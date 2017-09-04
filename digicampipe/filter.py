@@ -25,7 +25,7 @@ def filter_events(event_stream):
 if __name__ == '__main__':
 
     from stats import stats_events
-    
+
 
     directory = '/home/alispach/Downloads/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
