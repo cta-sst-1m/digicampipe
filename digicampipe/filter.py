@@ -24,16 +24,16 @@ def filter_events(event_stream):
 
 if __name__ == '__main__':
 
-    from stats import stats_events
+    from digicampipe.skimmer import skim_events
 
     directory = '/home/alispach/blackmonkey/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename % number for number in range(0, 50)]
+    file_list = [filename % number for number in range(30, 165)]
     data_stream = event_stream(file_list=file_list, expert_mode=True)
     #  filtered_data = filter_events(event_stream)
 
-    # data = stats_events(data_stream)
-    # np.savez('temp.npz', **data)
+    data = skim_events(data_stream)
+    np.savez('temp.npz', **data)
     data = np.load('temp.npz')
 
     print(data['time_trigger'])
