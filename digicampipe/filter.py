@@ -26,9 +26,9 @@ if __name__ == '__main__':
 
     from stats import stats_events
 
-    directory = '/home/alispach/Downloads/'
+    directory = '/home/alispach/blackmonkey/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename % number for number in range(102, 103)]
+    file_list = [filename % number for number in range(0, 50)]
     data_stream = event_stream(file_list=file_list, expert_mode=True)
     #  filtered_data = filter_events(event_stream)
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     plt.hist(data['n_patches'], log=True)
 
     plt.figure()
-    plt.hist(data['shower_spread'], log=True)
+    # plt.hist(data['shower_spread'], log=True)
 
     from scipy.stats import expon
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     for key_1, val_1 in data.items():
         for key_2, val_2 in data.items():
 
-            if key_1 == 'time_trigger' or key_2 == 'time_trigger':
+            if key_1 in ['time_trigger', 'shower_spread'] or key_2 in ['time_trigger', 'shower_spread']:
               continue
 
             num = 50
