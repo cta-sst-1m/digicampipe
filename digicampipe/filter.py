@@ -26,32 +26,59 @@ if __name__ == '__main__':
 
     from stats import stats_events
 
-
     directory = '/home/alispach/Downloads/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename %number for number in range(102, 103)]
+    file_list = [filename % number for number in range(102, 103)]
     data_stream = event_stream(file_list=file_list, expert_mode=True)
     #  filtered_data = filter_events(event_stream)
 
-    stats = stats_events(data_stream)
+    # data = stats_events(data_stream)
+    # np.savez('temp.npz', **data)
+    data = np.load('temp.npz')
 
+    print(data['time_trigger'])
+
+    import matplotlib
     import matplotlib.pyplot as plt
 
     plt.figure()
-    plt.hist(stats[0], log=True)
+    plt.hist(data['time_trigger'], log=True)
 
     plt.figure()
-    plt.hist(stats[1], log=True)
+    plt.hist(data['time_total'], log=True)
+
+    plt.figure()
+    plt.hist(data['time_max'], log=True)
+
+    plt.figure()
+    plt.hist(data['n_patches'], log=True)
+
+    plt.figure()
+    plt.hist(data['shower_spread'], log=True)
 
     from scipy.stats import expon
 
-    param = expon.fit(np.diff(stats[2]), floc=0)
+    param = expon.fit(np.diff(data['time_trigger']), floc=0)
     plt.figure()
-    hist = plt.hist(np.diff(stats[2]), log=True)
+    hist = plt.hist(np.diff(data['time_trigger']), log=True)
     n_entries = np.sum(hist[0])
     bin_width = hist[1][1] - hist[1][0]
     pdf_fit = expon(loc=param[0], scale=param[1])
     plt.plot(hist[1], n_entries * bin_width * pdf_fit.pdf(hist[1]),
              label='$f_{trigger}$ = %0.2f [Hz]' % (1E9 / param[1]))
     plt.legend(loc='best')
+
+    for key_1, val_1 in data.items():
+        for key_2, val_2 in data.items():
+
+            if key_1 == 'time_trigger' or key_2 == 'time_trigger':
+              continue
+
+            num = 50
+            bins = [np.linspace(np.min(val_1), np.max(val_1), num=num), np.linspace(np.min(val_2), np.max(val_2), num=num)]
+            plt.figure()
+            plt.hist2d(val_1, val_2, bins=bins, norm=matplotlib.colors.LogNorm())
+            plt.xlabel(key_1)
+            plt.ylabel(key_2)
+
     plt.show()
