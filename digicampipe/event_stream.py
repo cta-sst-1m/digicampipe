@@ -1,4 +1,4 @@
-from ctapipe.io import zfits
+from digicampipe.io import zfits
 
 
 def event_stream(file_list, expert_mode=False):

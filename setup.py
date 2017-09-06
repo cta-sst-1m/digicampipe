@@ -4,7 +4,7 @@ from distutils.core import setup
 setup(
     name='digicampipe',
     version='0.1.0',
-    packages=['digicampipe'],
+    packages=['digicampipe', 'digicampipe.io'],
     url='https://github.com/calispac/digicampipe',
     license='GNU GPL 3.0',
     author='Cyril Alispach',

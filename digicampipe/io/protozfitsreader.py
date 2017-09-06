@@ -227,6 +227,7 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
         frames = self._get_numpyfield(self.event.trigger_output_patch7)
+        print(frames)
         n_samples = frames.shape[0] / 18 / 3
         frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,
                                                                                                    144).reshape(

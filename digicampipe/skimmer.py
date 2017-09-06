@@ -13,6 +13,9 @@ def compute_discrimination_variable(r0_container, patch_coordinates):
     n_patches_above_threshold = np.sum((time_above_threshold_per_patch > 0))
     patches_id_above_threshold = np.where((time_above_threshold_per_patch > 0))[0]
 
+    list_no = [391, 392, 403, 404, 405, 416, 417]
+    nimportecomment = (np.sum(output_trigger_patch7[list_no]) > 0.5 )
+
     sigma_x = np.std((patch_x*time_above_threshold_per_patch)[patches_id_above_threshold])
     # sigma_x = np.std(patch_x[patches_id_above_threshold])
     sigma_y = np.std((patch_y*time_above_threshold_per_patch)[patches_id_above_threshold])
@@ -20,7 +23,7 @@ def compute_discrimination_variable(r0_container, patch_coordinates):
     sigma = np.sqrt(sigma_x**2 + sigma_y**2)
     sigma = sigma if not np.isnan(sigma) else 0.
 
-    return trigger_time, total_time_above_threshold, max_time_above_threshold, n_patches_above_threshold, sigma
+    return trigger_time, total_time_above_threshold, max_time_above_threshold, n_patches_above_threshold, sigma, nimportecomment
 
 
 def skim_events(event_stream):
@@ -55,3 +58,15 @@ def skim_events(event_stream):
         discrimination_variable[key] = np.array(val)
 
     return discrimination_variable
+
+
+def compute_patch_coordinates():
+
+    cts_path = '/home/alispach/Documents/PhD/ctasoft/CTS/'
+    digicam = camera.Camera(_config_file=cts_path + 'config/camera_config.cfg')
+    patch_x = np.array([digicam.Patches[i].Vertices[0][0] for i in range(len(digicam.Patches))])
+    patch_y = np.array([digicam.Patches[i].Vertices[1][0] for i in range(len(digicam.Patches))])
+    patch_coordinates = [patch_x, patch_y]
+
+    return patch_coordinates
+
