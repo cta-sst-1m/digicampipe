@@ -17,13 +17,13 @@ def filter_events(event_stream):
 
             trigger_time, total_time_above_threshold, max_time_above_threshold, n_patches_above_threshold, sigma, nimp = variable
 
-            if not nimp:
+            #if not nimp:
 
-                print(n_patches_above_threshold)
+            #    print(n_patches_above_threshold)
 
-                if n_patches_above_threshold > 5:
+            #    if n_patches_above_threshold > 5:
 
-                    yield event
+            yield event
 
 
 
