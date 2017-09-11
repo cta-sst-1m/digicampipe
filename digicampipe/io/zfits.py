@@ -48,7 +48,7 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
 
     #print(eventstream)
     # loop over the events
-    for run_id, event_id in eventstream:
+    for run_id, eventid in eventstream:
 
         #print('hello')
         # define the main container and fill some metadata
@@ -56,7 +56,7 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
         data.meta['zfits__input'] = url
         data.meta['zfits__max_events'] = max_events
         data.r0.run_id = run_id
-        data.r0.event_id = event_id
+        data.r0.event_id = zfits.get_event_number()
         data.r0.tels_with_data = [zfits.event.telescopeID, ]
         data.count = counter
 

@@ -123,7 +123,8 @@ class ZFile(object):
         return (self._get_numpyfield(self.event.telescopeID))
 
     def get_event_number(self):
-        return (self._get_numpyfield(self.event.eventNumber))
+
+        return self.event.eventNumber
 
     def get_run_id(self):
         return (self._get_numpyfield(self.header.runNumber))
@@ -138,7 +139,7 @@ class ZFile(object):
         timeNanoSec = self.event.local_time_nanosec
         return (timeSec, timeNanoSec)
 
-    def get_event_number(self):
+    def get_event_number_array(self):
         return (self._get_numpyfield(self.event.arrayEvtNum))
 
     def get_event_type(self):
@@ -227,13 +228,10 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
         frames = self._get_numpyfield(self.event.trigger_output_patch7)
-        print(frames.shape)
         n_samples = frames.shape[0] / 18 / 3
         frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,
                                                                                                    144).reshape(
             n_samples, 432).T
-
-        print(frames.shape)
 
         patches = numpy.arange(0, 432)  # TODO access patch_ids from self.event
         properties = dict(zip(patches, frames))
