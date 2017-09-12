@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
 
-    directory = '/home/alispach/blackmonkey/'
+    directory = '/home/alispach/blackmonkey/first_light/20170831/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
     file_list = [filename % number for number in range(30, 165)]
     data_stream = event_stream(file_list=file_list, expert_mode=True)

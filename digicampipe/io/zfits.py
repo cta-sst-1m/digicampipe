@@ -43,8 +43,13 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
                            .format(url))
 
     # intialise counter and event generator
+
+
     counter = 0
     eventstream = zfits.move_to_next_event()
+
+    # print('File %s contains %d events' % (url, zfits.numrows))
+
 
     #print(eventstream)
     # loop over the events
@@ -59,7 +64,6 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
         data.r0.event_id = zfits.get_event_number()
         data.r0.tels_with_data = [zfits.event.telescopeID, ]
         data.count = counter
-
 
         # remove forbidden telescopes
         if allowed_tels:
