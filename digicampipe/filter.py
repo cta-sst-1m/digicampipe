@@ -22,8 +22,26 @@ def filter_events(event_stream):
             #    print(n_patches_above_threshold)
 
                 if n_patches_above_threshold > 10:
-
+                    # add _std and _baseline to event
                     yield event
+
+
+            else:
+                # calcul std baseline
+                _std
+                _baseline
+
+
+def to_r1(event_stream):
+    # Acceder au Gain (Cyril)
+    # Acceder au XT, fonction de saturation (Cyril+Vic)
+
+    # soustraction baseline (Vic)
+    # integration (Vic)
+
+    # calibration (/Gain/XT*sat)0
+
+    return
 
 
 
