@@ -103,8 +103,13 @@ class R1CameraContainer(Container):
     """
     Storage of r1 calibrated data from a single telescope
     """
+
+    pedestal_mean = Item(None, "baseline mean")
+    pedestal_std = Item(None, "baseline std")
     pe_samples = Item(None, ("numpy array containing p.e. samples"
                              "(n_channels x n_pixels, n_samples)"))
+    nsb = Item(None, "nsb rate in GHz")
+    gain_drop = Item(None, "gain drop")
 
 
 class R1Container(Container):
