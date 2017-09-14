@@ -1,21 +1,27 @@
 from ctapipe.image import hillas
 
 
-def calibrate_dl1(event_stream):
+def calibrate_to_dl2(event_stream):
 
     first = True
 
     for event in event_stream:
 
-        if first:
+        for telescope_id in event.dl1.tels_with_data:
 
-            pixel_x, pixel_y = event.inst.pixel_pos
-            first = False
+            if first:
+                pixel_x, pixel_y = event.inst.pixel_pos[telescope_id]
+                first = False
 
-        for telescope_id in event.dl0.tels_with_data:
+            image = event.dl1.tel[telescope_id].image
+            moments = hillas.hillas_parameters_1(pixel_x, pixel_y, image)
+            event.dl2.shower = moments
 
-            image = event.dl0.tel[telescope_id].pe_samples
-            hillas_parameters = hillas.hillas_parameters_1(pixel_x, pixel_y, image)
-            event.dl1.shower = hillas_parameters
+            """
+            
+            event.dl1.energy = None
+            event.dl1.classification = None
+
+            """
 
         yield event
