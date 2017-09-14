@@ -16,7 +16,7 @@ if __name__ == '__main__':
     data_stream = filter.filter_patch(data_stream, unwanted_patch=unwanted_patch)
     data_stream = r1.calibrate_to_r1(event_stream=data_stream)
 
-    n_events = 10000
+    n_events = 100
     n_pixels = 1296
     baseline_mean = np.zeros((n_pixels, n_events))
     baseline_std = np.zeros((n_pixels, n_events))
