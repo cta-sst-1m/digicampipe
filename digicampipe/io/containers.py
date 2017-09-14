@@ -88,7 +88,6 @@ class R0CameraContainer(Container):
     num_samples = Item(None, "number of time samples for telescope")
 
 
-
 class R0Container(Container):
     """
     Storage of a Merged Raw Data Event
@@ -280,21 +279,22 @@ class DataContainer(Container):
     count = Item(0, "number of events processed")
     inst = Item(InstrumentContainer(), "instrumental information (deprecated")
 
+
 class DigiCamCameraContainer(R0CameraContainer):
     """ DigiCam specific information """
     camera_event_number =  Item(-1, "camera event number")
-    pixel_flags  = Item(None, ("pixel status flags","(n_channels x n_pixels)"))
-    local_camera_clock  = Item(-1, "camera timestamp")
-    gps_time  = Item(-1, "gps timestamp")
-    timestamp  = Item(-1, "precise white rabbit based timestamp")
+    pixel_flags = Item(None, ("pixel status flags", "(n_channels x n_pixels)"))
+    local_camera_clock = Item(-1, "camera timestamp")
+    gps_time = Item(-1, "gps timestamp")
+    timestamp = Item(-1, "precise white rabbit based timestamp")
 
 
 class DigiCamExpertCameraContainer(DigiCamCameraContainer):
     """ DigiCam specific information
         for debugging and engeneering runs
     """
-    event_type =  Item(-1, "event type (1)")
-    eventType =  Item(-1, "event Type (2)")
-    trigger_input_traces  = Item(None, ("trigger patch trace","(n_patches)"))
-    trigger_output_patch7  = Item(None, ("trigger 7 patch cluster trace","(n_clusters)"))
-    trigger_output_patch19 = Item(None, ("trigger 19 patch cluster trace","(n_clusters)"))
+    event_type = Item(-1, "event type (1)")
+    eventType = Item(-1, "event Type (2)")
+    trigger_input_traces = Item(None, ("trigger patch trace", "(n_patches)"))
+    trigger_output_patch7 = Item(None, ("trigger 7 patch cluster trace", "(n_clusters)"))
+    trigger_output_patch19 = Item(None, ("trigger 19 patch cluster trace", "(n_clusters)"))
