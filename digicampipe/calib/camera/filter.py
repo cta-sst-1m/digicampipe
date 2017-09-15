@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def filter_patch(event_stream, unwanted_patch, reversed=False):
+def filter_patch(event_stream, unwanted_patch):
 
     for event in event_stream:
 
@@ -12,13 +12,16 @@ def filter_patch(event_stream, unwanted_patch, reversed=False):
             output_trigger_patch7 = np.array(list(r0_camera.trigger_output_patch7.values()))
 
             patch_condition = np.any(output_trigger_patch7[unwanted_patch])
-            if (not reversed) and patch_condition:
 
+            if not patch_condition:
+                # Set the event type
+                event.trig.trigger_flag = 0
+                yield event
+            else:
+                # Set the event type
+                event.trig.trigger_flag = 1
                 yield event
 
-            elif reversed and (not patch_condition):
-
-                yield event
 
 
 def filter_trigger_time(event_stream, time):

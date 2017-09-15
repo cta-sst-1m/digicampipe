@@ -103,6 +103,7 @@ class R1CameraContainer(Container):
     Storage of r1 calibrated data from a single telescope
     """
 
+    cleaning_mask = Item(None, "mask for clean pixels")
     pedestal_mean = Item(None, "baseline mean")
     pedestal_std = Item(None, "baseline std")
     pe_samples = Item(None, ("numpy array containing p.e. samples"
@@ -312,5 +313,8 @@ class CalibrationDataContainer(Container):
                 "(n_pixels x baseline)"))
     baseline = Item(None, ("numpy array containing integrated baseline per pixel "
                 "(n_pixels x baseline)"))
+    dark_baseline = Item(None, ("numpy array containing integrated baseline per pixel "
+                "(n_pixels x baseline)"))
     counter = Item(0, ("counter"))
     sample_to_consider = Item(0, ("number of sample to consider"))
+    baseline_ready =  Item(False, ("Is the baseline ready to be used?"))
