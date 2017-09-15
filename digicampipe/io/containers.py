@@ -111,6 +111,7 @@ class R1CameraContainer(Container):
     gain_drop = Item(None, "gain drop")
 
 
+
 class R1Container(Container):
     """
     Storage of a r1 calibrated Data Event
@@ -192,9 +193,9 @@ class MCHeaderContainer(Container):
 
 
 class CentralTriggerContainer(Container):
-
     gps_time = Item(Time, "central average time stamp")
     tels_with_trigger = Item([], "list of telescopes with data")
+    trigger_flag = Item(-1, "trigger flag")
 
 
 class ReconstructedShowerContainer(Container):
@@ -302,3 +303,14 @@ class DigiCamExpertCameraContainer(DigiCamCameraContainer):
     trigger_input_traces = Item(None, ("trigger patch trace", "(n_patches)"))
     trigger_output_patch7 = Item(None, ("trigger 7 patch cluster trace", "(n_clusters)"))
     trigger_output_patch19 = Item(None, ("trigger 19 patch cluster trace", "(n_clusters)"))
+
+
+class CalibrationDataContainer(Container):
+    samples_for_baseline = Item(None, ("numpy array containing integrated baseline per pixel "
+                "(n_pixels x baseline x nintegrated)"))
+    std_dev = Item(None, ("numpy array containing integrated baseline per pixel "
+                "(n_pixels x baseline)"))
+    baseline = Item(None, ("numpy array containing integrated baseline per pixel "
+                "(n_pixels x baseline)"))
+    counter = Item(0, ("counter"))
+    sample_to_consider = Item(0, ("number of sample to consider"))
