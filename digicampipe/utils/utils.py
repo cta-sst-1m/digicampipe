@@ -75,3 +75,38 @@ def contiguous_regions(data):
         sum_tmp = np.sum(data[start:stop])
         if val < sum_tmp: val = sum_tmp
     return val
+
+
+
+def fake_timing_hist(n_samples,timing_width,central_sample):
+    """
+    Create a timing array based on options.central_sample and options.timing_width
+    :param options:
+    :param n_samples:
+    :return:
+    """
+    timing = np.zeros((1296,n_samples+1,),dtype=float)
+    timing[...,int(central_sample-timing_width):int(central_sample+timing_width)]=1.
+    return timing
+
+def generate_timing_mask(window_start,window_width,peak_positions):
+    """
+    Generate mask arround the possible peak position
+    :param peak_positions:
+    :return:
+    """
+    peak = np.argmax(peak_positions, axis=1)
+    mask = (peak_positions.T / np.sum(peak_positions, axis=1)).T > 1e-3
+    mask_window = mask + np.append(mask[..., 1:], np.zeros((peak_positions.shape[0], 1), dtype=bool), axis=1) + \
+                  np.append(np.zeros((peak_positions.shape[0], 1), dtype=bool), mask[..., :-1], axis=1)
+    mask_windows_edge = mask_window * ~mask
+    mask_window = mask_window[..., :-1]
+    mask_windows_edge = mask_windows_edge[..., :-1]
+    shift = window_start  # window_width - int(np.floor(window_width/2))+window_start
+    missing = mask_window.shape[1] - (window_width - 1)
+    mask_window = mask_window[..., shift:]
+    missing = mask_window.shape[1] - missing
+    mask_window = mask_window[..., :-missing]
+    mask_windows_edge = mask_windows_edge[..., shift:]
+    mask_windows_edge = mask_windows_edge[..., :-missing]
+    return peak,mask_window,mask_windows_edge

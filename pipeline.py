@@ -1,6 +1,7 @@
 from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
 from digicamviewer.viewer import EventViewer
+from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,11 +21,16 @@ if __name__ == '__main__':
                                 'peak':None,
                                 'window_start':3,
                                 'window_width':7,
-                                'threshold_saturation':3500}
+                                'threshold_saturation':3500,
+                                'n_samples':50,
+                                'timing_width':6,
+                                'central_sample':11}
 
-    peak_position = fake_timing_hist(options, options.n_samples - options.baseline_per_event_limit)
+    peak_position = fake_timing_hist(n_samples, timing_width, central_sample)
     time_integration_options['peak'], time_integration_options['mask'], time_integration_options['mask_edges'] =\
-        generate_timing_mask(options, peak_position)
+        generate_timing_mask(time_integration_options['window_start'],
+                             time_integration_options['window_width'],
+                             peak_position)
 
     # Create the calibration container
     calib_data = initialise_calibration_data(n_samples_for_baseline = 10000)
@@ -37,12 +43,9 @@ if __name__ == '__main__':
     # Run the r1 calibration
     data_stream = r1.calibrate_to_r1(data_stream,calib_data,time_integration_options)
 
-
-
     n_events = 100000
     n_pixels = 1296
-    baseline_mean = np.zeros((n_pixels, n_events))
-    baseline_std = np.zeros((n_pixels, n_events))
+
     time = np.zeros(n_events)
 
     for i, event in zip(range(n_events), data_stream):
@@ -85,4 +88,3 @@ if __name__ == '__main__':
     camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
     display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
     display.draw()
-    0/0
