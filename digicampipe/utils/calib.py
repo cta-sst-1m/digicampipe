@@ -24,4 +24,4 @@ def compute_nsb_rate(pedestal, type='std'):
 
 
 def get_gains():
-    return np.ones(adc_samples.shape[0]) * 23. # TODO, replace gain of 23 by calib array of gain
+    return np.ones(1296) * 23. # TODO, replace gain of 23 by calib array of gain

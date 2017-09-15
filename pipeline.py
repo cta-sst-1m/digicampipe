@@ -11,6 +11,7 @@ if __name__ == '__main__':
     directory = '/data/datasets/CTA/REALDATA/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
     file_list = [filename % number for number in range(110,132)]
+    camera_config_file = '/data/software/CTS/config/camera_config.cfg'
 
     # Trigger configuration
     unwanted_patch = [391, 392, 403, 404, 405, 416, 417]
@@ -34,7 +35,7 @@ if __name__ == '__main__':
                              peak_position)
 
     # Create the calibration container
-    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 10000)
+    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 5000)
 
     # Define the event stream
     # Get the actual data stream
@@ -52,6 +53,7 @@ if __name__ == '__main__':
     n_pixels = 1296
 
     for i, event in zip(range(n_events), data_stream):
-        camera_config_file = '/data/software/CTS/config/camera_config.cfg'
+        # check that the event was treated up to r1
+        if event.level < 1 : continue
         display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
         display.draw()

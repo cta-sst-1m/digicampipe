@@ -27,7 +27,8 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             r1_camera.pedestal_mean = calib_container.baseline
             r1_camera.pedestal_std = calib_container.std_dev
             # Subtract baseline to the data
-            adc_samples = adc_samples - r1_camera.pedestal_mean
+            adc_samples = adc_samples.astype(dtype = float) - r1_camera.pedestal_mean.reshape(-1,1)
+            r1_camera.adc_samples = adc_samples
             # Compute the gain drop and NSB
             if calib_container.dark_baseline is None :
                 # compute NSB and Gain drop from STD
@@ -42,8 +43,8 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             gain = gain_init * r1_camera.gain_drop
 
             # mask pixels which goes above N sigma
-            mask_for_cleaning = adcs_samples > cleaning_threshold  * r1_camera.pedestal_std
-            r1.cleaning_mask = np.any(mask_for_cleaning,axis=-1)
+            mask_for_cleaning = adc_samples > cleaning_threshold  * r1_camera.pedestal_std.reshape(-1,1)
+            r1_camera.cleaning_mask = np.any(mask_for_cleaning,axis=-1)
             #TODO enlarge +1
 
             # Integrate the data
@@ -56,7 +57,8 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
                                     time_integration_options['window_start'],
                                     time_integration_options['threshold_saturation'])
 
-            r1_camera.time_bin = r1_camera.time_bin*4 + event.r0.tel[telescope_id].local_camera_clock
+            r1_camera.time_bin = np.array([r1_camera.time_bin])*4 + event.r0.tel[telescope_id].local_camera_clock
+            event.level = 1
 
             yield event
 

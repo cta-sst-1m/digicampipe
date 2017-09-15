@@ -21,13 +21,12 @@ def extract_baseline(event_stream, calib_container):
         for telid in event.r0.tels_with_data:
             # Get the adcs
             adcs = np.array(list(event.r0.tel[telid].adc_samples.values()))
-            print(calib_container.samples_for_baseline.shape)
             # When the first event comes, add adcs.shape[-1] length to the number of samples
             if calib_container.sample_to_consider == calib_container.samples_for_baseline.shape[-1]:
                 calib_container.samples_for_baseline = np.append(calib_container.samples_for_baseline,
                                                                  np.zeros((1296, adcs.shape[-1]), dtype=int),axis=-1)
 
-            print(calib_container.samples_for_baseline.shape)
+            #print(calib_container.samples_for_baseline.shape)
             # Was the container filled up to n_samples_for_baseline?
             compute_baseline = True
             if calib_container.counter < calib_container.samples_for_baseline.shape[-1] - 1:
@@ -52,7 +51,7 @@ def extract_baseline(event_stream, calib_container):
             # Insert new event
             if compute_baseline:
                 # shift all adcs by one event
-                calib_container.samples_for_baseline[:, :-adcs.shape[-1]] = calib_container.samples_for_baseline[
+                calib_container.samples_for_baseline[:, :-adcs.shape[-1]] = calib_container.samples_for_baseline[:,
                                                                             adcs.shape[-1]:]
                 # Add the new event
                 calib_container.samples_for_baseline[:, -adcs.shape[-1]:] = adcs
@@ -64,8 +63,6 @@ def extract_baseline(event_stream, calib_container):
 
             else:
                 # Fill it in the proper place
-                print(calib_container.samples_for_baseline.shape, calib_container.counter,
-                      calib_container.counter + adcs.shape[-1])
                 calib_container.samples_for_baseline[:,
                 calib_container.counter: calib_container.counter + adcs.shape[-1]] = adcs
                 # and increment the counter
