@@ -34,12 +34,12 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             # Compute the gain drop and NSB
             if calib_container.dark_baseline is None :
                 # compute NSB and Gain drop from STD
-                r1_camera.gain_drop = calib.compute_gain_drop(adc_samples,'std')
-                r1_camera.nsb  = calib.compute_nsb_rate(adc_samples,'std')
+                r1_camera.gain_drop = calib.compute_gain_drop(r1_camera.pedestal_std ,'std')
+                r1_camera.nsb  = calib.compute_nsb_rate(r1_camera.pedestal_std ,'std')
             else:
                 # compute NSB and Gain drop from baseline shift
-                r1_camera.gain_drop = calib.compute_gain_drop(adc_samples,'mean')
-                r1_camera.nsb  = calib.compute_nsb_rate(adc_samples,'mean')
+                r1_camera.gain_drop = calib.compute_gain_drop(r1_camera.pedestal_mean,'mean')
+                r1_camera.nsb  = calib.compute_nsb_rate(r1_camera.pedestal_mean,'mean')
 
             gain_init = calib.get_gains()
             gain = gain_init * r1_camera.gain_drop
@@ -47,7 +47,6 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             # mask pixels which goes above N sigma
             mask_for_cleaning = adc_samples > cleaning_threshold  * r1_camera.pedestal_std.reshape(-1,1)
             r1_camera.cleaning_mask = np.any(mask_for_cleaning,axis=-1)
-            #TODO enlarge +1
 
             # Integrate the data
             adc_samples = utils.integrate(adc_samples, time_integration_options['window_width'])
