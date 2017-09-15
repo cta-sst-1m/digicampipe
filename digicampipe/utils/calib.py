@@ -90,5 +90,3 @@ if __name__ == '__main__':
     plt.legend()
 
     plt.show()
-
-    print(data.__dict__)

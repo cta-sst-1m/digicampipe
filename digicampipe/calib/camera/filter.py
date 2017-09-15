@@ -16,25 +16,11 @@ def filter_patch(event_stream, unwanted_patch):
             if not patch_condition:
                 # Set the event type
                 event.trig.trigger_flag = 0
-                event.level = 0
                 yield event
             else:
                 # Set the event type
                 event.trig.trigger_flag = 1
-                event.level = 0
                 yield event
-
-
-def filter_level(event_stream, level = 1):
-    """
-    Filter events as a function of the processing level
-    :param event_stream:
-    :param level:
-    :return:
-    """
-    for event in event_stream:
-        if event.level >= level :
-            yield event
 
 
 
