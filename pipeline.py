@@ -35,7 +35,7 @@ if __name__ == '__main__':
                              peak_position)
 
     # Create the calibration container
-    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 5000)
+    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 50000)
 
     # Define the event stream
     # Get the actual data stream
@@ -48,12 +48,8 @@ if __name__ == '__main__':
     data_stream = r1.calibrate_to_r1(data_stream,calib_data,time_integration_options)
     # Run Hillas
     #data_stream = dl2.calibrate_to_dl2(data_stream)
+    # Filter the proecssing level
+    data_stream = filter.filter_level(data_stream, level = 1)
 
-    n_events = 100000
-    n_pixels = 1296
-
-    for i, event in zip(range(n_events), data_stream):
-        # check that the event was treated up to r1
-        if event.level < 1 : continue
-        display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
-        display.draw()
+    display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
+    display.draw()

@@ -25,6 +25,18 @@ def filter_patch(event_stream, unwanted_patch):
                 yield event
 
 
+def filter_level(event_stream, level = 1):
+    """
+    Filter events as a function of the processing level
+    :param event_stream:
+    :param level:
+    :return:
+    """
+    for event in event_stream:
+        if event.level >= level :
+            yield event
+
+
 
 def filter_trigger_time(event_stream, time):
 
