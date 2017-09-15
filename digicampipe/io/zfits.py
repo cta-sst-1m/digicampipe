@@ -4,7 +4,7 @@ Components to read ZFITS data.
 This requires the protozfitsreader python library to be installed
 """
 import logging
-from ctapipe.io.containers import DataContainer
+from digicampipe.io.containers import DataContainer
 from digicampipe.io.containers import DigiCamCameraContainer, DigiCamExpertCameraContainer
 
 logger = logging.getLogger(__name__)

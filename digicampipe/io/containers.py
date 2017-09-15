@@ -4,7 +4,6 @@ Container structures for data that should be read or written to disk
 
 from astropy import units as u
 from astropy.time import Time
-
 from ctapipe.core import Container, Item, Map
 from numpy import ndarray
 
@@ -103,12 +102,14 @@ class R1CameraContainer(Container):
     """
     Storage of r1 calibrated data from a single telescope
     """
+
+    pedestal_mean = Item(None, "baseline mean")
+    pedestal_std = Item(None, "baseline std")
     pe_samples = Item(None, ("numpy array containing p.e. samples"
                              "(n_channels x n_pixels, n_samples)"))
-    baseline = Item(None, ("numpy array containing the baseline per event"
-                             "(n_pixels)"))
-    std_dev = Item(None, ("numpy array containing the standard deviation per event"
-                             "(n_pixels)"))
+    nsb = Item(None, "nsb rate in GHz")
+    gain_drop = Item(None, "gain drop")
+
 
 
 class R1Container(Container):

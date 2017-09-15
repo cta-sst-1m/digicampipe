@@ -89,11 +89,13 @@ if __name__ == '__main__':
 
     directory = '/home/alispach/blackmonkey/first_light/20170831/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
+
     file_list = [filename % number for number in range(30, 165)]
 
     # Some container to handle calibration data
     calib_data_holder = initialise_calibration_data(n_samples_for_baseline = 10000)
     # Get the raw data
+
     data_stream = event_stream(file_list=file_list, expert_mode=True)
     # Filter events
     data_stream = filter_events(data_stream)
@@ -106,7 +108,7 @@ if __name__ == '__main__':
 
     display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
     display.draw()
-    0/0
+
     data = np.load('temp.npz')
 
     print(data['time_trigger'])
