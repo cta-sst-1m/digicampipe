@@ -15,9 +15,9 @@ def filter_events(event_stream):
             # get informations on the event_type
             variable = compute_discrimination_variable(r0_container=r0_container, patch_coordinates=patch_coordinates)
 
-            trigger_time, total_time_above_threshold, max_time_above_threshold, n_patches_above_threshold, sigma, nimp = variable
+            trigger_time, total_time_above_threshold, max_time_above_threshold, n_patches_above_threshold, sigma, random_trigger = variable
 
-            if not nimp:
+            if not random_trigger:
                 # Set the event type
                 event.trig.trigger_flag = 0
                 yield event
@@ -26,32 +26,6 @@ def filter_events(event_stream):
                 event.trig.trigger_flag = 1
                 yield event
 
-
-def analyse_random_trigger_events(event_stream, calib_stream):
-
-    for event in event_stream:
-
-        if event.trig.trigger_flag != 1 : continue
-
-        # Get the adcs
-        adcs = np.array(list(event.r0.tel[telid].adc_samples.values()))
-
-        # Verfier ou on en est dans le counter
-
-        # Checker si l'evenement precedent est pas chaud
-
-        # Inserer l'evenement
-
-        # Calculer baseline std gain drop
-
-
-
-
-
-
-
-
-    return
 
 def to_r1(event_stream):
     # Acceder au Gain (Cyril)
@@ -65,20 +39,6 @@ def to_r1(event_stream):
     return
 
 
-def initialise_calibration_data(n_samples_for_baseline = 10000):
-    '''
-    Create a calibration data container to handle the data
-    :param n_samples_for_baseline: Number of sample to evaluate the baseline
-    :return:
-    '''
-    calib_container = containers.CalibrationDataContainer()
-    calib_container.sample_to_consider = n_samples_for_baseline
-    calib_container.samples_for_baseline = np.zeros((1296,n_samples_for_baseline),dtpye = int)
-    calib_container.baseline = np.zeros((1296),dtpye = int)
-    calib_container.std_dev = np.zeros((1296),dtpye = int)
-    calib_container.counter = 0
-
-    yield
 
 
 if __name__ == '__main__':

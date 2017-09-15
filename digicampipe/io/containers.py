@@ -312,5 +312,8 @@ class CalibrationDataContainer(Container):
                 "(n_pixels x baseline)"))
     baseline = Item(None, ("numpy array containing integrated baseline per pixel "
                 "(n_pixels x baseline)"))
+    dark_baseline = Item(None, ("numpy array containing integrated baseline per pixel "
+                "(n_pixels x baseline)"))
     counter = Item(0, ("counter"))
     sample_to_consider = Item(0, ("number of sample to consider"))
+    baseline_ready =  Item(False, ("Is the baseline ready to be used?"))
