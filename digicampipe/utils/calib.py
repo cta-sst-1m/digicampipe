@@ -91,4 +91,4 @@ if __name__ == '__main__':
 
     plt.show()
 
-print(data.__dict__)
+    print(data.__dict__)
