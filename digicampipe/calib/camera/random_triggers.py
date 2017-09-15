@@ -77,7 +77,6 @@ def extract_baseline(event_stream, calib_container):
                 calib_container.std_dev = np.nanstd(calib_container.samples_for_baseline[:, :calib_container.counter-adcs.shape[-1]], axis=-1)
                 yield event
 
-
 def initialise_calibration_data(n_samples_for_baseline = 10000):
     '''
     Create a calibration data container to handle the data
