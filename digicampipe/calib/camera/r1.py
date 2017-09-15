@@ -43,7 +43,8 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
 
             # mask pixels which goes above N sigma
             mask_for_cleaning = adcs_samples > cleaning_threshold  * r1_camera.pedestal_std
-            mask_for_cleaning = np.any(mask_for_cleaning,axis=-1)
+            r1.cleaning_mask = np.any(mask_for_cleaning,axis=-1)
+            #TODO enlarge +1
 
             # Integrate the data
             adc_samples = utils.integrate(adc_samples, time_integration_options['window_width'])
@@ -55,7 +56,7 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
                                     time_integration_options['window_start'],
                                     time_integration_options['threshold_saturation'])
 
-            r1_camera.pe_samples = dict(zip(pixel_list, charge))
+            r1_camera.pe_samples = charge
 
 
             yield event

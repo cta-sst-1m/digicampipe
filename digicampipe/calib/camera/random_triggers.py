@@ -16,7 +16,7 @@ def extract_baseline(event_stream, calib_container):
 
         # Check that the event is random trigger
         if event.trig.trigger_flag != 1:
-            yield calib_container
+            yield event
 
         # Get the adcs
         adcs = np.array(list(event.r0.tel[telid].adc_samples.values()))
@@ -61,7 +61,7 @@ def extract_baseline(event_stream, calib_container):
             # and increment the counter
             calib_container.counter += adcs.shape[-1]
 
-        yield calib_container
+        yield event
 
 
 def initialise_calibration_data(n_samples_for_baseline = 10000):

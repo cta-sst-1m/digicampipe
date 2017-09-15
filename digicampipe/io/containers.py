@@ -103,6 +103,7 @@ class R1CameraContainer(Container):
     Storage of r1 calibrated data from a single telescope
     """
 
+    cleaning_mask = Item(None, "mask for clean pixels")
     pedestal_mean = Item(None, "baseline mean")
     pedestal_std = Item(None, "baseline std")
     pe_samples = Item(None, ("numpy array containing p.e. samples"

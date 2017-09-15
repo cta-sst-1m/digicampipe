@@ -26,7 +26,8 @@ if __name__ == '__main__':
                                 'timing_width':6,
                                 'central_sample':11}
 
-    peak_position = fake_timing_hist(n_samples, timing_width, central_sample)
+    peak_position = fake_timing_hist(time_integration_options['n_samples'], time_integration_options['timing_width'],
+                                     time_integration_options['central_sample'])
     time_integration_options['peak'], time_integration_options['mask'], time_integration_options['mask_edges'] =\
         generate_timing_mask(time_integration_options['window_start'],
                              time_integration_options['window_width'],
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     # Filter events
     data_stream = filter.filter_patch(data_stream,unwanted_patch=unwanted_patch)
     # Deal with random trigger
-    data_stream,calib_data = random_triggers.extract_baseline(data_stream,calib_data)
+    data_stream = random_triggers.extract_baseline(data_stream,calib_data)
     # Run the r1 calibration
     data_stream = r1.calibrate_to_r1(data_stream,calib_data,time_integration_options)
 
@@ -48,43 +49,7 @@ if __name__ == '__main__':
 
     time = np.zeros(n_events)
 
-    for i, event in zip(range(n_events), data_stream):
-
-        for telescope_id in event.r0.tels_with_data:
-
-            print(i)
-            baseline_mean[..., i] = list(event.r1.tel[telescope_id].pedestal_mean.values())
-            baseline_std[..., i] = list(event.r1.tel[telescope_id].pedestal_std.values())
-            time[i] = event.r0.tel[telescope_id].local_camera_clock
-
-    pixels = [0, 300, 1200]
-    fig1 = plt.figure()
-    fig2 = plt.figure()
-
-    axis_1 = fig1.add_subplot(111)
-    axis_2 = fig2.add_subplot(111)
-
-    for pixel in pixels:
-
-        axis_1.plot(time - time[0], baseline_mean[pixel], linestyle='-', label='pixel %d' % pixel)
-        axis_2.plot(time - time[0], baseline_std[pixel], linestyle='-', label='pixel %d' % pixel)
-
-    axis_1.set_xlabel('time [ns]')
-    axis_2.set_xlabel('time [ns]')
-    axis_1.set_ylabel('baseline [LSB]')
-    axis_2.set_ylabel('std [LSB]')
-    axis_1.legend()
-    axis_2.legend()
-
-    plt.figure()
-    plt.hist(np.mean(baseline_mean, axis=-1), bins='auto')
-    plt.xlabel('baseline [LSB]')
-
-    plt.figure()
-    plt.hist(np.mean(baseline_std, axis=-1), bins='auto')
-    plt.xlabel('std [LSB]')
-
-    plt.show()
-    camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
-    display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
-    display.draw()
+    for i, event, calib in zip(range(n_events), data_stream):
+        camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
+        display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
+        display.draw()
