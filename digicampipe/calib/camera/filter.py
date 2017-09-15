@@ -16,12 +16,10 @@ def filter_patch(event_stream, unwanted_patch):
             if not patch_condition:
                 # Set the event type
                 event.trig.trigger_flag = 0
-                event.level = 0
                 yield event
             else:
                 # Set the event type
                 event.trig.trigger_flag = 1
-                event.level = 0
                 yield event
 
 

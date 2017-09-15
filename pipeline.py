@@ -1,4 +1,4 @@
-from digicampipe.calib.camera import filter, r1, random_triggers, dl2
+from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
 from digicamviewer.viewer import EventViewer
 from digicampipe.utils import utils
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     # Run Hillas
     #data_stream = dl2.calibrate_to_dl2(data_stream)
     # Filter the proecssing level
+
     data_stream = filter.filter_level(data_stream, level = 1)
     data_stream = filter.filter_bigshower(data_stream,minpe=10000)
 

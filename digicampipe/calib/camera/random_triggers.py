@@ -79,6 +79,7 @@ def extract_baseline(event_stream, calib_container):
                 yield event
 
 
+
 def initialise_calibration_data(n_samples_for_baseline = 10000):
     '''
     Create a calibration data container to handle the data

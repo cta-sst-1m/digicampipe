@@ -58,6 +58,8 @@ def compute_gain_drop(pedestal, type='std'):
         raise('Unknown type %s' % type)
     return splev(pedestal, spline)
 
+    return splev(pedestal, spline)
+
 
 def compute_nsb_rate(pedestal, type='std'):
 
