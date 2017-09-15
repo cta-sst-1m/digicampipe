@@ -60,7 +60,7 @@ if __name__ == '__main__':
     # Filter events
     data_stream = filter_events(data_stream)
     # Update the baseline
-    data_stream,calib_data_holder = baseline_evaluation(data_stream,calib_data_holder)
+    data_stream, calib_data_holder = baseline_evaluation(data_stream,calib_data_holder)
     #  filtered_data = filter_events(event_stream)
 
 #    data = skim_events(data_stream)

@@ -78,8 +78,7 @@ def contiguous_regions(data):
     return val
 
 
-
-def fake_timing_hist(n_samples,timing_width,central_sample):
+def fake_timing_hist(n_samples,timing_width, central_sample):
     """
     Create a timing array based on options.central_sample and options.timing_width
     :param options:
@@ -89,6 +88,7 @@ def fake_timing_hist(n_samples,timing_width,central_sample):
     timing = np.zeros((1296,n_samples+1,),dtype=float)
     timing[...,int(central_sample-timing_width):int(central_sample+timing_width)]=1.
     return timing
+
 
 def generate_timing_mask(window_start,window_width,peak_positions):
     """
