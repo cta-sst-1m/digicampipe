@@ -4,7 +4,6 @@ Container structures for data that should be read or written to disk
 
 from astropy import units as u
 from astropy.time import Time
-
 from ctapipe.core import Container, Item, Map
 from numpy import ndarray
 

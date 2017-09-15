@@ -16,7 +16,7 @@ if __name__ == '__main__':
     data_stream = filter.filter_patch(data_stream, unwanted_patch=unwanted_patch)
     data_stream = r1.calibrate_to_r1(event_stream=data_stream)
 
-    n_events = 100
+    n_events = 100000
     n_pixels = 1296
     baseline_mean = np.zeros((n_pixels, n_events))
     baseline_std = np.zeros((n_pixels, n_events))
@@ -26,6 +26,7 @@ if __name__ == '__main__':
 
         for telescope_id in event.r0.tels_with_data:
 
+            print(i)
             baseline_mean[..., i] = list(event.r1.tel[telescope_id].pedestal_mean.values())
             baseline_std[..., i] = list(event.r1.tel[telescope_id].pedestal_std.values())
             time[i] = event.r0.tel[telescope_id].local_camera_clock

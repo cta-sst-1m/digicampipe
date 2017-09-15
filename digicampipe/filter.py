@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     directory = '/home/alispach/blackmonkey/first_light/20170831/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename % number for number in range(30, 165)]
+    file_list = [filename % number for number in range(100, 165)]
     data_stream = event_stream(file_list=file_list, expert_mode=True)
     data_stream = filter_events(data_stream)
     #  filtered_data = filter_events(event_stream)

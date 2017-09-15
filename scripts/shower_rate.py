@@ -24,6 +24,8 @@ if __name__ == '__main__':
 
         for telescope_id in event.r0.tels_with_data:
 
+            print(i)
+
             time[i] = event.r0.tel[telescope_id].local_camera_clock
 
     plt.figure()
@@ -34,7 +36,7 @@ if __name__ == '__main__':
     param = expon.fit(np.diff(time), floc=0)
     pdf_fit = expon(loc=param[0], scale=param[1])
     plt.plot(hist[1], n_entries * bin_width * pdf_fit.pdf(hist[1]), label='$f_{trigger}$ = %0.2f [Hz]' % (1E9 / param[1]))
-    plt.xlabel('$\Delta t$ [s]')
+    plt.xlabel('$\Delta t$ [ns]')
     plt.legend(loc='best')
 
     camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
