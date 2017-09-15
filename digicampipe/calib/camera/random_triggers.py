@@ -1,5 +1,5 @@
 import numpy as np
-import digicampipe.io.containers as containers
+
 
 def extract_baseline(event_stream, calib_container):
     """
@@ -85,9 +85,9 @@ def initialise_calibration_data(n_samples_for_baseline = 10000):
     '''
     calib_container = containers.CalibrationDataContainer()
     calib_container.sample_to_consider = n_samples_for_baseline
-    calib_container.samples_for_baseline = np.zeros((1296,n_samples_for_baseline),dtype = int)
-    calib_container.baseline = np.zeros((1296),dtype = int)
-    calib_container.std_dev = np.zeros((1296),dtype = int)
+    calib_container.samples_for_baseline = np.zeros((1296,n_samples_for_baseline),dtpye = int)
+    calib_container.baseline = np.zeros((1296),dtpye = int)
+    calib_container.std_dev = np.zeros((1296),dtpye = int)
     calib_container.counter = 0
 
     return calib_container
