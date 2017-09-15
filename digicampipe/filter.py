@@ -1,5 +1,5 @@
 import numpy as np
-from digicampipe.io import event_stream,containers
+from digicampipe.io import event_stream, containers
 from digicampipe.skimmer import skim_events, compute_discrimination_variable, compute_patch_coordinates
 
 

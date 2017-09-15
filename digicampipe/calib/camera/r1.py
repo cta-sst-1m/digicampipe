@@ -43,6 +43,7 @@ def compute_charge(adc_samples, gain, baseline_mean, baseline_std=None, type='ma
 
         print('Unknown type %s' %type)
 
+
 def compute_gain_drop(pedestal, type='std'):
 
     if type == 'mean':
@@ -58,6 +59,7 @@ def compute_gain_drop(pedestal, type='std'):
         print('Unknown type %s' % type)
 
     return
+
 
 def compute_nsb_rate(pedestal, type='std'):
 
