@@ -14,6 +14,18 @@ if __name__ == '__main__':
     # Trigger configuration
     unwanted_patch = [391, 392, 403, 404, 405, 416, 417]
 
+    # Integration configuration
+    time_integration_options = {'mask':None,
+                                'mask_edges':None,
+                                'peak':None,
+                                'window_start':3,
+                                'window_width':7,
+                                'threshold_saturation':3500}
+
+    peak_position = fake_timing_hist(options, options.n_samples - options.baseline_per_event_limit)
+    time_integration_options['peak'], time_integration_options['mask'], time_integration_options['mask_edges'] =\
+        generate_timing_mask(options, peak_position)
+
     # Create the calibration container
     calib_data = initialise_calibration_data(n_samples_for_baseline = 10000)
     # Get the actual data stream
@@ -21,14 +33,11 @@ if __name__ == '__main__':
     # Filter events
     data_stream = filter.filter_patch(data_stream,unwanted_patch=unwanted_patch)
     # Deal with random trigger
-    data_stream,calib_data_holder = random_triggers.extract_baseline(data_stream,calib_data_holder)
+    data_stream,calib_data = random_triggers.extract_baseline(data_stream,calib_data)
     # Run the r1 calibration
+    data_stream = r1.calibrate_to_r1(data_stream,calib_data,time_integration_options)
 
-    # Get the data
-    data_stream = event_stream(file_list=file_list, expert_mode=True)
-    data_stream =
 
-    data_stream = r1.calibrate_to_r1(event_stream=data_stream)
 
     n_events = 100000
     n_pixels = 1296
