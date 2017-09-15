@@ -4,6 +4,7 @@ from digicampipe.utils import utils,calib
 
 def calibrate_to_r1(event_stream, calib_container, time_integration_options):
     cleaning_threshold = 3.
+    
 
     pixel_list = list(range(1296))
 
