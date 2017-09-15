@@ -57,6 +57,5 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
 
             r1_camera.pe_samples = dict(zip(pixel_list, charge))
 
-
             yield event
 
