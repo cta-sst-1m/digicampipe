@@ -50,14 +50,13 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             adc_samples = utils.integrate(adc_samples, time_integration_options['window_width'])
 
             # Compute the charge
-            charge = utils.extract_charge(adc_samples, time_integration_options['mask'],
+            r1_camera.pe_samples, r1_camera.time_bin = utils.extract_charge(adc_samples, time_integration_options['mask'],
                                     time_integration_options['mask_edges'],
                                     time_integration_options['peak'],
                                     time_integration_options['window_start'],
                                     time_integration_options['threshold_saturation'])
 
-            r1_camera.pe_samples = charge
-
+            r1_camera.time_bin = r1_camera.time_bin*4 + event.r0.tel[telescope_id].local_camera_clock
 
             yield event
 

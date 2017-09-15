@@ -44,7 +44,7 @@ def extract_charge(data, timing_mask, timing_mask_edge, peak, window_start, thre
         _data = data[sat_indices,...]
         charge[sat_indices,...] = np.apply_along_axis(contiguous_regions, 1, _data)
 
-    return charge
+    return charge,index_max
 
 
 def contiguous_regions(data):

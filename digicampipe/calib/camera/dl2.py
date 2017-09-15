@@ -7,7 +7,7 @@ def calibrate_to_dl2(event_stream):
 
     for event in event_stream:
 
-        for telescope_id in event.dl1.tels_with_data:
+        for telescope_id in event.dl2.tels_with_data:
 
             if first:
                 pixel_x, pixel_y = event.inst.pixel_pos[telescope_id]
