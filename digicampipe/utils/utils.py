@@ -2,6 +2,7 @@ import numpy as np
 import scipy.ndimage as ndimage
 
 # Define the integration function
+
 def integrate(data, window_width):
     """
     Simple integration function over N samples
