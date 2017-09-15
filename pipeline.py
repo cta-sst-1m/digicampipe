@@ -49,7 +49,7 @@ if __name__ == '__main__':
     # Run Hillas
     #data_stream = dl2.calibrate_to_dl2(data_stream)
     # Filter the proecssing level
-    
+
     data_stream = filter.filter_level(data_stream, level = 1)
 
     display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
