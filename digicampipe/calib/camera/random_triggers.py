@@ -1,5 +1,5 @@
 import numpy as np
-import digicampipe.io.containers as containers
+
 
 def extract_baseline(event_stream, calib_container):
     """
@@ -28,9 +28,9 @@ def extract_baseline(event_stream, calib_container):
 
             #print(calib_container.samples_for_baseline.shape)
             # Was the container filled up to n_samples_for_baseline?
-            compute_baseline = True
+            compute_full_baseline = True
             if calib_container.counter < calib_container.samples_for_baseline.shape[-1] - 1:
-                compute_baseline = False
+                compute_full_baseline = False
 
             # Check the meaningfulness of previous event for baseline calculation and set to nan noisy pixels
             if calib_container.counter - 2 * adcs.shape[-1] > 0 :
@@ -47,9 +47,11 @@ def extract_baseline(event_stream, calib_container):
                 present_mean = np.mean(adcs, axis=-1)
                 calib_container.samples_for_baseline[prev_mean - np.minimum(present_mean, prevprev_mean) > 50][
                 calib_container.counter - adcs.shape[-1]:calib_container.counter] = np.nan
+            else:
+                yield event
 
             # Insert new event
-            if compute_baseline:
+            if compute_full_baseline:
                 # shift all adcs by one event
                 calib_container.samples_for_baseline[:, :-adcs.shape[-1]] = calib_container.samples_for_baseline[:,
                                                                             adcs.shape[-1]:]
@@ -60,6 +62,7 @@ def extract_baseline(event_stream, calib_container):
                 calib_container.baseline = np.nanmean(calib_container.samples_for_baseline[:, :-adcs.shape[-1]],
                                                       axis=-1)
                 calib_container.std_dev = np.nanstd(calib_container.samples_for_baseline[:, :-adcs.shape[-1]], axis=-1)
+                yield event
 
             else:
                 # Fill it in the proper place
@@ -67,8 +70,12 @@ def extract_baseline(event_stream, calib_container):
                 calib_container.counter: calib_container.counter + adcs.shape[-1]] = adcs
                 # and increment the counter
                 calib_container.counter += adcs.shape[-1]
-
-            yield event
+                # Compute the baseline and standard deviations
+                calib_container.baseline_ready = True
+                calib_container.baseline = np.nanmean(calib_container.samples_for_baseline[:, :calib_container.counter-adcs.shape[-1]],
+                                                      axis=-1)
+                calib_container.std_dev = np.nanstd(calib_container.samples_for_baseline[:, :calib_container.counter-adcs.shape[-1]], axis=-1)
+                yield event
 
 
 def initialise_calibration_data(n_samples_for_baseline = 10000):
@@ -79,9 +86,9 @@ def initialise_calibration_data(n_samples_for_baseline = 10000):
     '''
     calib_container = containers.CalibrationDataContainer()
     calib_container.sample_to_consider = n_samples_for_baseline
-    calib_container.samples_for_baseline = np.zeros((1296,n_samples_for_baseline),dtype = int)
-    calib_container.baseline = np.zeros((1296),dtype = int)
-    calib_container.std_dev = np.zeros((1296),dtype = int)
+    calib_container.samples_for_baseline = np.zeros((1296,n_samples_for_baseline),dtpye = int)
+    calib_container.baseline = np.zeros((1296),dtpye = int)
+    calib_container.std_dev = np.zeros((1296),dtpye = int)
     calib_container.counter = 0
 
-    return calib_container
+return calib_container

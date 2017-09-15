@@ -7,7 +7,8 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
 
     pixel_list = list(range(1296))
 
-    for event in event_stream:
+    for i_evt,event in enumerate(event_stream):
+        if i_evt%100 == 0 : print('Evt_number %d'%i_evt)
         # Check that the event is physics trigger
         if event.trig.trigger_flag != 0:
             yield event
@@ -57,9 +58,10 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
                                     time_integration_options['window_start'],
                                     time_integration_options['threshold_saturation'])
 
+            r1_camera.pe_samples = r1_camera.pe_samples / gain
+
             r1_camera.time_bin = np.array([r1_camera.time_bin])*4 + event.r0.tel[telescope_id].local_camera_clock
             event.level = 1
 
             yield event
-
 
