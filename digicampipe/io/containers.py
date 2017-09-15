@@ -107,7 +107,11 @@ class R1CameraContainer(Container):
     pedestal_mean = Item(None, "baseline mean")
     pedestal_std = Item(None, "baseline std")
     pe_samples = Item(None, ("numpy array containing p.e. samples"
-                             "(n_channels x n_pixels, n_samples)"))
+                             "(n_pixels)"))
+    adc_samples = Item(None, ("numpy array containing baseline subtracted ADCs"
+                             "(n_pixels, n_samples)"))
+    time_bin = Item(None, ("numpy array containing the bin of maximum"
+                             "(n_pixels)"))
     nsb = Item(None, "nsb rate in GHz")
     gain_drop = Item(None, "gain drop")
 
@@ -273,7 +277,7 @@ class ReconstructedContainer(Container):
 
 class DataContainer(Container):
     """ Top-level container for all event information """
-
+    level = Item(-1,"To which computing level it went (-1: nothing, 0: trigger flagged, 1: R1)")
     r0 = Item(R0Container(), "Raw Data")
     r1 = Item(R1Container(), "R1 Calibrated Data")
     dl0 = Item(DL0Container(), "DL0 Data Volume Reduced Data")
