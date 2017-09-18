@@ -51,7 +51,7 @@ if __name__ == '__main__':
     # Filter the proecssing level
 
     data_stream = filter.filter_level(data_stream, level = 1)
-    data_stream = filter.filter_bigshower(data_stream,minpe=10000)
+    data_stream = filter.filter_bigshower(data_stream,minpe=100)
 
     display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
     display.draw()

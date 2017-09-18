@@ -10,6 +10,7 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
 
     for i_evt,event in enumerate(event_stream):
         if i_evt%100 == 0 : print('Evt_number %d'%i_evt)
+        
         # Check that the event is physics trigger
         if event.trig.trigger_flag != 0:
             yield event
@@ -18,7 +19,6 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
         if not calib_container.baseline_ready :
             yield event
             continue
-
         for telescope_id in event.r0.tels_with_data:
             # Get the R0 and R1 containers
             r0_camera = event.r0.tel[telescope_id]
