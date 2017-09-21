@@ -51,15 +51,13 @@ class DL1CameraContainer(Container):
     image in intensity units and other per-event calculated
     calibration information.
     """
-    image = Item(None, "np array of camera image", unit=u.electron)
-    extracted_samples = Item(None, ("numpy array of bools indicating which "
-                                    "samples were included in the "
-                                    "charge extraction as a result of the "
-                                    "charge extractor chosen. "
-                                    "Shape=(nchan, npix, nsamples)."))
-    peakpos = Item(None, ("numpy array containing position of the peak as "
-                          "determined by the "
-                          "peak-finding algorithm for each pixel and channel"))
+
+    pe_samples = Item(None, ("numpy array containing data volume reduced "
+                             "p.e. samples"
+                             "(n_channels x n_pixels, n_samples)"))
+    cleaning_mask = Item(None, "mask for clean pixels")
+    time_bin = Item(None, ("numpy array containing the bin of maximum"
+                           "(n_pixels)"))
 
 
 class CameraCalibrationContainer(Container):
@@ -86,6 +84,15 @@ class R0CameraContainer(Container):
                               "(n_channels x n_pixels, n_samples)"))
     num_samples = Item(None, "number of time samples for telescope")
 
+    baseline = Item(None, "number of time samples for telescope")
+
+    standard_deviation = Item(None, "number of time samples for telescope")
+
+    flag = Item(None, "Flag calib (1), data(0)")
+
+    dark_baseline = None # Item(None, "dark baseline")
+
+    hv_off_baseline = Item(None, 'HV off baseline')
 
 class R0Container(Container):
     """
@@ -103,18 +110,10 @@ class R1CameraContainer(Container):
     Storage of r1 calibrated data from a single telescope
     """
 
-    cleaning_mask = Item(None, "mask for clean pixels")
-    pedestal_mean = Item(None, "baseline mean")
-    pedestal_std = Item(None, "baseline std")
-    pe_samples = Item(None, ("numpy array containing p.e. samples"
-                             "(n_pixels)"))
     adc_samples = Item(None, ("numpy array containing baseline subtracted ADCs"
                              "(n_pixels, n_samples)"))
-    time_bin = Item(None, ("numpy array containing the bin of maximum"
-                             "(n_pixels)"))
     nsb = Item(None, "nsb rate in GHz")
     gain_drop = Item(None, "gain drop")
-
 
 
 class R1Container(Container):
@@ -132,9 +131,6 @@ class DL0CameraContainer(Container):
     """
     Storage of data volume reduced dl0 data from a single telescope
     """
-    pe_samples = Item(None, ("numpy array containing data volume reduced "
-                             "p.e. samples"
-                             "(n_channels x n_pixels, n_samples)"))
 
 
 class DL0Container(Container):
@@ -277,7 +273,6 @@ class ReconstructedContainer(Container):
 
 class DataContainer(Container):
     """ Top-level container for all event information """
-    level = Item(-1,"To which computing level it went (-1: nothing, 0: trigger flagged, 1: R1)")
     r0 = Item(R0Container(), "Raw Data")
     r1 = Item(R1Container(), "R1 Calibrated Data")
     dl0 = Item(DL0Container(), "DL0 Data Volume Reduced Data")

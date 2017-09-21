@@ -3,6 +3,7 @@ import scipy.ndimage as ndimage
 
 # Define the integration function
 
+
 def integrate(data, window_width):
     """
     Simple integration function over N samples
@@ -41,7 +42,7 @@ def extract_charge(data, timing_mask, timing_mask_edge, peak, window_start, thre
     local_max[local_max < 0] = 0
     index_max = (np.arange(0, data.shape[0]), local_max,)
     charge = data[index_max]
-    if np.any(is_saturated) and integration_type == 'integration_saturation': ## TODO, find a better evaluation that it is saturated
+    if np.any(is_saturated): ## TODO, find a better evaluation that it is saturated
         sat_indices = tuple(np.where(is_saturated)[0])
         _data = data[sat_indices,...]
         charge[sat_indices,...] = np.apply_along_axis(contiguous_regions, 1, _data)
