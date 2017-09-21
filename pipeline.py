@@ -38,7 +38,7 @@ if __name__ == '__main__':
                              peak_position)
 
     # Create the calibration container
-    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 50000)
+    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 3000)
 
     # Define the event stream
     # Get the actual data stream
@@ -54,6 +54,7 @@ if __name__ == '__main__':
     # Run Hillas
     # data_stream = dl2.calibrate_to_dl2(data_stream)
     # Filter the proecssing level
+    data_stream = filter.filter_bigshower(data_stream,minpe=10000)
 
     data_stream = filter.filter_level(data_stream, level = 1)
     data_stream = filter.filter_bigshower(data_stream,minpe=100)

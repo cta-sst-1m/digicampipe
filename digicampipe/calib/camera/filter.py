@@ -78,7 +78,7 @@ def filter_bigshower(event_stream, min_photon = 10000):
     """
     for event in event_stream:
 
-        for telescope_id in event.r0.tels_with_data:
+      for telescope_id in event.r0.tels_with_data:
 
             dl1_camera = event.dl1.tel[telescope_id]
 
