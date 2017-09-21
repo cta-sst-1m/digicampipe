@@ -24,7 +24,8 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             r0_camera = event.r0.tel[telescope_id]
             r1_camera = event.r1.tel[telescope_id]
             # Get the ADCs
-            adc_samples = np.array(list(r0_camera.adc_samples.values()))
+            adc_samples = np.copy(np.array(list(r0_camera.adc_samples.values())))
+            shape_tmp = adc_samples.shape
             # Get the mean and standard deviation
             r1_camera.pedestal_mean = calib_container.baseline
             r1_camera.pedestal_std = calib_container.std_dev
@@ -52,15 +53,17 @@ def calibrate_to_r1(event_stream, calib_container, time_integration_options):
             adc_samples = utils.integrate(adc_samples, time_integration_options['window_width'])
 
             # Compute the charge
-            r1_camera.pe_samples, r1_camera.time_bin = utils.extract_charge(adc_samples, time_integration_options['mask'],
+            pe_samples, r1_camera.time_bin = utils.extract_charge(adc_samples, time_integration_options['mask'],
                                     time_integration_options['mask_edges'],
                                     time_integration_options['peak'],
                                     time_integration_options['window_start'],
                                     time_integration_options['threshold_saturation'])
 
-            r1_camera.pe_samples = r1_camera.pe_samples / gain
+            r1_camera.pe_samples = pe_samples / gain
 
-            r1_camera.time_bin = np.array([r1_camera.time_bin])*4 + event.r0.tel[telescope_id].local_camera_clock
+            #r1_camera.time_bin = np.array([r1_camera.time_bin])*4 + event.r0.tel[telescope_id].local_camera_clock
+            r1_camera.pe_samples_time = np.zeros(shape_tmp,dtype=float)
+            r1_camera.pe_samples_time[:,tuple(r1_camera.time_bin)] = pe_samples / gain
             event.level = 1
 
             yield event
