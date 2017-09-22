@@ -6,6 +6,7 @@ This requires the protozfitsreader python library to be installed
 import logging
 from digicampipe.io.containers import DataContainer
 from digicampipe.io.containers import DigiCamCameraContainer, DigiCamExpertCameraContainer
+from digicampipe.utils import geometry
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,8 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
             # TODO: add the time flag
             data.inst.num_channels[tel_id] = zfits.event.num_gains
             data.inst.num_pixels[tel_id] = zfits._get_numpyfield(zfits.event.hiGain.waveforms.pixelsIndices).shape[0]
+            data.inst.pixel_pos[tel_id] = geometry.find_pixel_positions()
+
             if data.inst.num_pixels[tel_id] == 1296:
                 # Note, I'll add in the data model of the zfits a camera identifier, just need some time
                 # to be released and to have some data containing this new field to test.
