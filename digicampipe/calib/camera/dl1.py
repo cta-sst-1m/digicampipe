@@ -24,16 +24,20 @@ def calibrate_to_dl1(event_stream, time_integration_options):
             # Integrate the data
             adc_integrated = utils.integrate(adc_samples, time_integration_options['window_width'])
 
+            pe_samples_trace = adc_integrated / gain[:, np.newaxis]
+            n_samples = adc_samples.shape[-1]
+            dl1_camera.pe_samples_trace = np.pad(pe_samples_trace, ((0,0), (0, n_samples - pe_samples_trace.shape[-1] % n_samples)), 'constant')
+
             # Compute the charge
             dl1_camera.pe_samples, dl1_camera.time_bin = utils.extract_charge(adc_integrated,
                                                                               time_integration_options['mask'],
                                                                               time_integration_options['mask_edges'],
-                                                                              time_integration_options['peak'],
+                                                                        time_integration_options['peak'],
                                                                               time_integration_options['window_start'],
                                                                               time_integration_options['threshold_saturation'])
             dl1_camera.pe_samples = dl1_camera.pe_samples / gain
 
-            dl1_camera.time_bin = np.array([dl1_camera.time_bin]) * 4 + r0_camera.local_camera_clock
+            # dl1_camera.time_bin = np.array([dl1_camera.time_bin]) * 4 + r0_camera.local_camera_clock
 
         yield event
 
