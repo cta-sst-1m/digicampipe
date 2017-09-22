@@ -59,6 +59,11 @@ class DL1CameraContainer(Container):
     time_bin = Item(None, ("numpy array containing the bin of maximum"
                            "(n_pixels)"))
 
+    pe_samples_trace = Item(None, ("numpy array containing data volume reduced "
+                             "p.e. samples"
+                             "(n_channels x n_pixels, n_samples)"))
+
+
 
 class CameraCalibrationContainer(Container):
     """

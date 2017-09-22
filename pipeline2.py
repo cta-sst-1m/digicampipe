@@ -1,6 +1,6 @@
 from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
-from digicamviewer.viewer import EventViewer
+from digicamviewer.viewer import EventViewer, EventViewer2
 from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.fill_flag(data_stream, unwanted_patch=unwanted_patch)
     # Fill the baseline (to be replaced by Digicam)
-    data_stream = random_triggers.fill_baseline_r0(data_stream)
+    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=500)
 
     data_stream = filter.filter_flag(data_stream, flags=[1])
     data_stream = filter.filter_baseline_zero(data_stream)
@@ -58,10 +58,10 @@ if __name__ == '__main__':
 
     ## Filter the events for display
 
-    data_stream = filter.filter_bigshower(data_stream, min_photon=10)
-
-
+    data_stream = filter.filter_bigshower(data_stream, min_photon=100)
 
     with plt.style.context('ggplot'):
-        display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
+        display = EventViewer2(data_stream, n_samples=50, camera_config_file=camera_config_file, scale='lin')
+        #display.next()
         display.draw()
+        #plt.show()
