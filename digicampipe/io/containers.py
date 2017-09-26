@@ -64,7 +64,6 @@ class DL1CameraContainer(Container):
                              "(n_channels x n_pixels, n_samples)"))
 
 
-
 class CameraCalibrationContainer(Container):
     """
     Storage of externally calculated calibration parameters (not per-event)
@@ -98,6 +97,7 @@ class R0CameraContainer(Container):
     dark_baseline = None # Item(None, "dark baseline")
 
     hv_off_baseline = Item(None, 'HV off baseline')
+
 
 class R0Container(Container):
     """

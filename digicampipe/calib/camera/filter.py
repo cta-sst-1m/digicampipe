@@ -111,7 +111,6 @@ def filter_trigger_time(event_stream, time):
 
             output_trigger_patch7 = np.array(list(r0_camera.trigger_output_patch7.values()))
 
-            print(np.sum(output_trigger_patch7))
             condition = np.sum(output_trigger_patch7) > time
 
             if condition:

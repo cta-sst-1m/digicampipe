@@ -18,7 +18,6 @@ def calibrate_to_dl2(event_stream):
 
             moments = hillas.hillas_parameters_2(pixel_x, pixel_y, image)
 
-        print(moments)
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None
