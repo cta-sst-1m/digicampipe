@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     # Data configuration
-    # directory = '/data/datasets/CTA/REALDATA/'
+    directory = '/data/datasets/CTA/REALDATA/'
     # directory = '/home/alispach/blackmonkey/calib_data/first_light/20170831/'
-    directory = '/home/alispach/Downloads/'
+    #directory = '/home/alispach/Downloads/'
 
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename % number for number in range(130, 135)]
+    file_list = [filename % number for number in [0]]
     camera_config_file = '/data/software/CTS/config/camera_config.cfg'
 
     # Trigger configuration
@@ -38,9 +38,9 @@ if __name__ == '__main__':
                              peak_position)
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True)
+    data_stream = event_stream(file_list=file_list, expert_mode=True, geom_file=camera_config_file)
     # Fill the flags (to be replaced by Digicam)
-    data_stream = filter.fill_flag(data_stream, unwanted_patch=unwanted_patch)
+    data_stream = filter.fill_flag(data_stream ) #, unwanted_patch=unwanted_patch)
     # Fill the baseline (to be replaced by Digicam)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=500)
 

@@ -13,7 +13,7 @@ if __name__ == '__main__':
     directory = '/home/alispach/Downloads/'
 
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename % number for number in range(130, 135)]
+    file_list = [filename % number for number in [0]]
     camera_config_file = '/data/software/CTS/config/camera_config.cfg'
 
     # Trigger configuration

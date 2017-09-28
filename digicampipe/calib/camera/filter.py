@@ -23,7 +23,7 @@ def filter_patch(event_stream, unwanted_patch):
         yield event
 
 
-def fill_flag(event_stream, unwanted_patch):
+def fill_flag(event_stream, unwanted_patch = None):
 
     for event in event_stream:
 
@@ -31,16 +31,27 @@ def fill_flag(event_stream, unwanted_patch):
 
             r0_camera = event.r0.tel[telescope_id]
 
-            output_trigger_patch7 = np.array(list(r0_camera.trigger_output_patch7.values()))
-
-            patch_condition = np.any(output_trigger_patch7[unwanted_patch])
-
-            if not patch_condition:
-                # Set the event type
-                r0_camera.flag = 1
+            if unwanted_patch is None:
+                # Condition to be checked....
+                print('event_type',r0_camera.event_type,'eventType',r0_camera.eventType)
+                if r0_camera.event_type == 0:
+                    # Physics
+                    r0_camera.flag = 1
+                else:
+                    # Calib
+                    r0_camera.flag = 0
             else:
-                # Set the event type
-                r0_camera.flag = 0
+
+                output_trigger_patch7 = np.array(list(r0_camera.trigger_output_patch7.values()))
+
+                patch_condition = np.any(output_trigger_patch7[unwanted_patch])
+
+                if not patch_condition:
+                    # Set the event type
+                    r0_camera.flag = 1
+                else:
+                    # Set the event type
+                    r0_camera.flag = 0
 
         yield event
 
