@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     # Data configuration
-    directory = '/data/datasets/CTA/REALDATA/'
+    #directory = '/data/datasets/'
     # directory = '/home/alispach/blackmonkey/calib_data/first_light/20170831/'
-    #directory = '/home/alispach/Downloads/'
+    directory = '/home/alispach/Downloads/'
 
-    filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
-    file_list = [filename % number for number in [0]]
+    filename = directory + 'SST1M_01_0_000.00%d.fits.fz'
+    file_list = [filename % number for number in [3]]
     camera_config_file = '/data/software/CTS/config/camera_config.cfg'
 
     # Trigger configuration

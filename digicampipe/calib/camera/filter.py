@@ -33,12 +33,11 @@ def fill_flag(event_stream, unwanted_patch = None):
 
             if unwanted_patch is None:
                 # Condition to be checked....
-                print('event_type',r0_camera.event_type,'eventType',r0_camera.eventType)
-                if r0_camera.event_type == 0:
-                    # Physics
+                if r0_camera.event_type == 8:
+                    # Calib?
                     r0_camera.flag = 1
                 else:
-                    # Calib
+                    # Physics
                     r0_camera.flag = 0
             else:
 
