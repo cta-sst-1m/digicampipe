@@ -1,6 +1,6 @@
-from digicampipe.calib.camera import filter, r1, random_triggers, dl2, dl1
+from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
-from digicamviewer.viewer import EventViewer
+from digicamviewer.viewer import EventViewer, EventViewer2
 from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,16 +8,16 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     # Data configuration
-    # directory = '/data/datasets/CTA/REALDATA/'
+    #directory = '/data/datasets/'
     # directory = '/home/alispach/blackmonkey/calib_data/first_light/20170831/'
-    directory = '/home/alispach/Downloads/'
-
-    filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
+    #directory = '/home/alispach/Downloads/'
+    directory = '/calib_data/second_light/CRAB_01/'
+    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in [0]]
     camera_config_file = '/data/software/CTS/config/camera_config.cfg'
 
     # Trigger configuration
-    unwanted_patch = [391, 392, 403, 404, 405, 416, 417]
+    unwanted_patch = None #[391, 392, 403, 404, 405, 416, 417]
 
     # Integration configuration
     time_integration_options = {'mask':None,
@@ -37,28 +37,13 @@ if __name__ == '__main__':
                              time_integration_options['window_width'],
                              peak_position)
 
-    # Create the calibration container
-    calib_data = random_triggers.initialise_calibration_data(n_samples_for_baseline = 3000)
-
     # Define the event stream
-    # Get the actual data stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True)
-    # Filter events
-    data_stream = filter.filter_patch(data_stream,unwanted_patch=unwanted_patch)
-    # Deal with random trigger
-    data_stream = random_triggers.extract_baseline(data_stream,calib_data)
-    # Run the r1 calibration
-    data_stream = r1.calibrate_to_r1(data_stream, calib_data)
-    # Reconstruct charge and time
-    data_stream = dl1.calibrate_to_dl1(data_stream, time_integration_options)
-    # Run Hillas
-    # data_stream = dl2.calibrate_to_dl2(data_stream)
-    # Filter the proecssing level
-    data_stream = filter.filter_bigshower(data_stream,minpe=10000)
+    data_stream = event_stream(file_list=file_list, expert_mode=True, geom_file=camera_config_file)
+    # Fill the flags (to be replaced by Digicam)
+    data_stream = filter.fill_flag(data_stream , unwanted_patch=unwanted_patch)
+    # Fill the baseline (to be replaced by Digicam)
+    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=18000)
+    # Fill the baseline (to be replaced by Digicam)
+    data_stream = random_triggers.dump_baseline(data_stream, '/calib_data/second_light/dark.npz', n_bins=18000)
 
-    data_stream = filter.filter_level(data_stream, level = 1)
-    data_stream = filter.filter_bigshower(data_stream,minpe=0)
-
-    with plt.style.context('ggplot'):
-        display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
-        display.draw()
+    ## Filter the events for display

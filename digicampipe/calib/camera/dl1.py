@@ -4,7 +4,7 @@ import numpy as np
 
 def calibrate_to_dl1(event_stream, time_integration_options):
 
-    cleaning_threshold = 3
+    cleaning_threshold = 4
 
     for i, event in enumerate(event_stream):
 
@@ -24,7 +24,7 @@ def calibrate_to_dl1(event_stream, time_integration_options):
             # Integrate the data
             adc_integrated = utils.integrate(adc_samples, time_integration_options['window_width'])
 
-            pe_samples_trace = adc_integrated / gain[:, np.newaxis]
+            pe_samples_trace = adc_integrated / gain.reshape(-1,1)#[:, np.newaxis]
             n_samples = adc_samples.shape[-1]
             dl1_camera.pe_samples_trace = np.pad(pe_samples_trace, ((0,0), (0, n_samples - pe_samples_trace.shape[-1] % n_samples)), 'constant')
 

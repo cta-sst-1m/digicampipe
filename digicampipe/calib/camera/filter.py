@@ -30,15 +30,13 @@ def fill_flag(event_stream, unwanted_patch = None):
         for telescope_id in event.r0.tels_with_data:
 
             r0_camera = event.r0.tel[telescope_id]
-
             if unwanted_patch is None:
-                # Condition to be checked....
                 if r0_camera.event_type == 8:
-                    # Calib?
-                    r0_camera.flag = 1
+                    # Calib
+                    r0_camera.flag = 0
                 else:
                     # Physics
-                    r0_camera.flag = 0
+                    r0_camera.flag = 1
             else:
 
                 output_trigger_patch7 = np.array(list(r0_camera.trigger_output_patch7.values()))
@@ -79,7 +77,7 @@ def filter_flag(event_stream, flags=[0]):
                 yield event
 
 
-def filter_bigshower(event_stream, min_photon = 10000):
+def filter_bigshower(event_stream, min_photon = 1000):
     """
     Filter events as a function of the processing level
     :param event_stream:
@@ -89,10 +87,23 @@ def filter_bigshower(event_stream, min_photon = 10000):
     for event in event_stream:
 
       for telescope_id in event.r0.tels_with_data:
-
             dl1_camera = event.dl1.tel[telescope_id]
+            r1_camera = event.r1.tel[telescope_id]
+            if np.sum(dl1_camera.pe_samples) >= min_photon:
+                yield event
 
-            if np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask]) >= min_photon:
+def filter_bigshower_adc(event_stream, min_adc = 5800):
+    """
+    Filter events as a function of the processing level
+    :param event_stream:
+    :param level:
+    :return:
+    """
+    for event in event_stream:
+
+      for telescope_id in event.r0.tels_with_data:
+            r1_camera = event.r1.tel[telescope_id]
+            if np.sum(np.max(r1_camera.adc_samples,axis=-1)) >= min_adc:
                 yield event
 
 

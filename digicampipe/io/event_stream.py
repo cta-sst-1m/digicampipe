@@ -11,7 +11,7 @@ def event_stream(file_list, expert_mode=False, geom_file = None):
 
         for event in event_stream:
 
-            print(i)
+            #print(i)
             i += 1
 
             yield event
