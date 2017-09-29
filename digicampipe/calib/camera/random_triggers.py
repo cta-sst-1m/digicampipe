@@ -2,7 +2,7 @@ import numpy as np
 import digicampipe.io.containers as containers
 
 
-def fill_baseline_r0(event_stream, n_bins=5000):
+def fill_baseline_r0(event_stream, n_bins=10000):
 
     n_pixels = 1296
     mean_temp = np.zeros(n_pixels)
@@ -39,6 +39,22 @@ def fill_baseline_r0(event_stream, n_bins=5000):
 
         yield event
 
+
+def dump_baseline(event_stream, filename, n_bins=10000):
+    count_calib_events = 0
+    for event_number, event in enumerate(event_stream):
+
+        for telescope_id in event.r0.tels_with_data:
+
+            r0_camera = event.r0.tel[telescope_id]
+            if r0_camera.flag == 0:
+                n_samples = r0_camera.num_samples
+                count_calib_events+= n_samples
+                print(count_calib_events)
+                if count_calib_events > n_bins:
+                    np.savez(filename, baseline = r0_camera.baseline, standard_deviation = r0_camera.standard_deviation)
+                    print('######### Enough events, exit the code')
+                    exit()
 
 def extract_baseline(event_stream, calib_container):
     """

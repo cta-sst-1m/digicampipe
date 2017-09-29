@@ -21,7 +21,7 @@ __all__ = [
     'zfits_event_source',
 ]
 
-def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = False):
+def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = False, geom_file = None):
     """A generator that streams data from an ZFITs data file
     Parameters
     ----------
@@ -75,7 +75,7 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
             # TODO: add the time flag
             data.inst.num_channels[tel_id] = zfits.event.num_gains
             data.inst.num_pixels[tel_id] = zfits._get_numpyfield(zfits.event.hiGain.waveforms.pixelsIndices).shape[0]
-            data.inst.pixel_pos[tel_id] = geometry.find_pixel_positions()
+            data.inst.pixel_pos[tel_id] = geometry.find_pixel_positions(geom_file)
 
             if data.inst.num_pixels[tel_id] == 1296:
                 # Note, I'll add in the data model of the zfits a camera identifier, just need some time
@@ -90,8 +90,9 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
                 data.r0.tel[tel_id].local_camera_clock = (seconds * 1e9 + nano_seconds * 4)
                 seconds, nano_seconds = zfits.get_central_event_gps_time()
                 data.r0.tel[tel_id].gps_time = (seconds * 1e9 + nano_seconds * 4)
-                #data.r0.tel[tel_id].event_type =zfits.get_event_type()
-                #data.r0.tel[tel_id].eventType =zfits._get_eventType()
+                #print(zfits.get_event_type(),zfits.get_eventType())
+                data.r0.tel[tel_id].event_type =zfits.get_event_type()
+                data.r0.tel[tel_id].eventType =zfits.get_eventType()
 
                 if expert_mode:
                     data.r0.tel[tel_id].trigger_input_traces = zfits.get_trigger_input_traces(telescope_id=tel_id)
