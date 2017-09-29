@@ -52,12 +52,12 @@ if __name__ == '__main__':
     data_stream = dl0.calibrate_to_dl0(data_stream)
     # Run the dl1 calibration (compute charge in photons)
     data_stream = dl1.calibrate_to_dl1(data_stream, time_integration_options)
+    data_stream = filter.filter_bigshower(data_stream, min_photon=1000)
     # Run the dl2 calibration (Hillas + classification + energy + direction)
     data_stream = dl2.calibrate_to_dl2(data_stream)
 
     ## Filter the events for display
 
-    data_stream = filter.filter_bigshower(data_stream, min_photon=60)
     #data_stream = filter.filter_bigshower(data_stream, min_photon=0)
 
     with plt.style.context('ggplot'):
