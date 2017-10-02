@@ -11,9 +11,10 @@ if __name__ == '__main__':
     # directory = '/data/datasets/CTA/REALDATA/'
     # directory = '/home/alispach/blackmonkey/calib_data/first_light/20170831/'
     directory = '/home/alispach/data/CRAB_01/'
+    # directory = '/home/alispach/Downloads/'
 
-    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(4, 5)]
+    filename = directory + 'CRAB_01_0_000.%03d_remapped.fits.fz'
+    file_list = [filename % number for number in range(12, 13)]
     camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     dark_baseline = np.load(directory + 'dark.npz')
 
@@ -48,7 +49,7 @@ if __name__ == '__main__':
                              peak_position)
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True, geom_file=camera_config_file, remapped=True)
+    data_stream = event_stream(file_list=file_list, expert_mode=True, geom_file=camera_config_file, remapped=False)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.fill_flag(data_stream, unwanted_patch=unwanted_patch)
     # Fill the baseline (to be replaced by Digicam)

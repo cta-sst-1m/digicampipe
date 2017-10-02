@@ -2,7 +2,7 @@ from digicampipe.utils import utils, calib
 import numpy as np
 
 
-def calibrate_to_dl1(event_stream, time_integration_options, additional_mask=None, cleaning_threshold=5):
+def calibrate_to_dl1(event_stream, time_integration_options, additional_mask=None, cleaning_threshold=3):
 
 
     for i, event in enumerate(event_stream):
