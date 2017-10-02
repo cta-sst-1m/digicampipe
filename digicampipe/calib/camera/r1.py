@@ -28,6 +28,9 @@ def calibrate_to_r1(event_stream,dark_baseline):
             else:
                 # compute NSB and Gain drop from baseline shift
                 baseline_shift = baseline - r0_camera.dark_baseline
+                print(baseline)
+                print(r0_camera.dark_baseline)
+                print(baseline_shift)
                 r1_camera.gain_drop = calib.compute_gain_drop(baseline_shift, 'mean')
                 r1_camera.nsb = calib.compute_nsb_rate(baseline_shift, 'mean')
 

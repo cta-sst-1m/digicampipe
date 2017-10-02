@@ -18,12 +18,18 @@ def calibrate_to_dl2(event_stream):
             pixel_x = pixel_x
             pixel_y = pixel_y
             for i,pe in enumerate(image):
-                print(pixel_x[i],pixel_y[i],image[i])
+                print(pixel_x[i], pixel_y[i], image[i])
 
             print(np.sum(np.ones(image.shape)[mask]))
 
-            moments = hillas.hillas_parameters_2(pixel_x, pixel_y, image)
-            print(moments)
+            try:
+
+                moments = hillas.hillas_parameters_2(pixel_x, pixel_y, image)
+                print(moments)
+
+            except HillasParametrizationError:
+
+                moments = None
 
         event.dl2.shower = moments
         event.dl2.energy = None

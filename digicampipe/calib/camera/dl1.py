@@ -2,9 +2,8 @@ from digicampipe.utils import utils, calib
 import numpy as np
 
 
-def calibrate_to_dl1(event_stream, time_integration_options):
+def calibrate_to_dl1(event_stream, time_integration_options, additional_mask=None, cleaning_threshold=5):
 
-    cleaning_threshold = 4
 
     for i, event in enumerate(event_stream):
 
@@ -21,10 +20,16 @@ def calibrate_to_dl1(event_stream, time_integration_options):
             mask_for_cleaning = adc_samples > cleaning_threshold * r0_camera.standard_deviation.reshape(-1, 1)
             dl1_camera.cleaning_mask = np.any(mask_for_cleaning, axis=-1)
 
+            if additional_mask is not None:
+
+                print(dl1_camera.cleaning_mask)
+                dl1_camera.cleaning_mask = dl1_camera.cleaning_mask * additional_mask
+                print(dl1_camera.cleaning_mask)
+
             # Integrate the data
             adc_integrated = utils.integrate(adc_samples, time_integration_options['window_width'])
 
-            pe_samples_trace = adc_integrated / gain.reshape(-1,1)#[:, np.newaxis]
+            pe_samples_trace = adc_integrated / gain[:, np.newaxis] #gain.reshape(-1,1)#[:, np.newaxis]
             n_samples = adc_samples.shape[-1]
             dl1_camera.pe_samples_trace = np.pad(pe_samples_trace, ((0,0), (0, n_samples - pe_samples_trace.shape[-1] % n_samples)), 'constant')
 

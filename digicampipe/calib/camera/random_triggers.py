@@ -18,17 +18,18 @@ def fill_baseline_r0(event_stream, n_bins=10000):
             r0_camera = event.r0.tel[telescope_id]
             n_samples = r0_camera.num_samples
             n_events = n_bins // n_samples
-
             if r0_camera.flag == 0:
 
                 adc_samples = np.array(list(r0_camera.adc_samples.values()))
                 mean_temp += np.mean(adc_samples, axis=-1)
                 std_temp += np.std(adc_samples, axis=-1)
 
+                print(mean_temp)
+
                 if (count_calib_events % n_events) == 0 and (count_calib_events > 0):
 
-                    mean_new = mean_temp / n_events
-                    std_new = std_temp / n_events
+                    mean_new = mean_temp / (n_events + 1)
+                    std_new = std_temp / (n_events + 1)
                     mean_temp = np.zeros(n_pixels)
                     std_temp = np.zeros(n_pixels)
 
@@ -53,6 +54,7 @@ def dump_baseline(event_stream, filename, n_bins=10000):
                 print(count_calib_events)
                 if count_calib_events > n_bins:
                     np.savez(filename, baseline = r0_camera.baseline, standard_deviation = r0_camera.standard_deviation)
+                    print(r0_camera.baseline)
                     print('######### Enough events, exit the code')
                     exit()
 

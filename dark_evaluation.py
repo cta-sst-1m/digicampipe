@@ -10,11 +10,12 @@ if __name__ == '__main__':
     # Data configuration
     #directory = '/data/datasets/'
     # directory = '/home/alispach/blackmonkey/calib_data/first_light/20170831/'
-    #directory = '/home/alispach/Downloads/'
-    directory = '/calib_data/second_light/CRAB_01/'
+    directory = '/home/alispach/data/CRAB_01/'
+    #directory = '/calib_data/second_light/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in [0]]
-    camera_config_file = '/data/software/CTS/config/camera_config.cfg'
+    file_list = [filename % number for number in [1, 2]]
+    # camera_config_file = '/data/software/CTS/config/camera_config.cfg'
+    camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
 
     # Trigger configuration
     unwanted_patch = None #[391, 392, 403, 404, 405, 416, 417]
@@ -38,12 +39,12 @@ if __name__ == '__main__':
                              peak_position)
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True, geom_file=camera_config_file)
+    data_stream = event_stream(file_list=file_list, expert_mode=True, geom_file=camera_config_file, remapped=True)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.fill_flag(data_stream , unwanted_patch=unwanted_patch)
     # Fill the baseline (to be replaced by Digicam)
-    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=18000)
+    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=50000)
     # Fill the baseline (to be replaced by Digicam)
-    data_stream = random_triggers.dump_baseline(data_stream, '/calib_data/second_light/dark.npz', n_bins=18000)
+    data_stream = random_triggers.dump_baseline(data_stream, directory + 'dark.npz', n_bins=50000)
 
     ## Filter the events for display

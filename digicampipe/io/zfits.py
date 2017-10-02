@@ -21,7 +21,7 @@ __all__ = [
     'zfits_event_source',
 ]
 
-def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = False, geom_file = None):
+def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = False, geom_file = None, remapped=False):
     """A generator that streams data from an ZFITs data file
     Parameters
     ----------
@@ -106,7 +106,12 @@ def zfits_event_source(url, max_events=None, allowed_tels=None, expert_mode = Fa
 
             data.r0.tel[tel_id].num_samples = zfits._get_numpyfield(zfits.event.hiGain.waveforms.samples).shape[0] //\
                                                zfits._get_numpyfield(zfits.event.hiGain.waveforms.pixelsIndices).shape[0]
-            data.r0.tel[tel_id].adc_samples = zfits.get_adcs_samples(telescope_id=tel_id)
+
+            if remapped:
+                data.r0.tel[tel_id].adc_samples = zfits.get_adcs_samples_remapped(telescope_id=tel_id)
+
+            else:
+                data.r0.tel[tel_id].adc_samples = zfits.get_adcs_samples(telescope_id=tel_id)
 
             #print(data.r0.tel[tel_id].adc_samples)
             #nchans = zfits.get_num_channels(tel_id)
