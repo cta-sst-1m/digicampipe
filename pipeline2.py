@@ -36,7 +36,7 @@ if __name__ == '__main__':
                                 'peak':None,
                                 'window_start':3,
                                 'window_width':7,
-                                'threshold_saturation':3500,
+                                'threshold_saturation': np.inf,
                                 'n_samples':50,
                                 'timing_width':6,
                                 'central_sample':11}
