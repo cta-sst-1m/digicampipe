@@ -88,7 +88,6 @@ def filter_bigshower(event_stream, min_photon = 1000):
 
       for telescope_id in event.r0.tels_with_data:
             dl1_camera = event.dl1.tel[telescope_id]
-            r1_camera = event.r1.tel[telescope_id]
             if np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask]) >= min_photon:
                 yield event
 
