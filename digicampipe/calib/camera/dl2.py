@@ -43,14 +43,15 @@ def calibrate_to_dl2(event_stream, reclean=False, camera_config_file=None, showe
                     moments = hillas.hillas_parameters_4(pixel_x, pixel_y, image)
             except:
 
-                print('could not recompute Hillas, using first cleaning')
-                moments = moments_first
+                print('could not recompute Hillas, not yielding')
+                moments = None
 
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None
 
-        yield event
+        if moments is not None:
+            yield event
 
 
 def find_mask_near_center(geom, cen_x, cen_y, distance):
