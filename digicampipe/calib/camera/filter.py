@@ -91,6 +91,10 @@ def filter_bigshower(event_stream, min_photon = 1000):
             if np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask]) >= min_photon:
                 yield event
 
+            else:
+
+                print('Shower contains ', np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask]), ' [p.e.]')
+
 
 def filter_bigshower_adc(event_stream, min_adc = 5800):
     """

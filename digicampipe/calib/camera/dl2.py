@@ -51,6 +51,7 @@ def calibrate_to_dl2(event_stream, reclean=False, camera_config_file=None, showe
         event.dl2.classification = None
 
         if moments is not None:
+            print(moments)
             yield event
 
 

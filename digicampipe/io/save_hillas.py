@@ -15,7 +15,7 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
     skewness = np.zeros(n_showers)
     kurtosis = np.zeros(n_showers)
     event_number = np.zeros(n_showers)
-    time_stampe = np.zeros(n_showers)
+    time_stamp = np.zeros(n_showers)
 
     for event, i in zip(data_stream, range(n_showers)):
 
@@ -31,7 +31,10 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
         skewness[i] = event.dl2.shower.skewness
         kurtosis[i] = event.dl2.shower.kurtosis
         event_number[i] = event.r0.event_id
-        time_stamp[i] = event
+
+        for telescope_id in event.r0.tels_with_data:
+
+            time_stamp[i] = event.r0.tel[telescope_id].local_camera_clock
 
         print('hillas #', i)
 

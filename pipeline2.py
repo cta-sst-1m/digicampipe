@@ -25,8 +25,8 @@ if __name__ == '__main__':
     dark_baseline = np.load(directory + 'dark.npz')
 
     # Config for Hillas parameters analysis
-    hillas_filename = directory + 'hillas_crab_500.npz'
-    n_showers = 500
+    hillas_filename = directory + 'hillas_crab.npz'
+    n_showers = 100
     reclean = True
 
     # Noisy patch that triggered
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     shower_distance = 50 * u.mm
 
     # Filering on big showers
-    min_photon = 1000
+    min_photon = 500
 
     ####################
     ##### ANALYSIS #####
