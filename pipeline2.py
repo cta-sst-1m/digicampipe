@@ -25,8 +25,8 @@ if __name__ == '__main__':
     dark_baseline = np.load(directory + 'dark.npz')
 
     # Config for Hillas parameters analysis
-    hillas_filename = directory + 'hillas_crab_1000.npz'
-    n_showers = 1000
+    hillas_filename = directory + 'hillas_crab_500.npz'
+    n_showers = 500
     reclean = True
 
     # Noisy patch that triggered
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                                    peak_position)
 
     # Image cleaning configuration
-    picture_threshold = 100
+    picture_threshold = 80
     boundary_threshold = 15
     shower_distance = 50 * u.mm
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     data_stream = dl2.calibrate_to_dl2(data_stream, reclean=reclean, camera_config_file=camera_config_file,
                                      shower_distance=shower_distance)
     # Save the hillas parameters
-    save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=hillas_filename)
+    # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=hillas_filename)
 
 
     # Data visualization

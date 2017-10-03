@@ -2,9 +2,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_hillas(hillas_dict, **kwargs):
+def plot_hillas(hillas_dict, mask=None, title='', **kwargs):
+
+    if mask is not None:
+
+        new_dict = {}
+
+        for key, val in hillas_dict.items():
+
+            new_dict[key] = val[mask]
+
+        hillas_dict = new_dict
 
     figure, axis_array = plt.subplots(3, 4)
+    figure.suptitle(title)
+    figure.subplots_adjust(top=0.95)
     plot_parameter(hillas_dict['cen_x'], name='$x$', units=' [mm]', axis=axis_array[0, 0], **kwargs)
     plot_parameter(hillas_dict['cen_y'], name='$y$', units=' [mm]', axis=axis_array[0, 1], **kwargs)
     plot_parameter(hillas_dict['length'], name='$l$', units=' [mm]', axis=axis_array[0, 2], **kwargs)
@@ -25,9 +37,6 @@ def plot_hillas(hillas_dict, **kwargs):
 
 
 def plot_parameter(parameter, name, units, axis=None, **kwargs):
-
-
-    parameter = parameter[~np.isnan(parameter)]
 
     if axis is None:
 
