@@ -61,7 +61,7 @@ def calibrate_to_dl1_better_cleaning(event_stream, time_integration_options, cam
 
             adc_samples = np.array(list(r1_camera.adc_samples.values()))
             gain_init = calib.get_gains()
-            gain = gain_init * r1_camera.gain_drop
+            gain = gain_init # * r1_camera.gain_drop
 
             # Integrate the data
             adc_integrated = utils.integrate(adc_samples, time_integration_options['window_width'])
@@ -84,6 +84,10 @@ def calibrate_to_dl1_better_cleaning(event_stream, time_integration_options, cam
             dl1_camera.cleaning_mask = cleaning.tailcuts_clean(geom=geom, image=dl1_camera.pe_samples,
                                 picture_threshold=picture_threshold, boundary_threshold=boundary_threshold,
                                 keep_isolated_pixels=False)
+
+            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
+            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
+            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
 
             if additional_mask is not None:
                 dl1_camera.cleaning_mask = dl1_camera.cleaning_mask * additional_mask

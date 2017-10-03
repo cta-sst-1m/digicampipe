@@ -2,7 +2,7 @@ import numpy as np
 from digicampipe.visualization import plot
 
 directory = '/home/alispach/data/CRAB_01/'
-hillas_filename = directory + 'hillas_all.npz'
+hillas_filename = directory + 'hillas_crab.npz'
 
 hillas = np.load(hillas_filename)
 
@@ -13,6 +13,9 @@ cut_width_length = 0.4
 #mask = hillas['size'] > cut_size
 mask = (hillas['width']/hillas['length']) < cut_width_length
 mask *= (hillas['kurtosis'] > 0) * (hillas['kurtosis'] < 6)
+
+print(hillas['time_stamp'])
+print(hillas['event_number'])
 
 for key, val in hillas.items():
 

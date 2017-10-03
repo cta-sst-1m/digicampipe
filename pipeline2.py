@@ -16,7 +16,7 @@ if __name__ == '__main__':
     # Input configuration
     directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(3, 23)]
+    file_list = [filename % number for number in range(10, 23)]
 
     # Camera config file
     camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
@@ -25,8 +25,8 @@ if __name__ == '__main__':
     dark_baseline = np.load(directory + 'dark.npz')
 
     # Config for Hillas parameters analysis
-    hillas_filename = directory + 'hillas_crab.npz'
-    n_showers = 100
+    hillas_filename = directory + 'hillas_crab_500_cut_100pe.npz'
+    n_showers = 5000
     reclean = True
 
     # Noisy patch that triggered
@@ -61,9 +61,9 @@ if __name__ == '__main__':
                                    peak_position)
 
     # Image cleaning configuration
-    picture_threshold = 80
-    boundary_threshold = 15
-    shower_distance = 50 * u.mm
+    picture_threshold = 40
+    boundary_threshold = 10
+    shower_distance = 200 * u.mm
 
     # Filering on big showers
     min_photon = 500
