@@ -11,5 +11,5 @@ setup(
     author_email='cyril.alispach@gmail.com',
     long_description=open('README.md').read(),
     description='A package for DigiCam pipeline',
-    requires=['numpy', 'matplotlib', 'scipy', 'ctapipe'],
+    requires=['numpy', 'matplotlib', 'scipy', 'ctapipe', 'astropy'],
 )

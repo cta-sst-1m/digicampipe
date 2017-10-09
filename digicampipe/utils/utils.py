@@ -76,7 +76,7 @@ def contiguous_regions(data):
     val = 0.
     for start, stop in idx:
         sum_tmp = np.sum(data[start:stop])
-        if val < sum_tmp: val = sum_tmp
+        if val < sum_tmp : val = sum_tmp
     return val
 
 

@@ -4,37 +4,49 @@ import digicampipe.io.containers as containers
 
 def fill_baseline_r0(event_stream, n_bins=10000):
 
-    n_pixels = 1296
-    mean_temp = np.zeros(n_pixels)
-    mean_new = np.zeros(n_pixels)
-    std_temp = np.zeros(n_pixels)
-    std_new = np.zeros(n_pixels)
     count_calib_events = 0
 
-    for event_number, event in enumerate(event_stream):
+    for count, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
 
+            if count == 0:
+                n_pixels = event.inst.num_pixels[telescope_id]
+                n_samples = event.inst.num_samples[telescope_id]
+                n_events = n_bins // n_samples
+                baselines = np.zeros((n_pixels, n_events))
+                baselines_std = np.zeros((n_pixels, n_events))
+                baseline = np.zeros(n_pixels)
+                std = np.zeros(n_pixels)
+
             r0_camera = event.r0.tel[telescope_id]
-            n_samples = r0_camera.num_samples
-            n_events = n_bins // n_samples
-            if r0_camera.flag == 0:
+
+            if r0_camera.event_type_1 == 8:
 
                 adc_samples = np.array(list(r0_camera.adc_samples.values()))
-                mean_temp += np.mean(adc_samples, axis=-1)
-                std_temp += np.std(adc_samples, axis=-1)
+                new_mean = np.mean(adc_samples, axis=-1)
+                new_std = np.std(adc_samples, axis=-1)
 
-                if (count_calib_events % n_events) == 0 and (count_calib_events > 0):
+                baselines = np.roll(baselines, 1, axis=-1)
+                baselines_std = np.roll(baselines_std, 1, axis=-1)
 
-                    mean_new = mean_temp / (n_events + 1)
-                    std_new = std_temp / (n_events + 1)
-                    mean_temp = np.zeros(n_pixels)
-                    std_temp = np.zeros(n_pixels)
+                baseline += new_mean - baselines[..., 0]
+                std += new_std - baselines_std[..., 0]
+
+                baselines[..., 0] = new_mean
+                baselines_std[..., 0] = new_std
 
                 count_calib_events += 1
 
-            r0_camera.baseline = mean_new
-            r0_camera.standard_deviation = std_new
+            if count_calib_events >= n_events:
+
+                r0_camera.baseline = baseline / n_events
+                r0_camera.standard_deviation = std / n_events
+
+            else:
+
+                r0_camera.baseline = np.zeros(n_pixels) * np.nan
+                r0_camera.standard_deviation = np.zeros(n_pixels) * np.nan
 
         yield event
 
@@ -129,19 +141,3 @@ def extract_baseline(event_stream, calib_container):
                                                           axis=-1)
                     calib_container.std_dev = np.nanstd(calib_container.samples_for_baseline[:, :calib_container.counter-adcs.shape[-1]], axis=-1)
                 yield event
-
-
-def initialise_calibration_data(n_samples_for_baseline = 10000):
-    '''
-    Create a calibration data container to handle the data
-    :param n_samples_for_baseline: Number of sample to evaluate the baseline
-    :return:
-    '''
-    calib_container = containers.CalibrationDataContainer()
-    calib_container.sample_to_consider = n_samples_for_baseline
-    calib_container.samples_for_baseline = np.zeros((1296,n_samples_for_baseline),dtype = int)
-    calib_container.baseline = np.zeros((1296),dtype = int)
-    calib_container.std_dev = np.zeros((1296),dtype = int)
-    calib_container.counter = 0
-
-    return calib_container

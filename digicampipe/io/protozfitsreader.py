@@ -72,11 +72,47 @@ pixel_remap = [425, 461, 353, 389, 352, 388, 424, 460, 315, 351, 387, 423, 281, 
                657, 622, 623, 587, 693, 694, 658, 659, 655, 620, 690, 654, 726, 691, 692, 656, 762, 763, 727, 728]
 
 class ZFile(object):
+
     def __init__(self, fname):
         # Save filename
         self.fname = fname
         # Read non-iterable tables (header), keep their contents in memory.
         # self.read_runheader()
+        self.patch_id = [78, 204, 216, 180, 192, 229, 241, 205, 217, 254, 266, 230, 242, 279,
+       291, 255, 267, 304, 316, 280, 292, 329, 341, 305, 317, 156, 168,
+       132, 144, 181, 193, 157, 169, 206, 218, 182, 194, 231, 243, 207,
+       219, 256, 268, 232, 244, 281, 293, 257, 269, 108, 120,  84,  96,
+       133, 145, 109, 121, 158, 170, 134, 146, 183, 195, 159, 171, 208,
+       220, 184, 196, 233, 245, 209, 221,  60,  72,  40,  50,  85,  97,
+        61,  73, 110, 122,  86,  98, 135, 147, 111, 123, 160, 172, 136,
+       148, 185, 197, 161, 173,  24,  32,  12,  18,  41,  51,  25,  33,
+        62,  74,  42,  52,  87,  99,  63,  75, 112, 124,  88, 100, 137,
+       149, 113, 125,   4,   8,   0,   2,  13,  19,   5,   9,  26,  34,
+        14,  20,  43,  53,  27,  35,  64,  76,  44,  54,  89, 101,  65,
+        77, 228, 239, 240, 252, 251, 262, 263, 275, 274, 285, 286, 298,
+       297, 308, 309, 321, 320, 331, 332, 344, 343, 354, 355, 366, 253,
+       264, 265, 277, 276, 287, 288, 300, 299, 310, 311, 323, 322, 333,
+       334, 346, 345, 356, 357, 368, 367, 377, 378, 387, 278, 289, 290,
+       302, 301, 312, 313, 325, 324, 335, 336, 348, 347, 358, 359, 370,
+       369, 379, 380, 389, 388, 396, 397, 404, 303, 314, 315, 327, 326,
+       337, 338, 350, 349, 360, 361, 372, 371, 381, 382, 391, 390, 398,
+       399, 406, 405, 411, 412, 417, 328, 339, 340, 352, 351, 362, 363,
+       374, 373, 383, 384, 393, 392, 400, 401, 408, 407, 413, 414, 419,
+       418, 422, 423, 426, 353, 364, 365, 376, 375, 385, 386, 395, 394,
+       402, 403, 410, 409, 415, 416, 421, 420, 424, 425, 428, 427, 429,
+       430, 431, 215, 191, 227, 203, 167, 143, 179, 155, 119,  95, 131,
+       107,  71,  49,  83,  59,  31,  17,  39,  23,   7,   1,  11,   3,
+       238, 214, 250, 226, 190, 166, 202, 178, 142, 118, 154, 130,  94,
+        70, 106,  82,  48,  30,  58,  38,  16,   6,  22,  10, 261, 237,
+       273, 249, 213, 189, 225, 201, 165, 141, 177, 153, 117,  93, 129,
+       105,  69,  47,  81,  57,  29,  15,  37,  21, 284, 260, 296, 272,
+       236, 212, 248, 224, 188, 164, 200, 176, 140, 116, 152, 128,  92,
+        68, 104,  80,  46,  28,  56,  36, 307, 283, 319, 295, 259, 235,
+       271, 247, 211, 187, 223, 199, 163, 139, 175, 151, 115,  91, 127,
+       103,  67,  45,  79,  55, 330, 306, 342, 318, 282, 258, 294, 270,
+       234, 210, 246, 222, 186, 162, 198, 174, 138, 114, 150, 126,  90,
+        66, 102]
+
 
     ### INTERNAL METHODS ###########################################################
 
@@ -264,17 +300,16 @@ class ZFile(object):
         # Structured array (dict)
         samples = samples.reshape(npixels, -1)
         properties = dict(zip(pixels, samples))
-        return (properties)
 
         return (properties)
 
     def get_adcs_samples(self, telescope_id=None):
-        '''
+        """
         Get the samples for all channels
 
         :param telescope_id: id of the telescopeof interest
         :return: dictionnary of samples (value) per pixel indices (key)
-        '''
+        """
         waveforms = self.event.hiGain.waveforms
         samples = self._get_numpyfield(waveforms.samples)
         pixels = self._get_numpyfield(waveforms.pixelsIndices)
@@ -293,17 +328,19 @@ class ZFile(object):
         '''
 
         patch_traces = self._get_numpyfield(self.event.trigger_input_traces)
-        patches = numpy.arange(0, 192, 1)  # TODO check : might not be correct yet
-        patch_traces = patch_traces.reshape(patches.shape[0], -1)
-        properties = dict(zip(patches, patch_traces))
+        patches = self.patch_id # numpy.arange(0, 192, 1)  # TODO check : might not be correct yet
+        # print(patch_traces.shape)
+        # patch_traces = patch_traces.reshape(len(patches), -1)
+        # patch_traces = np.zeros(len(patches), self.event.hiGain.waveforms.shape)
+        # properties = dict(zip(patches, patch_traces))
 
-        return (properties)
+        return self.get_trigger_output_patch7(telescope_id=telescope_id)
 
     def get_trigger_output_patch7(self, telescope_id=None):
         '''
         Get the samples for all channels
 
-        :param telescope_id: id of the telescopeof interest
+        :param telescope_id: id of the telescope of interest
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
         frames = self._get_numpyfield(self.event.trigger_output_patch7)
@@ -312,23 +349,22 @@ class ZFile(object):
                                                                                                    144).reshape(
             n_samples, 432).T
 
-        patches = numpy.arange(0, 432)  # TODO access patch_ids from self.event
+        patches = self.patch_id # numpy.arange(0, 432)  # TODO access patch_ids from self.event
         properties = dict(zip(patches, frames))
-        return (properties)
+
+        return properties
 
     def get_trigger_output_patch19(self, telescope_id=None):
         '''
         Get the samples for all channels
 
-        :param telescope_id: id of the telescopeof interest
+        :param telescope_id: id of the telescope of interest
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
         frames = self._get_numpyfield(self.event.trigger_output_patch19)
         n_samples = int(frames.shape[0] / 18 / 3)
-        frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,
-                                                                                                   144).reshape(
-            n_samples, 432).T
-        patches = numpy.arange(0, 432)  # TODO acess patch_ids from self.event
+        frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,144).reshape(n_samples, 432).T
+        patches = self.patch_id  # numpy.arange(0, 432)  # TODO acess patch_ids from self.event
         properties = dict(zip(patches, frames))
 
         return (properties)

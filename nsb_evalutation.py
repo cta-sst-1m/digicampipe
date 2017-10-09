@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in [0, 1, 2]]
+    file_list = [filename % number for number in range(3, 23)]
     camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     source_x = 0 * u.mm
     source_y = 0. * u.mm
@@ -56,6 +56,7 @@ if __name__ == '__main__':
     # Fill the baseline (to be replaced by Digicam)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=50000)
     # Fill the baseline (to be replaced by Digicam)
+    data_stream = filter.filter_event_types(data_stream, flags=[8])
     data_stream = random_triggers.dump_baseline(data_stream, directory + 'dark.npz', n_bins=50000)
 
     ## Filter the events for display

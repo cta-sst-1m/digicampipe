@@ -5,30 +5,23 @@ import cts_core.camera as camera
 import digicampipe.utils.geometry as geometry
 
 
-def calibrate_to_dl2(event_stream, reclean=False, camera_config_file=None, shower_distance=80*u.mm):
+def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
-    if reclean:
-        cam = camera.Camera(_config_file=camera_config_file)
-        geom = geometry.generate_geometry(camera=cam)
-
-    for event in event_stream:
+    for i, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
 
+            if i == 0:
+
+                geom = event.inst.geom[telescope_id]
+                pixel_x, pixel_y = geom.pix_x, geom.pix_y
+
             dl1_camera = event.dl1.tel[telescope_id]
 
-            pixel_x, pixel_y = event.inst.pixel_pos[telescope_id]
             image = dl1_camera.pe_samples
 
             mask = dl1_camera.cleaning_mask
             image[~mask] = 0.
-
-            """
-            for i,pe in enumerate(image):
-                print(pixel_x[i], pixel_y[i], image[i])
-
-            print(np.sum(np.ones(image.shape)[mask]))
-            """
 
             try:
 
@@ -43,7 +36,7 @@ def calibrate_to_dl2(event_stream, reclean=False, camera_config_file=None, showe
                     moments = hillas.hillas_parameters_4(pixel_x, pixel_y, image)
             except:
 
-                print('could not recompute Hillas, not yielding')
+                # print('could not recompute Hillas, not yielding')
                 moments = None
 
         event.dl2.shower = moments
@@ -51,7 +44,7 @@ def calibrate_to_dl2(event_stream, reclean=False, camera_config_file=None, showe
         event.dl2.classification = None
 
         if moments is not None:
-            print(moments)
+            # print(moments)
             yield event
 
 

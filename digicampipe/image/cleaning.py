@@ -60,7 +60,7 @@ def tailcuts_clean(geom, image, picture_threshold=7, boundary_threshold=5,
         pixels_with_boundary_neighbors = (pixels_above_boundary &
                                          geom.neighbor_matrix).any(axis=1)
         return ((pixels_above_boundary & pixels_with_picture_neighbors) |
-                (pixels_in_picture &  pixels_with_boundary_neighbors))
+                (pixels_in_picture & pixels_with_boundary_neighbors))
 
 
 def dilate(geom, mask):

@@ -243,7 +243,7 @@ font.serif          : Bitstream Vera Serif
 axes.linewidth      : 2.0     # edge linewidth
 axes.grid           : True   # display grid or not
 axes.titlesize      : xx-large   # fontsize of the axes title
-axes.labelsize      : xx-large  # fontsize of the x any y labels
+axes.labelsize      : large  # fontsize of the x any y labels
 axes.labelpad       : 10.0     # space between label and axis
 axes.labelweight    : normal  # weight of the x and y labels
 #axes.labelcolor     : black
