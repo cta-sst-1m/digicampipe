@@ -1,6 +1,5 @@
 from digicampipe.calib.camera import filter, r1
 from digicampipe.io.event_stream import event_stream
-from digicamviewer.viewer import EventViewer
 import numpy as np
 import matplotlib.pyplot as plt
 

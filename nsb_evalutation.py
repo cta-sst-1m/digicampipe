@@ -1,11 +1,7 @@
-from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
+from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
-from digicampipe.io import save_external_triggers
 from cts_core.camera import Camera
 from digicampipe.utils import geometry
-import astropy.units as u
-from digicamviewer.viewer import EventViewer, EventViewer2
-from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
 
