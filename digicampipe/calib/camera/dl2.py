@@ -34,6 +34,8 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                     dl1_camera.cleaning_mask = dl1_camera.cleaning_mask & mask_near_center
                     image[~dl1_camera.cleaning_mask] = 0
                     moments = hillas.hillas_parameters_4(pixel_x, pixel_y, image)
+                else:
+                    moments = moments_first
             except:
 
                 # print('could not recompute Hillas, not yielding')
