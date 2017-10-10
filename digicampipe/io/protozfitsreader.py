@@ -71,6 +71,7 @@ pixel_remap = [425, 461, 353, 389, 352, 388, 424, 460, 315, 351, 387, 423, 281, 
                443, 549, 550, 514, 515, 511, 476, 546, 510, 582, 547, 548, 512, 618, 619, 583, 584, 586, 551, 621, 585,
                657, 622, 623, 587, 693, 694, 658, 659, 655, 620, 690, 654, 726, 691, 692, 656, 762, 763, 727, 728]
 
+
 class ZFile(object):
 
     def __init__(self, fname):
@@ -352,15 +353,14 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
 
-        patch_traces = self._get_numpyfield(self.event.trigger_input_traces)
-        patches = self.patch_id_input # numpy.arange(0, 192, 1)  # TODO check : might not be correct yet
+        frames = self._get_numpyfield(self.event.trigger_input_traces)
+        frames = frames.reshape(frames.shape[0] // 3, 3)
+        frames = frames.reshape(frames.shape[0] // 192, 3, 192)
+        frames = frames[..., :144]
+        frames = frames.reshape(frames.shape[0], frames.shape[1]*frames.shape[2])
+        frames = frames.T
 
-        # print(patch_traces.shape)
-        # patch_traces = patch_traces.reshape(len(patches), -1)
-        # patch_traces = np.zeros(len(patches), self.event.hiGain.waveforms.shape)
-        # properties = dict(zip(patches, patch_traces))
-
-        return self.get_trigger_output_patch7(telescope_id=telescope_id)
+        return dict(zip(self.patch_id_input, frames))
 
     def get_trigger_output_patch7(self, telescope_id=None):
         '''
@@ -375,7 +375,7 @@ class ZFile(object):
                                                                                                    144).reshape(
             n_samples, 432).T
 
-        patches = self.patch_id_output #numpy.arange(0, 432) # self.patch_id # numpy.arange(0, 432)  # TODO access patch_ids from self.event
+        patches = self.patch_id_output
         properties = dict(zip(patches, frames))
 
         return properties
@@ -390,7 +390,7 @@ class ZFile(object):
         frames = self._get_numpyfield(self.event.trigger_output_patch19)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,144).reshape(n_samples, 432).T
-        patches = self.patch_id_output  # numpy.arange(0, 432)  # TODO acess patch_ids from self.event
+        patches = self.patch_id_output
         properties = dict(zip(patches, frames))
 
         return (properties)

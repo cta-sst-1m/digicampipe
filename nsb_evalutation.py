@@ -63,6 +63,8 @@ if __name__ == '__main__':
 
     pixel_list = [0]
 
+    next(data_stream)
+
     # save_external_triggers.save_external_triggers(data_stream, output_filename=directory + 'nsb.npz', pixel_list=pixel_list)
 
     data = np.load(directory + 'nsb.npz')
@@ -77,7 +79,8 @@ if __name__ == '__main__':
         if key != 'time_stamp':
 
             plt.figure()
-            plt.plot(data['time_stamp'] - data['time_stamp'][0], data[key][:, pixel], label='pixel : {}'.format(pixel_list[pixel]))
+            plt.plot(data['time_stamp'] - data['time_stamp'][0], data[key][:, pixel],
+                     label='pixel : {}'.format(pixel_list[pixel]))
             plt.xlabel('t [ns]')
             plt.ylabel(key)
             plt.legend()
