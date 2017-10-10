@@ -17,13 +17,10 @@ if __name__ == '__main__':
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(3, 23)]
     camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
-    source_x = 0 * u.mm
-    source_y = 0. * u.mm
-
     dark_baseline = np.load(directory + 'dark.npz')
 
     digicam = Camera(_config_file=camera_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam, source_x=source_x, source_y=source_y)
+    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
     # Trigger configuration
     unwanted_patch = None
