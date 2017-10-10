@@ -1,18 +1,17 @@
 from digicampipe.io import zfits
 
 
-def event_stream(file_list, expert_mode=False, geom_file = None):
-
-    i = 0
+def event_stream(file_list, camera_geometry, expert_mode=False, max_events=None, allowed_tels=None):
 
     for file in file_list:
 
-        event_stream = zfits.zfits_event_source(url=file, expert_mode=expert_mode, geom_file=geom_file)
+        data_stream = zfits.zfits_event_source(url=file,
+                                               expert_mode=expert_mode,
+                                               camera_geometry=camera_geometry,
+                                               max_events=max_events,
+                                               allowed_tels=allowed_tels)
 
-        for event in event_stream:
-
-            #print(i)
-            i += 1
+        for event in data_stream:
 
             yield event
 

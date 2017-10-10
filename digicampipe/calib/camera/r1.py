@@ -2,7 +2,7 @@ import numpy as np
 from digicampipe.utils import calib
 
 
-def calibrate_to_r1(event_stream,dark_baseline):
+def calibrate_to_r1(event_stream, dark_baseline):
 
     for event in event_stream:
 
