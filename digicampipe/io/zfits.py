@@ -80,9 +80,9 @@ def zfits_event_source(url, camera_geometry, max_events=None, allowed_tels=None,
             #data.r0.tel[tel_id].pixel_flags = zfits.get_pixel_flags(telescope_id=tel_id)
 
             seconds, nano_seconds = zfits.get_local_time()
-            data.r0.tel[tel_id].local_camera_clock = (seconds * 1e9 + nano_seconds * 4)
+            data.r0.tel[tel_id].local_camera_clock = (seconds * 1e9 + nano_seconds)# * 4)
             seconds, nano_seconds = zfits.get_central_event_gps_time()
-            data.r0.tel[tel_id].gps_time = (seconds * 1e9 + nano_seconds * 4)
+            data.r0.tel[tel_id].gps_time = (seconds * 1e9 + nano_seconds)# * 4)
             data.r0.tel[tel_id].event_type_1 =zfits.get_event_type()
             data.r0.tel[tel_id].event_type_2 =zfits.get_eventType()
 

@@ -14,11 +14,9 @@ from scipy.interpolate import splrep, splev
 import scipy.ndimage as ndimage
 from ctapipe.utils.linalg import rotation_matrix_2d
 
-
 __all__ = ['CameraGeometry', 'CameraCalibration']
 
 logger = logging.getLogger(__name__)
-
 
 # dictionary to convert number of pixels to camera + the focal length of the
 # telescope into a camera type for use in `CameraGeometry.guess()`
@@ -44,8 +42,8 @@ _CAMERA_GEOMETRY_TABLE = {
 
 
 class CameraCalibration:
-
-    def __init__(self, gain, sigma_e, xt, charge_reconstruction_options, cell_capacitance=85. * 1E-15, bias_resistance=10. * 1E3):
+    def __init__(self, gain, sigma_e, xt, charge_reconstruction_options, cell_capacitance=85. * 1E-15,
+                 bias_resistance=10. * 1E3):
 
         self.gain = gain
         self.sigma_e = sigma_e
@@ -53,25 +51,25 @@ class CameraCalibration:
         self.cell_capacitance = cell_capacitance
         self.bias_resistance = bias_resistance
         self.charge_reconstruction_options = charge_reconstruction_options
-        self.lut_std = np.array([1.10364884,   1.12430139,   1.2435541,    1.36286533,   1.59703604,
-                                 1.80362736,   2.07318656,   2.50829027,   2.92629147,   3.44292195,
-                                 4.0800227,    4.79139778,   5.63669767,   6.53108791,   7.64749998,
-                                 8.65923108,   9.57379588,  10.37193237,  10.88006117,  11.19791948,
-                                11.10610816,  10.95768853,  10.57739894,  10.37384412,  10.18064523,
-                                10.75009621,  11.57963516,  13.24342791,  15.57271873,  18.24045984])
-        self.lut_nsb_rate = np.array([1.00000000e-03,   1.45222346e-03,   2.10895298e-03,   3.06267099e-03,
-                                      4.44768267e-03,   6.45902911e-03,   9.37995361e-03,   1.36217887e-02,
-                                      1.97818811e-02,   2.87277118e-02,   4.17190571e-02,   6.05853935e-02,
-                                      8.79835297e-02,   1.27771746e-01,   1.85553127e-01,   2.69464604e-01,
-                                      3.91322820e-01,   5.68288180e-01,   8.25281427e-01,   1.19849305e+00,
-                                      1.74047972e+00,   2.52756549e+00,   3.67058990e+00,   5.33051677e+00,
-                                      7.74110151e+00,   1.12418092e+01,   1.63256191e+01,   2.37084470e+01,
-                                      3.44299630e+01,   5.00000000e+01])
-        self.lut_baseline_shift = np.array([ 500.10844,  500.13456,  500.19772,  500.2697,   500.44418,  500.6094,
-                                             500.87226,  501.33124,  501.8768,   502.71168,  503.9574,   505.51968,
-                                             507.92038,  511.24914,  515.572,    521.41952,  528.5894,   537.03064,
-                                             547.04614,  557.76222,  568.03408,  577.88066,  586.55614,  593.50884,
-                                             598.97944,  603.33174,  606.54438,  608.84342,  610.4056,   611.94482])
+        self.lut_std = np.array([1.10364884, 1.12430139, 1.2435541, 1.36286533, 1.59703604,
+                                 1.80362736, 2.07318656, 2.50829027, 2.92629147, 3.44292195,
+                                 4.0800227, 4.79139778, 5.63669767, 6.53108791, 7.64749998,
+                                 8.65923108, 9.57379588, 10.37193237, 10.88006117, 11.19791948,
+                                 11.10610816, 10.95768853, 10.57739894, 10.37384412, 10.18064523,
+                                 10.75009621, 11.57963516, 13.24342791, 15.57271873, 18.24045984])
+        self.lut_nsb_rate = np.array([1.00000000e-03, 1.45222346e-03, 2.10895298e-03, 3.06267099e-03,
+                                      4.44768267e-03, 6.45902911e-03, 9.37995361e-03, 1.36217887e-02,
+                                      1.97818811e-02, 2.87277118e-02, 4.17190571e-02, 6.05853935e-02,
+                                      8.79835297e-02, 1.27771746e-01, 1.85553127e-01, 2.69464604e-01,
+                                      3.91322820e-01, 5.68288180e-01, 8.25281427e-01, 1.19849305e+00,
+                                      1.74047972e+00, 2.52756549e+00, 3.67058990e+00, 5.33051677e+00,
+                                      7.74110151e+00, 1.12418092e+01, 1.63256191e+01, 2.37084470e+01,
+                                      3.44299630e+01, 5.00000000e+01])
+        self.lut_baseline_shift = np.array([500.10844, 500.13456, 500.19772, 500.2697, 500.44418, 500.6094,
+                                            500.87226, 501.33124, 501.8768, 502.71168, 503.9574, 505.51968,
+                                            507.92038, 511.24914, 515.572, 521.41952, 528.5894, 537.03064,
+                                            547.04614, 557.76222, 568.03408, 577.88066, 586.55614, 593.50884,
+                                            598.97944, 603.33174, 606.54438, 608.84342, 610.4056, 611.94482])
 
         self.lut_baseline_shift -= 500.0
 
@@ -118,6 +116,7 @@ class CameraCalibration:
         :param integration_type:
         :return:
         """
+
         is_saturated = np.max(data, axis=-1) > threshold_saturation
         local_max = np.argmax(np.multiply(data, timing_mask), axis=1)
         local_max_edge = np.argmax(np.multiply(data, timing_mask_edge), axis=1)
@@ -390,12 +389,12 @@ class CameraGeometry:
     def __repr__(self):
         return "CameraGeometry(cam_id='{cam_id}', pix_type='{pix_type}', " \
                "npix={npix}, cam_rot={camrot}, pix_rot={pixrot})".format(
-                   cam_id=self.cam_id,
-                   pix_type=self.pix_type,
-                   npix=len(self.pix_id),
-                   pixrot=self.pix_rotation,
-                   camrot=self.cam_rotation
-               )
+            cam_id=self.cam_id,
+            pix_type=self.pix_type,
+            npix=len(self.pix_id),
+            pixrot=self.pix_rotation,
+            camrot=self.cam_rotation
+        )
 
     def __str__(self):
         return self.cam_id
@@ -591,6 +590,3 @@ def _neighbor_list_to_matrix(neighbors):
             neigh2d[ipix, neighbor] = True
 
     return neigh2d
-
-
-

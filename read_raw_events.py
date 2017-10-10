@@ -9,9 +9,9 @@ if __name__ == '__main__':
 
     directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(7, 23)]
+    file_list = [filename % number for number in range(19, 23)]
     digicam_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
-    max_events = 10
+    max_events = 100
 
     digicam = Camera(_config_file=digicam_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
