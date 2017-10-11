@@ -11,7 +11,6 @@ def calibrate_to_r1(event_stream, dark_baseline):
             # Get the R0 and R1 containers
             r0_camera = event.r0.tel[telescope_id]
             r1_camera = event.r1.tel[telescope_id]
-            if not dark_baseline is None : r0_camera.dark_baseline = dark_baseline['baseline']
 
             # Get the ADCs
             adc_samples = np.array(list(r0_camera.adc_samples.values()))
@@ -27,6 +26,7 @@ def calibrate_to_r1(event_stream, dark_baseline):
                 r1_camera.nsb = calib.compute_nsb_rate(standard_deviation, 'std')
             else:
                 # compute NSB and Gain drop from baseline shift
+                r0_camera.dark_baseline = dark_baseline['baseline']
                 baseline_shift = baseline - r0_camera.dark_baseline
                 r1_camera.gain_drop = calib.compute_gain_drop(baseline_shift, 'mean')
                 r1_camera.nsb = calib.compute_nsb_rate(baseline_shift, 'mean')

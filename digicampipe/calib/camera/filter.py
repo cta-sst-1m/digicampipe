@@ -1,4 +1,5 @@
 import numpy as np
+import astropy.units as u
 
 
 def filter_patch(event_stream, unwanted_patch):
@@ -133,4 +134,20 @@ def filter_trigger_time(event_stream, time):
 
             if condition:
 
+                yield event
+
+
+def filter_period(event_stream, period):
+
+    t_last = 0 * u.second
+
+    for event in event_stream:
+
+        for telescope_id in event.r0.tels_with_data:
+
+            t_new = event.r0.tel[telescope_id].local_camera_clock * u.nanosecond
+
+            if (t_new - t_last) > period:
+
+                t_last = t_new
                 yield event
