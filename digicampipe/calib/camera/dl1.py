@@ -86,10 +86,34 @@ def calibrate_to_dl1_better_cleaning(event_stream, time_integration_options, pic
             dl1_camera.cleaning_mask = cleaning.tailcuts_clean(geom=geom, image=dl1_camera.pe_samples,
                                 picture_threshold=picture_threshold, boundary_threshold=boundary_threshold,
                                 keep_isolated_pixels=False)
+                        
+            #recursive selection of neighboring pixels
+            #threshold is 2*boundary_threshold, maybe we should introduce yet a 3rd threshold in the args of the function
+            image = dl1_camera.pe_samples 
+            mask  = dl1_camera.cleaning_mask 
+            recursion = True
+            border    = False
+            while recursion:
+                recursion = False
+                for i in range(1296):
+                    if mask[i] == True:
+                        num_neighbors = 0
+                        for j in range(1296):
+                            if geom.neighbor_matrix[i][j] == True:
+                                num_neighbors = num_neighbors + 1
+                                #print("pixel " + str(i) + " has neigbor " + str(j))
+                                if image[j] > 2*boundary_threshold:
+                                    if mask[j] == False:
+                                        mask[j] = True
+                                        recursion = True
+                        if num_neighbors != 6:
+                            border = True
+
+            dl1_camera.on_border = border
 
             dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
-            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
-            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
+#            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
+#            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
 
             if additional_mask is not None:
                 dl1_camera.cleaning_mask = dl1_camera.cleaning_mask * additional_mask

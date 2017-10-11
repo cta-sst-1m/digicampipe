@@ -59,6 +59,9 @@ class DL1CameraContainer(Container):
                              "p.e. samples"
                              "(n_channels x n_pixels, n_samples)"))
 
+    on_border = Item(None, ("Boolean telling if the shower touches the camera border or not "
+                            "none"
+                            "none"))
 
 class DL1Container(Container):
     """ DL1 Calibrated Camera Images and associated data"""
