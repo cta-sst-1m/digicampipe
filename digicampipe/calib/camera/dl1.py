@@ -67,7 +67,7 @@ def calibrate_to_dl1_better_cleaning(event_stream, time_integration_options, pic
 
             mask_for_cleaning = adc_samples > 3 * r0_camera.standard_deviation[:, np.newaxis]
             dl1_camera.cleaning_mask = np.any(mask_for_cleaning, axis=-1)
-            dl1_camera.cleaning_mask *= (r1_camera.nsb < 5.) * (r1_camera.nsb > 0)
+            # dl1_camera.cleaning_mask *= (r1_camera.nsb < 5.) * (r1_camera.nsb > 0)
 
             adc_samples[~dl1_camera.cleaning_mask] = 0.
 

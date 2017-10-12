@@ -18,13 +18,13 @@ if __name__ == '__main__':
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
     # Trigger configuration
-    unwanted_patch = None
+    unwanted_patch = [306, 318, 330, 342]
 
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 
-    save_bias_curve.save_bias_curve(data_stream, output_filename=directory + 'trigger_rate.npz', camera=digicam)
+    save_bias_curve.save_bias_curve(data_stream, output_filename=directory + 'trigger_rate.npz', camera=digicam, unwanted_patch=unwanted_patch)
 
     data = np.load(directory + 'trigger_rate.npz')
 

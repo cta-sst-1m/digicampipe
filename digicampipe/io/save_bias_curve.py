@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 
 
-def save_bias_curve(data_stream, output_filename, camera, n_events=None):
+def save_bias_curve(data_stream, output_filename, camera, n_events=None, unwanted_patch=None):
 
     if n_events is None:
 
@@ -27,6 +27,8 @@ def save_bias_curve(data_stream, output_filename, camera, n_events=None):
             for cluster in camera.Clusters_7:
 
                 trigger_input_patch[cluster.ID] = np.sum(trigger_in[cluster.patchesID, :], axis=0)
+
+            trigger_input_patch[unwanted_patch] = 0.
 
             for j, threshold in enumerate(reversed(thresholds)):
 

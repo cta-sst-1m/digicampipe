@@ -127,6 +127,7 @@ class R1CameraContainer(Container):
 
     adc_samples = Item(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)")
     nsb = Item(ndarray, "nsb rate in GHz")
+    pde = Item(ndarray, "Photo Detection Efficiency at given NSB")
     gain_drop = Item(ndarray, "gain drop")
 
 
@@ -225,3 +226,4 @@ class DataContainer(Container):
     dl1 = Item(DL1Container(), "DL1 Calibrated image")
     dl2 = Item(ReconstructedContainer(), "Reconstructed Shower Information")
     inst = Item(InstrumentContainer(), "instrumental information (deprecated")
+

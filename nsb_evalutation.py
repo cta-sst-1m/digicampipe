@@ -6,6 +6,7 @@ from digicampipe.utils import geometry
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
+from digicampipe.visualization import mpl
 
 
 if __name__ == '__main__':
@@ -41,9 +42,10 @@ if __name__ == '__main__':
 
     data_stream = filter.filter_period(data_stream, period=10*u.second)
 
-    save_external_triggers(data_stream, output_filename=directory + nsb_filename, pixel_list=pixel_list)
+    # save_external_triggers(data_stream, output_filename=directory + nsb_filename, pixel_list=pixel_list)
 
     data = np.load(directory + nsb_filename)
+
 
     plt.figure()
     plt.hist(data['baseline_dark'].ravel(), bins='auto', label='dark')
@@ -53,16 +55,72 @@ if __name__ == '__main__':
     plt.ylabel('count')
     plt.legend()
 
+    baseline_change = np.diff(data['baseline'], axis=0)/np.diff(data['time_stamp'] * 1E-9)[:, np.newaxis]
+
     plt.figure()
-    plt.hist(data['baseline_std'].ravel(), bins='auto', label='nsb')
-    plt.xlabel('baseline std [LSB]')
+    plt.hist(baseline_change.ravel(), bins='auto', label='pixel + time')
+    plt.xlabel('dB/dt [LSB $\cdot$ s$^{-1}$ ]')
+    plt.ylabel('count')
+    plt.legend()
+
+    baseline_max_min = np.max(data['baseline'], axis=0) - np.min(data['baseline'], axis=0)
+
+    plt.figure()
+    plt.hist(baseline_max_min, bins='auto', label='pixel')
+    plt.xlabel('$B_{max} - B_{min}$ [LSB]')
+    plt.ylabel('count')
+    plt.legend()
+
+    baseline_max_dark = np.max(data['baseline'], axis=0) - np.mean(data['baseline_dark'], axis=0)
+
+    plt.figure()
+    plt.hist(baseline_max_dark.ravel(), bins='auto', label='pixel')
+    plt.xlabel('$B_{max} - B_{dark}$ [LSB]')
     plt.ylabel('count')
     plt.legend()
 
     plt.figure()
-    plt.hist(data['nsb_rate'][(data['nsb_rate'] > 0.) * (data['nsb_rate'] < 5)].ravel() * 1E3, bins='auto', label='all pixels')
-    plt.xlabel('$f_{nsb}$ [MHz]')
+    plt.hist(data['baseline_std'].ravel(), bins='auto', label='pixel + time')
+    plt.xlabel('baseline std [LSB]')
+    plt.ylabel('count')
+    plt.legend()
+
+    mask = (baseline_max_min < 25) * (baseline_max_min > 0)
+    mask = mask * (baseline_max_dark > 55) * (baseline_max_dark < 68)
+    mask = mask[:, np.newaxis].T * np.abs(baseline_change) < 0.4
+    mask = mask * (data['baseline_shift'][:-1] > 30) * (data['baseline_shift'][:-1] < 80)
+    x = data['nsb_rate'][:-1]
+
+    x = np.ma.array(x, mask=~mask)
+    x = np.mean(x, axis=0)
+    x = x[np.all(mask, axis=0)]
+
+    #mask = np.all(mask, axis=0)
+    #print(mask.shape)
+    #x = x[:, mask]
+    #print(x.shape)
+
+    plt.figure()
+    plt.hist(x, bins='auto', label='mean : {:.2f}, std : {:.2f}'.format(np.mean(x), np.std(x)))
+    plt.xlabel('$f_{nsb}$ [GHz]')
     plt.ylabel('count')
     plt.legend()
     plt.show()
+
+    plt.figure()
+    plt.hist(data['nsb_rate'][(data['nsb_rate'] > 0.5) * (data['nsb_rate'] < 1.8)].ravel() * 1E3, bins='auto', label='all pixels')
+    plt.xlabel('$f_{nsb}$ [MHz]')
+    plt.ylabel('count')
+    plt.legend()
+
+    x = np.mean(data['nsb_rate'], axis=0)
+    x = x[(x > 0.5) * (x < 1.8)]
+    plt.figure()
+    plt.hist(x, bins='auto', label='mean : {:.2f}, std : {:.2f}'.format(np.mean(x), np.std(x)))
+    plt.xlabel('$f_{nsb}$ [GHz]')
+    plt.ylabel('count')
+    plt.legend()
+    plt.show()
+
+
 
