@@ -1,4 +1,5 @@
 import numpy as np
+import astropy.units as u
 
 
 def filter_patch(event_stream, unwanted_patch):
@@ -134,3 +135,51 @@ def filter_trigger_time(event_stream, time):
             if condition:
 
                 yield event
+
+def filter_period(event_stream, period):
+
+    t_last = 0 * u.second
+
+    for event in event_stream:
+
+        for telescope_id in event.r0.tels_with_data:
+
+            t_new = event.r0.tel[telescope_id].local_camera_clock * u.nanosecond
+
+            if (t_new - t_last) > period:
+
+                t_last = t_new
+                yield event
+
+from gzip import open as gzip_open
+import pickle
+
+def load_from_pickle_gz(file):
+    file=gzip_open( file, "rb" )
+    while True:
+        try:
+            yield pickle.load(file)
+        except (EOFError,pickle.UnpicklingError):
+            return
+
+from os.path import isfile
+from ctapipe.io.serializer import Serializer
+
+from os import remove
+
+def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
+    if isfile(file):
+        if overwrite:
+            print('remove old', file, 'file')
+            remove(file)
+        else:
+            print(file, 'exist, exiting...')
+            return
+    writer = Serializer(filename=file, format='pickle', mode='w')
+    counter_events=0
+    for event in event_stream:
+        writer.add_container(event)
+        counter_events+=1
+        if max_events!=None and counter_events>=max_events:
+            break
+    writer.close()

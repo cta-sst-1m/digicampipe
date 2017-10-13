@@ -20,7 +20,6 @@ def save_external_triggers(data_stream, output_filename, n_events=None, pixel_li
 
         iter_events = range(n_events)
 
-
     for event, i in zip(data_stream, iter_events):
 
         for telescope_id in event.r0.tels_with_data:
