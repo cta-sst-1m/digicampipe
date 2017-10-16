@@ -3,7 +3,7 @@ from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import utils, geometry
 from cts_core.camera import Camera
 import astropy.units as u
-from digicampipe.calib.camera.filter import save_to_pickle_gz
+from digicampipe.io.containers import save_to_pickle_gz
 
 if __name__ == '__main__':
     # Data configuration

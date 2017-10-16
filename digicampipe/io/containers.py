@@ -71,6 +71,7 @@ class DL1CameraContainer(Container):
                             "none"
                             "none"))
 
+
 class DL1Container(Container):
     """ DL1 Calibrated Camera Images and associated data"""
     tel = Field(Map(DL1CameraContainer), "map of tel_id to DL1CameraContainer")
@@ -261,4 +262,5 @@ def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
 
         if max_events is not None and counter_events >= max_events:
             break
+
     writer.close()

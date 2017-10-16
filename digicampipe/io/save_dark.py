@@ -26,6 +26,8 @@ def save_dark(data_stream, output_filename, n_events=None):
             baseline += np.mean(data, axis=-1)
             std += np.std(data, axis=-1)
 
+        yield event
+
     baseline /= i
     std /= i
     np.savez(output_filename, baseline=baseline, standard_deviation=std)

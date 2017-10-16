@@ -24,6 +24,27 @@ def filter_patch(event_stream, unwanted_patch):
         yield event
 
 
+def set_patches_to_zero(event_stream, unwanted_patch):
+
+    for event in event_stream:
+
+        for telescope_id in event.r0.tels_with_data:
+
+            r0_camera = event.r0.tel[telescope_id]
+            trigger_in = np.array(list(r0_camera.trigger_input_traces.values()))
+            trigger_out_7 = np.array(list(r0_camera.trigger_output_patch7.values()))
+            trigger_out_19 = np.array(list(r0_camera.trigger_output_patch19.values()))
+            trigger_in[unwanted_patch] = 0
+            trigger_out_7[unwanted_patch] = 0
+            trigger_out_19[unwanted_patch] = 0
+
+            r0_camera.trigger_input_traces = dict(zip(range(trigger_in.shape[0]), trigger_in))
+            r0_camera.trigger_output_patch7 = dict(zip(range(trigger_out_7.shape[0]), trigger_out_7))
+            r0_camera.trigger_output_patch19 = dict(zip(range(trigger_out_19.shape[0]), trigger_out_19))
+
+        yield event
+
+
 def set_pixels_to_zero(event_stream, unwanted_pixels):
 
     for event in event_stream:
