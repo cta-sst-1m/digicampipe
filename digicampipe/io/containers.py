@@ -10,7 +10,11 @@ try:
 except ImportError:
     from ctapipe.core import Item as Field
 from numpy import ndarray
-import numpy as np
+from gzip import open as gzip_open
+import pickle
+from os.path import isfile
+from ctapipe.io.serializer import Serializer
+from os import remove
 
 __all__ = ['InstrumentContainer',
            'R0Container',
@@ -230,3 +234,31 @@ class DataContainer(Container):
     dl1 = Field(DL1Container(), "DL1 Calibrated image")
     dl2 = Field(ReconstructedContainer(), "Reconstructed Shower Information")
     inst = Field(InstrumentContainer(), "instrumental information (deprecated)")
+
+
+def load_from_pickle_gz(file):
+    file = gzip_open(file, "rb")
+    while True:
+        try:
+            yield pickle.load(file)
+        except (EOFError, pickle.UnpicklingError):
+            return
+
+
+def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
+    if isfile(file):
+        if overwrite:
+            print('remove old', file, 'file')
+            remove(file)
+        else:
+            print(file, 'exist, exiting...')
+            return
+    writer = Serializer(filename=file, format='pickle', mode='w')
+    counter_events = 0
+    for event in event_stream:
+        writer.add_container(event)
+        counter_events += 1
+
+        if max_events is not None and counter_events >= max_events:
+            break
+    writer.close()

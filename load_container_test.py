@@ -1,4 +1,5 @@
-from digicampipe.calib.camera import filter, random_triggers, r1, dl0, dl2, dl1
+from digicampipe.calib.camera import r1, dl0, dl2, dl1
+from digicampipe.io import containers
 from digicamviewer.viewer import EventViewer2
 from digicampipe.utils import utils
 import matplotlib.pyplot as plt
@@ -26,7 +27,7 @@ if __name__ == '__main__':
                                    peak_position)
 
     # Define the event stream
-    data_stream = filter.load_from_pickle_gz('test.pickle')
+    data_stream = containers.load_from_pickle_gz('test.pickle')
     data_stream = r1.calibrate_to_r1(data_stream, None)
     data_stream = dl0.calibrate_to_dl0(data_stream)
     # Run the dl1 calibration (compute charge in photons)
