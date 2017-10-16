@@ -92,9 +92,11 @@ def calibrate_to_dl1_better_cleaning(event_stream, time_integration_options, pic
 
             # mask pixels which goes above N sigma
 
-            dl1_camera.cleaning_mask *= cleaning.tailcuts_clean(geom=geom, image=dl1_camera.pe_samples,
-                                picture_threshold=picture_threshold, boundary_threshold=boundary_threshold,
-                                keep_isolated_pixels=False)
+            dl1_camera.cleaning_mask *= cleaning.tailcuts_clean(geom=geom,
+                                                                image=dl1_camera.pe_samples,
+                                                                picture_threshold=picture_threshold,
+                                                                boundary_threshold=boundary_threshold,
+                                                                keep_isolated_pixels=False)
                         
             # recursive selection of neighboring pixels
             # threshold is 2*boundary_threshold, maybe we should introduce yet a 3rd threshold in the args of the function
@@ -107,7 +109,7 @@ def calibrate_to_dl1_better_cleaning(event_stream, time_integration_options, pic
                     num_neighbors = 0
                     for j in pixel_id[geom.neighbor_matrix[i] & ~dl1_camera.cleaning_mask]:
                         num_neighbors = num_neighbors + 1
-                        if image[j] > 2*boundary_threshold:
+                        if image[j] > boundary_threshold:
                             dl1_camera.cleaning_mask[j] = True
                             recursion = True
                     if num_neighbors != 6:

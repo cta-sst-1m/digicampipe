@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from digicampipe.visualization import mpl
+import pandas as pd
 
 
 if __name__ == '__main__':
@@ -47,6 +48,7 @@ if __name__ == '__main__':
     data = np.load(directory + nsb_filename)
 
 
+
     plt.figure()
     plt.hist(data['baseline_dark'].ravel(), bins='auto', label='dark')
     plt.hist(data['baseline'].ravel(), bins='auto', label='nsb')
@@ -54,6 +56,8 @@ if __name__ == '__main__':
     plt.xlabel('baseline [LSB]')
     plt.ylabel('count')
     plt.legend()
+
+    '''
 
     baseline_change = np.diff(data['baseline'], axis=0)/np.diff(data['time_stamp'] * 1E-9)[:, np.newaxis]
 
@@ -85,8 +89,33 @@ if __name__ == '__main__':
     plt.ylabel('count')
     plt.legend()
 
+    '''
+    sectors = [1, 3]
+    pixel_not_in_intersil = [pixel.ID for pixel in digicam.Pixels if pixel.sector in sectors]
+
+    print(len(pixel_not_in_intersil))
+
+    x = data['nsb_rate'].T[pixel_not_in_intersil]
+
+    x = np.mean(x, axis=-1)
+
+    indices_to_keep = np.where(x > 0)
+    x = x[indices_to_keep[0]]
+
+    temp = np.where(((data['baseline_shift'].T <= 0) + (data['baseline_shift'].T >= 80)) > 0)
+    print(temp[0].shape, temp[1].shape)
+
+    plt.figure()
+    plt.hist(temp[0], bins=np.arange(0, 1296, 1))
+
+    plt.figure()
+    plt.hist(x.ravel(), bins='auto', label='sector : {} \n mean : {:0.2f} \n std : {:0.2f}'.format(sectors, np.mean(x), np.std(x)))
+    plt.legend()
+    plt.xlabel('$f_{nsb} [GHz]$')
+    plt.show()
+
     mask = (baseline_max_min < 25) * (baseline_max_min > 0)
-    mask = mask * (baseline_max_dark > 55) * (baseline_max_dark < 68)
+    mask = mask * (baseline_max_dark > 55) * (baseline_max_dark < 60)
     mask = mask[:, np.newaxis].T * np.abs(baseline_change) < 0.4
     mask = mask * (data['baseline_shift'][:-1] > 30) * (data['baseline_shift'][:-1] < 80)
     x = data['nsb_rate'][:-1]
