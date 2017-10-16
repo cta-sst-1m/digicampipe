@@ -2,7 +2,10 @@ from cts_core import camera as cam
 import numpy as np
 import astropy.units as u
 from digicampipe.instrument.camera import CameraGeometry
-from ctapipe.io.camera import find_neighbor_pixels
+try:
+    from ctapipe.io.camera import find_neighbor_pixels
+except ImportError:
+    from ctapipe.instrument.camera import _find_neighbor_pixels as find_neighbor_pixels
 
 
 def find_pixel_positions(camera_config_file, source_x=0.*u.mm, source_y=0.*u.mm):
