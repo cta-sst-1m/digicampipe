@@ -14,29 +14,13 @@ from optparse import OptionParser
 
 if __name__ == '__main__':
 
-    #########################
-    ##### CONFIGURATION #####
-    #########################
+    hillas_filename = 'hillas.npz'
+    do_display = False
 
-    # Input configuration
-
-    opts_parser = OptionParser()
-    opts_parser.add_option("-r", "--file_start", dest="file_range", help="file starting index", default=1, type=int)
-    opts_parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
-    opts_parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data", default=False)
-    
-    (options, args) = opts_parser.parse_args()
-    
-    hillas_filename = options.output
-    startup_range = options.file_range
-    do_display = options.display
-    
-    print("Processing from file index " + str(startup_range) + " writing to: " + hillas_filename)
-    
-    directory = '/sst1m/raw/2017/09/28/CRAB_01/'
+    directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(startup_range, startup_range+3)]
-    digicam_config_file = '/home/isdc/lyard/ctasoft/CTS/config/camera_config.cfg'
+    file_list = [filename % number for number in range(4, 23)]
+    digicam_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     max_events = 10
 
     # Source coordinates
@@ -51,7 +35,7 @@ if __name__ == '__main__':
     dark_baseline = np.load(directory + 'dark.npz')
 
     # Config for Hillas parameters analysis
-    n_showers = 200
+    n_showers = 10000
     reclean = True
 
     # Noisy patch that triggered
@@ -91,7 +75,7 @@ if __name__ == '__main__':
     shower_distance = 200 * u.mm
 
     # Filering on big showers
-    min_photon = 300
+    min_photon = 100
 
     ####################
     ##### ANALYSIS #####
@@ -134,5 +118,5 @@ if __name__ == '__main__':
             plt.show()
     else:
         # Save the hillas parameters
-        #save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=hillas_filename)
-        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=hillas_filename)
+        save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+        # save_hillas_parameters_in_text(data_stream=data_stream, output_filename=hillas_filename)

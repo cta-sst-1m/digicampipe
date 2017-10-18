@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 
 
-def save_bias_curve(data_stream, thresholds, output_filename, camera, n_events=None, blinding=True, by_cluster=True):
+def save_bias_curve(data_stream, thresholds, output_filename, camera, n_events=None, blinding=True, by_cluster=True, unwanted_cluster=None):
 
     if n_events is None:
 
@@ -23,11 +23,14 @@ def save_bias_curve(data_stream, thresholds, output_filename, camera, n_events=N
 
             cluster_matrix[cluster.ID, patch] = 1
 
+    if unwanted_cluster is not None:
+        cluster_matrix[unwanted_cluster] = 0
+
     for event, i in zip(data_stream, iter_events):
 
         for telescope_id in event.r0.tels_with_data:
 
-            trigger_in = np.array(list(event.r0.tel[telescope_id].trigger_input_traces.values()))
+            trigger_in = event.r0.tel[telescope_id].trigger_input_traces
 
             trigger_input_patch = np.dot(cluster_matrix, trigger_in)
 

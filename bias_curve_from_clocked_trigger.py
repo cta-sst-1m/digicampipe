@@ -34,9 +34,9 @@ if __name__ == '__main__':
                                   blinding=blinding,
                                   by_cluster=by_cluster)
 
-    for i, data in enumerate(data_stream):
+    # for i, data in enumerate(data_stream):
 
-        print(i)
+    #    print(i)
 
     data = np.load(directory + trigger_filename)
 
@@ -54,9 +54,9 @@ if __name__ == '__main__':
         axis = fig.add_subplot(111)
 
         n_clusters = data['cluster_rate'].shape[0]
-        for i in range(n_clusters):
+        for i in [306, 318, 330, 342, 200, 100]:
 
-            axis.plot(data['threshold'], data['cluster_rate'][i] * 1E9, label='Cluster : {}'.format(i))
+            axis.errorbar(data['threshold'], data['cluster_rate'][i] * 1E9, yerr=data['cluster_rate_error'][i] * 1E9, label='{} cluster : {}'.format('noisy' if i != 100 else 'regular', i))
 
         axis.set_ylabel('rate [Hz]')
         axis.set_xlabel('threshold [LSB]')

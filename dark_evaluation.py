@@ -20,6 +20,7 @@ if __name__ == '__main__':
     trigger_filename = 'bias_curve_dark.npz'
     thresholds = np.arange(0, 400, 10)
     unwanted_patch = [306, 318, 330, 342, 200]
+    unwanted_cluster = [200]
     blinding = True
 
     digicam = Camera(_config_file=camera_config_file)
@@ -35,7 +36,8 @@ if __name__ == '__main__':
                                   thresholds=thresholds,
                                   camera=digicam,
                                   blinding=blinding,
-                                  output_filename=directory + trigger_filename)
+                                  output_filename=directory + trigger_filename,
+                                  unwanted_cluster=unwanted_cluster)
 
     data_stream = save_dark(data_stream, directory + dark_filename)
 

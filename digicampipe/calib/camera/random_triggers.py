@@ -23,7 +23,7 @@ def fill_baseline_r0(event_stream, n_bins=10000):
 
             if r0_camera.event_type_1 == 8:
 
-                adc_samples = np.array(list(r0_camera.adc_samples.values()))
+                adc_samples = r0_camera.adc_samples
                 new_mean = np.mean(adc_samples, axis=-1)
                 new_std = np.std(adc_samples, axis=-1)
 
@@ -69,7 +69,7 @@ def extract_baseline(event_stream, calib_container):
 
         for telid in event.r0.tels_with_data:
             # Get the adcs
-            adcs = np.array(list(event.r0.tel[telid].adc_samples.values()))
+            adcs = event.r0.tel[telid].adc_samples
             # When the first event comes, add adcs.shape[-1] length to the number of samples
             if calib_container.sample_to_consider == calib_container.samples_for_baseline.shape[-1]:
                 calib_container.samples_for_baseline = np.append(calib_container.samples_for_baseline,

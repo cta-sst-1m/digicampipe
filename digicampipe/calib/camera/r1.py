@@ -13,10 +13,10 @@ def calibrate_to_r1(event_stream, dark_baseline):
             r1_camera = event.r1.tel[telescope_id]
 
             # Get the ADCs
-            adc_samples = np.array(list(r0_camera.adc_samples.values()))
+            adc_samples = r0_camera.adc_samples
             baseline = r0_camera.baseline
             adc_samples = adc_samples - baseline[:, np.newaxis]
-            r1_camera.adc_samples = dict(zip(range(adc_samples.shape[0]), list(adc_samples)))
+            r1_camera.adc_samples = adc_samples
             # Compute the gain drop and NSB
 
             if dark_baseline is None:

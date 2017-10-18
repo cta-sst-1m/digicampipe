@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-    directory = '/home/alispach/data/CRAB_01/'
-    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(2, 23)]
+    directory = '/home/alispach/data/BASELINE_TEST/'
+    filename = directory + 'BASELINE_TEST_0_000.00%d.fits.fz'
+    file_list = [filename % number for number in range(0, 23)]
     digicam_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     max_events = 100
 

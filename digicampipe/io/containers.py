@@ -70,6 +70,7 @@ class DL1CameraContainer(Container):
     on_border = Field(None, ("Boolean telling if the shower touches the camera border or not "
                             "none"
                             "none"))
+    time_spread = Field(None, ('Time elongation of the shower'))
 
 
 class DL1Container(Container):
@@ -81,21 +82,23 @@ class R0CameraContainer(Container):
     """
     Storage of raw data from a single telescope
     """
-    adc_sums = Field(None, ("numpy array containing integrated ADC data "
+    adc_sums = Field(ndarray, ("numpy array containing integrated ADC data "
                            "(n_channels x n_pixels)"))
-    adc_samples = Field(None, ("numpy array containing ADC samples"
+    adc_samples = Field(ndarray, ("numpy array containing ADC samples"
                               "(n_channels x n_pixels, n_samples)"))
-    num_samples = Field(None, "number of time samples for telescope")
+    num_samples = Field(int, "number of time samples for telescope")
 
-    num_pixels = Field(None, "number of pixels in camera")
+    num_pixels = Field(int, "number of pixels in camera")
 
-    baseline = Field(None, "number of time samples for telescope")
+    baseline = Field(ndarray, "number of time samples for telescope")
 
-    standard_deviation = Field(None, "number of time samples for telescope")
+    digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
+
+    standard_deviation = Field(ndarray, "number of time samples for telescope")
 
     dark_baseline = Field(ndarray, 'dark baseline')
 
-    hv_off_baseline = Field(None, 'HV off baseline')
+    hv_off_baseline = Field(ndarray, 'HV off baseline')
 
     camera_event_id = Field(-1, 'Camera event number')
 
