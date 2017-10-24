@@ -5,7 +5,7 @@ def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_even
 
     for file in file_list:
 
-        if mc:
+        if not mc:
 
             data_stream = zfits.zfits_event_source(url=file,
                                                    expert_mode=expert_mode,
