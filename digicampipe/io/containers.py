@@ -48,6 +48,9 @@ class InstrumentContainer(Container):
     geom = Field(Map(None), 'map of tel_if to CameraGeometry')
     cam = Field(Map(None), 'map of tel_id to Camera')
     optics = Field(Map(None), 'map of tel_id to CameraOptics')
+    cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
+    cluster_matrix_19 = Field(Map(ndarray), 'map of tel_id of cluster 19 matrix')
+    patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
 
 
 class DL1CameraContainer(Container):
@@ -82,43 +85,28 @@ class R0CameraContainer(Container):
     """
     Storage of raw data from a single telescope
     """
-    adc_sums = Field(ndarray, ("numpy array containing integrated ADC data "
-                           "(n_channels x n_pixels)"))
-    adc_samples = Field(ndarray, ("numpy array containing ADC samples"
-                              "(n_channels x n_pixels, n_samples)"))
+    adc_sums = Field(ndarray, ("numpy array containing integrated ADC data ""(n_channels x n_pixels)"))
+    adc_samples = Field(ndarray, ("numpy array containing ADC samples""(n_channels x n_pixels, n_samples)"))
     num_samples = Field(int, "number of time samples for telescope")
-
     num_pixels = Field(int, "number of pixels in camera")
-
     baseline = Field(ndarray, "number of time samples for telescope")
-
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
-
     standard_deviation = Field(ndarray, "number of time samples for telescope")
-
     dark_baseline = Field(ndarray, 'dark baseline')
-
     hv_off_baseline = Field(ndarray, 'HV off baseline')
-
     camera_event_id = Field(-1, 'Camera event number')
-
     camera_event_number = Field(-1, "camera event number")
-
     local_camera_clock = Field(-1, "camera timestamp")
-
     gps_time = Field(-1, "gps timestamp")
-
     white_rabbit_time = Field(-1, "precise white rabbit based timestamp")
-
     event_type_1 = Field(-1, "event type (1)")
-
     event_type_2 = Field(-1, "event Type (2)")
-
     trigger_input_traces = Field(ndarray, ("trigger patch trace", "(n_patches)"))
-
+    trigger_input_offline = Field(ndarray, ("trigger patch trace", "(n_patches)"))
     trigger_output_patch7 = Field(ndarray, ("trigger 7 patch cluster trace", "(n_clusters)"))
-
     trigger_output_patch19 = Field(ndarray, ("trigger 19 patch cluster trace", "(n_clusters)"))
+    trigger_input_7 = Field(ndarray, ('trigger input CLUSTER7'))
+    trigger_input_19 = Field(ndarray, ('trigger input CLUSTER19'))
 
 
 class R0Container(Container):

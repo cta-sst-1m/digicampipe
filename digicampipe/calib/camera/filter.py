@@ -31,9 +31,12 @@ def set_patches_to_zero(event_stream, unwanted_patch):
         for telescope_id in event.r0.tels_with_data:
 
             r0_camera = event.r0.tel[telescope_id]
-            r0_camera.trigger_input_traces[unwanted_patch] = 0
-            r0_camera.trigger_output_patch7[unwanted_patch] = 0
-            r0_camera.trigger_output_patch19[unwanted_patch] = 0
+
+            if unwanted_patch is not None:
+
+                r0_camera.trigger_input_traces[unwanted_patch] = 0
+                r0_camera.trigger_output_patch7[unwanted_patch] = 0
+                r0_camera.trigger_output_patch19[unwanted_patch] = 0
 
         yield event
 
@@ -93,11 +96,12 @@ def filter_shower(event_stream, min_photon):
     :param min_photon:
     :return:
     """
-    for event in event_stream:
+    for i, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
             dl1_camera = event.dl1.tel[telescope_id]
             if np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask]) >= min_photon:
+
                 yield event
 
 

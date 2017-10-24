@@ -15,7 +15,7 @@ def calibrate_to_r1(event_stream, dark_baseline):
             # Get the ADCs
             adc_samples = r0_camera.adc_samples
             baseline = r0_camera.baseline
-            adc_samples = adc_samples - baseline[:, np.newaxis]
+            adc_samples = adc_samples - baseline[:, np.newaxis].astype(np.int16)
             r1_camera.adc_samples = adc_samples
             # Compute the gain drop and NSB
 

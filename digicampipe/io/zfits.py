@@ -5,6 +5,7 @@ This requires the protozfitsreader python library to be installed
 """
 import logging
 from digicampipe.io.containers import DataContainer
+import digicampipe.utils as utils
 import astropy.units as u
 import itertools
 import digicampipe.io.protozfitsreader as protozfitsreader
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 __all__ = ['zfits_event_source']
 
 
-def zfits_event_source(url, camera_geometry, max_events=None, allowed_tels=None, expert_mode=False):
+def zfits_event_source(url, camera_geometry, camera, max_events=None, allowed_tels=None, expert_mode=False):
     """A generator that streams data from an ZFITs data file
     Parameters
     ----------
@@ -42,6 +43,9 @@ def zfits_event_source(url, camera_geometry, max_events=None, allowed_tels=None,
 
     event_stream = zfits.move_to_next_event()
     geometry = camera_geometry
+    patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
+    cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
+    cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
     data = DataContainer()
 
     if max_events is None:
@@ -65,6 +69,9 @@ def zfits_event_source(url, camera_geometry, max_events=None, allowed_tels=None,
             data.inst.num_channels[tel_id] = zfits.event.num_gains
             data.inst.num_pixels[tel_id] = zfits.get_number_of_pixels()
             data.inst.geom[tel_id] = geometry
+            data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
+            data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
+            data.inst.patch_matrix[tel_id] = patch_matrix
 
             data.r0.tel[tel_id].camera_event_number = zfits.event.eventNumber
             # data.r0.tel[tel_id].pixel_flags = zfits.get_pixel_flags(telescope_id=tel_id)

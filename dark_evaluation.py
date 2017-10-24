@@ -1,6 +1,6 @@
 from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
-from digicampipe.io.save_dark import save_dark
+from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve
 from cts_core.camera import Camera
 from digicampipe.utils import geometry

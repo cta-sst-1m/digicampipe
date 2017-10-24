@@ -21,7 +21,6 @@ if __name__ == '__main__':
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(4, 23)]
     digicam_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
-    max_events = 10
 
     # Source coordinates
     source_x = 0. * u.mm
@@ -35,7 +34,7 @@ if __name__ == '__main__':
     dark_baseline = np.load(directory + 'dark.npz')
 
     # Config for Hillas parameters analysis
-    n_showers = 10000
+    n_showers = 100000000
     reclean = True
 
     # Noisy patch that triggered
@@ -70,12 +69,12 @@ if __name__ == '__main__':
                                    peak_position)
 
     # Image cleaning configuration
-    picture_threshold = 40
+    picture_threshold = 15
     boundary_threshold = 10
     shower_distance = 200 * u.mm
 
     # Filering on big showers
-    min_photon = 100
+    min_photon = 20
 
     ####################
     ##### ANALYSIS #####
@@ -101,7 +100,7 @@ if __name__ == '__main__':
 
     # Run the dl1 calibration (compute charge in photons)
     # data_stream = dl1.calibrate_to_dl1(data_stream, time_integration_options, additional_mask=additional_mask, cleaning_threshold=6)
-    data_stream = dl1.calibrate_to_dl1_better_cleaning(data_stream, time_integration_options,
+    data_stream = dl1.calibrate_to_dl1(data_stream, time_integration_options,
                                                        additional_mask=additional_mask,
                                                        picture_threshold=picture_threshold,
                                                        boundary_threshold=boundary_threshold)
@@ -110,7 +109,7 @@ if __name__ == '__main__':
 
     # Run the dl2 calibration (Hillas + classification + energy + direction)
     data_stream = dl2.calibrate_to_dl2(data_stream, reclean=reclean, shower_distance=shower_distance)
-    
+
     if do_display:
         with plt.style.context('ggplot'):
             display = EventViewer2(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])

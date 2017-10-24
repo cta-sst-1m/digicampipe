@@ -77,9 +77,9 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
             if additional_mask is not None:
                 dl1_camera.cleaning_mask = dl1_camera.cleaning_mask * additional_mask
 
-            weight = dl1_camera.pe_samples[dl1_camera.cleaning_mask]
-            dl1_camera.time_spread = np.average(dl1_camera.time_bin[1][dl1_camera.cleaning_mask] * 4, weights=weight)
-            dl1_camera.time_spread = np.average((dl1_camera.time_bin[1][dl1_camera.cleaning_mask] * 4 - dl1_camera.time_spread)**2, weights=weight)
+            weight = dl1_camera.pe_samples
+            dl1_camera.time_spread = np.average(dl1_camera.time_bin[1] * 4, weights=weight)
+            dl1_camera.time_spread = np.average((dl1_camera.time_bin[1] * 4 - dl1_camera.time_spread)**2, weights=weight)
             dl1_camera.time_spread = np.sqrt(dl1_camera.time_spread)
 
         yield event

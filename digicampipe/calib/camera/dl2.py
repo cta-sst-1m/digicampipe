@@ -1,8 +1,6 @@
 from ctapipe.image import hillas
 import numpy as np
 import astropy.units as u
-import cts_core.camera as camera
-import digicampipe.utils.geometry as geometry
 
 
 def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
@@ -25,22 +23,23 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
             try:
 
-                moments_first = hillas.hillas_parameters_4(pixel_x, pixel_y, image)
+                moments_first = hillas.hillas_parameters(pixel_x, pixel_y, image)
 
                 if reclean:
 
-                    mask_near_center = find_mask_near_center(geom=geom, cen_x=moments_first.cen_x,
-                                                             cen_y=moments_first.cen_y, distance=shower_distance)
+                    mask_near_center = find_mask_near_center(geom=geom,
+                                                             cen_x=moments_first.cen_x,
+                                                             cen_y=moments_first.cen_y,
+                                                             distance=shower_distance)
                     dl1_camera.cleaning_mask = dl1_camera.cleaning_mask & mask_near_center
                     image[~dl1_camera.cleaning_mask] = 0
-                    moments = hillas.hillas_parameters_4(pixel_x, pixel_y, image)
+                    moments = hillas.hillas_parameters(pixel_x, pixel_y, image)
                 else:
                     moments = moments_first
             except:
 
-                # print('could not recompute Hillas, not yielding')
+                print('could not recompute Hillas of event')
                 moments = None
-
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None

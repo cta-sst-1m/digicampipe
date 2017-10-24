@@ -46,3 +46,44 @@ def generate_geometry_from_camera(camera, source_x=0.*u.mm, source_y=0.*u.mm):
                           neighbors=neighbors_pix)
 
     return geom
+
+
+def compute_patch_matrix(camera):
+
+    n_pixels = len(camera.Pixels)
+    n_patches = len(camera.Patches)
+    patch_matrix = np.zeros((n_patches, n_pixels), dtype=int)
+
+    for patch in camera.Patches:
+
+        for pixel in patch.pixelsID:
+
+            patch_matrix[patch.ID, pixel] = 1
+
+    return patch_matrix
+
+
+def compute_cluster_matrix_7(camera):
+
+    n_clusters = len(camera.Clusters_7)
+    cluster_matrix = np.zeros((n_clusters, n_clusters), dtype=int)
+
+    for cluster in camera.Clusters_7:
+
+        for patch in cluster.patchesID:
+            cluster_matrix[cluster.ID, patch] = 1
+
+    return cluster_matrix
+
+
+def compute_cluster_matrix_19(camera):
+
+    n_clusters = len(camera.Clusters_19)
+    cluster_matrix = np.zeros((n_clusters, n_clusters), dtype=int)
+
+    for cluster in camera.Clusters_19:
+
+        for patch in cluster.patchesID:
+            cluster_matrix[cluster.ID, patch] = 1
+
+    return cluster_matrix
