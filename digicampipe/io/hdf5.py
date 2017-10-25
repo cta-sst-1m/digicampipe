@@ -5,12 +5,7 @@ import h5py
 __all__ = ['digicamtoy_event_source']
 
 
-def digicamtoy_event_source(url,
-                            camera_geometry,
-                            camera,
-                            max_events=None,
-                            dc_level=0,
-                            ac_level=0):
+def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
     ----------
@@ -21,8 +16,6 @@ def digicamtoy_event_source(url,
     camera_geometry: CameraGeometry()
         camera containing info on pixels modules etc.
     camera : cts_core.Camera()
-    dc_level : 0
-    ac_level : 0
     """
 
     hdf5 = h5py.File(url, 'r')
@@ -32,10 +25,7 @@ def digicamtoy_event_source(url,
     cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
     cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
     data = DataContainer()
-    string_level = 'dc_level_{}_ac_level_{}'.format(dc_level, ac_level)
-    n_pixels = hdf5[string_level]['data'].shape[0]
-    n_samples = hdf5[string_level]['data'].shape[1]
-    n_events = hdf5[string_level]['data'].shape[2]
+    n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
 
     if max_events is None:
 
@@ -63,6 +53,6 @@ def digicamtoy_event_source(url,
             data.r0.tel[tel_id].gps_time = event_id
             data.r0.tel[tel_id].event_type_1 = None
             data.r0.tel[tel_id].event_type_2 = None
-            data.r0.tel[tel_id].adc_samples = hdf5[string_level]['data'][..., event_id]
+            data.r0.tel[tel_id].adc_samples = hdf5['data']['adc_count'][..., event_id]
 
         yield data

@@ -74,12 +74,11 @@ def zfits_event_source(url, camera_geometry, camera, max_events=None, allowed_te
             data.inst.patch_matrix[tel_id] = patch_matrix
 
             data.r0.tel[tel_id].camera_event_number = zfits.event.eventNumber
-            # data.r0.tel[tel_id].pixel_flags = zfits.get_pixel_flags(telescope_id=tel_id)
-
+            data.r0.tel[tel_id].pixel_flags = zfits.get_pixel_flags(telescope_id=tel_id)
             data.r0.tel[tel_id].local_camera_clock = zfits.get_local_time()
             data.r0.tel[tel_id].gps_time = zfits.get_central_event_gps_time()
-            data.r0.tel[tel_id].event_type_1 = zfits.get_event_type()
-            data.r0.tel[tel_id].event_type_2 = zfits.get_eventType()
+            data.r0.tel[tel_id].camera_event_type = zfits.get_camera_event_type()
+            data.r0.tel[tel_id].array_event_type = zfits.get_array_event_type()
 
             if expert_mode:
                 data.r0.tel[tel_id].trigger_input_traces = zfits.get_trigger_input_traces(telescope_id=tel_id)

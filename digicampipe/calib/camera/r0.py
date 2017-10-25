@@ -46,7 +46,6 @@ def fill_event_type(event_stream, flag):
 
         for telescope_id in event.r0.tels_with_data:
 
-            event.r0.tel[telescope_id].event_type_1 = flag
-            event.r0.tel[telescope_id].event_type_2 = flag
+            event.r0.tel[telescope_id].camera_event_type = flag
 
         yield event

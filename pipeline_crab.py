@@ -2,9 +2,8 @@ from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
-from digicampipe.io.save_hillas import save_hillas_parameters
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text
-from digicamviewer.viewer import EventViewer2
+from digicampipe.io.save_hillas import save_hillas_parameters_in_text, save_hillas_parameters
+from digicamviewer.viewer import EventViewer
 from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,15 +13,28 @@ from optparse import OptionParser
 
 if __name__ == '__main__':
 
-    do_display = True  # interactive mode
+
+    parser = OptionParser()
+    parser.add_option("-p", "--path", dest="directory", help="directory to data files",
+                      default='/sst1m/raw/2017/09/28/CRAB_01/')
+    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
+    parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
+                      default=False)
+    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=4, type=int)
+    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=23, type=int)
+    parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
+                      , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
+
+    (options, args) = parser.parse_args()
+    do_display = options.display  # interactive mode
 
     # Input/Output files
-    directory = '/home/alispach/data/CRAB_01/'
+    directory = options.directory
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(4, 23)]
-    digicam_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
+    file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
+    digicam_config_file = options.camera_config_file
     dark_baseline = np.load(directory + 'dark.npz')
-    hillas_filename = 'hillas.npz'
+    hillas_filename = options.output
 
     # Source coordinates (in camera frame)
     source_x = 0. * u.mm
@@ -83,12 +95,10 @@ if __name__ == '__main__':
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=pixel_not_wanted)
-    # Flag events triggered by unwanted patches
-    data_stream = filter.fill_flag(data_stream, unwanted_patch=unwanted_patch)
     # Compute baseline with clocked triggered events (sliding average over n_bins)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
     # Stop events that are not triggered by DigiCam algorithm (end of clocked triggered events)
-    data_stream = filter.filter_event_types(data_stream, flags=[1])
+    data_stream = filter.filter_event_types(data_stream, flags=[1, 2])
     # Do not return events that have not the baseline computed (only first events)
     data_stream = filter.filter_missing_baseline(data_stream)
 
@@ -108,11 +118,12 @@ if __name__ == '__main__':
     data_stream = dl2.calibrate_to_dl2(data_stream, reclean=reclean, shower_distance=shower_distance)
 
     if do_display:
+
         with plt.style.context('ggplot'):
-            display = EventViewer2(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
+            display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
             display.draw()
-            plt.show()
+            pass
     else:
         # Save the hillas parameters
-        save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
-        # save_hillas_parameters_in_text(data_stream=data_stream, output_filename=hillas_filename)
+        # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)

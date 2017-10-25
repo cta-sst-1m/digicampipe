@@ -59,21 +59,14 @@ class DL1CameraContainer(Container):
     calibration information.
     """
 
-    pe_samples = Field(None, ("numpy array containing data volume reduced "
-                             "p.e. samples"
-                             "(n_channels x n_pixels)"))
-    cleaning_mask = Field(None, "mask for clean pixels")
-    time_bin = Field(None, ("numpy array containing the bin of maximum"
-                           "(n_pixels)"))
+    pe_samples = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels)")
+    cleaning_mask = Field(ndarray, "mask for clean pixels")
+    time_bin = Field(ndarray, "numpy array containing the bin of maximum (n_pixels)")
 
-    pe_samples_trace = Field(None, ("numpy array containing data volume reduced "
-                             "p.e. samples"
-                             "(n_channels x n_pixels, n_samples)"))
+    pe_samples_trace = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels, n_samples)")
 
-    on_border = Field(None, ("Boolean telling if the shower touches the camera border or not "
-                            "none"
-                            "none"))
-    time_spread = Field(None, ('Time elongation of the shower'))
+    on_border = Field(bool, "Boolean telling if the shower touches the camera border or not")
+    time_spread = Field(float, 'Time elongation of the shower')
 
 
 class DL1Container(Container):
@@ -85,8 +78,8 @@ class R0CameraContainer(Container):
     """
     Storage of raw data from a single telescope
     """
-    adc_sums = Field(ndarray, ("numpy array containing integrated ADC data ""(n_channels x n_pixels)"))
-    adc_samples = Field(ndarray, ("numpy array containing ADC samples""(n_channels x n_pixels, n_samples)"))
+    pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
+    adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")
     num_samples = Field(int, "number of time samples for telescope")
     num_pixels = Field(int, "number of pixels in camera")
     baseline = Field(ndarray, "number of time samples for telescope")
@@ -94,19 +87,19 @@ class R0CameraContainer(Container):
     standard_deviation = Field(ndarray, "number of time samples for telescope")
     dark_baseline = Field(ndarray, 'dark baseline')
     hv_off_baseline = Field(ndarray, 'HV off baseline')
-    camera_event_id = Field(-1, 'Camera event number')
-    camera_event_number = Field(-1, "camera event number")
-    local_camera_clock = Field(-1, "camera timestamp")
-    gps_time = Field(-1, "gps timestamp")
-    white_rabbit_time = Field(-1, "precise white rabbit based timestamp")
-    event_type_1 = Field(-1, "event type (1)")
-    event_type_2 = Field(-1, "event Type (2)")
-    trigger_input_traces = Field(ndarray, ("trigger patch trace", "(n_patches)"))
-    trigger_input_offline = Field(ndarray, ("trigger patch trace", "(n_patches)"))
-    trigger_output_patch7 = Field(ndarray, ("trigger 7 patch cluster trace", "(n_clusters)"))
-    trigger_output_patch19 = Field(ndarray, ("trigger 19 patch cluster trace", "(n_clusters)"))
-    trigger_input_7 = Field(ndarray, ('trigger input CLUSTER7'))
-    trigger_input_19 = Field(ndarray, ('trigger input CLUSTER19'))
+    camera_event_id = Field(int, 'Camera event number')
+    camera_event_number = Field(int, "camera event number")
+    local_camera_clock = Field(float, "camera timestamp")
+    gps_time = Field(float, "gps timestamp")
+    white_rabbit_time = Field(float, "precise white rabbit based timestamp")
+    camera_event_type = Field(int, "camera event type")
+    array_event_type = Field(int, "array event type")
+    trigger_input_traces = Field(ndarray, "trigger patch trace (n_patches)")
+    trigger_input_offline = Field(ndarray, "trigger patch trace (n_patches)")
+    trigger_output_patch7 = Field(ndarray, "trigger 7 patch cluster trace (n_clusters)")
+    trigger_output_patch19 = Field(ndarray, "trigger 19 patch cluster trace (n_clusters)")
+    trigger_input_7 = Field(ndarray, 'trigger input CLUSTER7')
+    trigger_input_19 = Field(ndarray, 'trigger input CLUSTER19')
 
 
 class R0Container(Container):

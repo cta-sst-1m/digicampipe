@@ -1,5 +1,4 @@
 import numpy as np
-import digicampipe.io.containers as containers
 
 
 def fill_baseline_r0(event_stream, n_bins=10000):
@@ -21,7 +20,7 @@ def fill_baseline_r0(event_stream, n_bins=10000):
 
             r0_camera = event.r0.tel[telescope_id]
 
-            if r0_camera.event_type_1 == 8:
+            if r0_camera.camera_event_type == 8:
 
                 adc_samples = r0_camera.adc_samples
                 new_mean = np.mean(adc_samples, axis=-1)

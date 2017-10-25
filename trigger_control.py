@@ -22,7 +22,7 @@ if __name__ == '__main__':
     opts_parser.add_option('-d', '--directory', dest='directory', help='path', default='/home/alispach/data/CRAB_01/')
     opts_parser.add_option('-f', '--file', dest='filename', help='file basename', default='CRAB_01_0_000.%03d.fits.fz')
     opts_parser.add_option("-s", "--file_start", dest="file_start", help="file starting index", default=3, type=int)
-    opts_parser.add_option("-e", "--file_end", dest="file_end", help="file starting index", default=23 + 1, type=int)
+    opts_parser.add_option("-e", "--file_end", dest="file_end", help="file starting index", default=23, type=int)
     opts_parser.add_option("-c", "--config_path", dest="config_path", help="config file path", default="/home/alispach/ctasoft/CTS/config/", type=str)
 
     (options, args) = opts_parser.parse_args()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     directory = options.directory
     filename = directory + options.filename
-    file_list = [filename % number for number in range(options.file_start, options.file_end)]
+    file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     camera_config_file = options.config_path + 'camera_config.cfg'
     pixel_histogram_filename = 'pixel_histogram.npz'
     patch_histogram_filename = 'patch_histogram.npz'
@@ -93,7 +93,7 @@ if __name__ == '__main__':
             width = 1
             x = x - width / 3
             y = trigger['cluster_rate'][:, i] * period
-            yerr = trigger['cluster_rate_error'][:, i] * period, width
+            yerr = trigger['cluster_rate_error'][:, i] * period
             axis.bar(x, y, width, label=' threshold : {} [LSB]\n total : {}'.format(trigger['threshold'][i], np.sum(y)))
             axis.set_xlabel('cluster 7 ID')
             axis.legend()

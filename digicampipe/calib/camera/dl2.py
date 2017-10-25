@@ -12,7 +12,6 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
             if i == 0:
 
                 geom = event.inst.geom[telescope_id]
-                pixel_x, pixel_y = geom.pix_x, geom.pix_y
 
             dl1_camera = event.dl1.tel[telescope_id]
 
@@ -23,7 +22,7 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
             try:
 
-                moments_first = hillas.hillas_parameters(pixel_x, pixel_y, image)
+                moments_first = hillas.hillas_parameters(geom, image)
 
                 if reclean:
 
@@ -33,20 +32,17 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                                                              distance=shower_distance)
                     dl1_camera.cleaning_mask = dl1_camera.cleaning_mask & mask_near_center
                     image[~dl1_camera.cleaning_mask] = 0
-                    moments = hillas.hillas_parameters(pixel_x, pixel_y, image)
+                    moments = hillas.hillas_parameters(geom, image)
                 else:
                     moments = moments_first
-            except:
-
-                print('could not recompute Hillas of event')
+            except HillasParameterizationError:
+                print('could not recompute Hillas')
                 moments = None
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None
 
-        if moments is not None:
-            # print(moments)
-            yield event
+        yield event
 
 
 def find_mask_near_center(geom, cen_x, cen_y, distance):

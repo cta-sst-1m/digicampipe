@@ -1,6 +1,6 @@
 from digicampipe.utils import utils, calib
 import numpy as np
-from digicampipe.image import cleaning
+from ctapipe.image import cleaning
 
 
 def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7,
@@ -49,8 +49,8 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
 
             dl1_camera.cleaning_mask *= cleaning.tailcuts_clean(geom=geom,
                                                                 image=dl1_camera.pe_samples,
-                                                                picture_threshold=picture_threshold,
-                                                                boundary_threshold=boundary_threshold,
+                                                                picture_thresh=picture_threshold,
+                                                                boundary_thresh=boundary_threshold,
                                                                 keep_isolated_pixels=False)
                         
             # recursive selection of neighboring pixels

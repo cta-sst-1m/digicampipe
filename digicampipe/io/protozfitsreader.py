@@ -250,13 +250,14 @@ class ZFile(object):
 
     def get_telescope_id(self):
 
-        return (self._get_numpyfield(self.event.telescopeID))
+        return self.event.telescopeID
 
     def get_event_number(self):
 
         return self.event.eventNumber
 
     def get_run_id(self):
+
         return (self._get_numpyfield(self.header.runNumber))
 
     def get_central_event_gps_time(self):
@@ -296,11 +297,11 @@ class ZFile(object):
 
         return self._get_numpyfield(self.event.arrayEvtNum)
 
-    def get_event_type(self):
+    def get_camera_event_type(self):
 
         return self.event.event_type
 
-    def get_eventType(self):
+    def get_array_event_type(self):
 
         return self.event.eventType
 
@@ -410,9 +411,8 @@ class ZFile(object):
         flags = self._get_numpyfield(self.event.pixels_flags)
         pixels = self._get_numpyfield(waveforms.pixelsIndices)
         npixels = len(pixels)
-        # Structured array (dict)
-        properties = dict(zip(pixels, flags))
-        return (properties)
+        properties = numpy.array(list(dict(zip(pixels, flags)).values()), dtype=bool)
+        return properties
 
     def print_listof_fields(self, obj):
         fields = [f.name for f in obj.DESCRIPTOR.fields]
