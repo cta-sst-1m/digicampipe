@@ -31,39 +31,35 @@ def gain_drop(nsb_rate, cell_capacitance=85. * 1E-15, bias_resistance=10. * 1E3)
     return 1. / (1. + nsb_rate * cell_capacitance * bias_resistance * 1E9)
 
 
-# spline_std_gain_drop = splrep(std, gain_drop(nsb_rate))
-spline_mean_gain_drop = splrep(baseline_shift, gain_drop(nsb_rate))
-# spline_std_nsb_rate = splrep(std, nsb_rate)
+gain_drop_array=gain_drop(nsb_rate)
+spline_mean_gain_drop = splrep(baseline_shift, gain_drop_array)
 spline_mean_nsb_rate = splrep(baseline_shift, nsb_rate)
+
+order_std=np.argsort(std)
+spline_std_gain_drop = splrep(std[order_std], gain_drop_array[order_std])
+spline_std_nsb_rate = splrep(std[order_std], nsb_rate[order_std])
 
 
 def compute_gain_drop(pedestal, type='mean'):
-
     if type == 'mean':
-
         return splev(pedestal, spline_mean_gain_drop)
+    elif type == 'std':
+        return splev(pedestal, spline_std_gain_drop)
     else:
         raise('Unknown type %s' % type)
-
 
 def compute_nsb_rate(pedestal, type='mean'):
-
     if type == 'mean':
-
         return splev(pedestal, spline_mean_nsb_rate)
-
+    elif type == 'std':
+        return splev(pedestal, spline_std_nsb_rate)
     else:
-
         raise('Unknown type %s' % type)
 
-
 def get_gains():
-
     return np.ones(1296) * 23. # TODO, replace gain of 23 by calib array of gain
 
-
 if __name__ == '__main__':
-
     import matplotlib.pyplot as plt
 
     data = np.load('true_mean_std_nsb.npz')

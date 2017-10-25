@@ -1,9 +1,13 @@
 from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
+from digicampipe.io.save_external_triggers import save_external_triggers
 from cts_core.camera import Camera
 from digicampipe.utils import geometry
 import numpy as np
 import matplotlib.pyplot as plt
+import astropy.units as u
+from digicampipe.visualization import mpl
+import pandas as pd
 
 
 if __name__ == '__main__':
@@ -15,77 +19,137 @@ if __name__ == '__main__':
     camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     dark_baseline = np.load(directory + 'dark.npz')
 
+    nsb_filename = 'nsb.npz'
+
     digicam = Camera(_config_file=camera_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
+    pixel_list = np.arange(1296)
+
     # Trigger configuration
     unwanted_patch = None
-
-    """
-    # Integration configuration
-    time_integration_options = {'mask': None,
-                                'mask_edges': None,
-                                'peak': None,
-                                'window_start': 3,
-                                'window_width': 7,
-                                'threshold_saturation': 3500,
-                                'n_samples': 50,
-                                'timing_width': 6,
-                                'central_sample': 11}
-
-    peak_position = utils.fake_timing_hist(time_integration_options['n_samples'], 
-                                           time_integration_options['timing_width'],
-                                           time_integration_options['central_sample'])
-    
-    temp = utils.generate_timing_mask(time_integration_options['window_start'], 
-                                      time_integration_options['window_width'],
-                                      peak_position)
-    
-    time_integration_options['peak'], time_integration_options['mask'], time_integration_options['mask_edges'] = temp
-
-    """
 
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry)
     # Fill the flags (to be replaced by Digicam)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=1050)
     # Fill the baseline (to be replaced by Digicam)
+
+    data_stream = filter.filter_missing_baseline(data_stream)
+
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
 
-    pixel_list = [0]
+    data_stream = filter.filter_period(data_stream, period=10*u.second)
 
-    next(data_stream)
+    # save_external_triggers(data_stream, output_filename=directory + nsb_filename, pixel_list=pixel_list)
 
-    # save_external_triggers.save_external_triggers(data_stream, output_filename=directory + 'nsb.npz', pixel_list=pixel_list)
+    data = np.load(directory + nsb_filename)
 
-    data = np.load(directory + 'nsb.npz')
+
 
     plt.figure()
-    plt.plot(data['time_stamp'])
+    plt.hist(data['baseline_dark'].ravel(), bins='auto', label='dark')
+    plt.hist(data['baseline'].ravel(), bins='auto', label='nsb')
+    plt.hist(data['baseline_shift'].ravel(), bins='auto', label='shift')
+    plt.xlabel('baseline [LSB]')
+    plt.ylabel('count')
+    plt.legend()
 
-    pixel = 0
+    '''
 
-    for key in data.keys():
+    baseline_change = np.diff(data['baseline'], axis=0)/np.diff(data['time_stamp'] * 1E-9)[:, np.newaxis]
 
-        if key != 'time_stamp':
+    plt.figure()
+    plt.hist(baseline_change.ravel(), bins='auto', label='pixel + time')
+    plt.xlabel('dB/dt [LSB $\cdot$ s$^{-1}$ ]')
+    plt.ylabel('count')
+    plt.legend()
 
-            plt.figure()
-            plt.plot(data['time_stamp'] - data['time_stamp'][0], data[key][:, pixel],
-                     label='pixel : {}'.format(pixel_list[pixel]))
-            plt.xlabel('t [ns]')
-            plt.ylabel(key)
-            plt.legend()
+    baseline_max_min = np.max(data['baseline'], axis=0) - np.min(data['baseline'], axis=0)
 
-            var = data[key][..., pixel]
-            mask = ~np.isnan(var)
+    plt.figure()
+    plt.hist(baseline_max_min, bins='auto', label='pixel')
+    plt.xlabel('$B_{max} - B_{min}$ [LSB]')
+    plt.ylabel('count')
+    plt.legend()
 
-            plt.figure()
-            plt.hist(var[mask], bins='auto')
-            plt.xlabel(key)
+    baseline_max_dark = np.max(data['baseline'], axis=0) - np.mean(data['baseline_dark'], axis=0)
 
+    plt.figure()
+    plt.hist(baseline_max_dark.ravel(), bins='auto', label='pixel')
+    plt.xlabel('$B_{max} - B_{dark}$ [LSB]')
+    plt.ylabel('count')
+    plt.legend()
+
+    plt.figure()
+    plt.hist(data['baseline_std'].ravel(), bins='auto', label='pixel + time')
+    plt.xlabel('baseline std [LSB]')
+    plt.ylabel('count')
+    plt.legend()
+
+    '''
+    sectors = [1, 3]
+    pixel_not_in_intersil = [pixel.ID for pixel in digicam.Pixels if pixel.sector in sectors]
+
+    print(len(pixel_not_in_intersil))
+
+    x = data['nsb_rate'].T[pixel_not_in_intersil]
+
+    x = np.mean(x, axis=-1)
+
+    indices_to_keep = np.where(x > 0)
+    x = x[indices_to_keep[0]]
+
+    temp = np.where(((data['baseline_shift'].T <= 0) + (data['baseline_shift'].T >= 80)) > 0)
+    print(temp[0].shape, temp[1].shape)
+
+    plt.figure()
+    plt.hist(temp[0], bins=np.arange(0, 1296, 1))
+
+    plt.figure()
+    plt.hist(x.ravel(), bins='auto', label='sector : {} \n mean : {:0.2f} \n std : {:0.2f}'.format(sectors, np.mean(x), np.std(x)))
+    plt.legend()
+    plt.xlabel('$f_{nsb} [GHz]$')
+    plt.show()
+
+    mask = (baseline_max_min < 25) * (baseline_max_min > 0)
+    mask = mask * (baseline_max_dark > 55) * (baseline_max_dark < 60)
+    mask = mask[:, np.newaxis].T * np.abs(baseline_change) < 0.4
+    mask = mask * (data['baseline_shift'][:-1] > 30) * (data['baseline_shift'][:-1] < 80)
+    x = data['nsb_rate'][:-1]
+
+    x = np.ma.array(x, mask=~mask)
+    x = np.mean(x, axis=0)
+    x = x[np.all(mask, axis=0)]
+
+    #mask = np.all(mask, axis=0)
+    #print(mask.shape)
+    #x = x[:, mask]
+    #print(x.shape)
+
+    plt.figure()
+    plt.hist(x, bins='auto', label='mean : {:.2f}, std : {:.2f}'.format(np.mean(x), np.std(x)))
+    plt.xlabel('$f_{nsb}$ [GHz]')
+    plt.ylabel('count')
+    plt.legend()
+    plt.show()
+
+    plt.figure()
+    plt.hist(data['nsb_rate'][(data['nsb_rate'] > 0.5) * (data['nsb_rate'] < 1.8)].ravel() * 1E3, bins='auto', label='all pixels')
+    plt.xlabel('$f_{nsb}$ [MHz]')
+    plt.ylabel('count')
+    plt.legend()
+
+    x = np.mean(data['nsb_rate'], axis=0)
+    x = x[(x > 0.5) * (x < 1.8)]
+    plt.figure()
+    plt.hist(x, bins='auto', label='mean : {:.2f}, std : {:.2f}'.format(np.mean(x), np.std(x)))
+    plt.xlabel('$f_{nsb}$ [GHz]')
+    plt.ylabel('count')
+    plt.legend()
     plt.show()
 
 
-    ## Filter the events for display
+

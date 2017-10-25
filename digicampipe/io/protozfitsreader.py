@@ -154,6 +154,7 @@ class ZFile(object):
 
     def _read_message(self):
         # Read next message. Fills property self.rawmessage and self.numrows
+
         self.rawmessage = rawzfitsreader.readEvent()
         self.numrows = rawzfitsreader.getNumRows()
 
@@ -198,6 +199,7 @@ class ZFile(object):
         # read an event. Assume it is a camera event
         # C++ return a serialized string, python protobuf rebuild message from serial string
         import L0_pb2
+
         try:
             assert (self.ttype == "Events")
         except:
@@ -209,6 +211,7 @@ class ZFile(object):
 
         # print("Reading event number %d" %self.eventnumber)
         self._read_message()
+
         self.event = L0_pb2.CameraEvent()
         self.event.ParseFromString(self.rawmessage)
         # self.print_listof_fields(self.event)
@@ -225,7 +228,6 @@ class ZFile(object):
         if hasattr(self, 'numrows'):
             numrows = self.numrows
         # End - Hook to deal with file with no header (1)
-
         while i < numrows:
             self.read_event()
             # Hook to deal with file with no header (2)
@@ -248,36 +250,64 @@ class ZFile(object):
 
     def get_telescope_id(self):
 
-        return (self._get_numpyfield(self.event.telescopeID))
+        return self.event.telescopeID
 
     def get_event_number(self):
 
         return self.event.eventNumber
 
     def get_run_id(self):
+
         return (self._get_numpyfield(self.header.runNumber))
 
     def get_central_event_gps_time(self):
-        timeSec = self.event.trig.timeSec
-        timeNanoSec = self.event.trig.timeNanoSec
-        return (timeSec, timeNanoSec)
+
+        time_second = self.event.trig.timeSec
+        time_nanosecond = self.event.trig.timeNanoSec
+        return time_second * 1E9 + time_nanosecond
 
     def get_local_time(self):
-        timeSec = self.event.local_time_sec
-        timeNanoSec = self.event.local_time_nanosec
-        return (timeSec, timeNanoSec)
+
+        time_second = self.event.local_time_sec
+        time_nanosecond = self.event.local_time_nanosec
+
+        return time_second * 1E9 + time_nanosecond
+
+    def get_baseline(self):
+        """
+        Get the baselines for all channels
+        :return: dict() of baselines (value) per pixel indices (key)
+        """
+        waveforms = self.event.hiGain.waveforms
+
+        try:
+            baselines = self._get_numpyfield(waveforms.baselines)
+
+        except:
+
+            n_pixels = self._get_numpyfield(waveforms.pixelsIndices).shape[0]
+            baselines = numpy.zeros(n_pixels) * numpy.nan
+
+        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        properties = numpy.array(list(dict(zip(pixels, baselines)).values()))
+
+        return properties
 
     def get_event_number_array(self):
-        return (self._get_numpyfield(self.event.arrayEvtNum))
 
-    def get_event_type(self):
+        return self._get_numpyfield(self.event.arrayEvtNum)
+
+    def get_camera_event_type(self):
+
         return self.event.event_type
 
-    def get_eventType(self):
+    def get_array_event_type(self):
+
         return self.event.eventType
 
     def get_num_channels(self):
-        return (self._get_numpyfield(self.event.head.numGainChannels))
+
+        return self._get_numpyfield(self.event.head.numGainChannels)
 
     def _get_adc(self, channel, telescope_id=None):
         # Expect hi/lo -> Will append Gain at the end -> hiGain/loGain
@@ -285,49 +315,13 @@ class ZFile(object):
         return (sel_channel)
 
     def get_pixel_position(self, telescope_id=None):
-        # TODO: Not implemented yet
-        return (None)
+
+        return None
 
     def get_number_of_pixels(self, telescope_id=None):
-        # TODO: Not implemented yet
-        return (None)
 
-    def get_adc_sum(self, channel, telescope_id=None):
-        sel_channel = self._get_adc(channel, telescope_id)
-        integrals = sel_channel.integrals
-
-        nsamples = self._get_numpyfield(integrals.num_samples)
-        pixelsIndices = self._get_numpyfield(integrals.pixelsIndices)
-
-        # Structured array (dict of dicts)
-        properties = dict()
-        for par in ["gains", "maximumTimes", "raiseTimes", "tailTimes", "firstSplIdx"]:
-            properties[par] = dict(zip(pixelIndices, self._get_numpyfield(_extract_field(par))))
-        return (properties)
-
-    def get_adc_samples(self, channel, telescope_id=None):
-        sel_channel = self._get_adc(channel, telescope_id)
-        waveforms = sel_channel.waveforms
-        samples = self._get_numpyfield(waveforms.samples)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
-        npixels = len(pixels)
-        # Structured array (dict)
-        samples = samples.reshape(npixels, -1)
-        properties = dict(zip(pixels, samples))
-
-        return (properties)
-
-    def get_adcs_samples_remapped(self, telescope_id=None):
-
-        waveforms = self.event.hiGain.waveforms
-        samples = self._get_numpyfield(waveforms.samples)
-        pixels = pixel_remap
-        npixels = len(pixels)
-        # Structured array (dict)
-        samples = samples.reshape(npixels, -1)
-        properties = dict(zip(pixels, samples))
-
-        return (properties)
+        n_pixels = self._get_numpyfield(self.event.hiGain.waveforms.pixelsIndices).shape[0]
+        return n_pixels
 
     def get_adcs_samples(self, telescope_id=None):
         """
@@ -342,8 +336,16 @@ class ZFile(object):
         npixels = len(pixels)
         # Structured array (dict)
         samples = samples.reshape(npixels, -1)
-        properties = dict(zip(pixels, samples))
-        return (properties)
+        properties = numpy.array(list(dict(zip(pixels, samples)).values()))
+        return properties
+
+    def get_num_samples(self):
+
+        waveforms = self.event.hiGain.waveforms
+        samples = self._get_numpyfield(waveforms.samples)
+        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+
+        return samples.shape[0] // pixels.shape[0]
 
     def get_trigger_input_traces(self, telescope_id=None):
         '''
@@ -359,8 +361,9 @@ class ZFile(object):
         frames = frames[..., :144]
         frames = frames.reshape(frames.shape[0], frames.shape[1]*frames.shape[2])
         frames = frames.T
+        frames = numpy.array(list(dict(zip(self.patch_id_input, frames)).values()))
 
-        return dict(zip(self.patch_id_input, frames))
+        return frames
 
     def get_trigger_output_patch7(self, telescope_id=None):
         '''
@@ -378,7 +381,9 @@ class ZFile(object):
         patches = self.patch_id_output
         properties = dict(zip(patches, frames))
 
-        return properties
+        frames = numpy.array(list(properties.values()))
+
+        return frames
 
     def get_trigger_output_patch19(self, telescope_id=None):
         '''
@@ -392,8 +397,9 @@ class ZFile(object):
         frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,144).reshape(n_samples, 432).T
         patches = self.patch_id_output
         properties = dict(zip(patches, frames))
+        properties = numpy.array(list(properties.values()))
 
-        return (properties)
+        return properties
 
     def get_pixel_flags(self, telescope_id=None):
         '''
@@ -405,9 +411,8 @@ class ZFile(object):
         flags = self._get_numpyfield(self.event.pixels_flags)
         pixels = self._get_numpyfield(waveforms.pixelsIndices)
         npixels = len(pixels)
-        # Structured array (dict)
-        properties = dict(zip(pixels, flags))
-        return (properties)
+        properties = numpy.array(list(dict(zip(pixels, flags)).values()), dtype=bool)
+        return properties
 
     def print_listof_fields(self, obj):
         fields = [f.name for f in obj.DESCRIPTOR.fields]
