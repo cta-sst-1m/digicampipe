@@ -24,7 +24,7 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
             dl1_camera.cleaning_mask = np.any(mask_for_cleaning, axis=-1)
             # dl1_camera.cleaning_mask *= (r1_camera.nsb < 5.) * (r1_camera.nsb > 0)
 
-            adc_samples[~dl1_camera.cleaning_mask] = 0.
+            adc_samples[~dl1_camera.cleaning_mask] = 0
 
             gain_init = calib.get_gains()
             gain = gain_init # * r1_camera.gain_drop

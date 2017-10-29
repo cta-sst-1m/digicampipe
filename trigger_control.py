@@ -8,6 +8,7 @@ from digicampipe.utils import geometry
 import matplotlib.pyplot as plt
 import numpy as np
 import utils.histogram as histogram
+from digicampipe.utils import utils
 
 from optparse import OptionParser
 
@@ -81,6 +82,21 @@ if __name__ == '__main__':
         cluster_19_histogram = histogram.Histogram(filename=directory + cluster_19_histogram_filename)
         trigger = np.load(directory + trigger_filename)
 
+        moments_pixel = utils.compute_moments(pixel_histogram.bin_centers, pixel_histogram.data)
+        moments_patch = utils.compute_moments(patch_histogram.bin_centers, patch_histogram.data)
+        moments_cluster_7 = utils.compute_moments(cluster_7_histogram.bin_centers, cluster_7_histogram.data)
+        moments_cluster_19 = utils.compute_moments(cluster_19_histogram.bin_centers, cluster_19_histogram.data)
+
+        np.savez('test.npz', **moments_pixel)
+        mask = ~np.isnan(moments_pixel['mean'] * moments_pixel['std'] * moments_pixel['skewness'] * moments_pixel['kurtosis'])
+        plt.figure()
+        plt.hist(moments_pixel['mean'][mask], label='mean', bins='auto')
+        plt.hist(moments_pixel['std'][mask], label='std', bins='auto')
+        plt.hist(moments_pixel['skewness'][mask], label='skewness', bins='auto')
+        plt.hist(moments_pixel['kurtosis'][mask], label='kurtosis', bins='auto')
+        plt.legend()
+        plt.show()
+
         directory = directory + 'figures/'
 
         for i in range(trigger['threshold'].shape[0]):
@@ -116,12 +132,11 @@ if __name__ == '__main__':
             fig = plt.figure()
             axis = fig.add_subplot(111)
             mask = pixel_histogram.data[i] > 0
-            mean = np.average(pixel_histogram.bin_centers, weights=pixel_histogram.data[i])
-            std = np.average((pixel_histogram.bin_centers - mean)**2, weights=pixel_histogram.data[i])
-            std = np.sqrt(std)
-            skewness = np.average(((pixel_histogram.bin_centers - mean)/std)**3, weights=pixel_histogram.data[i])
-            kurtosis = np.average(((pixel_histogram.bin_centers - mean)/std)**4, weights=pixel_histogram.data[i])
-            n_entries = np.sum(pixel_histogram.data[i][mask])
+            mean = moments_pixel['mean'][i]
+            std = moments_pixel['std'][i]
+            skewness = moments_pixel['skewness'][i]
+            kurtosis = moments_pixel['kurtosis'][i]
+            n_entries = moments_pixel['n_entries'][i]
             label = ' pixel : {}\n mean : {:0.2f} [LSB]\n std : {:0.2f} [LSB]\n skewness : {:0.2f} []\n kurtosis : {:0.2f} []\n entries : {}'.format(
                 i, mean, std, skewness, kurtosis, n_entries)
             axis.step(pixel_histogram.bin_centers[mask], pixel_histogram.data[i][mask], label=label, where='mid')
@@ -129,6 +144,8 @@ if __name__ == '__main__':
             axis.legend()
             fig.savefig(directory + 'pixel_{}.svg'.format(i))
             plt.close()
+
+        0/0
 
         for i in range(patch_histogram.data.shape[0]):
 

@@ -4,6 +4,23 @@ import scipy.ndimage as ndimage
 # Define the integration function
 
 
+def compute_moments(bins, count):
+
+    n_entries = np.sum(count, axis=-1)
+    count = count / n_entries[..., np.newaxis]
+    mean = np.sum(count * bins, axis=-1)
+    x = bins - mean[..., np.newaxis]
+    std = np.sum(x**2 * count, axis=-1)
+    std = np.sqrt(std)
+    x = x / std[..., np.newaxis]
+    skewness = np.sum(x**3 * count, axis=-1)
+    kurtosis = np.sum(x**4 * count, axis=-1)
+
+    moments = {'mean': mean, 'std': std, 'skewness': skewness, 'kurtosis': kurtosis ,'n_entries': n_entries}
+
+    return moments
+
+
 def integrate(data, window_width):
     """
     Simple integration function over N samples
