@@ -16,8 +16,10 @@ def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_even
         for event in data_stream:
             yield event
 
+
 from astropy.io import fits
 import numpy as np
+
 
 def add_slow_data(event_stream,slowcontrol_file_list):
     slow_control_structs=[]
