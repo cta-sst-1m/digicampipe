@@ -1,5 +1,6 @@
 from digicampipe.io import zfits, hdf5
 
+
 def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_events=None, mc=False):
     for file in file_list:
         if not mc:
