@@ -1,5 +1,6 @@
 from digicampipe.io import zfits, hdf5
 
+
 def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_events=None, mc=False):
     for file in file_list:
         if not mc:
@@ -19,6 +20,7 @@ def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_even
 
 from astropy.io import fits
 import numpy as np
+
 
 def add_slow_data(event_stream,slowcontrol_file_list):
     slow_control_structs=[]
