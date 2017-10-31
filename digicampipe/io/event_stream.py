@@ -1,6 +1,5 @@
 from digicampipe.io import zfits, hdf5
 
-
 def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_events=None, mc=False):
     for file in file_list:
         if not mc:
@@ -17,15 +16,84 @@ def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_even
         for event in data_stream:
             yield event
 
-"""
-def add_slow_data(event_stream,slowcontrol_file_list):
+from astropy.io import fits
+import numpy as np
 
+def add_slow_data(event_stream,slowcontrol_file_list):
     slow_control_structs=[]
-    slow_control={}
+    #get basic information from slow data (min and max timestamp, data location)
     for file in slowcontrol_file_list:
-        slow_control['ts_min']=0
-        slow_control['ts_max']=1
+        slow_control = {}
+        hdulist = fits.open(file)
+        nslow_event=hdulist[1].data['timestamp'].shape[0]
+        first_slow_event = 0
+        last_slow_event = nslow_event - 1
+        while hdulist[1].data['timestamp'][first_slow_event] == 0:
+            first_slow_event += 1
+            if first_slow_event == last_slow_event:
+                break
+        slow_control['ts_min'] = hdulist[1].data['timestamp'][first_slow_event]
+        if first_slow_event == last_slow_event:
+            slow_control['ts_max'] = slow_control['ts_min']
+        else:
+            while hdulist[1].data['timestamp'][last_slow_event] == 0:
+                last_slow_event -= 1
+                if last_slow_event == 0:
+                    break
+            slow_control['ts_max'] = hdulist[1].data['timestamp'][last_slow_event]
+        slow_control['hdu'] = hdulist[1]
+        slow_control['timestamps'] = []
+        slow_control['events'] = []
         slow_control_structs.append(slow_control)
-        hdulist = fits.open('DigicamSlowControl_20171030_011.fits')
+    # now for each events look for the lastest slowdata with ts_slow<=ts_event
+    current_slow_data_file = 0
+    current_slow_data_file_event = 0
     for event in event_stream:
-"""
+        if len(event.r0.tels_with_data) == 0:
+            continue
+        telescope_id=event.r0.tels_with_data[0]
+        data_ts=event.r0.tel[telescope_id].local_camera_clock*1e-6
+        while not (slow_control_structs[current_slow_data_file]['ts_min']<data_ts and slow_control_structs[current_slow_data_file]['ts_max']>data_ts):
+            print(slow_control_structs[current_slow_data_file]['ts_min'],data_ts,slow_control_structs[current_slow_data_file]['ts_max'])
+            current_slow_data_file+=1
+            current_slow_data_file_event = 0
+            if current_slow_data_file == len(slow_control_structs):
+                break
+        if current_slow_data_file == len(slow_control_structs):
+            print("WARNING: slow data file not found")
+            yield event
+        else:
+            #"lazy" get of the the timestamps in slowdata
+            if len(slow_control_structs[current_slow_data_file]['timestamps']) == 0:
+                ts=slow_control_structs[current_slow_data_file]['hdu'].data['timestamp']
+                good = ts != 0
+                events =np.arange(len(ts))
+                slow_control_structs[current_slow_data_file]['timestamps']=ts[good]
+                slow_control_structs[current_slow_data_file]['events']=events[good]
+            #look for the last slow data with a timestamp <= event ts
+            ts=slow_control_structs[current_slow_data_file]['timestamps'][current_slow_data_file_event:]
+            ts_ge_datats = ts <= data_ts
+            if sum(ts_ge_datats)==0:
+                slow_event=slow_control_structs[current_slow_data_file]['events'][-1]
+            else:
+                slow_event=slow_control_structs[current_slow_data_file]['events'][ts<=data_ts][-1]
+            hdu=slow_control_structs[current_slow_data_file]['hdu']
+            #fill container
+            event.slowdata.slow_control.timestamp = hdu.data['timestamp'][slow_event]
+            event.slowdata.slow_control.trigger_timestamp = hdu.data['trigger_timestamp'][slow_event]
+            event.slowdata.slow_control.absolute_time = hdu.data['AbsoluteTime'][slow_event]
+            event.slowdata.slow_control.local_time = hdu.data['LocalTime'][slow_event]
+            event.slowdata.slow_control.opcua_time = hdu.data['opcuaTime'][slow_event]
+            event.slowdata.slow_control.crates = hdu.data['Crates'][slow_event]
+            event.slowdata.slow_control.crate1_timestamps = hdu.data['Crate1_timestamps'][slow_event]
+            event.slowdata.slow_control.crate1_status = hdu.data['Crate1_status'][slow_event]
+            event.slowdata.slow_control.crate1_temperature = hdu.data['Crate1_T'][slow_event]
+            event.slowdata.slow_control.crate2_timestamps = hdu.data['Crate2_timestamps'][slow_event]
+            event.slowdata.slow_control.crate2_status = hdu.data['Crate2_status'][slow_event]
+            event.slowdata.slow_control.crate2_temperature =  hdu.data['Crate2_T'][slow_event]
+            event.slowdata.slow_control.crate3_timestamps =  hdu.data['Crate3_timestamps'][slow_event]
+            event.slowdata.slow_control.crate3_status =  hdu.data['Crate3_status'][slow_event]
+            event.slowdata.slow_control.crate3_temperature =  hdu.data['Crate3_T'][slow_event]
+            event.slowdata.slow_control.cst_switches =  hdu.data['cstSwitches'][slow_event]
+            event.slowdata.slow_control.cst_parameters =  hdu.data['cstParameters'][slow_event]
+            yield event
