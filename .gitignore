@@ -116,3 +116,6 @@ venv.bak/
 
 # Baobab slurm script
 job.sh
+
+#some data
+/data/
