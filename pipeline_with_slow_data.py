@@ -12,85 +12,33 @@ import astropy.units as u
 from optparse import OptionParser
 
 if __name__ == '__main__':
-
-
     parser = OptionParser()
-    parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='/sst1m/raw/2017/10/30/SST1M01/')
-    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
-    parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
-                      default=False)
-    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=19, type=int)
-    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=91, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
                       , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
     (options, args) = parser.parse_args()
-    do_display = options.display  # interactive mode
-
     # Input/Output files
-    directory = options.directory
-    filename = directory + 'SST1M01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
+    slowcontrol_file_list = ['./data/DigicamSlowControl_20171030_011.fits']
+    file_list = ['./data/SST1M01_0_000.090.fits.fz']
+    #slowcontrol_file_list=['/mnt/sst1m_data/aux/2017/10/30/SST1M_01/DigicamSlowControl_20171030_%03d.fits' % number for number in range(11 + 1)]
+    #filename = options.directory + 'SST1M01_0_000.%03d.fits.fz'
+    #file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
-    hillas_filename = options.output
-
-    slowcontrol_file_list=['/mnt/sst1m_data/aux/2017/10/30/SST1M_01/DigicamSlowControl_20171030_%03d.fits' % number for number in range(11 + 1)]
-
-    # Source coordinates (in camera frame)
-    source_x = 0. * u.mm
-    source_y = 0. * u.mm
-
     # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
-    digicam = Camera(_config_file=digicam_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam, source_x=source_x, source_y=source_y)
-
+    digicam = Camera(_config_file=options.camera_config_file)
+    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
     # Config for NSB + baseline evaluation
     n_bins = 1000
-
     # Config for Hillas parameters analysis
     n_showers = 100000000
     reclean = True
-
     # Noisy patch that triggered
-    unwanted_patch = None  # [306, 318, 330, 342] #[391, 392, 403, 404, 405, 416, 417]
-
+    unwanted_patch = None
     # Noisy pixels not taken into account in Hillas
     pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
-    additional_mask = np.ones(1296)
-    additional_mask[pixel_not_wanted] = 0
-    additional_mask = additional_mask > 0
-
-    # Integration configuration (signal reco.)
-    time_integration_options = {'mask': None,
-                                'mask_edges': None,
-                                'peak': None,
-                                'window_start': 3,
-                                'window_width': 7,
-                                'threshold_saturation': np.inf,
-                                'n_samples': 50,
-                                'timing_width': 6,
-                                'central_sample': 11}
-
-    peak_position = utils.fake_timing_hist(time_integration_options['n_samples'],
-                                           time_integration_options['timing_width'],
-                                           time_integration_options['central_sample'])
-
-    time_integration_options['peak'], time_integration_options['mask'], time_integration_options['mask_edges'] = \
-        utils.generate_timing_mask(time_integration_options['window_start'], time_integration_options['window_width'],
-                                   peak_position)
-
-    # Image cleaning configuration
-    picture_threshold = 15
-    boundary_threshold = 10
-    shower_distance = 200 * u.mm
-
-    # Filtering on big showers
-    min_photon = 20
 
     ####################
     ##### ANALYSIS #####
     ####################
-
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
     # Clean pixels
@@ -103,15 +51,31 @@ if __name__ == '__main__':
     data_stream = filter.filter_missing_baseline(data_stream)
 
     #add slow data
-    data_stream=add_slow_data(data_stream,slowcontrol_file_list)
+    data_stream = add_slow_data(data_stream, slowcontrol_file_list)
+    ts_slow = []
+    ts_data = []
+    diff = []
+    i = 0
+    for event in data_stream:
+        ts_slow.append(event.slowdata.slow_control.timestamp * 1e-3)
+        ts_data.append(event.r0.tel[1].local_camera_clock * 1e-9)
+        diff.append(ts_data[-1] - ts_slow[-1])
+        i += 1
+        if i == 100:
+            i=0
+            print(ts_slow[-1], ts_data[-1], diff[-1])
+    from matplotlib import pyplot as plt
 
-    if do_display:
+    plt.figure()
+    plt.subplot(2, 1, 1)
+    plt.plot(ts_slow, ts_data)
+    plt.subplot(2, 1, 2)
+    plt.plot(diff)
+    plt.show()
 
-        with plt.style.context('ggplot'):
-            display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
-            display.draw()
-            pass
-    else:
-        # Save the hillas parameters
-        # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
-        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
+"""
+    with plt.style.context('ggplot'):
+        display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
+        display.draw()
+        pass
+"""
