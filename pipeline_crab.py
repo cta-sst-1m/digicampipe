@@ -68,7 +68,7 @@ if __name__ == '__main__':
                                 'window_width': 7,
                                 'threshold_saturation': np.inf,
                                 'n_samples': 50,
-                                'timing_width': 6,
+                                'timing_width': 20, # 6 default
                                 'central_sample': 11}
 
     peak_position = utils.fake_timing_hist(time_integration_options['n_samples'],
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
-    min_photon = 20
+    min_photon = 10
 
     ####################
     ##### ANALYSIS #####
@@ -125,5 +125,5 @@ if __name__ == '__main__':
             pass
     else:
         # Save the hillas parameters
-        # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
-        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
+        save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+        # save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)

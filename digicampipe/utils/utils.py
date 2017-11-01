@@ -21,6 +21,16 @@ def compute_moments(bins, count):
     return moments
 
 
+def moving_average(data, n):
+
+    window = np.ones(n)
+    smoothed = ndimage.convolve1d(data, window, axis=-1, mode='reflect')
+    smoothed = smoothed / n
+    # mask = np.ones(data.shape[0]) * False
+    # mask[:smoothed.shape[0]] = True
+    return smoothed
+
+
 def integrate(data, window_width):
     """
     Simple integration function over N samples
@@ -105,7 +115,7 @@ def fake_timing_hist(n_samples,timing_width, central_sample):
     :return:
     """
     timing = np.zeros((1296,n_samples+1,),dtype=float)
-    timing[...,int(central_sample-timing_width):int(central_sample+timing_width)]=1.
+    timing[...,max(0, int(central_sample-timing_width)):min(int(central_sample+timing_width), n_samples+1)]=1.
     return timing
 
 

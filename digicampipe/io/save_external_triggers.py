@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 
 
-def save_external_triggers(data_stream, output_filename, n_events=None, pixel_list=[...]):
+def save_external_triggers(data_stream, output_filename, n_events=None, pixel_list=[...], yielding=False):
 
     baseline = []
     baseline_dark = []
@@ -31,6 +31,8 @@ def save_external_triggers(data_stream, output_filename, n_events=None, pixel_li
             nsb_rate.append(list(event.r1.tel[telescope_id].nsb[pixel_list]))
             gain_drop.append(list(event.r1.tel[telescope_id].gain_drop[pixel_list]))
             time_stamp.append(event.r0.tel[telescope_id].local_camera_clock)
+        if yielding:
+            yield event
 
     np.savez(output_filename,
              baseline=np.array(baseline),
