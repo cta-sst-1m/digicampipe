@@ -5,6 +5,7 @@ Utilities for reading or working with Camera geometry files
 import logging
 
 import numpy as np
+import matplotlib.pyplot as plt
 from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.table import Table
@@ -73,12 +74,94 @@ class CameraCalibration:
 
         self.lut_baseline_shift -= 500.0
 
-        self.spline_gain_drop = splrep(self.lut_baseline_shiftbaseline_shift, self.gain_drop(self.lut_nsb_rate))
-        self.spline_nsb_rate = splrep(self.lut_baseline_shiftbaseline_shift, self.lut_nsb_rate)
+        #AttributeError: 'CameraCalibration' object has no attribute 'lut_baseline_shiftbaseline_shift'
+        #self.spline_gain_drop = splrep(self.lut_baseline_shiftbaseline_shift, self.gain_drop(self.lut_nsb_rate))
+        #self.spline_nsb_rate = splrep(self.lut_baseline_shiftbaseline_shift, self.lut_nsb_rate)
 
     def gain_drop(self, nsb_rate):
 
         return 1. / (1. + nsb_rate * self.cell_capacitance * self.bias_resistance * 1E9)
+
+    def overvoltage_drop(self, overvoltage=2.8, fnsb=0.0):
+        # Drop of overvoltage due to NSB
+        #overvoltage in volts
+        #fnsb if GHz
+
+        fnsb = fnsb*1.e9
+        return overvoltage*(1. - 1./(1 + self.bias_resistance*fnsb*self.cell_capacitance))
+
+    def p_xt(self, overvoltage=2.8, fnsb=0.0):
+        # optical cross-talk calculation at a given overvoltage and nsb
+        # p0 - slope of a an average geiger probability for photons generated due to hot carrier phenomena
+        # p1 = Cucell * Nhny/e, where Cucell - micro-cell capacitance (85 fF), e - electron charge, Nhny - an average number of photons generated due to hot carrier phenomena
+        # p0 = 0.139822
+        # p1 = 7.22578
+
+        #read fit parameters:
+        filename = '/Users/nagai/ctasoft/digicampipe/digicampipe/parametersPxt.txt'
+        param, param_err = np.loadtxt(filename, unpack=True, skiprows=0)
+
+        # calculate an effective overvoltage due to NSB
+        overvoltage = overvoltage - self.overvoltage_drop(overvoltage, fnsb)
+
+        return 0.01*param[1] * overvoltage * (1. - np.exp(-param[0] * overvoltage))
+
+    def pde_slope(self, wavelength, param):
+        # pde_slope     - slope of Geiger triggering probability Pgeiger, define how fast PDE and Pgeiger rises with overvoltage
+        # p0, p1, p2 - polinominial parametrization of pde_slope vs. wavelength
+        return param[0] + param[1] * wavelength + param[2] * wavelength * wavelength
+
+    def pde_max(self, wavelength, param):
+        # pde_max       - pde vs. wavelenght at saturation overvoltage
+        # p0, p1, p2    - parametrization of PDE @ [260nm, 370nm)
+        # p3, p4, p5    - parametrization of PDE @ [370nm, 570nm)
+        # p6, p7, p8    - parametrization of PDE @ [570nm, 800nm)
+        # p9, p10, p11  - parametrization of PDE @ [800nm, 1200nm)
+
+        if (260 <= wavelength) and (wavelength < 370):
+            return param[0] + param[1] * wavelength + param[2] * wavelength * wavelength
+        elif (370 <= wavelength) and (wavelength < 600):
+            return param[3] + param[4] * wavelength + param[5] * wavelength * wavelength
+        elif 600 <= wavelength < 800:
+            return param[6] + param[7] * wavelength + param[8] * wavelength * wavelength
+        elif 800 <= wavelength < 1200:
+            return param[9] + param[10] * wavelength + param[11] * wavelength * wavelength
+        elif wavelength >= 1200:
+            return 0
+
+    def pde(self, wavelength, overvoltage=2.8, fnsb=0.0):
+        # Photon Detection Efficency calculation at a given wavelength, overvoltage and NSB
+        # pde_max       - pde vs. wavelenght at saturation overvoltage
+        # pde_slope     - slope of Geiger triggering probability Pgeiger, define how fast PDE and Pgeiger rises with overvoltage
+        # p0, p1, p2    - parametrization of PDE @ [260nm, 370nm)
+        # p3, p4, p5    - parametrization of PDE @ [370nm, 570nm)
+        # p6, p7, p8    - parametrization of PDE @ [570nm, 800nm)
+        # p9, p10, p11  - parametrization of PDE @ [800nm, 1200nm)
+        # p12, p13, p14 - polinominial parametrization of pde_slope vs. wavelength
+
+        # p0 = -1.29693e+00
+        # p1 = 8.27659e-03
+        # p2 = -1.02035e-05
+        # p3 = -1.89539e+00
+        # p4 = 9.78309e-03
+        # p5 = -9.97473e-06
+        # p6 = 1.25334e+00
+        # p7 = -1.53717e-03
+        # p8 = 1.96296e-07
+        # p9 = 2.09973e+00
+        # p10 = -3.90231e-03
+        # p11 = 1.82918e-06
+        # p12 = 4.96106e-01
+        # p13 = -4.65596e-05
+        # p14 = -3.03291e-07
+
+        # calculate an effective overvoltage due to NSB
+        overvoltage = overvoltage - self.overvoltage_drop(overvoltage, fnsb)
+
+        filename = '/Users/nagai/ctasoft/digicampipe/digicampipe/parametersPDE.txt'
+        param, param_err = np.loadtxt(filename, unpack=True, skiprows=0)
+
+        return self.pde_max(wavelength, param[0:12]) * (1 - np.exp(-self.pde_slope(wavelength, param[12:15]) * overvoltage))
 
     def gain(self, baseline_shift):
 
@@ -590,3 +673,48 @@ def _neighbor_list_to_matrix(neighbors):
             neigh2d[ipix, neighbor] = True
 
     return neigh2d
+
+if __name__ == '__main__':
+
+    cam_test = CameraCalibration(gain = 1, sigma_e = 0.01, xt= 0.06, charge_reconstruction_options = '', cell_capacitance=85. * 1E-15,
+                 bias_resistance=10. * 1E3)
+
+    print (cam_test.overvoltage_drop(2.8, 0.0))
+    print (cam_test.p_xt(2.8, 0.0))
+    print (cam_test.p_xt(2.8, 1.0))
+    print (cam_test.pde(460., 2.8, 0.0))
+    print (cam_test.pde(460., 2.8, 1.0))
+
+    wavelength = np.arange(260, 1000, 10)
+    overvoltage = 2.8*np.ones( wavelength.shape )
+    pde_results = np.zeros(len(wavelength))
+
+    for x in range(0, len(wavelength)):
+        pde_results[x] = cam_test.pde(wavelength[x], overvoltage[x], 0.0)
+
+    plt.figure(1)
+
+    plt.plot(wavelength, pde_results)
+    plt.yscale('linear')
+    plt.title('PDE vs. wavelength')
+    plt.grid(True)
+    plt.xlim(wavelength[0]-10, wavelength[len(wavelength)-1]+10)
+
+    plt.show()
+
+    overvoltage_xt = np.arange(0.0, 7., 0.2)
+    pxt_results = np.zeros(len(overvoltage_xt))
+
+    for x in range(0, len(overvoltage_xt)):
+        pxt_results[x] = cam_test.p_xt(overvoltage_xt[x], 0.0)
+
+
+    plt.figure(2)
+
+    plt.plot(overvoltage_xt, pxt_results)
+    plt.yscale('linear')
+    plt.title('Pxt vs. Overvoltage')
+    plt.grid(True)
+    plt.xlim(0.0, 8.0)
+
+    plt.show()
