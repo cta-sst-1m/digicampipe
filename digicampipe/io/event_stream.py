@@ -46,39 +46,38 @@ def add_slow_data(event_stream,slowcontrol_file_list):
         slow_control['events'] = []
         slow_control_structs.append(slow_control)
     # now for each events look for the lastest slowdata with ts_slow<=ts_event
-    current_slow_data_file = 0
-    current_slow_data_file_event = 0
+    index_slow_file = 0
+    index_slow_event = 0
     for event in event_stream:
         if len(event.r0.tels_with_data) == 0:
             continue
         telescope_id=event.r0.tels_with_data[0]
         data_ts=event.r0.tel[telescope_id].local_camera_clock*1e-6
-        while not (slow_control_structs[current_slow_data_file]['ts_min']<data_ts and slow_control_structs[current_slow_data_file]['ts_max']>data_ts):
-            print(slow_control_structs[current_slow_data_file]['ts_min'],data_ts,slow_control_structs[current_slow_data_file]['ts_max'])
-            current_slow_data_file+=1
-            current_slow_data_file_event = 0
-            if current_slow_data_file == len(slow_control_structs):
+        while not (slow_control_structs[index_slow_file]['ts_min']<data_ts and slow_control_structs[index_slow_file]['ts_max']>data_ts):
+            index_slow_file+=1
+            index_slow_event = 0
+            if index_slow_file == len(slow_control_structs):
                 break
-        if current_slow_data_file == len(slow_control_structs):
+        if index_slow_file == len(slow_control_structs):
             print("WARNING: slow data file not found")
             yield event
         else:
-            #"lazy" get of the the timestamps in slowdata
-            if len(slow_control_structs[current_slow_data_file]['timestamps']) == 0:
-                ts=slow_control_structs[current_slow_data_file]['hdu'].data['timestamp']
+            # "lazy" get of the the timestamps in slowdata
+            if len(slow_control_structs[index_slow_file]['timestamps']) == 0:
+                ts=slow_control_structs[index_slow_file]['hdu'].data['timestamp']
                 good = ts != 0
                 events =np.arange(len(ts))
-                slow_control_structs[current_slow_data_file]['timestamps']=ts[good]
-                slow_control_structs[current_slow_data_file]['events']=events[good]
-            #look for the last slow data with a timestamp <= event ts
-            ts=slow_control_structs[current_slow_data_file]['timestamps'][current_slow_data_file_event:]
-            ts_ge_datats = ts <= data_ts
-            if sum(ts_ge_datats)==0:
-                slow_event=slow_control_structs[current_slow_data_file]['events'][-1]
-            else:
-                slow_event=slow_control_structs[current_slow_data_file]['events'][ts<=data_ts][-1]
-            hdu=slow_control_structs[current_slow_data_file]['hdu']
-            #fill container
+                slow_control_structs[index_slow_file]['timestamps']=ts[good]
+                slow_control_structs[index_slow_file]['events']=events[good]
+                nevent=len(slow_control_structs[index_slow_file]['events'])
+            # look for the last slow data with a timestamp <= event ts
+            ts=slow_control_structs[index_slow_file]['timestamps'][index_slow_event:]
+            while (index_slow_event < nevent - 1) and \
+                    (slow_control_structs[index_slow_file]['timestamps'][index_slow_event + 1] <= data_ts):
+                index_slow_event += 1
+            slow_event=slow_control_structs[index_slow_file]['events'][index_slow_event]
+            hdu=slow_control_structs[index_slow_file]['hdu']
+            # fill container
             event.slowdata.slow_control.timestamp = hdu.data['timestamp'][slow_event]
             event.slowdata.slow_control.trigger_timestamp = hdu.data['trigger_timestamp'][slow_event]
             event.slowdata.slow_control.absolute_time = hdu.data['AbsoluteTime'][slow_event]

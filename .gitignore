@@ -108,3 +108,7 @@ venv.bak/
 
 # Baobab slurm script
 job.sh
+
+# local data
+/data/
+
