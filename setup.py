@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 
 setup(
@@ -11,12 +11,13 @@ setup(
     author_email='cyril.alispach@gmail.com',
     long_description=open('README.md').read(),
     description='A package for DigiCam pipeline',
-    requires=[
+    install_requires=[
         'numpy',
         'matplotlib',
         'scipy',
-        'ctapipe',
         'astropy',
         'h5py',
     ],
+    tests_require=['pytest>=3.0.0'],
+    setup_requires=['pytest-runner'],
 )
