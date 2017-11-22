@@ -4,8 +4,8 @@ python:
 install:
   - sudo apt-get update
   - wget https://repo.continuum.io/archive/Anaconda3-5.0.0.1-Linux-x86_64.sh
-  - bash ./Anaconda3-5.0.0.1-Linux-x86_64.sh -b -p $HOME/anaconda
-  - export PATH="$HOME/anaconda/bin:$PATH"
+  - bash ./miniconda -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
@@ -19,6 +19,10 @@ install:
   # - conda install zeromq  ## this does not work, it installs libzmq.so.4 not libzmq.so.3 which is needed
   - sudo apt-get install libzmq3 libzmq3-dev
 
+  - echo "-----------------------"
+  - pwd
+  - ls -larth
+  - echo "-----------------------"
   - mkdir ctasoft
   - cd ctasoft
 
@@ -45,11 +49,5 @@ install:
   - pip install -e digicampipe
 
 script:
-  - pwd
-  - ls -larth
-  - ls digicampipe
-
-  - python digicampipe/tests/test_imports.py
-  - date
   - python digicampipe/pipeline_crab.py
 
