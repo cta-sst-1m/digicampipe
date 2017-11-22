@@ -1,0 +1,49 @@
+language: python
+python:
+  - "3.5"
+install:
+  - sudo apt-get update
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+  - conda create -n digicampipe python=3.5
+  - source activate digicampipe
+
+  - conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
+  - conda install matplotlib llvmlite hdf5 ipython h5py
+  # - conda install zeromq  ## this does not work, it installs libzmq.so.4 not libzmq.so.3 which is needed
+  - sudo apt-get install libzmq3 libzmq3-dev
+
+  - mkdir ctasoft
+  - cd ctasoft
+
+  - wget www.isdc.unige.ch/~lyard/repo/ProtoZFitsReader-0.41.Python3.5.Linux.x86_64.tar.gz
+  - pip install ProtoZFitsReader-0.41.Python3.5.Linux.x86_64.tar.gz
+  - export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.5/site-packages:$LD_LIBRARY_PATH
+
+  - git clone https://github.com/cta-observatory/pyhessio
+  - pip install -e pyhessio
+
+  - git clone https://github.com/calispac/ctapipe
+  - pip install -e ctapipe
+
+  - git clone https://github.com/calispac/ctapipe-extra
+  - pip install -e ctapipe-extra
+
+  - git clone https://github.com/cocov/CTS
+  - pip install -e CTS
+
+  - git clone https://github.com/calispac/digicamviewer
+  - pip install -e digicamviewer
+
+  - cd ..
+  - pip install -e .
+script:
+  - python tests/test_imports.py
+  # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
+
