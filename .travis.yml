@@ -34,16 +34,14 @@ install:
   - git clone https://github.com/calispac/ctapipe-extra
   - pip install -e ctapipe-extra
 
-  - git clone https://github.com/calispac/digicamviewer
-  - pip install -e digicamviewer
-
   - git clone https://github.com/cocov/CTS
   - pip install -e CTS
 
-  - cd
-  - ls -larth
-  - pip install -e .
+  - git clone https://github.com/calispac/digicamviewer
+  - pip install -e digicamviewer
 
+  - git clone https://github.com/calispac/digicampipe
+  - pip install -e digicampipe
 
 script:
-  - python tests/test_imports.py
+  - python digicampipe/tests/test_imports.py

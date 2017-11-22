@@ -50,14 +50,14 @@ This step involves a bit of manual work, but we are working on streamlining it.
     git clone https://github.com/calispac/ctapipe-extra
     pip install -e ctapipe-extra
 
+    git clone https://github.com/cocov/CTS
+    pip install -e CTS
+
     git clone https://github.com/calispac/digicamviewer
     pip install -e digicamviewer
 
     git clone https://github.com/calispac/digicampipe
     pip install -e digicampipe
-
-    git clone https://github.com/cocov/CTS
-    pip install -e CTS
 
 
 You can only run the software, if you have access to example input data. You have to ask somebody for this.
