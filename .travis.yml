@@ -40,7 +40,6 @@ install:
   - git clone https://github.com/cocov/CTS
   - pip install -e CTS
 
-install:
   - pip install -e .
 
 
