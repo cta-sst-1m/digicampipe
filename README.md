@@ -23,7 +23,7 @@ We propose to use the most recent version.
 ## install necessary libraries and packages for CTA software
 
     conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
-    conda install matplotlib llvmlite hdf5 ipython
+    conda install matplotlib llvmlite hdf5 ipython h5py
 
 ## Prepare a folder
 
