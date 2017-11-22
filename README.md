@@ -32,30 +32,7 @@ This step involves a bit of manual work, but we are working on streamlining it.
 
     wget www.isdc.unige.ch/~lyard/repo/ProtoZFitsReader-0.41.Python3.5.Linux.x86_64.tar.gz
     pip install ProtoZFitsReader-0.41.Python3.5.Linux.x86_64.tar.gz
-
-type
-
-    python -m site
-
-you'll get something similar to this:
-
-    (digicampipe) dneise@lair:~/ctasoft$ python -m site
-    sys.path = [
-        '/home/dneise/ctasoft',
-        '/home/dneise/anaconda36/envs/digicampipe/lib/python35.zip',
-        '/home/dneise/anaconda36/envs/digicampipe/lib/python3.5',
-        '/home/dneise/anaconda36/envs/digicampipe/lib/python3.5/plat-linux',
-        '/home/dneise/anaconda36/envs/digicampipe/lib/python3.5/lib-dynload',
-        '/home/dneise/.local/lib/python3.5/site-packages',
-        '/home/dneise/anaconda36/envs/digicampipe/lib/python3.5/site-packages',    <----- your envs site-packages
-    ]
-    USER_BASE: '/home/dneise/.local' (exists)
-    USER_SITE: '/home/dneise/.local/lib/python3.5/site-packages' (exists)
-    ENABLE_USER_SITE: True
-
-Note the `site-packages` folder of your environment. Add this folder to your LD_LIBRARY_PATH:
-
-    export LD_LIBRARY_PATH=$HOME/anaconda36/envs/digicampipe/lib/python3.5/site-packages:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.5/site-packages:$LD_LIBRARY_PATH
 
 
 ## Get a bunch of repos (and install in "editable" mode)
