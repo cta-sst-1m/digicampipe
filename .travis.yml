@@ -43,8 +43,6 @@ install:
 
   - cd ..
   - pip install -e .
-  - pwd
-  - ls -larth
 script:
   - python tests/test_imports.py
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
