@@ -45,3 +45,6 @@ install:
 
 script:
   - python digicampipe/tests/test_imports.py
+  - date
+  - python digicampipe/pipeline_crab.py
+
