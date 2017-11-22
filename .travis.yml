@@ -19,10 +19,6 @@ install:
   # - conda install zeromq  ## this does not work, it installs libzmq.so.4 not libzmq.so.3 which is needed
   - sudo apt-get install libzmq3 libzmq3-dev
 
-  - echo "-----------------------"
-  - pwd
-  - ls -larth
-  - echo "-----------------------"
   - mkdir ctasoft
   - cd ctasoft
 
@@ -45,9 +41,11 @@ install:
   - git clone https://github.com/calispac/digicamviewer
   - pip install -e digicamviewer
 
-  - git clone https://github.com/calispac/digicampipe
-  - pip install -e digicampipe
-
+  - cd ..
+  - pip install -e .
+  - pwd
+  - ls -larth
 script:
-  - python digicampipe/pipeline_crab.py
+  - python tests/test_imports.py
+  - python pipeline_crab.py
 
