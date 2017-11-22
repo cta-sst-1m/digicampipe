@@ -45,4 +45,4 @@ install:
 
 
 script:
-  - python setup.py test
+  - python pipeline_crab.py
