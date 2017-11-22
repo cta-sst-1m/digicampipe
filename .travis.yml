@@ -44,4 +44,4 @@ install:
 
 
 script:
-  - python pipeline_crab.py
+  - python tests/test_imports.py
