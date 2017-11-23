@@ -40,10 +40,16 @@ This step involves a bit of manual work, but we are working on streamlining it.
     git clone https://github.com/cta-observatory/pyhessio
     pip install -e pyhessio
 
-    git clone https://github.com/calispac/ctapipe
+    git clone https://github.com/cta-observatory/ctapipe
+    cd ctapipe
+    git checkout  fe9d87e
+    cd ..
     pip install -e ctapipe
 
-    git clone https://github.com/calispac/ctapipe-extra
+    git clone https://github.com/cta-observatory/ctapipe-extra
+    cd ctapipe-extra
+    git checkout  6d32ca1
+    cd ..
     pip install -e ctapipe-extra
 
     git clone https://github.com/cocov/CTS
