@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import utils.histogram as histogram
 from digicampipe.utils import utils
+from digicampipe.visualization import mpl as visualization
+from cts_core import camera
 
 from optparse import OptionParser
 
@@ -89,10 +91,80 @@ if __name__ == '__main__':
 
         np.savez('test.npz', **moments_pixel)
         mask = ~np.isnan(moments_pixel['mean'] * moments_pixel['std'] * moments_pixel['skewness'] * moments_pixel['kurtosis'])
+
+
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
+        geometry = geometry.generate_geometry_from_camera(camera=digicam)
+        camera_visu = visualization.CameraDisplay(geometry, ax=axis, title='Kurtosis', cmap='viridis', allow_pick=True, norm='log')
+        plt.axis('off')
+
+        # if limits_colormap is not None:
+        #    self.camera_visu.set_limits_minmax(limits_colormap[0], limits_colormap[1])
+
+        # camera_visu.image = moments_pixel['mean']
+        # plt.legend(loc='best')
+        # plt.show()
+
+        noisy_module = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
+
+        mask = np.isnan(moments_pixel['kurtosis'])
+        mask[noisy_module] = True
+        camera_visu.image = np.ma.masked_array(moments_pixel['kurtosis'], mask=mask)
+        camera_visu.cmap.set_bad('k')
+        camera_visu.add_colorbar(orientation='horizontal', pad=0.03, fraction=0.05, shrink=.85)
+
+
+
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
+        camera_visu = visualization.CameraDisplay(geometry, ax=axis, title='Mean', cmap='viridis', allow_pick=True, norm='log')
+        plt.axis('off')
+
+        mask = np.isnan(moments_pixel['mean'])
+        mask[noisy_module] = True
+        camera_visu.image = np.ma.masked_array(moments_pixel['mean'], mask=mask)
+        camera_visu.cmap.set_bad('k')
+        camera_visu.add_colorbar(orientation='horizontal', pad=0.03, fraction=0.05, shrink=.85)
+
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
+        camera_visu = visualization.CameraDisplay(geometry, ax=axis, title='Std', cmap='viridis', allow_pick=True, norm='log')
+        plt.axis('off')
+
+        mask = np.isnan(moments_pixel['std'])
+        mask[noisy_module] = True
+        camera_visu.image = np.ma.masked_array(moments_pixel['std'], mask=mask)
+        camera_visu.cmap.set_bad('k')
+        camera_visu.add_colorbar(orientation='horizontal', pad=0.03, fraction=0.05, shrink=.85)
+
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
+        camera_visu = visualization.CameraDisplay(geometry, ax=axis, title='Skewness', cmap='viridis', allow_pick=True, norm='log')
+        plt.axis('off')
+
+        mask = np.isnan(moments_pixel['skewness'])
+        mask[noisy_module] = True
+        camera_visu.image = np.ma.masked_array(moments_pixel['skewness'], mask=mask)
+        camera_visu.cmap.set_bad('k')
+        camera_visu.add_colorbar(orientation='horizontal', pad=0.03, fraction=0.05, shrink=.85)
+
+        plt.show()
+
+        mask = ~np.isnan(moments_pixel['mean'] * moments_pixel['std'] * moments_pixel['skewness'] * moments_pixel['kurtosis'])
         plt.figure()
         plt.hist(moments_pixel['mean'][mask], label='mean', bins='auto')
+        plt.legend()
+
+        plt.figure()
         plt.hist(moments_pixel['std'][mask], label='std', bins='auto')
+        plt.legend()
+
+        plt.figure()
         plt.hist(moments_pixel['skewness'][mask], label='skewness', bins='auto')
+        plt.legend()
+
+        plt.figure()
         plt.hist(moments_pixel['kurtosis'][mask], label='kurtosis', bins='auto')
         plt.legend()
         plt.show()

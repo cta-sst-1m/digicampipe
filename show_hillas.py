@@ -3,124 +3,105 @@ from digicampipe.visualization import plot
 import plot_alpha_corrected
 import matplotlib.pyplot as plt
 
-directory = '/home/alispach/data/CRAB_01/'
-hillas_filename = directory + 'hillas_test.npz'
 
-hillas = dict(np.load(hillas_filename))
+def correct_hillas(data, source_x, source_y):
 
-'''
-cut_size = 10000
-cut_width_length = 0.5
-cut_r = 350
+    data['cen_x'] = data['cen_x'] - source_x
+    data['cen_y'] = data['cen_y'] - source_y
+    data['r'] = np.sqrt((data['cen_x'])**2 + (data['cen_y'])**2)
+    data['phi'] = np.arctan2(data['cen_y'], data['cen_x'])
 
-source_xs = [0] # [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
-source_ys = source_xs
+    data['alpha'] = np.cos(data['phi']-data['psi'])
+    data['alpha'] = np.arccos(data['alpha'])
 
-alpha_max = 0
+    mask = data['alpha'] > (np.pi / 2)
+    data['alpha'][mask] = np.pi - data['alpha'][mask]
+    data['alpha'] = np.rad2deg(data['alpha'])
+    data['phi'] = np.rad2deg(data['phi'])
+    data['psi'] = np.rad2deg(data['psi'])
+    # data['alpha'] = np.abs(data['phi'] - data['psi'])
+    # data['alpha'] = np.remainder(data['alpha'], np.pi/2)
+    data['miss'] = data['r'] * np.sin(data['alpha'])
 
-for source_x in source_xs:
-    for source_y in source_ys:
-
-        hillas_cor = plot_alpha_corrected.correct_alpha(hillas, source_x=source_x, source_y=source_y)
-
-        alpha_histo = np.histogram(hillas_cor['alpha'], bins=30)
-
-        alpha_0_count = alpha_histo[0][0]
-        print(alpha_0_count)
-
-        if alpha_0_count >= alpha_max:
-
-            print(alpha_max)
-            alpha_max = alpha_0_count
-            true_source = [source_x, source_y]
-            # hillas = hillas_cor
+    return data
 
 
-print(true_source, alpha_max)
+def plot_hillas_parameter(parameter, name, units='', axis=None, bins='auto', log_x=False, log_y=False, legend=True, errorbar=False, **kwargs):
 
-# hillas_corr = plot_alpha_corrected.correct_alpha(hillas, source_x=true_source[0], source_y=true_source[1])
-# plot.plot_hillas(hillas_dict=hillas, bins='auto')#, title='Crab (%0.1f, %0.1f)' %(true_source[0], true_source[1]))
-'''
-mask = (np.ones(hillas['size'].shape[0]) > 0)
+    if axis is None:
 
-for key, val in hillas.items():
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
 
-    mask *= np.isfinite(val)
+    hist, bins = np.histogram(parameter, bins=bins)
+    axis.step(bins[:-1], hist, where='mid', label=name, **kwargs)
+    if errorbar:
+        axis.errorbar(bins[:-1], hist, yerr=np.sqrt(hist), fmt='k', linestyle='None', **kwargs)
+    # axis.set_xlabel(name + units)
+    if log_x:
+        axis.set_xscale('log')
+    if log_y:
+        axis.set_yscale('log')
+    # axis.set_ylabel('count')
+    if legend:
+        axis.legend(loc='best')
 
-for key, val in hillas.items():
-    hillas[key] = val[mask]
-
-
-hillas['time_spread'] = hillas['time_spread'][np.isfinite(hillas['time_spread'])]
-
-plt.figure()
-plt.hist(hillas['time_spread'], bins='auto')
-plt.xlabel('time spread [ns]')
-plt.ylabel('count')
-
-plt.figure()
-plt.hist(hillas['cen_x'], bins='auto')
-plt.xlabel('$x$ [mm]')
-plt.ylabel('count')
+    return axis
 
 
-plt.figure()
-plt.hist(hillas['cen_y'], bins='auto')
-plt.xlabel('$y$ [mm]')
-plt.ylabel('count')
+if __name__ == '__main__':
 
 
-plt.figure()
-plt.hist(hillas['length'], bins='auto')
-plt.xlabel('$l$ [mm]')
-plt.ylabel('count')
+    """
+    directory = '/home/alispach/data/CRAB_01/'
+    hillas_filename = directory + 'hillas_crab_all_cut_100pe.npz'
+    hillas = dict(np.load(hillas_filename))
+    """
 
+    directory = '/home/alispach/data/CRAB_02/'
+    hillas_filename = directory + 'crab_2nd.txt'
+    hillas = np.loadtxt(hillas_filename)
+    hillas = hillas.T
+    names = ["size", "cen_x", "cen_y", "length", "width", "r", "phi", "psi", "miss", "skewness", "kurtosis", "event_number", "time_stamp", 'border']
+    hillas = dict(zip(names, hillas))
 
-plt.figure()
-plt.hist(hillas['width'], bins='auto')
-plt.xlabel('$w$ [mm]')
-plt.ylabel('count')
+    x, y = 40, 13.5
+    hillas = correct_hillas(hillas, source_x=x, source_y=y)
 
-plt.figure()
-plt.hist(hillas['phi'], bins='auto')
-plt.xlabel('$\phi$ [rad]')
-plt.ylabel('count')
+    mask = (np.ones(hillas['size'].shape[0]) > 0)
+    print(np.sum(mask))
+    mask *= hillas['width']/hillas['length'] < 2/3
+    # mask *= hillas['alpha'] < 4
+    try:
+        mask *= hillas['border'] == 0
+    except:
+        print('no border parameter')
 
-plt.figure()
-plt.hist(hillas['psi'], bins='auto')
-plt.xlabel('$\psi$ [rad]')
-plt.ylabel('count')
+    for key, val in hillas.items():
 
-plt.figure()
-plt.hist(hillas['miss'], bins='auto')
-plt.xlabel('miss [mm]')
-plt.ylabel('count')
+        mask *= np.isfinite(val)
 
-plt.figure()
-plt.hist(hillas['skewness'], bins='auto' , label='skewness []', alpha=0.7)
-plt.hist(hillas['kurtosis'], bins='auto', label='kurtosis []', alpha=0.7)
-plt.legend()
-plt.xlabel('[]')
-plt.ylabel('count')
+    for key, val in hillas.items():
+        hillas[key] = val[mask]
 
-plt.figure()
-plt.hist(hillas['r'], bins='auto')
-plt.xlabel('r [mm]')
-plt.ylabel('count')
+    n_bins = 40
 
-plt.figure()
-plt.hist(np.arcsin(hillas['miss']/hillas['r']), bins='auto')
-plt.xlabel(r'$\alpha$ [rad]')
-plt.ylabel('count')
+    title = 'Hillas parameters'
+    figure, axis_array = plt.subplots(3, 4)
+    figure.subplots_adjust(top=0.95)
 
-plt.figure()
-plt.hist(hillas['width']/hillas['length'], bins='auto')
-plt.xlabel(r'$\frac{w}{l}$ []')
-plt.ylabel('count')
+    plot_hillas_parameter(hillas['alpha'], r'$\alpha$ [deg]', axis=axis_array[2, 2], bins=np.arange(0, 90 + 4, 4), errorbar=True)
+    plot_hillas_parameter(hillas['cen_x'], '$x$ [mm]', axis=axis_array[0, 0], bins=n_bins)
+    plot_hillas_parameter(hillas['cen_y'], '$y$ [mm]', axis=axis_array[0, 1], bins=n_bins)
+    plot_hillas_parameter(hillas['length'], 'length [mm]', axis=axis_array[1, 0], bins=n_bins)
+    plot_hillas_parameter(hillas['width'], 'width [mm]', axis=axis_array[1, 1], bins=n_bins)
+    plot_hillas_parameter(hillas['phi'], '$\phi$ [deg]', axis=axis_array[2, 0], bins=n_bins//2)
+    plot_hillas_parameter(hillas['psi'], '$\psi$ [deg]', axis=axis_array[2, 1], bins=n_bins//2)
+    plot_hillas_parameter(hillas['miss'], 'miss [mm]', axis=axis_array[0, 3], bins=n_bins)
+    plot_hillas_parameter(hillas['skewness'], 'skewness', axis=axis_array[2, 3], legend=True, bins=n_bins)
+    plot_hillas_parameter(hillas['kurtosis'], 'kurtosis', axis=axis_array[2, 3], legend=True, bins=n_bins)
+    plot_hillas_parameter(hillas['r'], 'r [mm]', axis=axis_array[0, 2], bins=n_bins)
+    plot_hillas_parameter(hillas['size'], 'size [a.u.]', axis=axis_array[1, 3], bins=n_bins, log_y=True, log_x=True)
+    plot_hillas_parameter(hillas['width']/hillas['length'], 'width/length []', axis=axis_array[1, 2], bins=n_bins)
 
-plt.figure()
-plt.hist(hillas['size'], bins='auto', log=True)
-plt.xlabel('size [a.u.]')
-plt.ylabel('count')
-
-plt.show()
+    plt.show()
