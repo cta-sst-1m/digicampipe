@@ -34,8 +34,8 @@ We propose to use the most recent version.
 
 This step involves a bit of manual work, but we are working on streamlining it.
 
-    wget www.isdc.unige.ch/~lyard/repo/ProtoZFitsReader-0.41.Python3.5.Linux.x86_64.tar.gz
-    pip install ProtoZFitsReader-0.41.Python3.5.Linux.x86_64.tar.gz
+    wget http://www.isdc.unige.ch/~lyard/repo/ProtoZFitsReader-0.42.Python3.5.Linux.x86_64.tar.gz
+    pip install ProtoZFitsReader-0.42.Python3.5.Linux.x86_64.tar.gz
     export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.5/site-packages:$LD_LIBRARY_PATH
 
 
