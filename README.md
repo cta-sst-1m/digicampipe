@@ -3,10 +3,6 @@ DigiCam pipeline based on ctapipe
 
 # Installation
 
-## zerom-mq
-
-    sudo apt-get install libzmq3 libzmq3-dev
-
 ## Anaconda
 
 Follow [the anaconda installation instructions](https://conda.io/docs/user-guide/install/linux.html).
