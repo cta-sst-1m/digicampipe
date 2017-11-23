@@ -16,13 +16,10 @@ install:
 
   - conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
   - conda install matplotlib llvmlite hdf5 ipython h5py
-  # - conda install zeromq  ## this does not work, it installs libzmq.so.4 not libzmq.so.3 which is needed
-  # libzmq now already in the protozfits package
-  #- sudo apt-get install libzmq3 libzmq3-dev
 
   - mkdir ctasoft
   - cd ctasoft
-  
+
   - wget http://www.isdc.unige.ch/~lyard/repo/ProtoZFitsReader-0.42.Python3.5.Linux.x86_64.tar.gz
   - pip install ProtoZFitsReader-0.42.Python3.5.Linux.x86_64.tar.gz
   - export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.5/site-packages:$LD_LIBRARY_PATH
