@@ -39,6 +39,7 @@ setup(
             'digicam_plot_alpha_corrected = digicampipe.scripts.plot_alpha_corrected:main',
             'digicam_bias_curve_from_clocked_trigger = digicampipe.scripts.bias_curve_from_clocked_trigger:main',
             'digicam_bias_curve_mc = digicampipe.scripts.bias_curve_mc:main',
+            'digicam_dark_evaluation = digicampipe.scripts.dark_evaluation:main',
         ],
     }
 )
