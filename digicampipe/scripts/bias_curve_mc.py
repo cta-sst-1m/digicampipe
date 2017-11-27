@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-if __name__ == '__main__':
+def main():
 
     directory = '/home/alispach/data/digicam_commissioning/trigger/mc/'
     filename = directory + 'digicam_toy_2.hdf5'
@@ -60,3 +60,6 @@ if __name__ == '__main__':
     axis.legend(loc='best')
     # fig.savefig(directory + 'bias_curve.svg')
     plt.show()
+
+if __name__ == '__main__':
+    main()
