@@ -45,8 +45,8 @@ def correct_alpha(data, source_x, source_y):
 
     return data
 
-if __name__ == '__main__':
 
+def main():
     new_cen_cam_x = 0 #61.2
     new_cen_cam_y = 0 #7.5
 
@@ -64,3 +64,6 @@ if __name__ == '__main__':
     data_cor = correct_alpha(data_cor, source_x=new_cen_cam_x, source_y=new_cen_cam_y)
     plot_alpha(data_cor)
     plt.show()
+
+if __name__ == '__main__':
+    main()
