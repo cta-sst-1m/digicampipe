@@ -36,6 +36,7 @@ setup(
             'digicam_trigger_control = digicampipe.scripts.trigger_control:main',
             'digicam_shower_rate = digicampipe.scripts.shower_rate:main',
             'digicam_show_hillas = digicampipe.scripts.show_hillas:main',
+            'digicam_plot_alpha_corrected = digicampipe.scripts.plot_alpha_corrected:main',
         ],
     }
 )
