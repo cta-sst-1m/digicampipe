@@ -32,7 +32,8 @@ setup(
     setup_requires=['pytest-runner'],
     entry_points={
         'console_scripts': [
-            'digicam_crab_pipeline = digicampipe.scripts.pipeline_crab:main'
+            'digicam_crab_pipeline = digicampipe.scripts.pipeline_crab:main',
+            'digicam_trigger_control = digicampipe.scripts.trigger_control:main',
         ],
     }
 )
