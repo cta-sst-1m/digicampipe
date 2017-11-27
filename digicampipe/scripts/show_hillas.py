@@ -3,46 +3,48 @@ from digicampipe.visualization import plot
 import plot_alpha_corrected
 import matplotlib.pyplot as plt
 
-directory = '/home/alispach/data/CRAB_01/'
-hillas_filename = directory + 'hillas.npz'
 
-hillas = dict(np.load(hillas_filename))
+def main():
+    directory = '/home/alispach/data/CRAB_01/'
+    hillas_filename = directory + 'hillas.npz'
 
-cut_size = 10000
-cut_width_length = 0.5
-cut_r = 350
+    hillas = dict(np.load(hillas_filename))
 
-source_xs = [0] # [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
-source_ys = source_xs
+    cut_size = 10000
+    cut_width_length = 0.5
+    cut_r = 350
 
-alpha_max = 0
+    source_xs = [0] # [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+    source_ys = source_xs
 
-for source_x in source_xs:
-    for source_y in source_ys:
+    alpha_max = 0
 
-        hillas_cor = plot_alpha_corrected.correct_alpha(hillas, source_x=source_x, source_y=source_y)
+    for source_x in source_xs:
+        for source_y in source_ys:
 
-        alpha_histo = np.histogram(hillas_cor['alpha'], bins=30)
+            hillas_cor = plot_alpha_corrected.correct_alpha(hillas, source_x=source_x, source_y=source_y)
 
-        alpha_0_count = alpha_histo[0][0]
-        print(alpha_0_count)
+            alpha_histo = np.histogram(hillas_cor['alpha'], bins=30)
 
-        if alpha_0_count >= alpha_max:
+            alpha_0_count = alpha_histo[0][0]
+            print(alpha_0_count)
 
-            print(alpha_max)
-            alpha_max = alpha_0_count
-            true_source = [source_x, source_y]
-            # hillas = hillas_cor
+            if alpha_0_count >= alpha_max:
+
+                print(alpha_max)
+                alpha_max = alpha_0_count
+                true_source = [source_x, source_y]
+                # hillas = hillas_cor
 
 
-print(true_source, alpha_max)
+    print(true_source, alpha_max)
 
-# hillas_corr = plot_alpha_corrected.correct_alpha(hillas, source_x=true_source[0], source_y=true_source[1])
-plot.plot_hillas(hillas_dict=hillas, bins='auto')#, title='Crab (%0.1f, %0.1f)' %(true_source[0], true_source[1]))
+    # hillas_corr = plot_alpha_corrected.correct_alpha(hillas, source_x=true_source[0], source_y=true_source[1])
+    plot.plot_hillas(hillas_dict=hillas, bins='auto')#, title='Crab (%0.1f, %0.1f)' %(true_source[0], true_source[1]))
 
-hillas['time_spread'] = hillas['time_spread'][np.isfinite(hillas['time_spread'])]
+    hillas['time_spread'] = hillas['time_spread'][np.isfinite(hillas['time_spread'])]
 
-plt.figure()
-plt.hist(hillas['time_spread'], bins='auto')
-plt.xlabel('time spread [ns]')
-plt.show()
+    plt.figure()
+    plt.hist(hillas['time_spread'], bins='auto')
+    plt.xlabel('time spread [ns]')
+    plt.show()
