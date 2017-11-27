@@ -6,7 +6,8 @@ from digicampipe.utils import geometry
 import numpy as np
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
+
+def main():
     # Data configuration
 
     directory = '/home/alispach/data/CRAB_01/'  #
@@ -86,3 +87,7 @@ if __name__ == '__main__':
         axis.legend(loc='best')
 
     plt.show()
+
+
+if __name__ == '__main__':
+    main()
