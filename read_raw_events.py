@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 
 
-if __name__ == '__main__':
-
+def main():
     parser = OptionParser()
 
     parser.add_option("-d", "--directory", dest="directory", help="directory to data files",
@@ -42,3 +41,6 @@ if __name__ == '__main__':
     for data in data_stream:
 
         pass
+
+if __name__ == '__main__':
+    main()
