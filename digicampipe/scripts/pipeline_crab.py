@@ -11,9 +11,8 @@ import astropy.units as u
 
 from optparse import OptionParser
 
-if __name__ == '__main__':
 
-
+def main():
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
                       default='/sst1m/raw/2017/09/28/CRAB_01/')
@@ -127,3 +126,6 @@ if __name__ == '__main__':
         # Save the hillas parameters
         # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
         save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
+
+if __name__ == '__main__':
+    main
