@@ -12,7 +12,8 @@ setup(
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
-        'digicampipe.instrument'
+        'digicampipe.instrument',
+        'digicampipe.scripts',
     ],
     url='https://github.com/calispac/digicampipe',
     license='GNU GPL 3.0',
@@ -29,4 +30,9 @@ setup(
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
+    entry_points={
+        'console_scripts': [
+            'digicam_crab_pipeline = digicampipe.scripts.pipeline_crab:main'
+        ],
+    }
 )
