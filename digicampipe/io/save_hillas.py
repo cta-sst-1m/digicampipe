@@ -1,6 +1,25 @@
 import numpy as np
 from tqdm import tqdm
+from collections import OrderedDict
 
+what_to_write_description = {
+    # output name:  how-to-get-the-value-from-the-event
+    'size': lambda e: e.dl2.shower.size,
+    'cen_x': lambda e: e.dl2.shower.cen_x.value,
+    'cen_y': lambda e: e.dl2.shower.cen_y.value,
+    'length': lambda e: e.dl2.shower.length.value,
+    'width': lambda e: e.dl2.shower.width.value,
+    'r': lambda e: e.dl2.shower.r.value,
+    'phi': lambda e: e.dl2.shower.phi.value,
+    'psi': lambda e: e.dl2.shower.psi.value,
+    'miss': lambda e: e.dl2.shower.miss.value,
+    'skewness': lambda e: e.dl2.shower.skewness,
+    'kurtosis': lambda e: e.dl2.shower.kurtosis,
+    'event_number': lambda e: e.r0.event_id,
+    'border': lambda e: 1 if e.dl1.tel[1].on_border else 0,
+    'time_spread': lambda e: e.dl1.tel[1].time_spread,
+    'time_stamp': lambda e: e.r0.tel[1].local_camera_clock,
+}
 
 def save_hillas_parameters(data_stream, output_filename):
 
@@ -41,29 +60,16 @@ def save_hillas_parameters(data_stream, output_filename):
     np.savez(output_filename, **output)
 
 
-def save_hillas_parameters_in_text(data_stream, output_filename):
-
+def save_hillas_parameters_in_text(
+    data_stream,
+    output_filename,
+    description=None
+):
+    description = description or what_to_write_description
     with open(output_filename, 'w') as ofile:
-
-        ofile.write("# size cen_x cen_y length width r phi psi miss skewness kurtosis event_number timestamp border time spread\n")
+        ofile.write("# {keys}\n".format(' '.join(description)))
         for event in tqdm(data_stream):
-
-            size         = event.dl2.shower.size
-            cen_x        = event.dl2.shower.cen_x.value
-            cen_y        = event.dl2.shower.cen_y.value
-            length       = event.dl2.shower.length.value
-            width        = event.dl2.shower.width.value
-            r            = event.dl2.shower.r.value
-            phi          = event.dl2.shower.phi.value
-            psi          = event.dl2.shower.psi.value
-            miss         = event.dl2.shower.miss.value
-            skewness     = event.dl2.shower.skewness
-            kurtosis     = event.dl2.shower.kurtosis
-            event_number = event.r0.event_id
-            border       = 1 if event.dl1.tel[1].on_border else 0
-            time_spread  = event.dl1.tel[1].time_spread
-            time_stamp = event.r0.tel[1].local_camera_clock
-
-            ofile.write(str(size) + " " + str(cen_x) + " " + str(cen_y) + " " + str(length) + " " + str(width) + " " + str(r) + " "+ str(phi) + " "+ str(psi) + " "+ str(miss) + " "+ str(skewness) + " "+ str(kurtosis) + " "+ str(event_number) + " "+ str(time_stamp) + " " + str(border) + " " + str(time_spread) + "\n")
+            for get_value_from in description.values():
+                ofile.write(str(get_value_from(event)) + " ")
+            ofile.write('\n')
             ofile.flush()
-
