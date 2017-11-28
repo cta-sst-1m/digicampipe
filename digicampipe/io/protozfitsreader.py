@@ -160,8 +160,7 @@ class ZFile(object):
         return (getattr(obj, field))
 
     def _get_numpyfield(self, field):
-        numpyfield = toNumPyArray(field)
-        return (numpyfield)
+        return toNumPyArray(field)
 
     ### PUBLIC METHODS #############################################################
 
