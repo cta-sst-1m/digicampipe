@@ -289,7 +289,7 @@ class ZFile(object):
     def _get_adc(self, channel, telescope_id=None):
         # Expect hi/lo -> Will append Gain at the end -> hiGain/loGain
         sel_channel = self._extract_field(self.event, "%sGain" % channel)
-        return (sel_channel)
+        return sel_channel
 
     def get_pixel_position(self, telescope_id=None):
 
