@@ -16,11 +16,9 @@ def save_bias_curve(
         if i > n_events:
             break
 
-
         for telescope_id in event.r0.tels_with_data:
 
             trigger_input_7 = event.r0.tel[telescope_id].trigger_input_7
-            # trigger_input_19 = event.r0.tel[telescope_id].trigger_input_19
 
             if i == 0:
 
