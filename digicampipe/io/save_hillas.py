@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 
 def save_hillas_parameters(data_stream, n_showers, output_filename):
@@ -18,7 +19,7 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
     time_stamp = []
     time_spread = []
 
-    for i, event in enumerate(data_stream):
+    for i, event in enumerate(tqdm(data_stream)):
 
         size.append(event.dl2.shower.size)
         cen_x.append(event.dl2.shower.cen_x.value)
@@ -34,8 +35,6 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
         event_number.append(event.r0.event_id)
         time_spread.append(event.dl1.tel[1].time_spread)
         time_stamp.append(event.r0.tel[1].local_camera_clock)
-
-        print('hillas #', i)
 
     np.savez(output_filename, size=size, cen_x=cen_x, cen_y=cen_y, length=length, width=width, r=r, phi=phi, psi=psi,
              miss=miss, skewness=skewness, kurtosis=kurtosis, event_number=event_number, time_stamp=time_stamp,
