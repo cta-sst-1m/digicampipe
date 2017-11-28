@@ -160,7 +160,7 @@ class ZFile(object):
         return (getattr(obj, field))
 
     def _get_numpyfield(self, field):
-        return toNumPyArray(field)
+        return to_numpy_array(field)
 
     ### PUBLIC METHODS #############################################################
 
@@ -467,7 +467,7 @@ type_id_to_converter_map = {
 }
 
 
-def toNumPyArray(any_array):
+def to_numpy_array(any_array):
     try:
         return type_id_to_converter_map[any_array.type](any_array.data)
     except Exception as e:
