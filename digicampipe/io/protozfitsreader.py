@@ -144,13 +144,8 @@ class ZFile(object):
 
     def _read_file(self):
         # Read file. Return a serialized string
-        try:
-            assert (self.ttype in ["RunHeader", "Events", "RunTails"])
-        except AssertionError as e:
-            print("Error: Table type not RunHeader, Events or RunTails")
-            raise
-        else:
-            rawzfitsreader.open("%s:%s" % (self.fname, self.ttype))
+        assert self.ttype in ["RunHeader", "Events", "RunTails"]
+        rawzfitsreader.open("%s:%s" % (self.fname, self.ttype))
 
     def _read_message(self):
         # Read next message. Fills property self.rawmessage and self.numrows
