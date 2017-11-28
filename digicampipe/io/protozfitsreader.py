@@ -166,10 +166,7 @@ class ZFile(object):
     ### PUBLIC METHODS #############################################################
 
     def list_tables(self):
-        try:
-            return (rawzfitsreader.listAllTables(self.fname))
-        except:
-            raise
+        return rawzfitsreader.listAllTables(self.fname)
 
     def read_runheader(self):
         # Get number of events in file
