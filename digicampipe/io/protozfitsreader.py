@@ -155,7 +155,7 @@ class ZFile(object):
 
     def _extract_field(self, obj, field):
         # Read a specific field in object 'obj' given as input 'field'
-        if obj.HasField(field) == False:
+        if not obj.HasField(field):
             raise Exception("No field %s found in object %s" % (field, str(obj)))
         return (getattr(obj, field))
 
