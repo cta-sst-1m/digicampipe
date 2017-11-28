@@ -21,42 +21,17 @@ what_to_write_description = {
     'time_stamp': lambda e: e.r0.tel[1].local_camera_clock,
 }
 
-def save_hillas_parameters(data_stream, output_filename):
 
-    output = {
-        'size': [],
-        'cen_x': [],
-        'cen_y': [],
-        'length': [],
-        'width': [],
-        'r': [],
-        'phi': [],
-        'psi': [],
-        'miss': [],
-        'skewness': [],
-        'kurtosis': [],
-        'event_number': [],
-        'time_stamp': [],
-        'time_spread': [],
-    }
+def save_hillas_parameters(data_stream, output_filename, description=None):
+    description = description or what_to_write_description
+
+    output = OrderedDict()
+    for name in description:
+        output[name] = []
 
     for i, event in enumerate(tqdm(data_stream)):
-
-        output['size'].append(event.dl2.shower.size)
-        output['cen_x'].append(event.dl2.shower.cen_x.value)
-        output['cen_y'].append(event.dl2.shower.cen_y.value)
-        output['length'].append(event.dl2.shower.length.value)
-        output['width'].append(event.dl2.shower.width.value)
-        output['r'].append(event.dl2.shower.r.value)
-        output['phi'].append(event.dl2.shower.phi.value)
-        output['psi'].append(event.dl2.shower.psi.value)
-        output['miss'].append(event.dl2.shower.miss.value)
-        output['skewness'].append(event.dl2.shower.skewness)
-        output['kurtosis'].append(event.dl2.shower.kurtosis)
-        output['event_number'].append(event.r0.event_id)
-        output['time_spread'].append(event.dl1.tel[1].time_spread)
-        output['time_stamp'].append(event.r0.tel[1].local_camera_clock)
-
+        for name, get_value_from in description.items():
+            output[name].append(get_value_from(event))
     np.savez(output_filename, **output)
 
 
