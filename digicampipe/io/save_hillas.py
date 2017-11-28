@@ -18,7 +18,7 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
     time_stamp = []
     time_spread = []
 
-    for event, i in zip(data_stream, range(n_showers)):
+    for i, event in enumerate(data_stream):
 
         size.append(event.dl2.shower.size)
         cen_x.append(event.dl2.shower.cen_x.value)
