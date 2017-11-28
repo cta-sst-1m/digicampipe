@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 
 
 def save_bias_curve(
@@ -11,18 +10,12 @@ def save_bias_curve(
     by_cluster=True,
     unwanted_cluster=None
 ):
-
-    if n_events is None:
-
-        iter_events = itertools.count()
-
-    else:
-
-        iter_events = range(n_events)
-
     rate = np.zeros(thresholds.shape)
 
-    for event, i in zip(data_stream, iter_events):
+    for i, event in enumerate(data_stream):
+        if i > n_events:
+            break
+
 
         for telescope_id in event.r0.tels_with_data:
 
