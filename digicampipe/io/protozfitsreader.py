@@ -160,13 +160,8 @@ class ZFile(object):
         return (getattr(obj, field))
 
     def _get_numpyfield(self, field):
-        try:
-            numpyfield = toNumPyArray(field)
-        except Exception as e:
-            err = "Conversion to NumpyArray failed with error %s" % e
-            raise Exception(err)
-        else:
-            return (numpyfield)
+        numpyfield = toNumPyArray(field)
+        return (numpyfield)
 
     ### PUBLIC METHODS #############################################################
 
@@ -464,20 +459,24 @@ def typeBool(any_array):
     raise Exception("I have no idea if the boolean representation of the anyarray is the same as the numpy one")
 
 
-artificialSwitchCase = {0: typeNone,
-                        1: typeS8,
-                        2: typeU8,
-                        3: typeS16,
-                        4: typeU16,
-                        5: typeS32,
-                        6: typeU32,
-                        7: typeS64,
-                        8: typeU64,
-                        9: typeFloat,
-                        10: typeDouble,
-                        11: typeBool,
-                        }
+type_id_to_converter_map = {
+  0: typeNone,
+  1: typeS8,
+  2: typeU8,
+  3: typeS16,
+  4: typeU16,
+  5: typeS32,
+  6: typeU32,
+  7: typeS64,
+  8: typeU64,
+  9: typeFloat,
+  10: typeDouble,
+  11: typeBool,
+}
 
 
 def toNumPyArray(any_array):
-    return artificialSwitchCase[any_array.type](any_array.data)
+    try:
+        return type_id_to_converter_map[any_array.type](any_array.data)
+    except Exception as e:
+        raise Exception("Conversion to NumpyArray failed with error %s" % e)
