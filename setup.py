@@ -40,6 +40,10 @@ setup(
             'digicam_bias_curve_from_clocked_trigger = digicampipe.scripts.bias_curve_from_clocked_trigger:main',
             'digicam_bias_curve_mc = digicampipe.scripts.bias_curve_mc:main',
             'digicam_dark_evaluation = digicampipe.scripts.dark_evaluation:main',
+            'digicam_load_container_test = digicampipe.scripts.load_container_test:main',
+            'digicam_nsb_evalutation = digicampipe.scripts.nsb_evalutation:main',
+            'digicam_read_raw_events = digicampipe.scripts.read_raw_events:main',
+            'digicam_save_container_test = digicampipe.scripts.save_container_test:main',
         ],
     }
 )
