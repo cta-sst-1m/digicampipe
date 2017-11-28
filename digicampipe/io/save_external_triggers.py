@@ -1,37 +1,34 @@
 import numpy as np
 
 
-def save_external_triggers(data_stream, output_filename, n_events=None, pixel_list=[...]):
+def save_external_triggers(
+    data_stream,
+    output_filename,
+    n_events=None,
+    pixel_list=[...]
+):
 
-    baseline = []
-    baseline_dark = []
-    baseline_shift = []
-    baseline_std = []
-    nsb_rate = []
-    gain_drop = []
-    time_stamp = []
+    description = {
+        'baseline': lambda e, t, pl: list(e.r0.tel[t].baseline[pl]),
+        'baseline_dark': lambda e, t, pl: list(e.r0.tel[t].dark_baseline[pl]),
+        'baseline_shift': lambda e, t, pl:
+            list(e.r0.tel[t].baseline[pl] - e.r0.tel[t].dark_baseline[pl]),
+        'baseline_std':
+            lambda e, t, pl: list(e.r0.tel[t].standard_deviation[pl]),
+        'nsb_rate': lambda e, t, pl: list(e.r1.tel[t].nsb[pl]),
+        'gain_drop': lambda e, t, pl: list(e.r1.tel[t].gain_drop[pl]),
+        'time_stamp': lambda e, t, pl: e.r0.tel[t].local_camera_clock,
+    }
+
+    output = {name: [] for name in description}
 
     for i, event in enumerate(data_stream):
         if i >= n_events:
             break
 
         for telescope_id in event.r0.tels_with_data:
+            for name, getter in description.items():
+                output[name].append(getter(event, telescope_id, pixel_list))
 
-            baseline.append(list(event.r0.tel[telescope_id].baseline[pixel_list]))
-            baseline_dark.append(list(event.r0.tel[telescope_id].dark_baseline[pixel_list]))
-            baseline_shift.append(list(event.r0.tel[telescope_id].baseline[pixel_list] - event.r0.tel[telescope_id].dark_baseline[pixel_list]))
-            baseline_std.append(list(event.r0.tel[telescope_id].standard_deviation[pixel_list]))
-            nsb_rate.append(list(event.r1.tel[telescope_id].nsb[pixel_list]))
-            gain_drop.append(list(event.r1.tel[telescope_id].gain_drop[pixel_list]))
-            time_stamp.append(event.r0.tel[telescope_id].local_camera_clock)
-
-    np.savez(output_filename,
-             baseline=np.array(baseline),
-             baseline_dark=np.array(baseline_dark),
-             baseline_shift=np.array(baseline_shift),
-             baseline_std=np.array(baseline_std),
-             nsb_rate=np.array(nsb_rate),
-             gain_drop=np.array(gain_drop),
-             time_stamp=np.array(time_stamp))
-
-
+    output = {name: np.array(value) for name, value in output.items()}
+    np.savez(output_filename, **output)
