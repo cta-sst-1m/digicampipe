@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 
 
-if __name__ == '__main__':
-
+def main():
     parser = OptionParser()
 
     parser.add_option("-d", "--directory", dest="directory", help="directory to data files",
@@ -20,7 +19,10 @@ if __name__ == '__main__':
                       , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
 
     (options, args) = parser.parse_args()
+    read_raw_events(options, args)
 
+
+def read_raw_events(options, args):
     directory = options.directory
     filename = directory + options.filename
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
@@ -42,3 +44,6 @@ if __name__ == '__main__':
     for data in data_stream:
 
         pass
+
+if __name__ == '__main__':
+    main()
