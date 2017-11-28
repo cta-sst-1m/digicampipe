@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 
 
 def save_external_triggers(data_stream, output_filename, n_events=None, pixel_list=[...]):
@@ -12,15 +11,9 @@ def save_external_triggers(data_stream, output_filename, n_events=None, pixel_li
     gain_drop = []
     time_stamp = []
 
-    if n_events is None:
-
-        iter_events = itertools.count()
-
-    else:
-
-        iter_events = range(n_events)
-
-    for event, i in zip(data_stream, iter_events):
+    for i, event in enumerate(data_stream):
+        if i >= n_events:
+            break
 
         for telescope_id in event.r0.tels_with_data:
 
