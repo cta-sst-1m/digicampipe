@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-def save_hillas_parameters(data_stream, n_showers, output_filename):
+def save_hillas_parameters(data_stream, output_filename):
 
     output = {
         'size': [],
