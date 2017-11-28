@@ -157,7 +157,7 @@ class ZFile(object):
         # Read a specific field in object 'obj' given as input 'field'
         if not obj.HasField(field):
             raise Exception("No field %s found in object %s" % (field, str(obj)))
-        return (getattr(obj, field))
+        return getattr(obj, field)
 
     ### PUBLIC METHODS #############################################################
 
@@ -292,7 +292,6 @@ class ZFile(object):
         return sel_channel
 
     def get_pixel_position(self, telescope_id=None):
-
         return None
 
     def get_number_of_pixels(self, telescope_id=None):
