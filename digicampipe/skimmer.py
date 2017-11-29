@@ -2,7 +2,6 @@ import numpy as np
 from cts_core import camera
 
 
-
 def compute_discrimination_variable(r0_container, patch_coordinates):
 
     patch_x, patch_y = patch_coordinates
