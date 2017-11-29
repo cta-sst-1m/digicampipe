@@ -51,8 +51,8 @@ def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
             data.r0.tel[tel_id].camera_event_number = event_id
             data.r0.tel[tel_id].local_camera_clock = event_id
             data.r0.tel[tel_id].gps_time = event_id
-            data.r0.tel[tel_id].event_type_1 = None
-            data.r0.tel[tel_id].event_type_2 = None
+            data.r0.tel[tel_id].camera_event_type = None
+            data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = hdf5['data']['adc_count'][..., event_id]
 
         yield data

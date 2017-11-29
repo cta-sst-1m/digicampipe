@@ -94,7 +94,6 @@ class CameraCalibration:
         :param data:
         :return:
         """
-
         window_width = self.charge_reconstruction_options['window_width']
 
         if window_width == 1:

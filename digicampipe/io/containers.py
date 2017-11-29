@@ -203,12 +203,9 @@ class ParticleClassificationContainer(Container):
 class ReconstructedContainer(Container):
     """ collect reconstructed shower info from multiple algorithms """
 
-    shower = Field(Map(ReconstructedShowerContainer),
-                  "Map of algorithm name to shower info")
-    energy = Field(Map(ReconstructedEnergyContainer),
-                  "Map of algorithm name to energy info")
-    classification = Field(Map(ParticleClassificationContainer),
-                          "Map of algorithm name to classification info")
+    shower = Field(Map(ReconstructedShowerContainer), "Map of algorithm name to shower info")
+    energy = Field(Map(ReconstructedEnergyContainer), "Map of algorithm name to energy info")
+    classification = Field(Map(ParticleClassificationContainer), "Map of algorithm name to classification info")
 
 
 class DataContainer(Container):

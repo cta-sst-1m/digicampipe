@@ -14,15 +14,15 @@ if __name__ == '__main__':
                       default='/home/alispach/data/BASELINE_TEST/')
     parser.add_option("-f", "--file",  dest="filename", help="filebasename e.g. CRAB_%03d.fits.fz",
                       default='BASELINE_TEST_0_000.%03d.fits.fz')
-    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=0)
-    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=23)
+    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=0, type=int)
+    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=23, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
                       , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
 
     (options, args) = parser.parse_args()
 
     directory = options.directory
-    filename = directory + options.filename
+    filename = directory + options.filename # os.path etc.
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
 

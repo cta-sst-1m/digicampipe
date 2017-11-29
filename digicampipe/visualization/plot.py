@@ -25,17 +25,38 @@ def plot_hillas(hillas_dict, title='', **kwargs):
     return figure
 
 
+def plot_hillas_separate(hillas_dict, title='', **kwargs):
+
+    plot_parameter(hillas_dict['cen_x'], name='$x$', units=' [mm]', **kwargs)
+    plot_parameter(hillas_dict['cen_y'], name='$y$', units=' [mm]', **kwargs)
+    plot_parameter(hillas_dict['length'], name='$l$', units=' [mm]',  **kwargs)
+    plot_parameter(hillas_dict['width'], name='$w$', units=' [mm]',  **kwargs)
+    plot_parameter(hillas_dict['phi'], name='$\phi$', units=' [rad]', **kwargs)
+    plot_parameter(hillas_dict['psi'], name='$\psi$', units=' [rad]', **kwargs)
+    plot_parameter(hillas_dict['miss'], name='miss', units=' [mm]',  **kwargs)
+    plot_parameter(hillas_dict['skewness'], name='skewness', units=' []', **kwargs, alpha=0.5)
+    plot_parameter(hillas_dict['kurtosis'], name='kurtosis', units=' []', **kwargs, alpha=0.5)
+    plot_parameter(hillas_dict['r'], name='r', units=' [mm]', **kwargs)
+    plot_parameter(hillas_dict['alpha'], name=r'$\alpha$', units=' [rad]', **kwargs)
+    plot_parameter(hillas_dict['width'] / hillas_dict['length'], name=r'$\frac{w}{l}$', units=' [rad]', **kwargs)
+    plot_parameter(hillas_dict['size'], name='size', units=' [p.e.]', log=True, **kwargs)
+    plt.show()
+
+    return
+
+
 def plot_parameter(parameter, name, units, axis=None, **kwargs):
 
     parameter = parameter[~(np.isnan(parameter)) * ~np.isinf(parameter)]
 
     if axis is None:
 
-        plt.figure()
-        plt.hist(parameter, label=name, **kwargs)
-        plt.xlabel(name + units)
-        plt.ylabel('count')
-        plt.legend(loc='best')
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
+        axis.hist(parameter, label=name, **kwargs)
+        axis.set_xlabel(name + units)
+        axis.set_ylabel('count')
+        axis.legend(loc='best')
 
     else:
 
@@ -44,3 +65,4 @@ def plot_parameter(parameter, name, units, axis=None, **kwargs):
         #axis.set_xlabel(name + units)
         #axis.set_ylabel('count')
         axis.legend(loc='best')
+        axis.set_aspect('equal')

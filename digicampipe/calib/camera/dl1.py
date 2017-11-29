@@ -24,7 +24,7 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
             dl1_camera.cleaning_mask = np.any(mask_for_cleaning, axis=-1)
             # dl1_camera.cleaning_mask *= (r1_camera.nsb < 5.) * (r1_camera.nsb > 0)
 
-            adc_samples[~dl1_camera.cleaning_mask] = 0.
+            adc_samples[~dl1_camera.cleaning_mask] = 0
 
             gain_init = calib.get_gains()
             gain = gain_init # * r1_camera.gain_drop
@@ -57,22 +57,18 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
             # threshold is 2*boundary_threshold, maybe we should introduce yet a 3rd threshold in the args of the function
             image = dl1_camera.pe_samples 
             recursion = True
-            border = False
             while recursion:
                 recursion = False
                 for i in pixel_id[dl1_camera.cleaning_mask]:
-                    num_neighbors = 0
                     for j in pixel_id[geom.neighbor_matrix[i] & ~dl1_camera.cleaning_mask]:
-                        num_neighbors = num_neighbors + 1
                         if image[j] > boundary_threshold:
                             dl1_camera.cleaning_mask[j] = True
                             recursion = True
-                    if num_neighbors != 6:
-                        border = True
-
-            dl1_camera.on_border = border
 
             dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
+
+            num_neighbors = np.sum(geom.neighbor_matrix[dl1_camera.cleaning_mask], axis=-1)
+            dl1_camera.on_border = np.any(num_neighbors < 6)
 
             if additional_mask is not None:
                 dl1_camera.cleaning_mask = dl1_camera.cleaning_mask * additional_mask

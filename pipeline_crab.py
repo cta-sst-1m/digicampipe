@@ -13,7 +13,6 @@ from optparse import OptionParser
 
 if __name__ == '__main__':
 
-
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
                       default='/sst1m/raw/2017/09/28/CRAB_01/')
@@ -55,7 +54,7 @@ if __name__ == '__main__':
     unwanted_patch = None  # [306, 318, 330, 342] #[391, 392, 403, 404, 405, 416, 417]
 
     # Noisy pixels not taken into account in Hillas
-    pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
+    pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896] # Pixels of noisy module 96
     additional_mask = np.ones(1296)
     additional_mask[pixel_not_wanted] = 0
     additional_mask = additional_mask > 0
@@ -68,7 +67,7 @@ if __name__ == '__main__':
                                 'window_width': 7,
                                 'threshold_saturation': np.inf,
                                 'n_samples': 50,
-                                'timing_width': 6,
+                                'timing_width': 20, # 6 default
                                 'central_sample': 11}
 
     peak_position = utils.fake_timing_hist(time_integration_options['n_samples'],
@@ -85,7 +84,7 @@ if __name__ == '__main__':
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
-    min_photon = 20
+    min_photon = 10
 
     ####################
     ##### ANALYSIS #####
@@ -125,5 +124,5 @@ if __name__ == '__main__':
             pass
     else:
         # Save the hillas parameters
-        # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
-        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
+        save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+        # save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
