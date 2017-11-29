@@ -22,7 +22,7 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     directory = options.directory
-    filename = directory + options.filename
+    filename = directory + options.filename # os.path etc.
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
 
