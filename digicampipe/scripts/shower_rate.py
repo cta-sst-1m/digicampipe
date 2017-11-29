@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import expon
 
 
-if __name__ == '__main__':
-
+def main():
     """
     directory = '/home/alispach/blackmonkey/calib_data/first_light/20170831/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
@@ -60,3 +59,6 @@ if __name__ == '__main__':
     display.draw()
     plt.show()
     """
+
+if __name__ == '__main__':
+    main()

@@ -5,7 +5,7 @@ from cts_core.camera import Camera
 import astropy.units as u
 from digicampipe.io.containers import save_to_pickle_gz
 
-if __name__ == '__main__':
+def main():
     # Data configuration
     directory = '/mnt/calib_data/first_light/20170831/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
@@ -46,3 +46,6 @@ if __name__ == '__main__':
     data_stream = filter.filter_missing_baseline(data_stream)
 
     save_to_pickle_gz(data_stream, 'test.pickle', overwrite=True, max_events=100)
+
+if __name__ == '__main__':
+    main()

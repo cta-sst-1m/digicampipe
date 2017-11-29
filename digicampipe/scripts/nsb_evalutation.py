@@ -10,7 +10,7 @@ from digicampipe.visualization import mpl
 import pandas as pd
 
 
-if __name__ == '__main__':
+def main():
     # Data configuration
 
     directory = '/home/alispach/data/CRAB_01/' #
@@ -152,4 +152,5 @@ if __name__ == '__main__':
     plt.show()
 
 
-
+if __name__ == '__main__':
+    main()

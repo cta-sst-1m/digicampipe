@@ -5,7 +5,7 @@ from digicampipe.utils import utils
 import matplotlib.pyplot as plt
 
 
-if __name__ == '__main__':
+def main():
     camera_config_file = '/usr/src/cts/config/camera_config.cfg'
     # Integration configuration
     time_integration_options = {'mask': None,
@@ -41,3 +41,6 @@ if __name__ == '__main__':
         #display.next()
         display.draw()
         #plt.show()
+
+if __name__ == '__main__':
+    main()

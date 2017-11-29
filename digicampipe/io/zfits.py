@@ -6,7 +6,6 @@ This requires the protozfitsreader python library to be installed
 import logging
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
-import astropy.units as u
 import itertools
 import digicampipe.io.protozfitsreader as protozfitsreader
 logger = logging.getLogger(__name__)

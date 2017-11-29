@@ -11,7 +11,8 @@ import utils.histogram as histogram
 
 from optparse import OptionParser
 
-if __name__ == '__main__':
+
+def main():
     #########################
     ##### CONFIGURATION #####
     #########################
@@ -200,3 +201,5 @@ if __name__ == '__main__':
             plt.close()
 
 
+if __name__ == '__main__':
+    main

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-if __name__ == '__main__':
+def main():
     # Data configuration
 
     directory = '/home/alispach/data/CRAB_01/'
@@ -69,3 +69,6 @@ if __name__ == '__main__':
 
 
     ## Filter the events for display
+
+if __name__ == '__main__':
+    main()

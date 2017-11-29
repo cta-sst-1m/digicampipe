@@ -144,13 +144,8 @@ class ZFile(object):
 
     def _read_file(self):
         # Read file. Return a serialized string
-        try:
-            assert (self.ttype in ["RunHeader", "Events", "RunTails"])
-        except AssertionError as e:
-            print("Error: Table type not RunHeader, Events or RunTails")
-            raise
-        else:
-            rawzfitsreader.open("%s:%s" % (self.fname, self.ttype))
+        assert self.ttype in ["RunHeader", "Events", "RunTails"]
+        rawzfitsreader.open("%s:%s" % (self.fname, self.ttype))
 
     def _read_message(self):
         # Read next message. Fills property self.rawmessage and self.numrows
@@ -160,33 +155,19 @@ class ZFile(object):
 
     def _extract_field(self, obj, field):
         # Read a specific field in object 'obj' given as input 'field'
-        if obj.HasField(field) == False:
+        if not obj.HasField(field):
             raise Exception("No field %s found in object %s" % (field, str(obj)))
-        return (getattr(obj, field))
-
-    def _get_numpyfield(self, field):
-        try:
-            numpyfield = toNumPyArray(field)
-        except Exception as e:
-            err = "Conversion to NumpyArray failed with error %s" % e
-            raise Exception(err)
-        else:
-            return (numpyfield)
+        return getattr(obj, field)
 
     ### PUBLIC METHODS #############################################################
 
     def list_tables(self):
-        try:
-            return (rawzfitsreader.listAllTables(self.fname))
-        except:
-            raise
+        return rawzfitsreader.listAllTables(self.fname)
 
     def read_runheader(self):
         # Get number of events in file
         import L0_pb2
-        try:
-            assert (self.ttype == "RunHeader")
-        except:
+        if self.ttype != "RunHeader":
             self.ttype = "RunHeader"
             self._read_file()
 
@@ -200,14 +181,12 @@ class ZFile(object):
         # C++ return a serialized string, python protobuf rebuild message from serial string
         import L0_pb2
 
-        try:
-            assert (self.ttype == "Events")
-        except:
+        if self.ttype == "Events":
+            self.eventnumber += 1
+        else:
             self.ttype = "Events"
             self._read_file()
             self.eventnumber = 1
-        else:
-            self.eventnumber += 1
 
         # print("Reading event number %d" %self.eventnumber)
         self._read_message()
@@ -257,8 +236,7 @@ class ZFile(object):
         return self.event.eventNumber
 
     def get_run_id(self):
-
-        return (self._get_numpyfield(self.header.runNumber))
+        return to_numpy_array(self.header.runNumber)
 
     def get_central_event_gps_time(self):
 
@@ -281,21 +259,21 @@ class ZFile(object):
         waveforms = self.event.hiGain.waveforms
 
         try:
-            baselines = self._get_numpyfield(waveforms.baselines)
+            baselines = to_numpy_array(waveforms.baselines)
 
         except:
 
-            n_pixels = self._get_numpyfield(waveforms.pixelsIndices).shape[0]
+            n_pixels = to_numpy_array(waveforms.pixelsIndices).shape[0]
             baselines = numpy.zeros(n_pixels) * numpy.nan
 
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        pixels = to_numpy_array(waveforms.pixelsIndices)
         properties = numpy.array(list(dict(zip(pixels, baselines)).values()))
 
         return properties
 
     def get_event_number_array(self):
 
-        return self._get_numpyfield(self.event.arrayEvtNum)
+        return to_numpy_array(self.event.arrayEvtNum)
 
     def get_camera_event_type(self):
 
@@ -306,22 +284,18 @@ class ZFile(object):
         return self.event.eventType
 
     def get_num_channels(self):
-
-        return self._get_numpyfield(self.event.head.numGainChannels)
+        return to_numpy_array(self.event.head.numGainChannels)
 
     def _get_adc(self, channel, telescope_id=None):
         # Expect hi/lo -> Will append Gain at the end -> hiGain/loGain
         sel_channel = self._extract_field(self.event, "%sGain" % channel)
-        return (sel_channel)
+        return sel_channel
 
     def get_pixel_position(self, telescope_id=None):
-
         return None
 
     def get_number_of_pixels(self, telescope_id=None):
-
-        n_pixels = self._get_numpyfield(self.event.hiGain.waveforms.pixelsIndices).shape[0]
-        return n_pixels
+        return to_numpy_array(self.event.hiGain.waveforms.pixelsIndices).shape[0]
 
     def get_adcs_samples(self, telescope_id=None):
         """
@@ -331,8 +305,8 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         """
         waveforms = self.event.hiGain.waveforms
-        samples = self._get_numpyfield(waveforms.samples)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        samples = to_numpy_array(waveforms.samples)
+        pixels = to_numpy_array(waveforms.pixelsIndices)
         npixels = len(pixels)
         # Structured array (dict)
         samples = samples.reshape(npixels, -1)
@@ -342,8 +316,8 @@ class ZFile(object):
     def get_num_samples(self):
 
         waveforms = self.event.hiGain.waveforms
-        samples = self._get_numpyfield(waveforms.samples)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        samples = to_numpy_array(waveforms.samples)
+        pixels = to_numpy_array(waveforms.pixelsIndices)
 
         return samples.shape[0] // pixels.shape[0]
 
@@ -355,7 +329,7 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
 
-        frames = self._get_numpyfield(self.event.trigger_input_traces)
+        frames = to_numpy_array(self.event.trigger_input_traces)
         frames = frames.reshape(frames.shape[0] // 3, 3)
         frames = frames.reshape(frames.shape[0] // 192, 3, 192)
         frames = frames[..., :144]
@@ -372,7 +346,7 @@ class ZFile(object):
         :param telescope_id: id of the telescope of interest
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
-        frames = self._get_numpyfield(self.event.trigger_output_patch7)
+        frames = to_numpy_array(self.event.trigger_output_patch7)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,
                                                                                                    144).reshape(
@@ -392,7 +366,7 @@ class ZFile(object):
         :param telescope_id: id of the telescope of interest
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
-        frames = self._get_numpyfield(self.event.trigger_output_patch19)
+        frames = to_numpy_array(self.event.trigger_output_patch19)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,144).reshape(n_samples, 432).T
         patches = self.patch_id_output
@@ -408,8 +382,8 @@ class ZFile(object):
         :return: dictionnary of flags (value) per pixel indices (key)
         '''
         waveforms = self.event.hiGain.waveforms
-        flags = self._get_numpyfield(self.event.pixels_flags)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        flags = to_numpy_array(self.event.pixels_flags)
+        pixels = to_numpy_array(waveforms.pixelsIndices)
         npixels = len(pixels)
         properties = numpy.array(list(dict(zip(pixels, flags)).values()), dtype=bool)
         return properties
@@ -469,20 +443,24 @@ def typeBool(any_array):
     raise Exception("I have no idea if the boolean representation of the anyarray is the same as the numpy one")
 
 
-artificialSwitchCase = {0: typeNone,
-                        1: typeS8,
-                        2: typeU8,
-                        3: typeS16,
-                        4: typeU16,
-                        5: typeS32,
-                        6: typeU32,
-                        7: typeS64,
-                        8: typeU64,
-                        9: typeFloat,
-                        10: typeDouble,
-                        11: typeBool,
-                        }
+type_id_to_converter_map = {
+  0: typeNone,
+  1: typeS8,
+  2: typeU8,
+  3: typeS16,
+  4: typeU16,
+  5: typeS32,
+  6: typeU32,
+  7: typeS64,
+  8: typeU64,
+  9: typeFloat,
+  10: typeDouble,
+  11: typeBool,
+}
 
 
-def toNumPyArray(any_array):
-    return artificialSwitchCase[any_array.type](any_array.data)
+def to_numpy_array(any_array):
+    try:
+        return type_id_to_converter_map[any_array.type](any_array.data)
+    except Exception as e:
+        raise Exception("Conversion to NumpyArray failed with error %s" % e)
