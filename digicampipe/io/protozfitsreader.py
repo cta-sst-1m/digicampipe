@@ -166,12 +166,8 @@ PATCH_ID_OUTPUT = [
 class ZFile(object):
 
     def __init__(self, fname):
-        # Save filename
         self.fname = fname
-        # Read non-iterable tables (header), keep their contents in memory.
-        # self.read_runheader()
         self.patch_id_input = PATCH_ID_INPUT
-
         self.patch_id_output = PATCH_ID_OUTPUT
     #  ## INTERNAL METHODS ##################################################§
 
