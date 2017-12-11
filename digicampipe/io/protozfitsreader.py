@@ -320,12 +320,6 @@ class Event:
         return time_second * 1E9 + time_nanosecond
 
     def get_trigger_output_patch7(self, telescope_id=None):
-        '''
-        Get the samples for all channels
-
-        :param telescope_id: id of the telescope of interest
-        :return: dictionnary of samples (value) per pixel indices (key)
-        '''
         frames = toNumPyArray(self.event.trigger_output_patch7)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(
@@ -340,12 +334,6 @@ class Event:
         return frames
 
     def get_trigger_output_patch19(self, telescope_id=None):
-        '''
-        Get the samples for all channels
-
-        :param telescope_id: id of the telescope of interest
-        :return: dictionnary of samples (value) per pixel indices (key)
-        '''
         frames = toNumPyArray(self.event.trigger_output_patch19)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(
@@ -358,13 +346,6 @@ class Event:
         return properties
 
     def get_trigger_input_traces(self, telescope_id=None):
-        '''
-        Get the samples for all channels
-
-        :param telescope_id: id of the telescopeof interest
-        :return: dictionnary of samples (value) per pixel indices (key)
-        '''
-
         frames = toNumPyArray(self.event.trigger_input_traces)
         frames = frames.reshape(frames.shape[0] // 3, 3)
         frames = frames.reshape(frames.shape[0] // 192, 3, 192)
