@@ -258,24 +258,31 @@ class ZFile(object):
             yield run_id, event_id
             i += 1
 
-    def get_telescope_id(self):
-        return self.event.telescopeID
-
-    def get_event_number(self):
-        return self.event.eventNumber
-
     def get_run_id(self):
         return toNumPyArray(self.header.runNumber)
 
-    def get_central_event_gps_time(self):
-        time_second = self.event.trig.timeSec
-        time_nanosecond = self.event.trig.timeNanoSec
-        return time_second * 1E9 + time_nanosecond
+    def _get_adc(self, channel, telescope_id=None):
+        assert channel in ('hi', 'lo')
+        fieldname = "{}Gain".format(channel)
+        return extract_field(self.event, fieldname)
 
-    def get_local_time(self):
-        time_second = self.event.local_time_sec
-        time_nanosecond = self.event.local_time_nanosec
-        return time_second * 1E9 + time_nanosecond
+    def get_pixel_position(self, telescope_id=None):
+        return None
+
+    def print_listof_fields(self, obj):
+        fields = [f.name for f in obj.DESCRIPTOR.fields]
+        print(fields)
+        return (fields)
+
+
+class Event:
+    def __init__(self, event):
+        self.event = event
+
+    def get_number_of_pixels(self, telescope_id=None):
+        n_pixels = toNumPyArray(
+            self.event.hiGain.waveforms.pixelsIndices).shape[0]
+        return n_pixels
 
     def get_baseline(self):
         """Get the baselines for all channels
@@ -291,6 +298,22 @@ class ZFile(object):
 
         return baselines[np.argsort(pixels)]
 
+    def get_telescope_id(self):
+        return self.event.telescopeID
+
+    def get_event_number(self):
+        return self.event.eventNumber
+
+    def get_central_event_gps_time(self):
+        time_second = self.event.trig.timeSec
+        time_nanosecond = self.event.trig.timeNanoSec
+        return time_second * 1E9 + time_nanosecond
+
+    def get_local_time(self):
+        time_second = self.event.local_time_sec
+        time_nanosecond = self.event.local_time_nanosec
+        return time_second * 1E9 + time_nanosecond
+
     def get_event_number_array(self):
         return toNumPyArray(self.event.arrayEvtNum)
 
@@ -303,18 +326,18 @@ class ZFile(object):
     def get_num_channels(self):
         return toNumPyArray(self.event.head.numGainChannels)
 
-    def _get_adc(self, channel, telescope_id=None):
-        assert channel in ('hi', 'lo')
-        fieldname = "{}Gain".format(channel)
-        return extract_field(self.event, fieldname)
-
-    def get_pixel_position(self, telescope_id=None):
-        return None
-
-    def get_number_of_pixels(self, telescope_id=None):
-        n_pixels = toNumPyArray(
-            self.event.hiGain.waveforms.pixelsIndices).shape[0]
-        return n_pixels
+    def get_pixel_flags(self, telescope_id=None):
+        '''
+        Get the flag of pixels
+        :param id of the telescopeof interest
+        :return: dictionnary of flags (value) per pixel indices (key)
+        '''
+        waveforms = self.event.hiGain.waveforms
+        flags = toNumPyArray(self.event.pixels_flags)
+        pixels = toNumPyArray(waveforms.pixelsIndices)
+        properties = numpy.array(
+            list(dict(zip(pixels, flags)).values()), dtype=bool)
+        return properties
 
     def get_adcs_samples(self, telescope_id=None):
         """
@@ -339,28 +362,6 @@ class ZFile(object):
 
         return samples.shape[0] // pixels.shape[0]
 
-    def get_trigger_input_traces(self, telescope_id=None):
-        '''
-        Get the samples for all channels
-
-        :param telescope_id: id of the telescopeof interest
-        :return: dictionnary of samples (value) per pixel indices (key)
-        '''
-
-        frames = toNumPyArray(self.event.trigger_input_traces)
-        frames = frames.reshape(frames.shape[0] // 3, 3)
-        frames = frames.reshape(frames.shape[0] // 192, 3, 192)
-        frames = frames[..., :144]
-        frames = frames.reshape(
-            frames.shape[0],
-            frames.shape[1]*frames.shape[2]
-        )
-        frames = frames.T
-        frames = numpy.array(
-            list(dict(zip(self.patch_id_input, frames)).values()))
-
-        return frames
-
     def get_trigger_output_patch7(self, telescope_id=None):
         '''
         Get the samples for all channels
@@ -374,7 +375,7 @@ class ZFile(object):
             frames.reshape(n_samples, 3, 18, 1), axis=-1
             )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
 
-        patches = self.patch_id_output
+        patches = PATCH_ID_OUTPUT
         properties = dict(zip(patches, frames))
 
         frames = numpy.array(list(properties.values()))
@@ -393,30 +394,33 @@ class ZFile(object):
         frames = numpy.unpackbits(
             frames.reshape(n_samples, 3, 18, 1), axis=-1
             )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
-        patches = self.patch_id_output
+        patches = PATCH_ID_OUTPUT
         properties = dict(zip(patches, frames))
         properties = numpy.array(list(properties.values()))
 
         return properties
 
-    def get_pixel_flags(self, telescope_id=None):
+    def get_trigger_input_traces(self, telescope_id=None):
         '''
-        Get the flag of pixels
-        :param id of the telescopeof interest
-        :return: dictionnary of flags (value) per pixel indices (key)
+        Get the samples for all channels
+
+        :param telescope_id: id of the telescopeof interest
+        :return: dictionnary of samples (value) per pixel indices (key)
         '''
-        waveforms = self.event.hiGain.waveforms
-        flags = toNumPyArray(self.event.pixels_flags)
-        pixels = toNumPyArray(waveforms.pixelsIndices)
-        properties = numpy.array(
-            list(dict(zip(pixels, flags)).values()), dtype=bool)
-        return properties
 
-    def print_listof_fields(self, obj):
-        fields = [f.name for f in obj.DESCRIPTOR.fields]
-        print(fields)
-        return (fields)
+        frames = toNumPyArray(self.event.trigger_input_traces)
+        frames = frames.reshape(frames.shape[0] // 3, 3)
+        frames = frames.reshape(frames.shape[0] // 192, 3, 192)
+        frames = frames[..., :144]
+        frames = frames.reshape(
+            frames.shape[0],
+            frames.shape[1]*frames.shape[2]
+        )
+        frames = frames.T
+        frames = numpy.array(
+            list(dict(zip(PATCH_ID_INPUT, frames)).values()))
 
+        return frames
 
 any_array_type_to_npdtype = {
     1: 'i1',
