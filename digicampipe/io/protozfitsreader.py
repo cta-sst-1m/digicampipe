@@ -175,8 +175,6 @@ class ZFile(object):
         self.header = L0_pb2.CameraRunHeader()
         self.header.ParseFromString(rawzfitsreader.readEvent())
 
-
-    #  ## INTERNAL METHODS ##################################################§
     def __open_runheader(self):
         rawzfitsreader.open(self.fname + ":RunHeader")
 
@@ -211,14 +209,6 @@ class ZFile(object):
             return toNumPyArray(self.header.runNumber)
         except:
             return 0
-
-    def _get_adc(self, channel, telescope_id=None):
-        assert channel in ('hi', 'lo')
-        fieldname = "{}Gain".format(channel)
-        return extract_field(self.event, fieldname)
-
-    def get_pixel_position(self, telescope_id=None):
-        return None
 
     def print_listof_fields(self, obj):
         fields = [f.name for f in obj.DESCRIPTOR.fields]
