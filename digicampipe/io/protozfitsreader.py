@@ -100,7 +100,7 @@ pixel_remap = [
     690, 654, 726, 691, 692, 656, 762, 763, 727, 728
 ]
 
-PATH_ID_INPUT = [
+PATCH_ID_INPUT = [
     204, 216, 180, 192, 229, 241, 205, 217, 254, 266, 230, 242,
     279, 291, 255, 267, 304, 316, 280, 292, 329, 341, 305, 317, 156, 168, 132,
     144, 181, 193, 157, 169, 206, 218, 182, 194, 231, 243, 207, 219, 256, 268,
@@ -139,7 +139,7 @@ class ZFile(object):
         self.fname = fname
         # Read non-iterable tables (header), keep their contents in memory.
         # self.read_runheader()
-        self.patch_id_input = PATH_ID_INPUT
+        self.patch_id_input = PATCH_ID_INPUT
 
         self.patch_id_output = [204, 216, 229, 241, 254, 266, 279, 291, 304, 316, 329, 341, 180, 192, 205, 217, 230,
                                 242, 255, 267, 280, 292, 305, 317, 156, 168, 181, 193, 206, 218, 231, 243, 256, 268,
