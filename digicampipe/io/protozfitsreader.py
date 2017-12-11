@@ -284,18 +284,13 @@ class ZFile(object):
         """
         waveforms = self.event.hiGain.waveforms
 
+        pixels = toNumPyArray(waveforms.pixelsIndices)
         try:
             baselines = toNumPyArray(waveforms.baselines)
-
         except:
+            baselines = numpy.ones(len(pixels)) * numpy.nan
 
-            n_pixels = toNumPyArray(waveforms.pixelsIndices).shape[0]
-            baselines = numpy.zeros(n_pixels) * numpy.nan
-
-        pixels = toNumPyArray(waveforms.pixelsIndices)
-        properties = numpy.array(list(dict(zip(pixels, baselines)).values()))
-
-        return properties
+        return baselines[np.argsort(pixels)]
 
     def get_event_number_array(self):
         return toNumPyArray(self.event.arrayEvtNum)
@@ -315,11 +310,9 @@ class ZFile(object):
         return extract_field(self.event, fieldname)
 
     def get_pixel_position(self, telescope_id=None):
-
         return None
 
     def get_number_of_pixels(self, telescope_id=None):
-
         n_pixels = toNumPyArray(
             self.event.hiGain.waveforms.pixelsIndices).shape[0]
         return n_pixels
@@ -341,7 +334,6 @@ class ZFile(object):
         return properties
 
     def get_num_samples(self):
-
         waveforms = self.event.hiGain.waveforms
         samples = toNumPyArray(waveforms.samples)
         pixels = toNumPyArray(waveforms.pixelsIndices)
