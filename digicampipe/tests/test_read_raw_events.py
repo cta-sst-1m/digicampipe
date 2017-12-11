@@ -172,19 +172,6 @@ def test_n_pixel():
     assert n_pixel == [1296] * EVENTS_IN_EXAMPLE_FILE
 
 
-def test_eventNumber():
-    from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
-    eventNumber = [
-        zfits.event.eventNumber
-        for __ in zfits.move_to_next_event()
-    ]
-    expected_event_numbers = [
-        FIRST_EVENT_IN_EXAMPLE_FILE + i
-        for i in range(EVENTS_IN_EXAMPLE_FILE)
-    ]
-    assert eventNumber == expected_event_numbers
-
 def test_pixel_flags():
     from digicampipe.io.protozfitsreader import ZFile
     zfits = ZFile(example_file_path)
