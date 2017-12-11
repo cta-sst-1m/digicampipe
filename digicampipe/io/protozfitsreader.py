@@ -3,7 +3,7 @@
 # Zfits/protobuf loader.
 # import protozfitsreader
 import numpy
-import rawzfitsreader
+from protozfitsreader import rawzfitsreader
 
 
 pixel_remap = [425, 461, 353, 389, 352, 388, 424, 460, 315, 351, 387, 423, 281, 317, 209, 245, 208, 244, 280, 316, 175,
