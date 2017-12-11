@@ -449,8 +449,8 @@ class ZFile(object):
         waveforms = self.event.hiGain.waveforms
         flags = self._get_numpyfield(self.event.pixels_flags)
         pixels = self._get_numpyfield(waveforms.pixelsIndices)
-        npixels = len(pixels)
-        properties = numpy.array(list(dict(zip(pixels, flags)).values()), dtype=bool)
+        properties = numpy.array(
+            list(dict(zip(pixels, flags)).values()), dtype=bool)
         return properties
 
     def print_listof_fields(self, obj):
