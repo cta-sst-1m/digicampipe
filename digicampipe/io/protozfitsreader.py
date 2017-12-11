@@ -171,7 +171,8 @@ class ZFile:
         if not isfile(fname):
             raise FileNotFoundError(fname)
         self.fname = fname
-        self.eventnumber = 1
+        self.eventnumber = 0
+        self.is_events_table_open = False
 
         try:
             self.__open_runheader()
@@ -187,7 +188,7 @@ class ZFile:
             self.run_id = 0
 
     def __next__(self):
-        if self.eventnumber <= self.numrows:
+        if self.eventnumber < self.numrows:
             self.__open_events()
             event = L0_pb2.CameraEvent()
             event.ParseFromString(rawzfitsreader.readEvent())
@@ -203,7 +204,9 @@ class ZFile:
         rawzfitsreader.open(self.fname + ":RunHeader")
 
     def __open_events(self):
-        rawzfitsreader.open(self.fname + ":Events")
+        if not self.is_events_table_open:
+            rawzfitsreader.open(self.fname + ":Events")
+            self.is_events_table_open = True
 
     def __open_runtails(self):
         rawzfitsreader.open(self.fname + ":RunTails")
