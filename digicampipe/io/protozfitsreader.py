@@ -217,7 +217,7 @@ class ZFile(object):
 
     def read_runheader(self):
         # Get number of events in file
-        import L0_pb2
+        from protozfitsreader import L0_pb2
         try:
             assert (self.ttype == "RunHeader")
         except:
@@ -233,7 +233,7 @@ class ZFile(object):
         # read an event. Assume it is a camera event
         # C++ return a serialized string, python protobuf
         # rebuild message from serial string
-        import L0_pb2
+        from protozfitsreader import L0_pb2
 
         try:
             assert (self.ttype == "Events")
