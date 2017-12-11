@@ -211,14 +211,12 @@ class ZFile(object):
         # rebuild message from serial string
         import L0_pb2
 
-        try:
-            assert (self.ttype == "Events")
-        except:
+        if self.ttype == "Events":
+            self.eventnumber += 1
+        else:
             self.ttype = "Events"
             self._read_file()
             self.eventnumber = 1
-        else:
-            self.eventnumber += 1
 
         # print("Reading event number %d" %self.eventnumber)
         self._read_message()
