@@ -239,9 +239,12 @@ class Event:
         self.num_samples = self._samples.shape[1]
         self.pixel_flags = toNumPyArray(_e.pixels_flags)[self._sort_ids]
         self.adc_samples = self._samples[self._sort_ids]
-        self.trigger_output_patch7 = __prepare_trigger_output(_e.trigger_output_patch7)
-        self.trigger_output_patch19 = __prepare_trigger_output(_e.trigger_output_patch19)
-        self.trigger_input_traces = __prepare_trigger_input(_e.trigger_input_traces)
+        self.trigger_output_patch7 = __prepare_trigger_output(
+            _e.trigger_output_patch7)
+        self.trigger_output_patch19 = __prepare_trigger_output(
+            _e.trigger_output_patch19)
+        self.trigger_input_traces = __prepare_trigger_input(
+            _e.trigger_input_traces)
 
     @property
     def unsorted_baseline(self, waveforms):
