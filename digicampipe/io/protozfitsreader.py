@@ -237,10 +237,10 @@ class Event:
         self.event_number = _e.eventNumber
         self.central_event_gps_time = self.__calc_central_event_gps_time()
         self.local_time = self.__calc_local_time()
-        self.event_number_array = np.array(_e.arrayEvtNum)
+        self.event_number_array = _e.arrayEvtNum
         self.camera_event_type = _e.event_type
         self.array_event_type = _e.eventType
-        self.num_channels = _e.head.numGainChannels
+        self.num_gains = _e.head.numGainChannels
         self.num_samples = self._samples.shape[1]
         self.pixel_flags = toNumPyArray(_e.pixels_flags)[self._sort_ids]
         self.adc_samples = self._samples[self._sort_ids]
