@@ -1,6 +1,7 @@
+build/
+__pycache__
 .idea/*
 # Byte-compiled / optimized / DLL files
-__pycache__/
 *.py[cod]
 *$py.class
 
@@ -103,3 +104,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Baobab slurm script
+job.sh
