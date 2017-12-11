@@ -195,9 +195,6 @@ class ZFile(object):
                 "No field %s found in object %s", field, str(obj))
         return (getattr(obj, field))
 
-    def _get_numpyfield(self, field):
-        return toNumPyArray(field)
-
     #  ## PUBLIC METHODS ####################################################
 
     def list_tables(self):
@@ -285,7 +282,7 @@ class ZFile(object):
 
     def get_run_id(self):
 
-        return (self._get_numpyfield(self.header.runNumber))
+        return (toNumPyArray(self.header.runNumber))
 
     def get_central_event_gps_time(self):
 
@@ -308,21 +305,21 @@ class ZFile(object):
         waveforms = self.event.hiGain.waveforms
 
         try:
-            baselines = self._get_numpyfield(waveforms.baselines)
+            baselines = toNumPyArray(waveforms.baselines)
 
         except:
 
-            n_pixels = self._get_numpyfield(waveforms.pixelsIndices).shape[0]
+            n_pixels = toNumPyArray(waveforms.pixelsIndices).shape[0]
             baselines = numpy.zeros(n_pixels) * numpy.nan
 
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        pixels = toNumPyArray(waveforms.pixelsIndices)
         properties = numpy.array(list(dict(zip(pixels, baselines)).values()))
 
         return properties
 
     def get_event_number_array(self):
 
-        return self._get_numpyfield(self.event.arrayEvtNum)
+        return toNumPyArray(self.event.arrayEvtNum)
 
     def get_camera_event_type(self):
 
@@ -334,7 +331,7 @@ class ZFile(object):
 
     def get_num_channels(self):
 
-        return self._get_numpyfield(self.event.head.numGainChannels)
+        return toNumPyArray(self.event.head.numGainChannels)
 
     def _get_adc(self, channel, telescope_id=None):
         # Expect hi/lo -> Will append Gain at the end -> hiGain/loGain
@@ -347,7 +344,7 @@ class ZFile(object):
 
     def get_number_of_pixels(self, telescope_id=None):
 
-        n_pixels = self._get_numpyfield(
+        n_pixels = toNumPyArray(
             self.event.hiGain.waveforms.pixelsIndices).shape[0]
         return n_pixels
 
@@ -359,8 +356,8 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         """
         waveforms = self.event.hiGain.waveforms
-        samples = self._get_numpyfield(waveforms.samples)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        samples = toNumPyArray(waveforms.samples)
+        pixels = toNumPyArray(waveforms.pixelsIndices)
         npixels = len(pixels)
         # Structured array (dict)
         samples = samples.reshape(npixels, -1)
@@ -370,8 +367,8 @@ class ZFile(object):
     def get_num_samples(self):
 
         waveforms = self.event.hiGain.waveforms
-        samples = self._get_numpyfield(waveforms.samples)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        samples = toNumPyArray(waveforms.samples)
+        pixels = toNumPyArray(waveforms.pixelsIndices)
 
         return samples.shape[0] // pixels.shape[0]
 
@@ -383,7 +380,7 @@ class ZFile(object):
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
 
-        frames = self._get_numpyfield(self.event.trigger_input_traces)
+        frames = toNumPyArray(self.event.trigger_input_traces)
         frames = frames.reshape(frames.shape[0] // 3, 3)
         frames = frames.reshape(frames.shape[0] // 192, 3, 192)
         frames = frames[..., :144]
@@ -404,7 +401,7 @@ class ZFile(object):
         :param telescope_id: id of the telescope of interest
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
-        frames = self._get_numpyfield(self.event.trigger_output_patch7)
+        frames = toNumPyArray(self.event.trigger_output_patch7)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(
             frames.reshape(n_samples, 3, 18, 1), axis=-1
@@ -424,7 +421,7 @@ class ZFile(object):
         :param telescope_id: id of the telescope of interest
         :return: dictionnary of samples (value) per pixel indices (key)
         '''
-        frames = self._get_numpyfield(self.event.trigger_output_patch19)
+        frames = toNumPyArray(self.event.trigger_output_patch19)
         n_samples = int(frames.shape[0] / 18 / 3)
         frames = numpy.unpackbits(
             frames.reshape(n_samples, 3, 18, 1), axis=-1
@@ -442,8 +439,8 @@ class ZFile(object):
         :return: dictionnary of flags (value) per pixel indices (key)
         '''
         waveforms = self.event.hiGain.waveforms
-        flags = self._get_numpyfield(self.event.pixels_flags)
-        pixels = self._get_numpyfield(waveforms.pixelsIndices)
+        flags = toNumPyArray(self.event.pixels_flags)
+        pixels = toNumPyArray(waveforms.pixelsIndices)
         properties = numpy.array(
             list(dict(zip(pixels, flags)).values()), dtype=bool)
         return properties
