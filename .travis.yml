@@ -16,6 +16,7 @@ install:
 
   - conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
   - conda install matplotlib llvmlite hdf5 ipython h5py
+  - pip install pytest-benchmark
 
   - mkdir ctasoft
   - cd ctasoft
@@ -46,6 +47,6 @@ install:
   - cd ..
   - pip install -e .
 script:
-  - pytest -v digicampipe
+  - pytest -vv digicampipe
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
 
