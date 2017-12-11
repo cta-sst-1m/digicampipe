@@ -170,24 +170,26 @@ class ZFile(object):
         self.fname = fname
         self.eventnumber = 1
 
-        self._re_open_file("RunHeader")
+        self.__open_runheader()
         self.numrows = rawzfitsreader.getNumRows()
         self.header = L0_pb2.CameraRunHeader()
         self.header.ParseFromString(rawzfitsreader.readEvent())
 
     #  ## INTERNAL METHODS ##################################################§
+    def __open_runheader(self):
+        rawzfitsreader.open(self.fname + ":RunHeader")
 
-    def _re_open_file(self, _type):
-        assert _type in ["RunHeader", "Events", "RunTails"]
-        rawzfitsreader.open("%s:%s" % (self.fname, _type))
+    def __open_events(self):
+        rawzfitsreader.open(self.fname + ":Events")
 
-    #  ## PUBLIC METHODS ####################################################
+    def __open_runtails(self):
+        rawzfitsreader.open(self.fname + ":RunTails")
 
     def list_tables(self):
         return rawzfitsreader.listAllTables(self.fname)
 
     def read_event(self):
-        self._re_open_file("Events")
+        self.__open_events()
         self.rawmessage = rawzfitsreader.readEvent()
         self.numrows = rawzfitsreader.getNumRows()
 
