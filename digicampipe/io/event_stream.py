@@ -1,15 +1,23 @@
-from digicampipe.io import zfits
+from digicampipe.io import zfits, hdf5
 
 
-def event_stream(file_list, camera_geometry, expert_mode=False, max_events=None, allowed_tels=None):
+def event_stream(file_list, camera_geometry, camera, expert_mode=False, max_events=None, mc=False):
 
     for file in file_list:
 
-        data_stream = zfits.zfits_event_source(url=file,
-                                               expert_mode=expert_mode,
-                                               camera_geometry=camera_geometry,
-                                               max_events=max_events,
-                                               allowed_tels=allowed_tels)
+        if not mc:
+
+            data_stream = zfits.zfits_event_source(url=file,
+                                                   expert_mode=expert_mode,
+                                                   camera_geometry=camera_geometry,
+                                                   max_events=max_events,
+                                                   camera=camera)
+        else:
+
+            data_stream = hdf5.digicamtoy_event_source(url=file,
+                                                       camera_geometry=camera_geometry,
+                                                       camera=camera,
+                                                       max_events=max_events)
 
         for event in data_stream:
 
