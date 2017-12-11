@@ -5,7 +5,7 @@
 from os.path import isfile
 import numpy as np
 from protozfitsreader import rawzfitsreader
-import L0_pb2
+from protozfitsreader import L0_pb2
 import warnings
 
 pixel_remap = [
