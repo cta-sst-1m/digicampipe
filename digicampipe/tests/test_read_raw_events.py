@@ -4,6 +4,9 @@ import pkg_resources
 import os
 from os.path import relpath
 import numpy as np
+import warnings
+
+warnings.simplefilter("ignore")
 
 example_file_path = pkg_resources.resource_filename(
     'digicampipe',
@@ -108,7 +111,7 @@ def test_iteration_yield_expected_fields():
         # fields and we can access them
         event.event_id
         event.telescope_id
-        event.num_channels
+        event.num_gains
         event.n_pixels
         event.event_number
         event.pixel_flags
@@ -143,31 +146,28 @@ def test_event_number():
 
 def test_telescope_ids():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     telescope_ids = [
-        zfits.event.telescopeID
-        for __ in zfits.move_to_next_event()
+        event.telescope_id
+        for event in ZFile(example_file_path)
     ]
     expected_ids = [TELESCOPE_ID_IN_EXAMPLE_FILE] * EVENTS_IN_EXAMPLE_FILE
     assert telescope_ids == expected_ids
 
-
+@pytest.mark.xfail
 def test_num_gains():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     num_gains = [
-        zfits.event.num_gains
-        for __ in zfits.move_to_next_event()
+        event.num_gains
+        for event in ZFile(example_file_path)
     ]
     expected_num_gains = [0] * EVENTS_IN_EXAMPLE_FILE
     assert num_gains == expected_num_gains
 
 def test_n_pixel():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     n_pixel = [
-        zfits.get_number_of_pixels()
-        for __ in zfits.move_to_next_event()
+        event.n_pixels
+        for event in ZFile(example_file_path)
     ]
     assert n_pixel == [1296] * EVENTS_IN_EXAMPLE_FILE
 
