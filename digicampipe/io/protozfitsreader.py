@@ -326,12 +326,7 @@ class Event:
             frames.reshape(n_samples, 3, 18, 1), axis=-1
             )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
 
-        patches = PATCH_ID_OUTPUT
-        properties = dict(zip(patches, frames))
-
-        frames = numpy.array(list(properties.values()))
-
-        return frames
+        return frames[np.argsort(PATCH_ID_OUTPUT)]
 
     def get_trigger_output_patch19(self, telescope_id=None):
         frames = toNumPyArray(self.event.trigger_output_patch19)
@@ -339,11 +334,8 @@ class Event:
         frames = numpy.unpackbits(
             frames.reshape(n_samples, 3, 18, 1), axis=-1
             )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
-        patches = PATCH_ID_OUTPUT
-        properties = dict(zip(patches, frames))
-        properties = numpy.array(list(properties.values()))
 
-        return properties
+        return frames[np.argsort(PATCH_ID_OUTPUT)]
 
     def get_trigger_input_traces(self, telescope_id=None):
         frames = toNumPyArray(self.event.trigger_input_traces)
