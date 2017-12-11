@@ -173,15 +173,17 @@ class ZFile:
         self.fname = fname
         self.eventnumber = 1
 
-        self.__open_runheader()
-        self.numrows = rawzfitsreader.getNumRows()
-        self.header = L0_pb2.CameraRunHeader()
-        self.header.ParseFromString(rawzfitsreader.readEvent())
         try:
+            self.__open_runheader()
+            self.numrows = rawzfitsreader.getNumRows()
+            self.header = L0_pb2.CameraRunHeader()
+            self.header.ParseFromString(rawzfitsreader.readEvent())
             self.run_id = toNumPyArray(self.header.runNumber)
         except ValueError:
             warnings.warn(
-                "Could not read `run_id` from {}".format(self.fname))
+                "{} has no RunHeader".format(self.fname))
+            self.__open_events()
+            self.numrows = rawzfitsreader.getNumRows()
             self.run_id = 0
 
     def __next__(self):
