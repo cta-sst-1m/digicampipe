@@ -240,7 +240,8 @@ class Event:
         self.event_number_array = _e.arrayEvtNum
         self.camera_event_type = _e.event_type
         self.array_event_type = _e.eventType
-        self.num_gains = _e.head.numGainChannels
+        self.num_gains = _e.num_gains
+        self.num_channels = _e.head.numGainChannels
         self.num_samples = self._samples.shape[1]
         self.pixel_flags = toNumPyArray(_e.pixels_flags)[self._sort_ids]
         self.adc_samples = self._samples[self._sort_ids]
