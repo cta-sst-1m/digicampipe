@@ -53,9 +53,8 @@ def test_rawreader_can_work_with_absolute_path():
 
 def test_can_iterate_over_events():
     from digicampipe.io.protozfitsreader import ZFile
-    print(example_file_path)
+
     zfits = ZFile(example_file_path)
-    event_stream = zfits.move_to_next_event()
-    for __ in event_stream:
+    for __ in zfits.move_to_next_event():
         pass
 
