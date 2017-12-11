@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='digicampipe',
-    version='0.1.1',
+    version='0.1.2',
     packages=[
         'digicampipe',
         'digicampipe.io',
@@ -29,4 +29,5 @@ setup(
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
+    package_data={'': ['tests/resources/*']},
 )

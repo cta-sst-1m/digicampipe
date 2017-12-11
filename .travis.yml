@@ -37,7 +37,7 @@ install:
   - cd ..
   - pip install -e ctapipe-extra
 
-  - git clone https://github.com/cocov/CTS
+  - git clone https://github.com/yrenier/CTS
   - pip install -e CTS
 
   - git clone https://github.com/calispac/digicamviewer
@@ -46,6 +46,6 @@ install:
   - cd ..
   - pip install -e .
 script:
-  - python tests/test_imports.py
+  - pytest -v digicampipe
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
 
