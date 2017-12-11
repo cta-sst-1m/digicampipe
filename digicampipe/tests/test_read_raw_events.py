@@ -174,10 +174,9 @@ def test_n_pixel():
 
 def test_pixel_flags():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     pixel_flags = [
-        zfits.get_pixel_flags()
-        for __ in zfits.move_to_next_event()
+        event.pixel_flags
+        for event in ZFile(example_file_path)
     ]
     expected_pixel_flags = [
         np.ones(1296, dtype=np.bool)
@@ -188,59 +187,53 @@ def test_pixel_flags():
 
 def test_local_time():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     local_time = [
-        zfits.get_local_time()
-        for __ in zfits.move_to_next_event()
+        event.local_time
+        for event in ZFile(example_file_path)
     ]
     assert local_time == EXPECTED_LOCAL_TIME
 
 def test_gps_time():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     gps_time = [
-        zfits.get_central_event_gps_time()
-        for __ in zfits.move_to_next_event()
+        event.central_event_gps_time
+        for event in ZFile(example_file_path)
     ]
     assert gps_time == EXPECTED_GPS_TIME
 
 
 def test_camera_event_type():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     camera_event_type = [
-        zfits.get_camera_event_type()
-        for __ in zfits.move_to_next_event()
+        event.camera_event_type
+        for event in ZFile(example_file_path)
     ]
     assert camera_event_type == [1, 1, 1, 1, 1, 8, 1, 1, 1, 1]
 
 
 def test_array_event_type():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     array_event_type = [
-        zfits.get_array_event_type()
-        for __ in zfits.move_to_next_event()
+        event.array_event_type
+        for event in ZFile(example_file_path)
     ]
     assert array_event_type == [0] * EVENTS_IN_EXAMPLE_FILE
 
 
 def test_num_samples():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     num_samples = [
-        zfits.get_num_samples()
-        for __ in zfits.move_to_next_event()
+        event.num_samples
+        for event in ZFile(example_file_path)
     ]
     assert num_samples == [50] * EVENTS_IN_EXAMPLE_FILE
 
 
 def test_adc_samples():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     adc_samples = [
-        zfits.get_adcs_samples()
-        for __ in zfits.move_to_next_event()
+        event.adc_samples
+        for event in ZFile(example_file_path)
     ]
 
     for actual in adc_samples:
@@ -257,10 +250,9 @@ def test_adc_samples():
 
 def test_trigger_input_traces():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     trigger_input_traces = [
-        zfits.get_trigger_input_traces()
-        for __ in zfits.move_to_next_event()
+        event.trigger_input_traces
+        for event in ZFile(example_file_path)
     ]
 
     for actual in trigger_input_traces:
@@ -270,10 +262,9 @@ def test_trigger_input_traces():
 
 def test_trigger_output_patch7():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     trigger_output_patch7 = [
-        zfits.get_trigger_output_patch7()
-        for __ in zfits.move_to_next_event()
+        event.trigger_output_patch7
+        for event in ZFile(example_file_path)
     ]
 
     for actual in trigger_output_patch7:
@@ -283,10 +274,9 @@ def test_trigger_output_patch7():
 
 def test_trigger_output_patch19():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     trigger_output_patch19 = [
-        zfits.get_trigger_output_patch19()
-        for __ in zfits.move_to_next_event()
+        event.trigger_output_patch19
+        for event in ZFile(example_file_path)
     ]
 
     for actual in trigger_output_patch19:
@@ -295,10 +285,9 @@ def test_trigger_output_patch19():
 
 def test_baseline():
     from digicampipe.io.protozfitsreader import ZFile
-    zfits = ZFile(example_file_path)
     baseline = [
-        zfits.get_baseline()
-        for __ in zfits.move_to_next_event()
+        event.baseline
+        for event in ZFile(example_file_path)
     ]
 
     for actual in baseline:
