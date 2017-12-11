@@ -164,7 +164,7 @@ PATCH_ID_OUTPUT = [
 ]
 
 
-class ZFile(object):
+class ZFile:
 
     def __init__(self, fname):
         self.fname = fname
@@ -207,8 +207,6 @@ class ZFile(object):
     def rewind_table(self):
         # Rewind the current reader. Go to the beginning of the table.
         rawzfitsreader.rewindTable()
-
-
 
 
 class Event:
