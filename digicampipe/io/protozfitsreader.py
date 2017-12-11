@@ -244,22 +244,14 @@ class ZFile(object):
                 numrows = self.numrows
             # End - Hook to deal with file with no header (2)
 
-            # Hook to deal with file with no header (3)
-            try:
-                run_id = self.get_run_id()
-                event_id = self.get_event_id()
-            except:
-                run_id = 0
-                event_id = self.eventnumber
-                # print('No header in this file, run_id set to 0 and event_id
-                # set to event_number')
-            # Hook to deal with file with no header (3)
-
-            yield run_id, event_id
+            yield Event(self.event, self.run_id(), self.eventnumber)
             i += 1
 
-    def get_run_id(self):
-        return toNumPyArray(self.header.runNumber)
+    def run_id(self):
+        try:
+            return toNumPyArray(self.header.runNumber)
+        except:
+            return 0
 
     def _get_adc(self, channel, telescope_id=None):
         assert channel in ('hi', 'lo')
@@ -276,7 +268,9 @@ class ZFile(object):
 
 
 class Event:
-    def __init__(self, event):
+    def __init__(self, event, run_id, event_id):
+        self.event_id = event_id
+        self.run_id = run_id
         self.__event = event
 
         _e = self.__event                   # just to make lines shorter
@@ -286,7 +280,7 @@ class Event:
         self._sort_ids = np.argsort[self.pixel_ids]
         self.n_pixels = len(self.pixel_ids)
         self._samples = toNumPyArray(_w.samples).reshape(self.n_pixels, -1)
-        self.baseline = self.__get_baseline()
+        self.baseline = self.unsorted_baseline[self._sort_ids]
         self.telescope_id = _e.telescopeID
         self.event_number = _e.eventNumber
         self.central_event_gps_time = self.__calc_central_event_gps_time()
@@ -298,16 +292,21 @@ class Event:
         self.num_samples = self._samples.shape[1]
         self.pixel_flags = toNumPyArray(_e.pixels_flags)[self._sort_ids]
         self.adc_samples = self._samples[self._sort_ids]
+        self.trigger_output_patch7 = __prepare_trigger_output(_e.trigger_output_patch7)
+        self.trigger_output_patch19 = __prepare_trigger_output(_e.trigger_output_patch19)
+        self.trigger_input_traces = __prepare_trigger_input(_e.trigger_input_traces)
 
-    def __get_baseline(self, waveforms, ):
-        """Get the baselines for all channels
-        :return: 1D array baselines, sorted by pixel ids
-        """
-        try:
-            baselines = toNumPyArray(waveforms.baselines)
-        except:
-            baselines = numpy.ones(len(self.pixel_ids)) * numpy.nan
-        return baselines[self._sort_ids]
+    @property
+    def unsorted_baseline(self, waveforms):
+        if not hasattr(self, '__unsorted_baseline'):
+            try:
+                self.__unsorted_baseline = toNumPyArray(
+                    self.__event.hiGain.waveforms.baselines)
+            except:
+                self.__unsorted_baseline = numpy.ones(
+                    len(self.pixel_ids)
+                ) * numpy.nan
+        return self.__unsorted_baseline
 
     def __calc_central_event_gps_time(self):
         time_second = self.event.trig.timeSec
@@ -319,37 +318,29 @@ class Event:
         time_nanosecond = self.event.local_time_nanosec
         return time_second * 1E9 + time_nanosecond
 
-    def get_trigger_output_patch7(self, telescope_id=None):
-        frames = toNumPyArray(self.event.trigger_output_patch7)
-        n_samples = int(frames.shape[0] / 18 / 3)
-        frames = numpy.unpackbits(
-            frames.reshape(n_samples, 3, 18, 1), axis=-1
-            )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
 
-        return frames[np.argsort(PATCH_ID_OUTPUT)]
+def __prepare_trigger_input(_a):
+    _a = toNumPyArray(_a)
+    A, B = 3, 192
+    cut = 144
+    _a = _a.reshape(-1, A)
+    _a = _a.reshape(-1, A, B)
+    _a = _a[..., :cut]
+    _a = _a.reshape(_a.shape[0], -1)
+    _a = _a.T
+    _a = _a[np.argsort(PATCH_ID_INPUT)]
+    return _a
 
-    def get_trigger_output_patch19(self, telescope_id=None):
-        frames = toNumPyArray(self.event.trigger_output_patch19)
-        n_samples = int(frames.shape[0] / 18 / 3)
-        frames = numpy.unpackbits(
-            frames.reshape(n_samples, 3, 18, 1), axis=-1
-            )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
 
-        return frames[np.argsort(PATCH_ID_OUTPUT)]
+def __prepare_trigger_output(_a):
+    _a = toNumPyArray(_a)
+    A, B, C = 3, 18, 8
 
-    def get_trigger_input_traces(self, telescope_id=None):
-        frames = toNumPyArray(self.event.trigger_input_traces)
-        frames = frames.reshape(frames.shape[0] // 3, 3)
-        frames = frames.reshape(frames.shape[0] // 192, 3, 192)
-        frames = frames[..., :144]
-        frames = frames.reshape(
-            frames.shape[0],
-            frames.shape[1]*frames.shape[2]
-        )
-        frames = frames.T
-        frames = frames[np.argsort(PATCH_ID_INPUT)]
+    _a = np.unpackbits(_a.reshape(-1, A, B, 1), axis=-1)
+    _a = _a[..., ::-1]
+    _a = _a.reshape(-1, A*B*C).T
+    return _a[np.argsort(PATCH_ID_OUTPUT)]
 
-        return frames
 
 any_array_type_to_npdtype = {
     1: 'i1',
