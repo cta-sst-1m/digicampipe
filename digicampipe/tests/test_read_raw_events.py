@@ -65,8 +65,7 @@ def test_zfile_opens_correct_path():
 def test_can_iterate_over_events():
     from digicampipe.io.protozfitsreader import ZFile
 
-    zfits = ZFile(example_file_path)
-    for __ in zfits.move_to_next_event():
+    for __ in ZFile(example_file_path):
         pass
 
 
