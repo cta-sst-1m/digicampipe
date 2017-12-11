@@ -153,7 +153,6 @@ def test_telescope_ids():
     expected_ids = [TELESCOPE_ID_IN_EXAMPLE_FILE] * EVENTS_IN_EXAMPLE_FILE
     assert telescope_ids == expected_ids
 
-@pytest.mark.xfail
 def test_num_gains():
     from digicampipe.io.protozfitsreader import ZFile
     num_gains = [
