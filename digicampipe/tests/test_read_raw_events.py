@@ -39,7 +39,7 @@ def test_rawreader_can_work_with_relative_path():
     event.ParseFromString(raw)
 
 
-def test_rawreader_cannot_work_with_absolute_path():
+def test_rawreader_can_work_with_absolute_path():
     from protozfitsreader import rawzfitsreader
     from protozfitsreader import L0_pb2
 
