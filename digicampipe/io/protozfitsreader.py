@@ -6,6 +6,7 @@ from os.path import isfile
 import numpy as np
 from protozfitsreader import rawzfitsreader
 import L0_pb2
+import warnings
 
 pixel_remap = [
     425, 461, 353, 389, 352, 388, 424, 460, 315, 351, 387, 423,
@@ -178,7 +179,9 @@ class ZFile:
         self.header.ParseFromString(rawzfitsreader.readEvent())
         try:
             self.run_id = toNumPyArray(self.header.runNumber)
-        except:
+        except ValueError:
+            warnings.warn(
+                "Could not read `run_id` from {}".format(self.fname))
             self.run_id = 0
 
     def __next__(self):
@@ -246,7 +249,11 @@ class Event:
             try:
                 self.__unsorted_baseline = toNumPyArray(
                     self.__event.hiGain.waveforms.baselines)
-            except:
+            except ValueError:
+                warnings.warn((
+                    "Could not read `hiGain.waveforms.baselines` for event:{0}"
+                    "of run_id:{1}".format(self.event_id, self.run_id)
+                    ))
                 self.__unsorted_baseline = np.ones(
                     len(self.pixel_ids)
                 ) * np.nan
@@ -311,6 +318,6 @@ def toNumPyArray(a):
         return np.frombuffer(
             a.data, any_array_type_to_npdtype[a.type])
     else:
-        raise Exception(
+        raise ValueError(
             "Conversion to NumpyArray failed with error:\n%s",
             any_array_type_cannot_convert_exception_text[a.type])
