@@ -34,6 +34,7 @@ EXPECTED_LOCAL_TIME = [
 ]
 EXPECTED_GPS_TIME = [0] * EVENTS_IN_EXAMPLE_FILE
 
+
 @pytest.mark.skip(reason="we know the current version does not raise")
 def test_zfile_raises_on_wrong_path():
     from digicampipe.io.protozfitsreader import ZFile
@@ -153,6 +154,7 @@ def test_telescope_ids():
     expected_ids = [TELESCOPE_ID_IN_EXAMPLE_FILE] * EVENTS_IN_EXAMPLE_FILE
     assert telescope_ids == expected_ids
 
+
 def test_num_gains():
     from digicampipe.io.protozfitsreader import ZFile
     num_gains = [
@@ -161,6 +163,7 @@ def test_num_gains():
     ]
     expected_num_gains = [0] * EVENTS_IN_EXAMPLE_FILE
     assert num_gains == expected_num_gains
+
 
 def test_n_pixel():
     from digicampipe.io.protozfitsreader import ZFile
@@ -184,6 +187,7 @@ def test_pixel_flags():
     for actual, expected in zip(pixel_flags, expected_pixel_flags):
         assert (actual == expected).all()
 
+
 def test_local_time():
     from digicampipe.io.protozfitsreader import ZFile
     local_time = [
@@ -191,6 +195,7 @@ def test_local_time():
         for event in ZFile(example_file_path)
     ]
     assert local_time == EXPECTED_LOCAL_TIME
+
 
 def test_gps_time():
     from digicampipe.io.protozfitsreader import ZFile
@@ -281,6 +286,7 @@ def test_trigger_output_patch19():
     for actual in trigger_output_patch19:
         assert actual.dtype == np.uint8
         assert actual.shape == (432, 50)
+
 
 def test_baseline():
     from digicampipe.io.protozfitsreader import ZFile
