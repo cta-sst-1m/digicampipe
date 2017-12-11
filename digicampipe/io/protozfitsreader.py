@@ -319,11 +319,3 @@ def toNumPyArray(a):
         raise Exception(
             "Conversion to NumpyArray failed with error:\n%s",
             any_array_type_cannot_convert_exception_text[a.type])
-
-
-def extract_field(obj, field):
-    # Read a specific field in object 'obj' given as input 'field'
-    if obj.HasField(field) is False:
-        raise Exception(
-            "No field %s found in object %s", field, str(obj))
-    return (getattr(obj, field))
