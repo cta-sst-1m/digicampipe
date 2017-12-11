@@ -2,7 +2,7 @@
 # this code should run in python3.
 # Zfits/protobuf loader.
 # import protozfitsreader
-import numpy
+
 import numpy as np
 from protozfitsreader import rawzfitsreader
 import L0_pb2
@@ -245,9 +245,9 @@ class Event:
                 self.__unsorted_baseline = toNumPyArray(
                     self.__event.hiGain.waveforms.baselines)
             except:
-                self.__unsorted_baseline = numpy.ones(
+                self.__unsorted_baseline = np.ones(
                     len(self.pixel_ids)
-                ) * numpy.nan
+                ) * np.nan
         return self.__unsorted_baseline
 
     def __calc_central_event_gps_time(self):
@@ -306,7 +306,7 @@ any_array_type_cannot_convert_exception_text = {
 
 def toNumPyArray(a):
     if a.type in any_array_type_to_npdtype:
-        return numpy.frombuffer(
+        return np.frombuffer(
             a.data, any_array_type_to_npdtype[a.type])
     else:
         raise Exception(
