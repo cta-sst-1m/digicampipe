@@ -29,4 +29,5 @@ setup(
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
+    package_data={'': ['tests/resources/*']},
 )

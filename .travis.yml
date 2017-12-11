@@ -46,6 +46,6 @@ install:
   - cd ..
   - pip install -e .
 script:
-  - python tests/test_imports.py
+  - pytest -v digicampipe
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
 
