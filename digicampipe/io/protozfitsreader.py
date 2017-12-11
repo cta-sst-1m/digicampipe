@@ -177,12 +177,6 @@ class ZFile(object):
         assert _type in ["RunHeader", "Events", "RunTails"]
         rawzfitsreader.open("%s:%s" % (self.fname, _type))
 
-    def _read_message(self):
-        # Read next message. Fills property self.rawmessage and self.numrows
-
-        self.rawmessage = rawzfitsreader.readEvent()
-        self.numrows = rawzfitsreader.getNumRows()
-
     #  ## PUBLIC METHODS ####################################################
 
     def list_tables(self):
@@ -191,13 +185,15 @@ class ZFile(object):
     def read_runheader(self):
         # Get number of events in file
         self._read_file("RunHeader")
-        self._read_message()
+        self.rawmessage = rawzfitsreader.readEvent()
+        self.numrows = rawzfitsreader.getNumRows()
         self.header = L0_pb2.CameraRunHeader()
         self.header.ParseFromString(self.rawmessage)
 
     def read_event(self):
         self._read_file("Events")
-        self._read_message()
+        self.rawmessage = rawzfitsreader.readEvent()
+        self.numrows = rawzfitsreader.getNumRows()
 
         event = L0_pb2.CameraEvent()
         event.ParseFromString(self.rawmessage)
