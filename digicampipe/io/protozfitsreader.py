@@ -278,9 +278,8 @@ class ZFile(object):
         return time_second * 1E9 + time_nanosecond
 
     def get_baseline(self):
-        """
-        Get the baselines for all channels
-        :return: dict() of baselines (value) per pixel indices (key)
+        """Get the baselines for all channels
+        :return: 1D array baselines, sorted by pixel ids
         """
         waveforms = self.event.hiGain.waveforms
 
