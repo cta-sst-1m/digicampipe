@@ -175,6 +175,7 @@ class ZFile(object):
         self.header = L0_pb2.CameraRunHeader()
         self.header.ParseFromString(rawzfitsreader.readEvent())
 
+
     #  ## INTERNAL METHODS ##################################################§
     def __open_runheader(self):
         rawzfitsreader.open(self.fname + ":RunHeader")
@@ -188,13 +189,6 @@ class ZFile(object):
     def list_tables(self):
         return rawzfitsreader.listAllTables(self.fname)
 
-    def read_event(self):
-        self.__open_events()
-        event = L0_pb2.CameraEvent()
-        event.ParseFromString(rawzfitsreader.readEvent())
-        self.eventnumber += 1
-        return event
-
     def rewind_table(self):
         # Rewind the current reader. Go to the beginning of the table.
         rawzfitsreader.rewindTable()
@@ -203,14 +197,14 @@ class ZFile(object):
         return self
 
     def __next__(self):
-        i = 0
-        numrows = self.numrows
-        while i < numrows:
-            event = self.read_event()
-            numrows = self.numrows
-
-            yield Event(event, self.run_id(), self.eventnumber)
-            i += 1
+        if self.eventnumber <= self.numrows:
+            self.__open_events()
+            event = L0_pb2.CameraEvent()
+            event.ParseFromString(rawzfitsreader.readEvent())
+            self.eventnumber += 1
+            return Event(event, self.run_id(), self.eventnumber)
+        else:
+            raise StopIteration
 
     def run_id(self):
         try:
