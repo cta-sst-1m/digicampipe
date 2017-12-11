@@ -191,7 +191,6 @@ class ZFile(object):
     def read_event(self):
         self.__open_events()
         self.rawmessage = rawzfitsreader.readEvent()
-        self.numrows = rawzfitsreader.getNumRows()
 
         event = L0_pb2.CameraEvent()
         event.ParseFromString(self.rawmessage)
