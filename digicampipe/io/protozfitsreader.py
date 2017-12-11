@@ -5,7 +5,7 @@
 import numpy
 import numpy as np
 from protozfitsreader import rawzfitsreader
-
+import L0_pb2
 
 pixel_remap = [
     425, 461, 353, 389, 352, 388, 424, 460, 315, 351, 387, 423,
@@ -170,17 +170,12 @@ class ZFile(object):
         self.fname = fname
         self.patch_id_input = PATCH_ID_INPUT
         self.patch_id_output = PATCH_ID_OUTPUT
+        self.eventnumber = 1
     #  ## INTERNAL METHODS ##################################################§
 
-    def _read_file(self):
-        # Read file. Return a serialized string
-        try:
-            assert (self.ttype in ["RunHeader", "Events", "RunTails"])
-        except AssertionError as e:
-            print("Error: Table type not RunHeader, Events or RunTails")
-            raise
-        else:
-            rawzfitsreader.open("%s:%s" % (self.fname, self.ttype))
+    def _read_file(self, _type):
+        assert _type in ["RunHeader", "Events", "RunTails"]
+        rawzfitsreader.open("%s:%s" % (self.fname, _type))
 
     def _read_message(self):
         # Read next message. Fills property self.rawmessage and self.numrows
@@ -195,33 +190,18 @@ class ZFile(object):
 
     def read_runheader(self):
         # Get number of events in file
-        import L0_pb2
-        if not self.ttype == "RunHeader":
-            self.ttype = "RunHeader"
-            self._read_file()
-
+        self._read_file("RunHeader")
         self._read_message()
         self.header = L0_pb2.CameraRunHeader()
         self.header.ParseFromString(self.rawmessage)
-        # self.print_listof_fields(self.header)
 
     def read_event(self):
-        # read an event. Assume it is a camera event
-        # C++ return a serialized string, python protobuf
-        # rebuild message from serial string
-        import L0_pb2
-
-        if self.ttype == "Events":
-            self.eventnumber += 1
-        else:
-            self.ttype = "Events"
-            self._read_file()
-            self.eventnumber = 1
-
+        self._read_file("Events")
         self._read_message()
 
         event = L0_pb2.CameraEvent()
         event.ParseFromString(self.rawmessage)
+        self.eventnumber += 1
         return event
 
     def rewind_table(self):
