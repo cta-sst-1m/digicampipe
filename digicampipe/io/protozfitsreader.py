@@ -190,10 +190,8 @@ class ZFile(object):
 
     def read_event(self):
         self.__open_events()
-        self.rawmessage = rawzfitsreader.readEvent()
-
         event = L0_pb2.CameraEvent()
-        event.ParseFromString(self.rawmessage)
+        event.ParseFromString(rawzfitsreader.readEvent())
         self.eventnumber += 1
         return event
 
@@ -201,16 +199,15 @@ class ZFile(object):
         # Rewind the current reader. Go to the beginning of the table.
         rawzfitsreader.rewindTable()
 
-    def move_to_next_event(self):
-        # Iterate over events
+    def __iter__(self):
+        return self
+
+    def __next__(self):
         i = 0
         numrows = self.numrows
         while i < numrows:
             event = self.read_event()
-            # Hook to deal with file with no header (2)
-            if hasattr(self, 'numrows'):
-                numrows = self.numrows
-            # End - Hook to deal with file with no header (2)
+            numrows = self.numrows
 
             yield Event(event, self.run_id(), self.eventnumber)
             i += 1
