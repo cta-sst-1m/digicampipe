@@ -72,9 +72,7 @@ def test_can_iterate_over_events():
 def test_iteration_yield_expected_fields():
     from digicampipe.io.protozfitsreader import ZFile
 
-    zfits = ZFile(example_file_path)
-
-    for __ in zfits.move_to_next_event():
+    for event in ZFile(example_file_path):
         # we just want to see, that the zfits file has all these
         # fields and we can access them
         zfits.get_event_number()
