@@ -196,13 +196,7 @@ class ZFile(object):
         return (getattr(obj, field))
 
     def _get_numpyfield(self, field):
-        try:
-            numpyfield = toNumPyArray(field)
-        except Exception as e:
-            err = "Conversion to NumpyArray failed with error %s" % e
-            raise Exception(err)
-        else:
-            return (numpyfield)
+        return toNumPyArray(field)
 
     #  ## PUBLIC METHODS ####################################################
 
@@ -481,8 +475,13 @@ any_array_type_cannot_convert_exception_text = {
 
 
 def toNumPyArray(a):
-    if a.type in any_array_type_to_npdtype:
-        return numpy.frombuffer(
-            a.data, any_array_type_to_npdtype[a.type])
-    else:
-        raise Exception(any_array_type_cannot_convert_exception_text[a.type])
+    try:
+        if a.type in any_array_type_to_npdtype:
+            return numpy.frombuffer(
+                a.data, any_array_type_to_npdtype[a.type])
+        else:
+            raise Exception(
+                any_array_type_cannot_convert_exception_text[a.type])
+    except Exception as e:
+        err = "Conversion to NumpyArray failed with error %s" % e
+        raise Exception(err)
