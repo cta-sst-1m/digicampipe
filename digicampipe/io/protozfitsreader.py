@@ -196,9 +196,7 @@ class ZFile(object):
     def read_runheader(self):
         # Get number of events in file
         import L0_pb2
-        try:
-            assert (self.ttype == "RunHeader")
-        except:
+        if not self.ttype == "RunHeader":
             self.ttype = "RunHeader"
             self._read_file()
 
