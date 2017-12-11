@@ -2,7 +2,7 @@
 # this code should run in python3.
 # Zfits/protobuf loader.
 # import protozfitsreader
-
+from os.path import isfile
 import numpy as np
 from protozfitsreader import rawzfitsreader
 import L0_pb2
@@ -167,6 +167,8 @@ PATCH_ID_OUTPUT = [
 class ZFile:
 
     def __init__(self, fname):
+        if not isfile(fname):
+            raise FileNotFoundError(fname)
         self.fname = fname
         self.eventnumber = 1
 
