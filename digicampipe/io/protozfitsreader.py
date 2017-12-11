@@ -475,13 +475,10 @@ any_array_type_cannot_convert_exception_text = {
 
 
 def toNumPyArray(a):
-    try:
-        if a.type in any_array_type_to_npdtype:
-            return numpy.frombuffer(
-                a.data, any_array_type_to_npdtype[a.type])
-        else:
-            raise Exception(
-                any_array_type_cannot_convert_exception_text[a.type])
-    except Exception as e:
-        err = "Conversion to NumpyArray failed with error %s" % e
-        raise Exception(err)
+    if a.type in any_array_type_to_npdtype:
+        return numpy.frombuffer(
+            a.data, any_array_type_to_npdtype[a.type])
+    else:
+        raise Exception(
+            "Conversion to NumpyArray failed with error:\n%s",
+            any_array_type_cannot_convert_exception_text[a.type])
