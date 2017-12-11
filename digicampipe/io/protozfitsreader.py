@@ -188,13 +188,6 @@ class ZFile(object):
         self.rawmessage = rawzfitsreader.readEvent()
         self.numrows = rawzfitsreader.getNumRows()
 
-    def _extract_field(self, obj, field):
-        # Read a specific field in object 'obj' given as input 'field'
-        if obj.HasField(field) is False:
-            raise Exception(
-                "No field %s found in object %s", field, str(obj))
-        return (getattr(obj, field))
-
     #  ## PUBLIC METHODS ####################################################
 
     def list_tables(self):
@@ -335,7 +328,7 @@ class ZFile(object):
 
     def _get_adc(self, channel, telescope_id=None):
         # Expect hi/lo -> Will append Gain at the end -> hiGain/loGain
-        sel_channel = self._extract_field(self.event, "%sGain" % channel)
+        sel_channel = extract_field(self.event, "%sGain" % channel)
         return (sel_channel)
 
     def get_pixel_position(self, telescope_id=None):
@@ -479,3 +472,11 @@ def toNumPyArray(a):
         raise Exception(
             "Conversion to NumpyArray failed with error:\n%s",
             any_array_type_cannot_convert_exception_text[a.type])
+
+
+def extract_field(obj, field):
+    # Read a specific field in object 'obj' given as input 'field'
+    if obj.HasField(field) is False:
+        raise Exception(
+            "No field %s found in object %s", field, str(obj))
+    return (getattr(obj, field))
