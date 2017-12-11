@@ -223,10 +223,10 @@ class Event:
     def __init__(self, event, run_id, event_id):
         self.event_id = event_id
         self.run_id = run_id
-        self.__event = event
+        self._event = event
 
-        _e = self.__event                   # just to make lines shorter
-        _w = self.__event.hiGain.waveforms  # just to make lines shorter
+        _e = self._event                   # just to make lines shorter
+        _w = self._event.hiGain.waveforms  # just to make lines shorter
 
         self.pixel_ids = toNumPyArray(_w.pixelsIndices)
         self._sort_ids = np.argsort(self.pixel_ids)
@@ -257,7 +257,7 @@ class Event:
         if not hasattr(self, '__unsorted_baseline'):
             try:
                 self.__unsorted_baseline = toNumPyArray(
-                    self.__event.hiGain.waveforms.baselines)
+                    self._event.hiGain.waveforms.baselines)
             except ValueError:
                 warnings.warn((
                     "Could not read `hiGain.waveforms.baselines` for event:{0}"
@@ -269,13 +269,13 @@ class Event:
         return self.__unsorted_baseline
 
     def __calc_central_event_gps_time(self):
-        time_second = self.__event.trig.timeSec
-        time_nanosecond = self.__event.trig.timeNanoSec
+        time_second = self._event.trig.timeSec
+        time_nanosecond = self._event.trig.timeNanoSec
         return time_second * 1E9 + time_nanosecond
 
     def __calc_local_time(self):
-        time_second = self.__event.local_time_sec
-        time_nanosecond = self.__event.local_time_nanosec
+        time_second = self._event.local_time_sec
+        time_nanosecond = self._event.local_time_nanosec
         return time_second * 1E9 + time_nanosecond
 
 
