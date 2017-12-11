@@ -14,7 +14,6 @@ example_file_path = pkg_resources.resource_filename(
 )
 
 
-@pytest.mark.skip(reason="we know the current version does not raise")
 def test_zfile_raises_on_wrong_path():
     from digicampipe.io.protozfitsreader import ZFile
     with pytest.raises(FileNotFoundError):
