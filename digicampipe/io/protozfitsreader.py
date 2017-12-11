@@ -205,11 +205,7 @@ class ZFile(object):
     def move_to_next_event(self):
         # Iterate over events
         i = 0
-        numrows = i + 2
-        # Hook to deal with file with no header (1)
-        if hasattr(self, 'numrows'):
-            numrows = self.numrows
-        # End - Hook to deal with file with no header (1)
+        numrows = self.numrows
         while i < numrows:
             event = self.read_event()
             # Hook to deal with file with no header (2)
