@@ -3,6 +3,7 @@
 # Zfits/protobuf loader.
 # import protozfitsreader
 import numpy
+import numpy as np
 from protozfitsreader import rawzfitsreader
 
 
@@ -459,70 +460,29 @@ class ZFile(object):
         return (fields)
 
 
-# below are utility functions used to convert from AnyArray to numPyArrays
-def typeNone(data):
-    raise Exception("This any array has no defined type")
+any_array_type_to_npdtype = {
+    1: 'i1',
+    2: 'u1',
+    3: 'i2',
+    4: 'u2',
+    5: 'i4',
+    6: 'u4',
+    7: 'i8',
+    8: 'u8',
+    9: 'f4',
+    10: 'f8',
+}
+
+any_array_type_cannot_convert_exception_text = {
+    0: "This any array has no defined type",
+    11: """I have no idea if the boolean representation
+        of the anyarray is the same as the numpy one"""
+}
 
 
-def typeS8(data):
-    return numpy.fromstring(data, numpy.int8)
-
-
-def typeU8(data):
-    return numpy.fromstring(data, numpy.uint8)
-
-
-def typeS16(data):
-    return numpy.fromstring(data, numpy.int16)
-
-
-def typeU16(data):
-    return numpy.fromstring(data, numpy.uint16)
-
-
-def typeS32(data):
-    return numpy.fromstring(data, numpy.int32)
-
-
-def typeU32(data):
-    return numpy.fromstring(data, numpy.uint32)
-
-
-def typeS64(data):
-    return numpy.fromstring(data, numpy.int64)
-
-
-def typeU64(data):
-    return numpy.fromstring(data, numpy.uint64)
-
-
-def typeFloat(data):
-    return numpy.fromstring(data, numpy.float)
-
-
-def typeDouble(data):
-    return numpy.fromstring(data, numpy.double)
-
-
-def typeBool(any_array):
-    raise Exception("""I have no idea if the boolean representation
-        of the anyarray is the same as the numpy one""")
-
-
-artificialSwitchCase = {0: typeNone,
-                        1: typeS8,
-                        2: typeU8,
-                        3: typeS16,
-                        4: typeU16,
-                        5: typeS32,
-                        6: typeU32,
-                        7: typeS64,
-                        8: typeU64,
-                        9: typeFloat,
-                        10: typeDouble,
-                        11: typeBool,
-                        }
-
-
-def toNumPyArray(any_array):
-    return artificialSwitchCase[any_array.type](any_array.data)
+def toNumPyArray(a):
+    if a.type in any_array_type_to_npdtype:
+        return numpy.frombuffer(
+            a.data, any_array_type_to_npdtype[a.type])
+    else:
+        raise Exception(any_array_type_cannot_convert_exception_text[a.type])
