@@ -48,7 +48,7 @@ We propose to use the most recent version.
     cd ..
     pip install -e ctapipe-extra
 
-    git clone https://github.com/cocov/CTS
+    git clone https://github.com/yrenier/CTS
     pip install -e CTS
 
     git clone https://github.com/calispac/digicamviewer
