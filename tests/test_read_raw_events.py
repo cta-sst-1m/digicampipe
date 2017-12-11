@@ -22,3 +22,11 @@ def test_zfile_raises_on_wrong_path():
 def test_zfile_opens_correct_path():
     from digicampipe.io.protozfitsreader import ZFile
     ZFile(example_file_path)
+
+
+def test_can_iterate_over_events():
+    from digicampipe.io.protozfitsreader import ZFile
+    zfits = ZFile(example_file_path)
+    event_stream = zfits.move_to_next_event()
+    for __ in event_stream:
+        pass
