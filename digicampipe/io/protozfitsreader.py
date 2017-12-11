@@ -173,7 +173,7 @@ class ZFile(object):
         self.patch_id_input = PATCH_ID_INPUT
 
         self.patch_id_output = PATCH_ID_OUTPUT
-    ### INTERNAL METHODS ###########################################################
+    #  ## INTERNAL METHODS ##################################################
 
     def _read_file(self):
         # Read file. Return a serialized string
