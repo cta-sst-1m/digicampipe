@@ -218,12 +218,11 @@ class ZFile(object):
             self._read_file()
             self.eventnumber = 1
 
-        # print("Reading event number %d" %self.eventnumber)
         self._read_message()
 
-        self.event = L0_pb2.CameraEvent()
-        self.event.ParseFromString(self.rawmessage)
-        # self.print_listof_fields(self.event)
+        event = L0_pb2.CameraEvent()
+        event.ParseFromString(self.rawmessage)
+        return event
 
     def rewind_table(self):
         # Rewind the current reader. Go to the beginning of the table.
@@ -238,13 +237,13 @@ class ZFile(object):
             numrows = self.numrows
         # End - Hook to deal with file with no header (1)
         while i < numrows:
-            self.read_event()
+            event = self.read_event()
             # Hook to deal with file with no header (2)
             if hasattr(self, 'numrows'):
                 numrows = self.numrows
             # End - Hook to deal with file with no header (2)
 
-            yield Event(self.event, self.run_id(), self.eventnumber)
+            yield Event(event, self.run_id(), self.eventnumber)
             i += 1
 
     def run_id(self):
