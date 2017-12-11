@@ -20,9 +20,7 @@ install:
   - mkdir ctasoft
   - cd ctasoft
 
-  - wget http://www.isdc.unige.ch/~lyard/repo/ProtoZFitsReader-0.42.Python3.5.Linux.x86_64.tar.gz
-  - pip install ProtoZFitsReader-0.42.Python3.5.Linux.x86_64.tar.gz
-  - export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/python3.5/site-packages:$LD_LIBRARY_PATH
+  - pip install git+https://github.com/dneise/protozfitsreader
 
   - git clone https://github.com/cta-observatory/pyhessio
   - pip install -e pyhessio
