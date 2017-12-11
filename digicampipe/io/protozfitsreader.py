@@ -231,7 +231,8 @@ class ZFile(object):
 
     def read_event(self):
         # read an event. Assume it is a camera event
-        # C++ return a serialized string, python protobuf rebuild message from serial string
+        # C++ return a serialized string, python protobuf
+        # rebuild message from serial string
         import L0_pb2
 
         try:
@@ -276,7 +277,8 @@ class ZFile(object):
             except:
                 run_id = 0
                 event_id = self.eventnumber
-                # print('No header in this file, run_id set to 0 and event_id set to event_number')
+                # print('No header in this file, run_id set to 0 and event_id
+                # set to event_number')
             # Hook to deal with file with no header (3)
 
             yield run_id, event_id
@@ -354,7 +356,8 @@ class ZFile(object):
 
     def get_number_of_pixels(self, telescope_id=None):
 
-        n_pixels = self._get_numpyfield(self.event.hiGain.waveforms.pixelsIndices).shape[0]
+        n_pixels = self._get_numpyfield(
+            self.event.hiGain.waveforms.pixelsIndices).shape[0]
         return n_pixels
 
     def get_adcs_samples(self, telescope_id=None):
@@ -408,9 +411,9 @@ class ZFile(object):
         '''
         frames = self._get_numpyfield(self.event.trigger_output_patch7)
         n_samples = int(frames.shape[0] / 18 / 3)
-        frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,
-                                                                                                   144).reshape(
-            n_samples, 432).T
+        frames = numpy.unpackbits(
+            frames.reshape(n_samples, 3, 18, 1), axis=-1
+            )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
 
         patches = self.patch_id_output
         properties = dict(zip(patches, frames))
