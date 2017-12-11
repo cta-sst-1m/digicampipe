@@ -259,28 +259,22 @@ class ZFile(object):
             i += 1
 
     def get_telescope_id(self):
-
         return self.event.telescopeID
 
     def get_event_number(self):
-
         return self.event.eventNumber
 
     def get_run_id(self):
-
-        return (toNumPyArray(self.header.runNumber))
+        return toNumPyArray(self.header.runNumber)
 
     def get_central_event_gps_time(self):
-
         time_second = self.event.trig.timeSec
         time_nanosecond = self.event.trig.timeNanoSec
         return time_second * 1E9 + time_nanosecond
 
     def get_local_time(self):
-
         time_second = self.event.local_time_sec
         time_nanosecond = self.event.local_time_nanosec
-
         return time_second * 1E9 + time_nanosecond
 
     def get_baseline(self):
@@ -304,25 +298,21 @@ class ZFile(object):
         return properties
 
     def get_event_number_array(self):
-
         return toNumPyArray(self.event.arrayEvtNum)
 
     def get_camera_event_type(self):
-
         return self.event.event_type
 
     def get_array_event_type(self):
-
         return self.event.eventType
 
     def get_num_channels(self):
-
         return toNumPyArray(self.event.head.numGainChannels)
 
     def _get_adc(self, channel, telescope_id=None):
-        # Expect hi/lo -> Will append Gain at the end -> hiGain/loGain
-        sel_channel = extract_field(self.event, "%sGain" % channel)
-        return (sel_channel)
+        assert channel in ('hi', 'lo')
+        fieldname = "{}Gain".format(channel)
+        return extract_field(self.event, fieldname)
 
     def get_pixel_position(self, telescope_id=None):
 
