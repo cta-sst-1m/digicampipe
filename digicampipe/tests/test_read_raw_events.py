@@ -39,6 +39,20 @@ def test_rawreader_can_work_with_relative_path():
     event.ParseFromString(raw)
 
 
+@pytest.mark.xfail
+def test_rawreader_can_read_runheader():
+    from protozfitsreader import rawzfitsreader
+    from protozfitsreader import L0_pb2
+
+    rawzfitsreader.open(example_file_path + ':RunHeader')
+
+    raw = rawzfitsreader.readEvent()
+    assert len(raw) > 0
+
+    header = L0_pb2.CameraRunHeader()
+    header.ParseFromString(raw)
+
+
 def test_rawreader_can_work_with_absolute_path():
     from protozfitsreader import rawzfitsreader
     from protozfitsreader import L0_pb2
