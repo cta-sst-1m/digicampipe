@@ -168,8 +168,6 @@ class ZFile(object):
 
     def __init__(self, fname):
         self.fname = fname
-        self.patch_id_input = PATCH_ID_INPUT
-        self.patch_id_output = PATCH_ID_OUTPUT
         self.eventnumber = 1
 
         self._re_open_file("RunHeader")
