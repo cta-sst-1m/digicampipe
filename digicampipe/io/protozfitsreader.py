@@ -279,8 +279,8 @@ class Event:
     def __init__(self, event):
         self.__event = event
 
-        _e = self.__event                # just to make lines shorter
-        _w = _e.hiGain.waveforms         # just to make lines shorter
+        _e = self.__event                   # just to make lines shorter
+        _w = self.__event.hiGain.waveforms  # just to make lines shorter
 
         self.pixel_ids = toNumPyArray(_w.pixelsIndices)
         self._sort_ids = np.argsort[self.pixel_ids]
