@@ -179,7 +179,7 @@ class ZFile:
             self.header = L0_pb2.CameraRunHeader()
             self.header.ParseFromString(rawzfitsreader.readEvent())
             self.run_id = toNumPyArray(self.header.runNumber)
-        except ValueError:
+        except (ValueError, TypeError):
             warnings.warn(
                 "{} has no RunHeader".format(self.fname))
             self.__open_events()
