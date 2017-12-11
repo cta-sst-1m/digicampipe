@@ -505,7 +505,8 @@ def typeDouble(data):
 
 
 def typeBool(any_array):
-    raise Exception("I have no idea if the boolean representation of the anyarray is the same as the numpy one")
+    raise Exception("""I have no idea if the boolean representation
+        of the anyarray is the same as the numpy one""")
 
 
 artificialSwitchCase = {0: typeNone,
