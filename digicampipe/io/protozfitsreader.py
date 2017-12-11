@@ -171,6 +171,12 @@ class ZFile(object):
         self.patch_id_input = PATCH_ID_INPUT
         self.patch_id_output = PATCH_ID_OUTPUT
         self.eventnumber = 1
+
+        self._re_open_file("RunHeader")
+        self.numrows = rawzfitsreader.getNumRows()
+        self.header = L0_pb2.CameraRunHeader()
+        self.header.ParseFromString(rawzfitsreader.readEvent())
+
     #  ## INTERNAL METHODS ##################################################§
 
     def _re_open_file(self, _type):
@@ -181,14 +187,6 @@ class ZFile(object):
 
     def list_tables(self):
         return rawzfitsreader.listAllTables(self.fname)
-
-    def read_runheader(self):
-        # Get number of events in file
-        self._re_open_file("RunHeader")
-        self.rawmessage = rawzfitsreader.readEvent()
-        self.numrows = rawzfitsreader.getNumRows()
-        self.header = L0_pb2.CameraRunHeader()
-        self.header.ParseFromString(self.rawmessage)
 
     def read_event(self):
         self._re_open_file("Events")
