@@ -2,7 +2,6 @@ import pytest
 
 import pkg_resources
 import os
-from os.path import relpath
 import numpy as np
 import warnings
 
@@ -60,18 +59,18 @@ def test_rawreader_can_work_with_relative_path():
     event.ParseFromString(raw)
 
 
-@pytest.mark.xfail
-def test_rawreader_can_read_runheader():
+def test_examplefile_has_no_runheader():
     from protozfitsreader import rawzfitsreader
     from protozfitsreader import L0_pb2
 
     rawzfitsreader.open(example_file_path + ':RunHeader')
 
     raw = rawzfitsreader.readEvent()
-    assert len(raw) > 0
+    assert raw < 0
 
     header = L0_pb2.CameraRunHeader()
-    header.ParseFromString(raw)
+    with pytest.raises(TypeError):
+        header.ParseFromString(raw)
 
 
 def test_rawreader_can_work_with_absolute_path():
@@ -84,17 +83,6 @@ def test_rawreader_can_work_with_absolute_path():
 
     event = L0_pb2.CameraEvent()
     event.ParseFromString(raw)
-
-
-def test_zfile_raises_on_wrong_path():
-    from digicampipe.io.protozfitsreader import ZFile
-    with pytest.raises(FileNotFoundError):
-        ZFile('foo.bar')
-
-
-def test_zfile_opens_correct_path():
-    from digicampipe.io.protozfitsreader import ZFile
-    ZFile(example_file_path)
 
 
 def test_can_iterate_over_events():
