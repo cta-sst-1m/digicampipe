@@ -173,7 +173,7 @@ class ZFile(object):
         self.patch_id_input = PATCH_ID_INPUT
 
         self.patch_id_output = PATCH_ID_OUTPUT
-    #  ## INTERNAL METHODS ##################################################
+    #  ## INTERNAL METHODS ##################################################§
 
     def _read_file(self):
         # Read file. Return a serialized string
@@ -193,8 +193,9 @@ class ZFile(object):
 
     def _extract_field(self, obj, field):
         # Read a specific field in object 'obj' given as input 'field'
-        if obj.HasField(field) == False:
-            raise Exception("No field %s found in object %s" % (field, str(obj)))
+        if obj.HasField(field) is False:
+            raise Exception(
+                "No field %s found in object %s", field, str(obj))
         return (getattr(obj, field))
 
     def _get_numpyfield(self, field):
@@ -206,7 +207,7 @@ class ZFile(object):
         else:
             return (numpyfield)
 
-    ### PUBLIC METHODS #############################################################
+    #  ## PUBLIC METHODS ####################################################
 
     def list_tables(self):
         try:
