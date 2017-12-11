@@ -85,3 +85,21 @@ def test_iteration_yield_expected_fields():
         zfits.get_trigger_output_patch7()
         zfits.get_trigger_output_patch19()
         zfits.get_baseline()
+
+
+def test_event_number():
+    from digicampipe.io.protozfitsreader import ZFile
+
+    zfits = ZFile(example_file_path)
+
+    event_numbers = [
+        zfits.get_event_number()
+        for __ in zfits.move_to_next_event()
+    ]
+
+    FIRST_EVENT_IN_EXAMPLE_FILE = 97750287
+    expected_event_numbers = [
+        FIRST_EVENT_IN_EXAMPLE_FILE + i
+        for i in range(10)
+    ]
+    assert event_numbers == expected_event_numbers
