@@ -277,90 +277,47 @@ class ZFile(object):
 
 class Event:
     def __init__(self, event):
-        self.event = event
+        self.__event = event
 
-    def get_number_of_pixels(self, telescope_id=None):
-        n_pixels = toNumPyArray(
-            self.event.hiGain.waveforms.pixelsIndices).shape[0]
-        return n_pixels
+        _e = self.__event                # just to make lines shorter
+        _w = _e.hiGain.waveforms         # just to make lines shorter
 
-    def get_baseline(self):
+        self.pixel_ids = toNumPyArray(_w.pixelsIndices)
+        self._sort_ids = np.argsort[self.pixel_ids]
+        self.n_pixels = len(self.pixel_ids)
+        self._samples = toNumPyArray(_w.samples).reshape(self.n_pixels, -1)
+        self.baseline = self.__get_baseline()
+        self.telescope_id = _e.telescopeID
+        self.event_number = _e.eventNumber
+        self.central_event_gps_time = self.__calc_central_event_gps_time()
+        self.local_time = self.__calc_local_time()
+        self.event_number_array = toNumPyArray(_e.arrayEvtNum)
+        self.camera_event_type = _e.event_type
+        self.array_event_type = _e.eventType
+        self.num_channels = toNumPyArray(_e.head.numGainChannels)
+        self.num_samples = self._samples.shape[1]
+        self.pixel_flags = toNumPyArray(_e.pixels_flags)[self._sort_ids]
+        self.adc_samples = self._samples[self._sort_ids]
+
+    def __get_baseline(self, waveforms, ):
         """Get the baselines for all channels
         :return: 1D array baselines, sorted by pixel ids
         """
-        waveforms = self.event.hiGain.waveforms
-
-        pixels = toNumPyArray(waveforms.pixelsIndices)
         try:
             baselines = toNumPyArray(waveforms.baselines)
         except:
-            baselines = numpy.ones(len(pixels)) * numpy.nan
+            baselines = numpy.ones(len(self.pixel_ids)) * numpy.nan
+        return baselines[self._sort_ids]
 
-        return baselines[np.argsort(pixels)]
-
-    def get_telescope_id(self):
-        return self.event.telescopeID
-
-    def get_event_number(self):
-        return self.event.eventNumber
-
-    def get_central_event_gps_time(self):
+    def __calc_central_event_gps_time(self):
         time_second = self.event.trig.timeSec
         time_nanosecond = self.event.trig.timeNanoSec
         return time_second * 1E9 + time_nanosecond
 
-    def get_local_time(self):
+    def __calc_local_time(self):
         time_second = self.event.local_time_sec
         time_nanosecond = self.event.local_time_nanosec
         return time_second * 1E9 + time_nanosecond
-
-    def get_event_number_array(self):
-        return toNumPyArray(self.event.arrayEvtNum)
-
-    def get_camera_event_type(self):
-        return self.event.event_type
-
-    def get_array_event_type(self):
-        return self.event.eventType
-
-    def get_num_channels(self):
-        return toNumPyArray(self.event.head.numGainChannels)
-
-    def get_pixel_flags(self, telescope_id=None):
-        '''
-        Get the flag of pixels
-        :param id of the telescopeof interest
-        :return: dictionnary of flags (value) per pixel indices (key)
-        '''
-        waveforms = self.event.hiGain.waveforms
-        flags = toNumPyArray(self.event.pixels_flags)
-        pixels = toNumPyArray(waveforms.pixelsIndices)
-        properties = numpy.array(
-            list(dict(zip(pixels, flags)).values()), dtype=bool)
-        return properties
-
-    def get_adcs_samples(self, telescope_id=None):
-        """
-        Get the samples for all channels
-
-        :param telescope_id: id of the telescopeof interest
-        :return: dictionnary of samples (value) per pixel indices (key)
-        """
-        waveforms = self.event.hiGain.waveforms
-        samples = toNumPyArray(waveforms.samples)
-        pixels = toNumPyArray(waveforms.pixelsIndices)
-        npixels = len(pixels)
-        # Structured array (dict)
-        samples = samples.reshape(npixels, -1)
-        properties = numpy.array(list(dict(zip(pixels, samples)).values()))
-        return properties
-
-    def get_num_samples(self):
-        waveforms = self.event.hiGain.waveforms
-        samples = toNumPyArray(waveforms.samples)
-        pixels = toNumPyArray(waveforms.pixelsIndices)
-
-        return samples.shape[0] // pixels.shape[0]
 
     def get_trigger_output_patch7(self, telescope_id=None):
         '''
@@ -417,8 +374,7 @@ class Event:
             frames.shape[1]*frames.shape[2]
         )
         frames = frames.T
-        frames = numpy.array(
-            list(dict(zip(PATCH_ID_INPUT, frames)).values()))
+        frames = frames[np.argsort(PATCH_ID_INPUT)]
 
         return frames
 
