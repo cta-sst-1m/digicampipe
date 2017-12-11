@@ -12,7 +12,9 @@ example_file_path = pkg_resources.resource_filename(
         'example_10evts.fits.fz'
     )
 )
-
+FIRST_EVENT_IN_EXAMPLE_FILE = 97750287
+TELESCOPE_ID_IN_EXAMPLE_FILE = 1
+EVENTS_IN_EXAMPLE_FILE = 10
 
 @pytest.mark.skip(reason="we know the current version does not raise")
 def test_zfile_raises_on_wrong_path():
@@ -33,7 +35,7 @@ def test_rawreader_can_work_with_relative_path():
     relative_test_file_path = os.path.relpath(example_file_path)
     rawzfitsreader.open(relative_test_file_path + ':Events')
     raw = rawzfitsreader.readEvent()
-    assert rawzfitsreader.getNumRows() == 10
+    assert rawzfitsreader.getNumRows() == EVENTS_IN_EXAMPLE_FILE
 
     event = L0_pb2.CameraEvent()
     event.ParseFromString(raw)
@@ -59,7 +61,7 @@ def test_rawreader_can_work_with_absolute_path():
 
     rawzfitsreader.open(example_file_path + ':Events')
     raw = rawzfitsreader.readEvent()
-    assert rawzfitsreader.getNumRows() == 10
+    assert rawzfitsreader.getNumRows() == EVENTS_IN_EXAMPLE_FILE
 
     event = L0_pb2.CameraEvent()
     event.ParseFromString(raw)
@@ -103,17 +105,26 @@ def test_iteration_yield_expected_fields():
 
 def test_event_number():
     from digicampipe.io.protozfitsreader import ZFile
-
     zfits = ZFile(example_file_path)
-
     event_numbers = [
         zfits.get_event_number()
         for __ in zfits.move_to_next_event()
     ]
-
-    FIRST_EVENT_IN_EXAMPLE_FILE = 97750287
     expected_event_numbers = [
         FIRST_EVENT_IN_EXAMPLE_FILE + i
-        for i in range(10)
+        for i in range(EVENTS_IN_EXAMPLE_FILE)
     ]
     assert event_numbers == expected_event_numbers
+
+
+def test_telescope_ids():
+    from digicampipe.io.protozfitsreader import ZFile
+    zfits = ZFile(example_file_path)
+    telescope_ids = [
+        zfits.event.telescopeID
+        for __ in zfits.move_to_next_event()
+    ]
+    expected_ids = [TELESCOPE_ID_IN_EXAMPLE_FILE] * EVENTS_IN_EXAMPLE_FILE
+    assert telescope_ids == expected_ids
+
+
