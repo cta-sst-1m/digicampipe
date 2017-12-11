@@ -396,9 +396,13 @@ class ZFile(object):
         frames = frames.reshape(frames.shape[0] // 3, 3)
         frames = frames.reshape(frames.shape[0] // 192, 3, 192)
         frames = frames[..., :144]
-        frames = frames.reshape(frames.shape[0], frames.shape[1]*frames.shape[2])
+        frames = frames.reshape(
+            frames.shape[0],
+            frames.shape[1]*frames.shape[2]
+        )
         frames = frames.T
-        frames = numpy.array(list(dict(zip(self.patch_id_input, frames)).values()))
+        frames = numpy.array(
+            list(dict(zip(self.patch_id_input, frames)).values()))
 
         return frames
 
