@@ -431,7 +431,9 @@ class ZFile(object):
         '''
         frames = self._get_numpyfield(self.event.trigger_output_patch19)
         n_samples = int(frames.shape[0] / 18 / 3)
-        frames = numpy.unpackbits(frames.reshape(n_samples, 3, 18, 1), axis=-1)[..., ::-1].reshape(n_samples, 3,144).reshape(n_samples, 432).T
+        frames = numpy.unpackbits(
+            frames.reshape(n_samples, 3, 18, 1), axis=-1
+            )[..., ::-1].reshape(n_samples, 3, 144).reshape(n_samples, 432).T
         patches = self.patch_id_output
         properties = dict(zip(patches, frames))
         properties = numpy.array(list(properties.values()))
