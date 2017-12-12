@@ -9,43 +9,12 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
   - conda info -a
-  - conda create -n digicampipe python=3.5
+  - conda env create -f environment.yml
   - source activate digicampipe
-
-  - conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
-  - conda install matplotlib llvmlite hdf5 ipython h5py
-
-  - mkdir ctasoft
-  - cd ctasoft
-
-  - pip install git+https://github.com/dneise/protozfitsreader
-
-  - git clone https://github.com/cta-observatory/pyhessio
-  - pip install -e pyhessio
-
-  - git clone https://github.com/cta-observatory/ctapipe
-  - cd ctapipe
-  - git checkout  fe9d87e
-  - cd ..
-  - pip install -e ctapipe
-
-  - git clone https://github.com/cta-observatory/ctapipe-extra
-  - cd ctapipe-extra
-  - git checkout  6d32ca1
-  - cd ..
-  - pip install -e ctapipe-extra
-
-  - git clone https://github.com/yrenier/CTS
-  - pip install -e CTS
-
-  - git clone https://github.com/calispac/digicamviewer
-  - pip install -e digicamviewer
-
-  - cd ..
-  - pip install -e .
+  - pip install -r requirements.txt
+  - pip install .
 script:
-  - pytest -v digicampipe
-  # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
+  - pytest -v
+
 
