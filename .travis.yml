@@ -18,6 +18,6 @@ install:
   - ls -larth
   - echo "what is in the src folder??"
   - ls -larth src
-
 script:
   - pytest -vv digicampipe
+  # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
