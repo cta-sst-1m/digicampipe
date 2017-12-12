@@ -1,4 +1,4 @@
-# digicampipe
+# digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
 DigiCam pipeline based on ctapipe
 
 # Installation
