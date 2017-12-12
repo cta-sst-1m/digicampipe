@@ -16,5 +16,8 @@ install:
   - pip install .
   - echo ".......... install done ......."
   - ls -larth
+  - echo "what is in the src folder??"
+  - ls -larth src
+
 script:
   - pytest -vv digicampipe
