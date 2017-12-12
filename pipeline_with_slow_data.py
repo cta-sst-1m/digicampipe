@@ -2,13 +2,7 @@ from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import *
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text, save_hillas_parameters
 from digicamviewer.viewer import EventViewer
-from digicampipe.utils import utils
-import numpy as np
-import matplotlib.pyplot as plt
-import astropy.units as u
-
 from optparse import OptionParser
 
 if __name__ == '__main__':
@@ -17,7 +11,8 @@ if __name__ == '__main__':
                       , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
     (options, args) = parser.parse_args()
     # Input/Output files
-    slowcontrol_file_list = ['./data/DigicamSlowControl_20171030_011.fits']
+    slow_control_file_list = ['./data/DigicamSlowControl_20171030_011.fits']
+    drive_system_file_list = ['/mnt/sst1m_data/aux/2017/10/30/SST1M_01/DriveSystem_20171030_%03d.fits']
     file_list = ['./data/SST1M01_0_000.090.fits.fz']
     #slowcontrol_file_list=['/mnt/sst1m_data/aux/2017/10/30/SST1M_01/DigicamSlowControl_20171030_%03d.fits' % number for number in range(11 + 1)]
     #filename = options.directory + 'SST1M01_0_000.%03d.fits.fz'
@@ -45,13 +40,16 @@ if __name__ == '__main__':
     data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=pixel_not_wanted)
     # Compute baseline with clocked triggered events (sliding average over n_bins)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
-    # Stop events that are not triggered by DigiCam algorithm (end of clocked triggered events)
-    data_stream = filter.filter_event_types(data_stream, flags=[1, 2])
+    # Stop events that are not triggered by muons
+    data_stream = filter.filter_event_types(data_stream, flags=[2])
     # Do not return events that have not the baseline computed (only first events)
     data_stream = filter.filter_missing_baseline(data_stream)
-
     #add slow data
-    data_stream = add_slow_data(data_stream, slowcontrol_file_list)
+    data_stream = add_slow_data(data_stream,
+                                slow_control_file_list=slow_control_file_list,
+                                drive_system_file_list=drive_system_file_list)
+
+
     ts_slow = []
     ts_data = []
     diff = []
@@ -64,15 +62,14 @@ if __name__ == '__main__':
         if i == 100:
             i=0
             print(ts_slow[-1], ts_data[-1], diff[-1])
-    from matplotlib import pyplot as plt
 
+    from matplotlib import pyplot as plt
     plt.figure()
     plt.subplot(2, 1, 1)
     plt.plot(ts_slow, ts_data)
     plt.subplot(2, 1, 2)
     plt.plot(diff)
     plt.show()
-
 """
     with plt.style.context('ggplot'):
         display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
