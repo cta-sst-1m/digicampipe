@@ -14,7 +14,7 @@ install:
   - source activate digicampipe
   - pip install -r requirements.txt
   - pip install .
+  - echo ".......... install done ......."
+  - ls -larth
 script:
-  - pytest -v
-
-
+  - pytest -vv digicampipe
