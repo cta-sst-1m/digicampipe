@@ -24,7 +24,6 @@ To not mix up your anaconda root environment with digicampipe, we propose
 to make a so called environment, with all the dependencies in it.
 
     conda env create -f digicampipe/environment.yml
-
     source activate digicampipe
 
 **Please Note**: When working with digicampipe, please always make sure you are really using the `digicampipe` environment. After `source activate digicampipe`
