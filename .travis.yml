@@ -9,11 +9,15 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
   - conda info -a
-  - conda create -n digicampipe python=3.5
+  - conda env create -f environment.yml
   - source activate digicampipe
-
+  - pip install -r requirements.txt
+  - pip install .
+  - echo ".......... install done ......."
+  - ls -larth
+  - echo "what is in the src folder??"
+  - ls -larth src
   - conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
   - conda install matplotlib llvmlite hdf5 ipython h5py
   - pip install pytest-benchmark
@@ -49,4 +53,3 @@ install:
 script:
   - pytest -vv digicampipe
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
-

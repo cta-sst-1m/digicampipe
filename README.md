@@ -1,63 +1,42 @@
-# digicampipe
+# digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
 DigiCam pipeline based on ctapipe
 
 # Installation
 
 ## Anaconda
 
+You'll need Anaconda, so if you don't have it yet, just install it now.
 Follow [the anaconda installation instructions](https://conda.io/docs/user-guide/install/linux.html).
 We propose to use the most recent version.
 
     wget https://repo.continuum.io/archive/Anaconda3-5.0.0.1-Linux-x86_64.sh
     bash ./Anaconda3-5.0.0.1-Linux-x86_64.sh
 
-## Create a virtual environment
+## digicampipe
 
-    conda create -n digicampipe python=3.5
-    source activate digicampipe
-
-## install necessary libraries and packages for CTA software
-
-    conda install protobuf=3.0.0 numpy six scipy astropy ipython_genutils decorator
-    conda install matplotlib llvmlite hdf5 ipython h5py
-
-## Prepare a folder
+We propose to have a tidy place and clone `digicampipe` into a folder `ctasoft/`
 
     mkdir ctasoft
     cd ctasoft
+    git clone https://github.com/calispac/digicampipe
 
-## Get ProtoZFitsReader
+To not mix up your anaconda root environment with digicampipe, we propose
+to make a so called environment, with all the dependencies in it.
 
-    pip install git+https://github.com/dneise/protozfitsreader
+    conda env create -f digicampipe/environment.yml
 
-
-## Get a bunch of repos (and install in "editable" mode)
-
-    git clone https://github.com/cta-observatory/pyhessio
-    pip install -e pyhessio
-
-    git clone https://github.com/cta-observatory/ctapipe
-    cd ctapipe
-    git checkout  fe9d87e
-    cd ..
-    pip install -e ctapipe
-
-    git clone https://github.com/cta-observatory/ctapipe-extra
-    cd ctapipe-extra
-    git checkout  6d32ca1
-    cd ..
-    pip install -e ctapipe-extra
+    source activate digicampipe
 
     git clone https://github.com/yrenier/CTS
     pip install -e CTS
+**Please Note**: When working with digicampipe, please always make sure you are really using the `digicampipe` environment. After `source activate digicampipe`
+your prompt should look similar to this this:
 
-    git clone https://github.com/calispac/digicamviewer
-    pip install -e digicamviewer
+    (digicampipe) username@host:~/ctasoft$
 
-    git clone https://github.com/calispac/digicampipe
+    pip install -r digicampipe/requirements.txt
     pip install -e digicampipe
 
+Run the tests on your machine:
 
-You can only run the software, if you have access to example input data. You have to ask somebody for this.
-
-    ipython digicampipe/pipeline_crab.py
+    pytest -vv digicampipe
