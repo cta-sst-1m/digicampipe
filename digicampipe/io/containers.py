@@ -34,6 +34,42 @@ __all__ = ['SlowControlContainer',
            'ParticleClassificationContainer',
            'DataContainer']
 
+class SlowControlContainer(Container):
+    """Storage of slow control data .
+    This container is filled only on request by using the ??? function.
+    """
+    timestamp = Field(int, "timestamp")
+    trigger_timestamp = Field(int, "trigger timestamp")
+    absolute_time = Field(int, "absolute time")
+    local_time = Field(int, "local time")
+    opcua_time = Field(int, "OPC UA time")
+    crates = Field(array, "Crates (3 of them)")
+    crate1_timestamps = Field(array, "Crate1 timestamps (10 of them)")
+    crate1_status = Field(array, "Crate1 status (10 of them)")
+    crate1_temperature = Field(array, "Crate1 temperature (60 of them)")
+    crate2_timestamps = Field(array, "Crate2 timestamps (10 of them)")
+    crate2_status = Field(array, "Crate2 status (10 of them)")
+    crate2_temperature = Field(array, "Crate2 temperature (60 of them)")
+    crate3_timestamps = Field(array, "Crate3 timestamps (10 of them)")
+    crate3_status = Field(array, "Crate3 status (10 of them)")
+    crate3_temperature = Field(array, "Crate3 temperature (60 of them)")
+    cst_switches = Field(array, "CST switches (4 of them)")
+    cst_parameters = Field(array, "CST parameters (6 of them)")
+    app_status = Field(array, "app status ??? (8 of them)")
+    trigger_status = Field(int, "trigger status")
+    triggers_status = Field(array, "triggers status (6 of them)")
+    trigger_parameters = Field(array, "trigger parameters (9 of them)")
+    fadc_resync = Field(int, "FADC resync")
+    fadc_offset = Field(int, "FADC offset")
+    trigger_switches = Field(array, "trigger switches (11 of them)")
+
+class SlowDataContainer(Container):
+    """Storage of slow data which changes much slower (typicaly every sec.)
+    than events.
+    This container is filled only on request by using the ??? function.
+    """
+    slow_control=Field(SlowControlContainer(), "Slow Control")
+
 
 class SlowControlContainer(Container):
     """Storage of slow control data.
@@ -241,6 +277,12 @@ class DL1Container(Container):
 class R0CameraContainer(Container):
     """
     Storage of raw data from a single telescope
+    event_type_1 definition:
+        1 = physics
+        2 = muon
+        3 = flasher
+        4 = dark
+        8 = clocked trigger
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
     adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")

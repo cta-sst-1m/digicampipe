@@ -64,16 +64,10 @@ if __name__ == '__main__':
             print(ts_slow[-1], ts_data[-1], diff[-1])
 
     from matplotlib import pyplot as plt
+
     plt.figure()
     plt.subplot(2, 1, 1)
     plt.plot(ts_slow, ts_data)
     plt.subplot(2, 1, 2)
     plt.plot(diff)
     plt.show()
-"""
-    with plt.style.context('ggplot'):
-        display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
-        display.draw()
-        pass
-"""
-
