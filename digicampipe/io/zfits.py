@@ -67,6 +67,7 @@ def zfits_event_source(
             data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
             data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
             data.inst.patch_matrix[tel_id] = patch_matrix
+            data.inst.num_samples[tel_id] = event.num_samples
 
             r0 = data.r0.tel[tel_id]
             r0.camera_event_number = event.event_number
@@ -83,6 +84,5 @@ def zfits_event_source(
                 r0.trigger_output_patch19 = event.trigger_output_patch19
                 r0.digicam_baseline = event.baseline
 
-            data.inst.num_samples[tel_id] = event.num_samples
 
         yield data
