@@ -44,6 +44,7 @@ if __name__ == '__main__':
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
     # Clean pixels
+
     data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=pixel_not_wanted)
     # Compute baseline with clocked triggered events (sliding average over n_bins)
 

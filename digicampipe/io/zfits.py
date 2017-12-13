@@ -88,5 +88,4 @@ def zfits_event_source(
                 r0.trigger_output_patch19 = event.trigger_output_patch19
                 r0.digicam_baseline = event.baseline
 
-
         yield data
