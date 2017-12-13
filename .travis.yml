@@ -21,5 +21,6 @@ install:
 script:
   - conda list
   - pytest -vv digicampipe
+  - ldd /home/travis/build/calispac/digicampipe/src/protozfitsreader/protozfitsreader/rawzfitsreader.cpython-35m-x86_64-linux-gnu.so
   - python -c "import protozfitsreader"
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
