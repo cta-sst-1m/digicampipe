@@ -19,9 +19,8 @@ install:
   - echo "what is in the src folder??"
   - ls -larth src
 script:
-  - conda list
   - pytest -vv digicampipe
   - ldd /home/travis/build/calispac/digicampipe/src/protozfitsreader/protozfitsreader/rawzfitsreader.cpython-35m-x86_64-linux-gnu.so
   - python -c "from digicampipe.io.protozfitsreader import ZFile"
   - python -c "import protozfitsreader"
-  # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
+
