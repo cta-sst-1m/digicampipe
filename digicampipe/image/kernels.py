@@ -14,8 +14,8 @@ def log(sigma=1., shape=None):  # Laplacien of Gaussian
     y = np.arange(ymin, -ymin + .1, 1)
     for binx in range(nbinx):
         for biny in range(nbiny):
-            result[binx, biny] = -(1 - (x[binx] ** 2 + x[binx] ** 2) / (2 * sigma ** 2)) * np.exp(
-                -(x[binx] ** 2 + y[biny] ** 2) / (2 * sigma ** 2))
+            result[binx, biny] = -(1 - (x[binx] ** 2 + x[binx] ** 2) / (2 * sigma ** 2)) * \
+                                 np.exp(-(x[binx] ** 2 + y[biny] ** 2) / (2 * sigma ** 2))
     return result / np.sum(result)
 
 

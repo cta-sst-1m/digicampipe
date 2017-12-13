@@ -9,6 +9,7 @@ from scipy import signal, ndimage, optimize
 import copy
 import numbers
 
+
 def crop_image(image, crop_pixel1, crop_pixel2):
     """
     :param image: 2D array of the image data with a shape = (vertical size, horizontal size)
@@ -27,11 +28,11 @@ def crop_image(image, crop_pixel1, crop_pixel2):
                              "(position in px of the other corner of the crop area).")
     crop_xmin, crop_ymin = crop_pixel1
     crop_xmax, crop_ymax = crop_pixel2
-    if not isinstance(crop_xmin, numbers.Integral) or  not isinstance(crop_ymin, numbers.Integral):
+    if not isinstance(crop_xmin, numbers.Integral) or not isinstance(crop_ymin, numbers.Integral):
         print('Warning in crop_image(): crop_pixel1 does not contain ints')
         crop_xmin = int(crop_xmin)
         crop_ymin = int(crop_ymin)
-    if  not isinstance(crop_xmax, numbers.Integral) or  not isinstance(crop_ymax, numbers.Integral):
+    if not isinstance(crop_xmax, numbers.Integral) or not isinstance(crop_ymax, numbers.Integral):
         print('Warning in crop_image(): crop_pixel2 does not contain ints')
         crop_xmax = int(crop_xmax)
         crop_ymax = int(crop_ymax)
@@ -77,7 +78,7 @@ def set_circle(image, center=(0, 0), radius=10, value=1):
     for ix in range(int(center[0] - radius - 1), int(center[0] + radius + 1)):
         for iy in range(int(center[1] - radius - 1), int(center[1] + radius + 1)):
             if not (0 <= ix < image.shape[1] and 0 <= iy < image.shape[0]):
-                continue # out of image border
+                continue  # out of image border
             if np.sqrt((ix - center[0]) * (ix - center[0]) + (iy - center[1]) * (iy - center[1])) < radius:
                 image[iy, ix] = value
     return image
@@ -92,7 +93,7 @@ def make_repetitive_mask(shape, radius, v1, v2, center, nrepetition=100):
     return mask
 
 
-def set_parallelogram(image, center=(0, 0), k1=(1,0), k2=(0,1), value=1):
+def set_parallelogram(image, center=(0, 0), k1=(1, 0), k2=(0, 1), value=1):
     origin = center - k1 / 2 - k2 / 2
     r = np.array((origin[0], origin[0]+k1[0], origin[0]+k1[0]+k2[0], origin[0]+k2[0]))
     c = np.array((origin[1], origin[1]+k1[1], origin[1]+k1[1]+k2[1], origin[1]+k2[1]))
@@ -101,7 +102,7 @@ def set_parallelogram(image, center=(0, 0), k1=(1,0), k2=(0,1), value=1):
     return image
 
 
-def get_consecutive_hex_radius(r1, r2): # set r2 to be the next radius after r1 anticlockwise
+def get_consecutive_hex_radius(r1, r2):  # set r2 to be the next radius after r1 anticlockwise
     r1 = np.array(r1)
     r2 = np.array(r2)
     # set r2 to be the next radius after r1 (anticlockwise)
@@ -125,11 +126,11 @@ def set_hexagon(image, center=(0, 0), r1=(1, 0), r2=(0.5, np.sqrt(3) / 2), value
     # set of hexagon's vertexes
     points = np.array((center + r1 ,
                        center + r2,
-                       center +r2 - r1,
+                       center + r2 - r1,
                        center - r1,
                        center - r2,
-                       center -r2 + r1))
-    rr, cc = polygon(points[:,0], points[:,1], (image.shape[1], image.shape[0]))
+                       center - r2 + r1))
+    rr, cc = polygon(points[:, 0], points[:, 1], (image.shape[1], image.shape[0]))
     image[cc, rr] = value
     return image
 
@@ -148,9 +149,9 @@ def plot_image(image, wait=True, vmin=None, vmax=None):
         mngr.window.setGeometry(dx/2, 0, dx/2, dy)
         fig_plot.canvas.flush_events()
     if vmin is None:
-        vmin=np.min(image)
+        vmin = np.min(image)
     if vmax is None:
-        vmax=np.max(image)
+        vmax = np.max(image)
     plt.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
     plt.show(block=False)
     fig_plot.canvas.flush_events()
@@ -176,11 +177,11 @@ def plot_points(x, y, wait=True):
     min_x = np.min(x)
     max_x = np.max(x)
     width_x = max_x - min_x + 1
-    plt.xlim((min_x - width_x/10,max_x + width_x/10))
+    plt.xlim((min_x - width_x/10, max_x + width_x/10))
     min_y = np.min(y)
     max_y = np.max(y)
     width_y = max_y - min_y + 1
-    plt.xlim((min_y - width_y/10,max_y + width_y/10))
+    plt.xlim((min_y - width_y/10, max_y + width_y/10))
     plt.show(block=False)
     fig_plot.canvas.flush_events()
     if wait:
@@ -192,17 +193,17 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
         center = (np.array(fft_image_shifted.shape[::-1]) - 1) / 2
     fft_image_shifted = set_circle(fft_image_shifted, center=center, radius=radius_removed, value=0)
     if crop_range is None:
-        min_crop_x=0
-        max_crop_x=fft_image_shifted.shape[1]
-        min_crop_y=0
-        max_crop_y=fft_image_shifted.shape[0]
+        min_crop_x = 0
+        max_crop_x = fft_image_shifted.shape[1]
+        min_crop_y = 0
+        max_crop_y = fft_image_shifted.shape[0]
     else:
         min_crop_x = int(center[1] - crop_range/2)
         max_crop_x = int(center[1] + crop_range/2)
         min_crop_y = int(center[0] - crop_range/2)
         max_crop_y = int(center[0] + crop_range/2)
-    crop_fft = fft_image_shifted[min_crop_x:max_crop_x,min_crop_y:max_crop_y]
-    #plot_image(crop_fft)
+    crop_fft = fft_image_shifted[min_crop_x:max_crop_x, min_crop_y:max_crop_y]
+    # plot_image(crop_fft)
     auto_correlation = signal.fftconvolve(crop_fft, crop_fft[::-1, ::-1], mode='same')
     auto_correlation_saved = copy.deepcopy(auto_correlation)
     center_peaks = []
@@ -217,7 +218,7 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
         amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg = fit_result
         if success != 1 or xsigma > 5 or ysigma > 5:
             auto_correlation = set_circle(auto_correlation, center=(max_pos_x, max_pos_y), radius=10, value=0)
-            #print('WARNING: fit of the peak failed in get_peaks_separation()')
+            # print('WARNING: fit of the peak failed in get_peaks_separation()')
             continue
         gaussian_function = Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
         center_peaks.append(np.array((xcenter + max_pos_x - 20, ycenter + max_pos_y - 20)))
@@ -235,12 +236,12 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
     ks_base[0, :] = ks[short_to_long[0], :]
     angles = angles - np.angle(ks_base[0, 0]+1j*(ks_base[0, 1]))
     factors = np.abs(ks_complex/(ks_base[0, 0]+1j*(ks_base[0, 1])))
-    is_collinear = (np.abs(np.mod(angles+np.pi,2*np.pi)-np.pi)< 1*np.pi/180) # less than 1 deg from 0
-    is_anti_collinear = np.abs(np.abs(angles)-np.pi)< 1*np.pi/180 # less than 1 deg from pi
+    is_collinear = (np.abs(np.mod(angles+np.pi, 2*np.pi)-np.pi) < 1*np.pi/180)  # less than 1 deg from 0
+    is_anti_collinear = np.abs(np.abs(angles)-np.pi) < 1*np.pi/180  # less than 1 deg from pi
     factors[is_anti_collinear] *= -1
-    is_multiple =  np.abs(np.mod(factors + 0.5, 1) - 0.5)< 1e-2
-    is_used = is_multiple & (is_collinear| is_anti_collinear)
-    rounded_factors = np.round(factors[is_used]).reshape(-1,1)
+    is_multiple = np.abs(np.mod(factors + 0.5, 1) - 0.5) < 1e-2
+    is_used = is_multiple & (is_collinear | is_anti_collinear)
+    rounded_factors = np.round(factors[is_used]).reshape(-1, 1)
     ks1s_rescaled = 1 / rounded_factors * ks[is_used, :]
     ks_base[0, :] = np.mean(ks1s_rescaled, axis=0)
     for i in short_to_long[1:]:
@@ -263,19 +264,19 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
 
 
 def get_image_hexagonalicity(image, rotations=(60, 300)):
-    #init = clock()
+    # init = clock()
     image[image != 0] -= np.mean(image)
     image = image.astype(float) / np.std(image)
-    #plot_image(image, wait=True)
+    # plot_image(image, wait=True)
     hexagonalicity = 0
     for rot in rotations:
         rotated_image = scipy.ndimage.interpolation.rotate(image, rot, reshape=False)
         difference = image - rotated_image
-        relative_distance = np.std(difference) / 2 # max std of difference is 2 as std of image is 1
-        #print("relative_distance", relative_distance)
+        relative_distance = np.std(difference) / 2  # max std of difference is 2 as std of image is 1
+        # print("relative_distance", relative_distance)
         # plot_image(difference, wait=False, vmin=-1, vmax=1)
         hexagonalicity += (1 - relative_distance) / len(rotations)
-    #end = clock()
+    # end = clock()
     # print('hex=', hexagonalicity, "in", end - init)
     return hexagonalicity
 
@@ -294,7 +295,7 @@ def get_neg_hexagonalicity_with_mask(center, image, r1, r2, rotations=(60, 300))
     displacement = image_center - center
 #    plot_image(image)
 #    init = clock()
-    M=np.float32([[1, 0, displacement[0]],[0, 1, displacement[1]]])
+    M = np.float32([[1, 0, displacement[0]], [0, 1, displacement[1]]])
     image = cv2.warpAffine(image, M, image.shape[::-1])
 #    end = clock()
 #    print("displacement=", displacement, "in", end - init)
@@ -307,10 +308,10 @@ def get_neg_hexagonalicity_with_mask(center, image, r1, r2, rotations=(60, 300))
                        image_center - r1,
                        image_center - r2,
                        image_center - r3))
-    pixels_x_min = int(np.floor(np.min(points[:,0])))
-    pixels_x_max = int(np.ceil(np.max(points[:,0]) + 1))
-    pixels_y_min = int(np.floor(np.min(points[:,1])))
-    pixels_y_max = int(np.ceil(np.max(points[:,1]) + 1))
+    pixels_x_min = int(np.floor(np.min(points[:, 0])))
+    pixels_x_max = int(np.ceil(np.max(points[:, 0]) + 1))
+    pixels_y_min = int(np.floor(np.min(points[:, 1])))
+    pixels_y_max = int(np.ceil(np.max(points[:, 1]) + 1))
     if (pixels_x_max + pixels_x_min - 1) / 2 < image_center[0]:
         pixels_x_max = int(2 * image_center[0] - pixels_x_min + 1)
     elif (pixels_x_max + pixels_x_min - 1) / 2 > image_center[0]:
@@ -338,46 +339,47 @@ def reciprocal_to_lattice_space(a1, a2, shape):
     return (b1, b2)
 
 
-def moments2D(inpData):
+def moments2D(inpData):  # from https://github.com/indiajoe/HandyTools4Astronomers
     """ Returns the (amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg, e) estimated from moments in the 2d input array Data """
     # Taking median of the 4 edges points as background
-    bkg=np.median(np.hstack((inpData[0,:],inpData[-1,:],inpData[:,0],inpData[:,-1])))
-    Data=np.ma.masked_less(inpData-bkg,0)   #Removing the background for calculating moments of pure 2D gaussian
-    #We also masked any negative values before measuring moments
-    amplitude=Data.max()
-    total= float(Data.sum())
-    Xcoords,Ycoords= np.indices(Data.shape)
-    xcenter= (Xcoords*Data).sum()/total
-    ycenter= (Ycoords*Data).sum()/total
-    RowCut= Data[int(xcenter),:]  # Cut along the row of data near center of gaussian
-    ColumnCut= Data[:,int(ycenter)]  # Cut along the column of data near center of gaussian
-    xsigma= np.sqrt(np.ma.sum(ColumnCut* (np.arange(len(ColumnCut))-xcenter)**2)/ColumnCut.sum())
-    ysigma= np.sqrt(np.ma.sum(RowCut* (np.arange(len(RowCut))-ycenter)**2)/RowCut.sum())
+    bkg = np.median(np.hstack((inpData[0, :], inpData[-1, :], inpData[:, 0], inpData[:, -1])))
+    Data=  np.ma.masked_less(inpData-bkg, 0)   #Removing the background for calculating moments of pure 2D gaussian
+    # We also masked any negative values before measuring moments
+    amplitude = Data.max()
+    total = float(Data.sum())
+    Xcoords, Ycoords = np.indices(Data.shape)
+    xcenter = (Xcoords*Data).sum()/total
+    ycenter = (Ycoords*Data).sum()/total
+    RowCut = Data[int(xcenter), :]  # Cut along the row of data near center of gaussian
+    ColumnCut = Data[:, int(ycenter)]  # Cut along the column of data near center of gaussian
+    xsigma = np.sqrt(np.ma.sum(ColumnCut * (np.arange(len(ColumnCut))-xcenter)**2)/ColumnCut.sum())
+    ysigma = np.sqrt(np.ma.sum(RowCut * (np.arange(len(RowCut))-ycenter)**2)/RowCut.sum())
     #Ellipcity and position angle calculation
-    Mxx= np.ma.sum((Xcoords-xcenter)*(Xcoords-xcenter) * Data) /total
-    Myy= np.ma.sum((Ycoords-ycenter)*(Ycoords-ycenter) * Data) /total
-    Mxy= np.ma.sum((Xcoords-xcenter)*(Ycoords-ycenter) * Data) /total
-    e= np.sqrt((Mxx - Myy)**2 + (2*Mxy)**2) / (Mxx + Myy)
-    pa= 0.5 * np.arctan(2*Mxy / (Mxx - Myy))
-    rot= np.rad2deg(pa)
-    return amplitude,xcenter,ycenter,xsigma,ysigma, rot,bkg, e
+    Mxx = np.ma.sum((Xcoords-xcenter)*(Xcoords-xcenter) * Data) / total
+    Myy = np.ma.sum((Ycoords-ycenter)*(Ycoords-ycenter) * Data) / total
+    Mxy = np.ma.sum((Xcoords-xcenter)*(Ycoords-ycenter) * Data) / total
+    e = np.sqrt((Mxx - Myy)**2 + (2*Mxy)**2) / (Mxx + Myy)
+    pa = 0.5 * np.arctan(2*Mxy / (Mxx - Myy))
+    rot = np.rad2deg(pa)
+    return amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg, e
 
 
-def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
+def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):  # from https://github.com/indiajoe/HandyTools4Astronomers
     """ Returns a 2D Gaussian function with input parameters. rotation input rot should be in degress """
-    rot=np.deg2rad(rot)  #Converting to radians
-    Xc=xcenter*np.cos(rot) - ycenter*np.sin(rot)  #Centers in rotated coordinates
+    rot=np.deg2rad(rot)  # Converting to radians
+    Xc=xcenter*np.cos(rot) - ycenter*np.sin(rot)  # Centers in rotated coordinates
     Yc=xcenter*np.sin(rot) + ycenter*np.cos(rot)
-    #Now lets define the 2D gaussian function
-    def Gauss2D(x,y) :
+    # Now lets define the 2D gaussian function
+
+    def Gauss2D(x, y):
         """ Returns the values of the defined 2d gaussian at x,y """
-        xr=x * np.cos(rot) - y * np.sin(rot)  #X position in rotated coordinates
-        yr=x * np.sin(rot) + y * np.cos(rot)
-        return amplitude*np.exp(-(((xr-Xc)/xsigma)**2 +((yr-Yc)/ysigma)**2)/2) +bkg
+        xr = x * np.cos(rot) - y * np.sin(rot)  # X position in rotated coordinates
+        yr = x * np.sin(rot) + y * np.cos(rot)
+        return amplitude * np.exp(-(((xr - Xc) / xsigma) ** 2 +((yr - Yc) / ysigma) ** 2) / 2) + bkg
     return Gauss2D
 
 
-def FitGauss2D(Data,ip=None):
+def FitGauss2D(Data, ip=None):  # from https://github.com/indiajoe/HandyTools4Astronomers
     """ Fits 2D gaussian to Data with optional Initial conditions ip=(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
     Example:
     >>> X,Y=np.indices((40,40),dtype=np.float)
@@ -385,14 +387,14 @@ def FitGauss2D(Data,ip=None):
     >>> FitGauss2D(Data)
     (array([  1.00000000e+00,   2.50000000e+01,   1.50000000e+01, 5.00000000e+00,   1.00000000e+01,   2.09859373e-07, 1]), 2)
      """
-    if ip is None:   #Estimate the initial parameters form moments and also set rot angle to be 0
-        ip=moments2D(Data)[:-1]   #Remove ellipticity from the end in parameter list
-    Xcoords,Ycoords= np.indices(Data.shape)
+    if ip is None:   # Estimate the initial parameters form moments and also set rot angle to be 0
+        ip=moments2D(Data)[:-1]   # Remove ellipticity from the end in parameter list
+    Xcoords, Ycoords = np.indices(Data.shape)
     def errfun(ip):
-        dXcoords= Xcoords-ip[1]
-        dYcoords= Ycoords-ip[2]
+        dXcoords = Xcoords - ip[1]
+        dYcoords = Ycoords - ip[2]
         # Taking radius as the weights for least square fitting
-        Weights=np.sqrt(np.square(dXcoords)+np.square(dYcoords) + 1e-6)
+        Weights = np.sqrt(np.square(dXcoords) + np.square(dYcoords) + 1e-6)
         # Taking a sqrt(weight) here so that while scipy takes square of this array it will become 1/r weight.
         return np.ravel((Gaussian2D(*ip)(*np.indices(Data.shape)) - Data)/np.sqrt(Weights))
     p, success = scipy.optimize.leastsq(errfun, ip, maxfev=1000)

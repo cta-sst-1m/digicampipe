@@ -9,7 +9,7 @@ import os
 
 
 class ConesImage(object):
-    def __init__(self, image, image_cone=None, output_dir=None, digicam_config_file = './resources/camera_config.cfg'):
+    def __init__(self, image, image_cone=None, output_dir=None, digicam_config_file='./resources/camera_config.cfg'):
         """
         constructor of a ConesImage object.
         :param image: fit filename or numpy array containing the lid CCD image.
@@ -45,11 +45,11 @@ class ConesImage(object):
                 for nv1, nv2 in self.pixels_nvs.transpose():
                     for i in range(10, -1, -1):
                         image = set_hexagon(image, center + offset + nv1 * v1_lattice + nv2 * v2_lattice,
-                                            r1=(i+7)/20 * r1 , r2=(i+7)/20 * r2, value=1-i/10)
+                                            r1=(i+7)/20 * r1, r2=(i+7)/20 * r2, value=1-i/10)
                     image = set_hexagon(image, center + offset + nv1 * v1_lattice + nv2 * v2_lattice,
                                         r1=6/20 * r1, r2=6/20 * r2, value=0)
-                image += 0. * np.random.randn(image.shape[0],image.shape[1])
-                image[0,0]=10000
+                image += 0. * np.random.randn(image.shape[0], image.shape[1])
+                image[0, 0] = 10000
                 if output_dir is not None:
                     fig = plt.figure()
                     ax = plt.gca()
@@ -79,29 +79,29 @@ class ConesImage(object):
         self.fft_image_cones = np.fft.fft2(self.image_cones)
         self.center_fitted = None
         # filled by get_cones_separation_reciprocal():
-        self.ks = None # distance between fft peaks
-        self.v1_lattice = None # distance between 2 hexagons
-        self.v2_lattice = None # distance between 2 hexagons
-        self.r1 = None # radius of the hexagon pixel
-        self.r2 = None # radius of the hexagon (after r1 in anticlockwise)
-        self.r3 = None # radius of the hexagon (after r2 in anticlockwise)
+        self.ks = None  # distance between fft peaks
+        self.v1_lattice = None  # distance between 2 hexagons
+        self.v2_lattice = None  # distance between 2 hexagons
+        self.r1 = None  # radius of the hexagon pixel
+        self.r2 = None  # radius of the hexagon (after r1 in anticlockwise)
+        self.r3 = None  # radius of the hexagon (after r2 in anticlockwise)
         # individual cone image, call get_cone() function to compute it
         if image_cone is None:
             self.image_cone = None
         else:
-            hdu=fits.open(image_cone)[0]
+            hdu = fits.open(image_cone)[0]
             self.image_cone = hdu.data
-            self.center_fitted = np.array((np.real(hdu.header['center']),np.imag(hdu.header['center'])))
+            self.center_fitted = np.array((np.real(hdu.header['center']), np.imag(hdu.header['center'])))
             center = (np.array(self.image_cones.shape[::-1]) - 1) / 2
             print('center of loaded cone at', self.center_fitted, ',', self.center_fitted - center, 'from center')
-            ks1 = np.array((np.real(hdu.header['ks1']),np.imag(hdu.header['ks1'])))
+            ks1 = np.array((np.real(hdu.header['ks1']), np.imag(hdu.header['ks1'])))
             ks2 = np.array((np.real(hdu.header['ks2']), np.imag(hdu.header['ks2'])))
             self.ks = np.array((ks1, ks2))
-            self.v1_lattice = np.array((np.real(hdu.header['v1']),np.imag(hdu.header['v1'])))
-            self.v2_lattice = np.array((np.real(hdu.header['v2']),np.imag(hdu.header['v2'])))
-            self.r1 = np.array((np.real(hdu.header['r1']),np.imag(hdu.header['r1'])))
-            self.r2 = np.array((np.real(hdu.header['r2']),np.imag(hdu.header['r2'])))
-            self.r3 = np.array((np.real(hdu.header['r3']),np.imag(hdu.header['r3'])))
+            self.v1_lattice = np.array((np.real(hdu.header['v1']), np.imag(hdu.header['v1'])))
+            self.v2_lattice = np.array((np.real(hdu.header['v2']), np.imag(hdu.header['v2'])))
+            self.r1 = np.array((np.real(hdu.header['r1']), np.imag(hdu.header['r1'])))
+            self.r2 = np.array((np.real(hdu.header['r2']), np.imag(hdu.header['r2'])))
+            self.r3 = np.array((np.real(hdu.header['r3']), np.imag(hdu.header['r3'])))
 
     def plot_cones(self, radius_mask=None, output_dir=None):
         """
@@ -123,7 +123,7 @@ class ConesImage(object):
             image_cones = np.real(np.fft.ifft2(self.fft_image_cones * mask))
             image_cones -= np.min(image_cones)
         else:
-            image_cones=self.image_cones
+            image_cones = self.image_cones
         plt.imshow(image_cones, cmap='gray')
         if radius_mask is not None:
             if self.center_fitted is None:
@@ -206,8 +206,8 @@ class ConesImage(object):
             plt.ion()
         fig = plt.figure()
         ax = plt.subplot(1, 2, 2)
-        vmin = np.min(scan_result[scan_result>0])
-        vmax= np.max(scan_result[scan_result>0])
+        vmin = np.min(scan_result[scan_result > 0])
+        vmax = np.max(scan_result[scan_result > 0])
         plt.imshow(scan_result, cmap='gray', vmin=vmin, vmax=vmax)
         max_y, max_x = np.unravel_index(np.argmax(scan_result), dims=scan_result.shape)
         plt.plot(max_x, max_y, 'r+')
@@ -266,12 +266,12 @@ class ConesImage(object):
         offsets= (0*self.r1, (self.r1+self.r2)/3, self.r1, self.r2, (self.r2+self.r3)/3, self.r3,
                   (self.r3-self.r1)/3, -self.r1, (-self.r1-self.r2)/3, -self.r2,
                   (-self.r2-self.r3)/3, -self.r3, (-self.r3+self.r1)/3)
-        results=[]
-        for i,offset in enumerate(offsets):
+        results = []
+        for i, offset in enumerate(offsets):
             res = optimize.minimize(get_neg_hexagonalicity_with_mask,
                                     center_tested+offset, args=(image_cones, self.r1, self.r2, (60, 300)),
                                     bounds=bounds, method='TNC',
-                                    options={'disp': False, 'eps': 1, 'xtol': 1e-2, 'maxiter':200})
+                                    options={'disp': False, 'eps': 1, 'xtol': 1e-2, 'maxiter': 200})
             results.append(res)
             print('fit', i+1, '/', len(offsets))
             if -res.fun > 0.5:
@@ -279,7 +279,7 @@ class ConesImage(object):
         hex_results = np.array([-res.fun for res in results])
         pos_results = np.array([res.x for res in results])
         self.center_fitted = pos_results[np.argmax(hex_results)]
-        #fine fit for best result
+        # fine fit for best result
         res = optimize.minimize(get_neg_hexagonalicity_with_mask,
                                 self.center_fitted, args=(image_cones, self.r1, self.r2, (60, 120, 180, 240, 300)),
                                 bounds=bounds, method='TNC',
@@ -296,9 +296,9 @@ class ConesImage(object):
         pixels_x_max = int(np.ceil(np.max(points_fitted[:, 0]))) + 1
         pixels_y_min = int(np.floor(np.min(points_fitted[:, 1])))
         pixels_y_max = int(np.ceil(np.max(points_fitted[:, 1]))) + 1
-        #plot_image(image_cones)
+        # plot_image(image_cones)
         image_crop = image_cones[pixels_y_min:pixels_y_max, pixels_x_min:pixels_x_max]
-        #plot_image(image_crop)
+        # plot_image(image_crop)
         center_crop = np.array(self.center_fitted) - np.array((pixels_x_min, pixels_y_min))
         mask_hexa = np.zeros_like(image_crop)
         mask_hexa = set_hexagon(mask_hexa, center=center_crop, r1=self.r1, r2=self.r2)
@@ -306,10 +306,10 @@ class ConesImage(object):
         if save_to_file:
             hdu = fits.PrimaryHDU(self.image_cone)
             hdu.header['center'] = (self.center_fitted[0] + 1j * self.center_fitted[1],
-                                      'fitted position (in original image) of the hexagon center')
+                                    'fitted position (in original image) of the hexagon center')
             hdu.header['ks1'] = (self.ks[0, 0] + 1j * self.ks[0, 1],
                                  '1st vector of the base of the hexagonal lattice in reciprocal space')
-            hdu.header['ks2'] = (self.ks[1 ,0] + 1j * self.ks[1, 1],
+            hdu.header['ks2'] = (self.ks[1, 0] + 1j * self.ks[1, 1],
                                  '2nd vector of the base of the hexagonal lattice in reciprocal space')
             hdu.header['v1'] = (self.v1_lattice[0] + 1j * self.v1_lattice[1],
                                 'spacing between 2 hexagons along the 1st axis')
@@ -331,7 +331,7 @@ class ConesImage(object):
         fig = plt.figure()
         ax = plt.gca()
         plt.imshow(self.image_cone, cmap='gray')
-        plt.plot(self.center_fitted[0]-pixels_x_min,self.center_fitted[1]-pixels_y_min,'y+')
+        plt.plot(self.center_fitted[0]-pixels_x_min, self.center_fitted[1]-pixels_y_min, 'y+')
         plt.xlim((-0.5, pixels_x_max-pixels_x_min-0.5))
         plt.ylim((-0.5, pixels_y_max-pixels_y_min-0.5))
         plt.grid(None)
@@ -396,11 +396,11 @@ class ConesImage(object):
         """
         if self.ks is None:
             self.get_cones_separation_reciprocal()
-        center = (np.array((self.fft_image_cones.shape[::-1])) - 1)/ 2
+        center = (np.array((self.fft_image_cones.shape[::-1])) - 1) / 2
         mask = make_repetitive_mask(self.fft_image_cones.shape,
                                     radius, self.ks[0, :], self.ks[1, :], center, nrepetition=100)
-        for nk1 in range (-50, 50):
-            for nk2 in range (-50, 50):
+        for nk1 in range(-50, 50):
+            for nk2 in range(-50, 50):
                 center_circle = center + nk1 * self.ks[0, :] + nk2 * self.ks[1, :]
                 mask = set_circle(mask, center=center_circle.reshape((2,)), radius=radius, value=1)
         return np.fft.ifftshift(mask)
@@ -463,8 +463,7 @@ class ConesImage(object):
         print('find peaks')
         cone_presence = signal.fftconvolve(self.image_cones, self.image_cone, mode='same')
         cone_presence = signal.fftconvolve(cone_presence, high_pass_filter_2525, mode='same')
-        cone_presence[cone_presence < 0]=0
-        #cone_presence = cv2.matchTemplate(self.image_cones.astype(np.float32), self.image_cone.astype(np.float32), cv2.TM_CCOEFF_NORMED)
+        cone_presence[cone_presence < 0] = 0
         if output_dir is not None:
             plt.ioff()
         else:
@@ -524,7 +523,7 @@ class ConesImage(object):
             print("v3=", v3, "|v3|=", v3_length)
             pixels_fit_px = []
             pixels_fit_sigma = []
-            nfail=0
+            nfail = 0
             print('fit all peaks')
             for i1 in range(-100, 100):
                 for i2 in range(-100, 100):
@@ -542,7 +541,6 @@ class ConesImage(object):
                     crop_center = (crop_px2 - crop_px1 - 1.) / 2
                     # print('fit around:', peak_pos_aprox)
                     peak_crop, crop_px1, crop_px2 = crop_image(cone_presence, crop_px1, crop_px2)
-                    #cone_presence_filtered[crop_px1[1]:crop_px2[1], crop_px1[0]:crop_px2[0]] = peak_crop
                     max_pos_crop = np.argmax(peak_crop)
                     [max_pos_y, max_pos_x] = np.unravel_index(max_pos_crop, peak_crop.shape)
                     init_amplitude = peak_crop[max_pos_y, max_pos_x] - np.min(peak_crop)
@@ -560,7 +558,7 @@ class ConesImage(object):
                         # print('FAIL: xcenter:', np.round(xcenter, 2), 'ycenter:', np.round(ycenter, 2),
                         #       'xsigma:', np.round(xsigma, 2), 'ysigma:', np.round(ysigma, 2))
                         nfail += 1
-                    if np.mod(len(pixels_fit_px)+nfail,100) == 0:
+                    if np.mod(len(pixels_fit_px)+nfail, 100) == 0:
                         print(len(pixels_fit_px)+nfail, 'fits done')
             pixels_fit_px = np.array(pixels_fit_px)
             pixels_fit_sigma = np.array(pixels_fit_sigma)
@@ -580,7 +578,7 @@ class ConesImage(object):
                         if matching_nvs > best_matching_nvs:
                             best_matching_nvs = matching_nvs
                             best_match_nv1, best_match_nv2 = nv1, nv2
-                            best_match_v1, best_match_v2 =  v1_test, v2_test
+                            best_match_v1, best_match_v2 = v1_test, v2_test
             v1, v2 = best_match_v1, best_match_v2
             print('best base: v1=', v1, ', v2=', v2)
             print('best match: nv1 =', best_match_nv1, ', nv2 =', best_match_nv2)
@@ -605,7 +603,7 @@ class ConesImage(object):
             pixels_geom_px = precise_vs.dot(np.vstack((self.pixels_nvs,  np.ones((1, self.pixels_nvs.shape[1])))))
             print("v1=", self.v1_lattice, "|v1|=", np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1]))
             print("v2=", self.v2_lattice, "|v2|=", np.abs(self.v2_lattice[0] + 1j * self.v2_lattice[1]))
-            center_image = (np.array(self.image_cones.shape[::-1]) -1) / 2
+            center_image = (np.array(self.image_cones.shape[::-1]) - 1) / 2
             print("center=", self.center_fitted, ',', self.center_fitted - center_image, 'from center')
             fig = plt.figure()
             ax = plt.gca()
@@ -674,4 +672,3 @@ class ConesImage(object):
                 plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
                 print(output_filename, 'saved.')
-

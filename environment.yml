@@ -62,6 +62,7 @@ dependencies:
 - readline=7.0
 - scipy=1.0.0
 - setuptools=36.5.0
+- skimage=0.13.0
 - simplegeneric=0.8.1
 - sip=4.18.1
 - six=1.11.0

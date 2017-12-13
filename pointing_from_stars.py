@@ -1,6 +1,7 @@
 from digicampipe.image.sky_image import *
 import os
 
+
 def get_pointing():
     # find stars in lid CCD images:
     crop_pixels1 = [  # (850, 50),
@@ -23,6 +24,7 @@ def get_pointing():
     lidccd_obs.plot_image_solved('./tests/resources/stars_on_lid')
     lidccd_obs.plot_image_treated('./tests/resources/stars_on_lid')
     lidccd_obs.print_summary()
+
 
 if __name__ == '__main__':
     get_pointing()

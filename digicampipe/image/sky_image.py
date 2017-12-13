@@ -23,10 +23,10 @@ class SkyImage(object):
             raise AttributeError('image must be a filename or a numpy.ndarray')
         # high pass filter
         self.image_stars = signal.convolve2d(image, high_pass_filter_2525, mode='same', boundary='symm')
-        self.image_stars[self.image_stars<0] = 0
+        self.image_stars[self.image_stars < 0] = 0
         # low_pass_filter
         self.image_stars = signal.convolve2d(self.image_stars, gauss(1, (5, 5)), mode='same', boundary='symm')
-        self.image_stars[self.image_stars<0] = 0
+        self.image_stars[self.image_stars < 0] = 0
         self.scale_low_deg = scale_low_deg
         self.scale_high_deg = scale_high_deg
         if image_static is not None:
@@ -40,7 +40,7 @@ class SkyImage(object):
         if calculate:
             self.calculate_galactic_coordinates(scale_low_deg=scale_low_deg, scale_high_deg=scale_high_deg)
 
-    def subtract_static_image(self, image_static, threshold=None ):
+    def subtract_static_image(self, image_static, threshold=None):
         """
         function which subtracts image_static to the filtered image to keep only the moving spikes.
         :param image_static: image subtracted to the filtered image
@@ -53,7 +53,7 @@ class SkyImage(object):
         self.image_stars = self.image_stars - image_static
         self.image_stars[self.image_stars < 0] = 0
         if threshold is None:
-            threshold = np.std(self.image_stars) #np.mean(self.image_stars) + 1.5 * np.std(self.image_stars)
+            threshold = np.std(self.image_stars)
         self.image_stars[self.image_stars < threshold] = 0
 
     def calculate_galactic_coordinates(self):
@@ -64,9 +64,9 @@ class SkyImage(object):
             hdu = fits.PrimaryHDU(self.image_stars)
             outfile = os.path.join(tmpdir, 'stars.fits')
             hdu.writeto(outfile, overwrite=True)
-            arguments = ['solve-field', outfile, #'--no-background-subtraction', '--no-verify-uniformize',
-                         '--ra', str(83.2), '--dec', str(26.2), '--radius', str(10),# '--no-plots',
-                         '-t ','--depth', '60']
+            arguments = ['solve-field', outfile,  # '--no-background-subtraction', '--no-verify-uniformize',
+                         # '--ra', str(83.2), '--dec', str(26.2), '--radius', str(10),# '--no-plots',
+                         '-t ', '--depth', '60']
             if self.scale_low_deg is not None or self.scale_high_deg is not None:
                 arguments.append('--scale-units')
                 arguments.append('degwidth')
@@ -88,11 +88,11 @@ class SkyImage(object):
                 header_wcs = fits.open(os.path.join(tmpdir, 'stars.wcs'))[0].header
                 self.wcs = WCS(header_wcs)
                 # reference point
-                self.reference_pixel = (header_wcs['CRPIX1'] , header_wcs['CRPIX2'])
+                self.reference_pixel = (header_wcs['CRPIX1'], header_wcs['CRPIX2'])
                 self.reference_ra_dec = (header_wcs['CRVAL1'], header_wcs['CRVAL2'])
                 # transformation matrix
                 self.cd_matrix = np.array(((header_wcs['CD1_1'], header_wcs['CD1_2']),
-                                                             (header_wcs['CD2_1'], header_wcs['CD2_2'])))
+                                           (header_wcs['CD2_1'], header_wcs['CD2_2'])))
             except FileNotFoundError:
                 self.wcs = None
                 self.reference_pixel = None
@@ -119,7 +119,7 @@ class LidCCDImage(object):
             raise AttributeError('crop_pixels1 must be a list of pixels')
         if type(crop_pixels2) is not list:
             raise AttributeError('crop_pixels2 must be a list of pixels')
-        image=fits.open(self.filename)[0].data
+        image = fits.open(self.filename)[0].data
         self.image_shape = image.shape
         self.crop_pixels1 = []
         self.crop_pixels2 = []
@@ -128,7 +128,7 @@ class LidCCDImage(object):
         print('divide', filename, 'in ', len(crop_pixels1), 'sub-areas')
         for crop_pixel1, crop_pixel2 in zip(crop_pixels1, crop_pixels2):
             image_cropped, crop_pixel1, crop_pixel2 = crop_image(filename, crop_pixel1, crop_pixel2)
-            ratios=[self.image_shape[0] / image_cropped.shape[0], self.image_shape[1] / image_cropped.shape[1]]
+            ratios = [self.image_shape[0] / image_cropped.shape[0], self.image_shape[1] / image_cropped.shape[1]]
             scale_low_crop_deg = scale_low_images_deg / np.max(ratios)
             scale_high_crop_deg = scale_high_images_deg / np.min(ratios)
             self.crop_pixels1.append(crop_pixel1)
@@ -162,18 +162,18 @@ class LidCCDImage(object):
         for sky_image, crop_pixel1 in zip(self.sky_images, self.crop_pixels1):
             if sky_image.reference_ra_dec is not None:
                 wcs_list.append(sky_image.wcs)
-        if len(wcs_list)>0:
+        if len(wcs_list) > 0:
             self.wcs = wcs_list[0]
 
     def print_summary(self):
         print('matching result for', self.filename)
         for sky_image, crop_pixel1 in zip(self.sky_images, self.crop_pixels1):
             if sky_image.reference_ra_dec is not None:
-                print('x pix =',sky_image.reference_pixel[0]+crop_pixel1[0])
-                print('y pix =',sky_image.reference_pixel[1]+crop_pixel1[1])
-                print('x ra =',sky_image.reference_ra_dec[0])
-                print('y de =',sky_image.reference_ra_dec[1])
-                print('CD =',sky_image.cd_matrix)
+                print('x pix =', sky_image.reference_pixel[0]+crop_pixel1[0])
+                print('y pix =', sky_image.reference_pixel[1]+crop_pixel1[1])
+                print('x ra =', sky_image.reference_ra_dec[0])
+                print('y de =', sky_image.reference_ra_dec[1])
+                print('CD =', sky_image.cd_matrix)
 
     def plot_image_solved(self, output_dir=None):
         """
@@ -232,7 +232,7 @@ class LidCCDImage(object):
         if type(lid_image) is not np.ndarray:
             raise AttributeError([self.filename, ' must be a fit file'])
         plt.imshow(lid_image, cmap='gray')
-        image_treated=np.zeros((self.image_shape))
+        image_treated = np.zeros(self.image_shape)
         vizier_blue = Vizier(columns=['all'], column_filters={"Bjmag": "<12"}, row_limit=-1, catalog=['I/271/out'])
         vizier_red = Vizier(columns=['all'], column_filters={"Rmag": "<12"}, row_limit=-1, catalog=['I/271/out'])
         vizier_green = Vizier(columns=['all'], column_filters={"Vmag": "<12"}, row_limit=-1, catalog=['I/271/out'])
@@ -258,7 +258,7 @@ class LidCCDImage(object):
                 blue_stars_px = sky_image.wcs.wcs_world2pix(blue_stars_ra_dec, 1)
                 for star_px, star_mag in zip(blue_stars_px, blue_stars_mag):
                     if -5 < star_mag <= 12:
-                        radius= 18 - star_mag
+                        radius = 18 - star_mag
                     else:
                         radius = 5
                     circle = Circle((star_px[0] + crop_pixel1[0], star_px[1] + crop_pixel1[1]), radius=radius,
@@ -270,8 +270,8 @@ class LidCCDImage(object):
                 red_stars_mag = result_red['Rmag']
                 red_stars_px = sky_image.wcs.wcs_world2pix(red_stars_ra_dec, 1)
                 for star_px, star_mag in zip(red_stars_px, red_stars_mag):
-                    if -5 < star_mag <=12:
-                        radius= 18 - star_mag
+                    if -5 < star_mag <= 12:
+                        radius = 18 - star_mag
                     else:
                         radius = 5
                     circle = Circle((star_px[0] + crop_pixel1[0], star_px[1] + crop_pixel1[1]), radius=radius,
@@ -310,8 +310,8 @@ class LidCCDImage(object):
             height = crop_pixel2[1] - crop_pixel1[1]
             rect = Rectangle(crop_pixel1, width=width, height=height, fill=False, color='y', linestyle='dashdot')
             ax.add_artist(rect)
- #       plt.imshow(image_treated, cmap='gray')
-        plt.plot(0,0,'w+')
+        # plt.imshow(image_treated, cmap='gray')
+        plt.plot(0, 0, 'w+')
         plt.grid(None)
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
