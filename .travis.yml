@@ -19,5 +19,7 @@ install:
   - echo "what is in the src folder??"
   - ls -larth src
 script:
+  - conda list
   - pytest -vv digicampipe
+  - python -c "import protozfitsreader"
   # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
