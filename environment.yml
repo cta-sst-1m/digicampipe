@@ -1,9 +1,11 @@
 name: digicampipe
 channels:
 - defaults
+- astropy
 dependencies:
 - python=3.5.4
 - astropy=2.0.2
+- astroquery=0.3.6.post2
 - attrs=17.3.0
 - ca-certificates=2017.08.26
 - certifi=2017.11.5
