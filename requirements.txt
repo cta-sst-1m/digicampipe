@@ -1,4 +1,4 @@
--e git+https://github.com/dneise/protozfitsreader.git#egg=protozfitsreader
+https://github.com/dneise/protozfitsreader/archive/v0.41.1.tar.gz
 -e git+https://github.com/cta-observatory/pyhessio.git#egg=pyhessio
 -e git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
 -e git+https://github.com/cta-observatory/ctapipe-extra.git#egg=ctapipe-extra
