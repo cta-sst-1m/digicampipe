@@ -20,7 +20,6 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  - ldd /home/travis/build/calispac/digicampipe/src/protozfitsreader/protozfitsreader/rawzfitsreader.cpython-35m-x86_64-linux-gnu.so
   - python -c "from digicampipe.io.protozfitsreader import ZFile"
   - python -c "import protozfitsreader"
 
