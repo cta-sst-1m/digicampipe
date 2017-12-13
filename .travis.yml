@@ -20,4 +20,6 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  # - python pipeline_crab.py   ## this needs input files, commented out until test files ready
+  - python -c "from digicampipe.io.protozfitsreader import ZFile"
+  - python -c "import protozfitsreader"
+
