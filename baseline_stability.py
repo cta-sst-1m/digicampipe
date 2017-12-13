@@ -47,6 +47,10 @@ if __name__ == '__main__':
     data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=pixel_not_wanted)
     # Compute baseline with clocked triggered events (sliding average over n_bins)
 
+    for data in data_stream:
+        print(data.r0.tel[0].num_samples)
+        input()
+
     #with plt.style.context('ggplot'):
     display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
     display.draw()
