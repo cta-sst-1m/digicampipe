@@ -46,7 +46,7 @@ To be able to determine the pointing using stars reflections on the lid, you nee
     
 You will need to download catalogs too: 
 
-    sudo mkdir ~/astrometry-data
+    mkdir ~/astrometry-data
     cd ~/astrometry-data
     wget http://broiler.astrometry.net/~dstn/4200/wget.sh
     chmod +x wget.sh
