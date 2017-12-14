@@ -25,7 +25,10 @@ def test_find_stars():
         crop_pixels1,
         crop_pixels2,
         scale_low_images_deg=8.,
-        scale_high_images_deg=12.)
+        scale_high_images_deg=12.,
+        guess_ra_dec=(83.2, 26.2),
+        guess_radius=10
+        )
     nsolved = 0
     for lidccd_image in lidccd_obs.lidccd_images:
         if lidccd_image.wcs is not None:

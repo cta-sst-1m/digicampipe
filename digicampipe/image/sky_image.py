@@ -16,7 +16,8 @@ class SkyImage(object):
     Computation of coordinates is done at construction only if a image_static is given.
     The static_image is removed from the filtered image (to keep only moving stars) prior of using astrometry."""
     def __init__(self, image, image_static=None, threshold=None,
-                 scale_low_deg=None, scale_high_deg=None, calculate=False):
+                 scale_low_deg=None, scale_high_deg=None, calculate=False,
+                 guess_ra_dec=None, guess_radius=None):
         if type(image) is str:
             image = fits.open(self.filename)[0].data
         if type(image) is not np.ndarray:
@@ -29,6 +30,8 @@ class SkyImage(object):
         self.image_stars[self.image_stars < 0] = 0
         self.scale_low_deg = scale_low_deg
         self.scale_high_deg = scale_high_deg
+        self.guess_ra_dec = guess_ra_dec
+        self.guess_radius = guess_radius
         if image_static is not None:
             self.subtract_static_image(image_static, threshold=threshold)
         self.sources_pixel = None
@@ -64,9 +67,16 @@ class SkyImage(object):
             hdu = fits.PrimaryHDU(self.image_stars)
             outfile = os.path.join(tmpdir, 'stars.fits')
             hdu.writeto(outfile, overwrite=True)
-            arguments = ['solve-field', outfile,  # '--no-background-subtraction', '--no-verify-uniformize',
-                         # '--ra', str(83.2), '--dec', str(26.2), '--radius', str(10),# '--no-plots',
+            arguments = ['solve-field', outfile, '--no-plots', # '--no-background-subtraction', '--no-verify-uniformize',
+                         # '--ra', str(83.2), '--dec', str(26.2), '--radius', str(10),
                          '-t ', '--depth', '60']
+            if self.guess_ra_dec is not None and self.guess_radius is not None:
+                arguments.append('--ra')
+                arguments.append(str(self.guess_ra_dec[0]))
+                arguments.append('--dec')
+                arguments.append(str(self.guess_ra_dec[1]))
+                arguments.append('--radius')
+                arguments.append(str(self.guess_radius))
             if self.scale_low_deg is not None or self.scale_high_deg is not None:
                 arguments.append('--scale-units')
                 arguments.append('degwidth')
@@ -111,7 +121,8 @@ class LidCCDImage(object):
     LidCCDImage takes an image and  a list of areas of interest and create a SkyImage for each area.
     """
     def __init__(self, filename, crop_pixels1, crop_pixels2, image_static=None,
-                 threshold=None, scale_low_images_deg=None, scale_high_images_deg=None):
+                 threshold=None, scale_low_images_deg=None, scale_high_images_deg=None,
+                 guess_ra_dec=None, guess_radius=None):
         if type(filename) is not str:
             raise AttributeError('filename must be a string')
         self.filename = filename
@@ -136,7 +147,8 @@ class LidCCDImage(object):
             self.sky_images_shape.append(image_cropped.shape)
             sky_image = SkyImage(image_cropped, image_static=image_static, threshold=threshold,
                                  scale_low_deg=scale_low_crop_deg,
-                                 scale_high_deg=scale_high_crop_deg)
+                                 scale_high_deg=scale_high_crop_deg,
+                                 guess_ra_dec=guess_ra_dec, guess_radius=guess_radius)
             self.sky_images.append(sky_image)
         self.center_px = None
         self.center_ra_dec = None
@@ -330,7 +342,8 @@ class LidCCDObservation:
     LidCCDObservation regroups several LidCCDImages. Useful to find moving stars.
     """
     def __init__(self, filenames, crop_pixels1, crop_pixels2, threshold=None,
-                 scale_low_images_deg=None, scale_high_images_deg=None):
+                 scale_low_images_deg=None, scale_high_images_deg=None,
+                 guess_ra_dec=None, guess_radius=None):
         """
         Create a lid ccd observation from several pictures of the lid CCD camera.
         Pointing is determined for each of the regions defined.
@@ -341,6 +354,8 @@ class LidCCDObservation:
             average pixel value after subtraction.
         :param scale_low_images_deg: minimum field of view (in degrees) considered during fitting.
         :param scale_high_images_deg: maximum field of view (in degrees) considered during fitting.
+        :param guess_ra_dec: aproximate pointing coordinates
+        :param guess_radius: radius of pointing  coordinates around guess_ra_dec tried during determination
         """
         self.lidccd_images = []
         image_shape = None
@@ -349,7 +364,9 @@ class LidCCDObservation:
         for filename in filenames:
             lidccd_image = LidCCDImage(filename, crop_pixels1, crop_pixels2,
                                        scale_low_images_deg=scale_low_images_deg,
-                                       scale_high_images_deg=scale_high_images_deg)
+                                       scale_high_images_deg=scale_high_images_deg,
+                                       guess_ra_dec = guess_ra_dec,
+                                       guess_radius = guess_radius)
             if image_shape is None:
                 image_shape = lidccd_image.image_shape
             elif image_shape != lidccd_image.image_shape:
