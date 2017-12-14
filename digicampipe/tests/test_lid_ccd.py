@@ -1,5 +1,4 @@
 from digicampipe.image.sky_image import *
-import os
 
 from pkg_resources import resource_filename
 from glob import glob

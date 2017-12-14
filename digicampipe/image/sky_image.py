@@ -331,8 +331,21 @@ class LidCCDObservation:
     """
     def __init__(self, filenames, crop_pixels1, crop_pixels2, threshold=None,
                  scale_low_images_deg=None, scale_high_images_deg=None):
+        """
+        Create a lid ccd observation from several pictures of the lid CCD camera.
+        Pointing is determined for each of the regions defined.
+        :param filenames: list of strings containing the path to lid CCD images (fits files).
+        :param crop_pixels1: list of points defining the upper left corner of the region of interest in pixels
+        :param crop_pixels2: list of points defining the lower right corner of the region of interest in pixels
+        :param threshold: threshold: pixels with a smaller value than threshold after subtraction are set to 0. Default at 100x the
+            average pixel value after subtraction.
+        :param scale_low_images_deg: minimum field of view (in degrees) considered during fitting.
+        :param scale_high_images_deg: maximum field of view (in degrees) considered during fitting.
+        """
         self.lidccd_images = []
         image_shape = None
+        if type(filenames) is not list or len(filenames) == 0:
+            raise AttributeError('filenames must be a non-empty list')
         for filename in filenames:
             lidccd_image = LidCCDImage(filename, crop_pixels1, crop_pixels2,
                                        scale_low_images_deg=scale_low_images_deg,
