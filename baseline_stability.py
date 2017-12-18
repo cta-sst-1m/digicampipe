@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
                       default=os.path.realpath('digicampipe/tests/resources'))
     parser.add_option('-f' , '--file', dest='filename', help='file basename e.g. CRAB_01_0_000.%03d.fits.fz',
-                      default='example_100evts.000.fits.fz', type=str)
+                      default='example_100_evts.000.fits.fz', type=str)
     # parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
     # parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
     #                   default=False)
