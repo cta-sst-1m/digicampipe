@@ -1,5 +1,6 @@
 import numpy as np
 from digicampipe.io.event_stream import event_stream
+import digicampipe.io.zfits as zfits
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
 from digicamviewer.viewer import EventViewer
@@ -16,12 +17,12 @@ if __name__ == '__main__':
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
                       default=os.path.realpath('digicampipe/tests/resources'))
     parser.add_option('-f' , '--file', dest='filename', help='file basename e.g. CRAB_01_0_000.%03d.fits.fz',
-                      default='example_100_evts.000.fits.fz', type=str)
+                      default='/example_100_evts.%03d.fits.fz', type=str)
     # parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
     # parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
     #                   default=False)
     parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=0, type=int)
-    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=5, type=int)
+    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=0, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
                       , default=home_absolute_path + '/ctasoft/CTS/config/camera_config.cfg')
 
@@ -39,7 +40,8 @@ if __name__ == '__main__':
 
     # Noisy pixels not taken into account
     # pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
-    n_events = 50000
+    n_events = zfits.count_number_events(file_list=file_list)
+    print(n_events)
     ####################
     ##### ANALYSIS #####
     ####################

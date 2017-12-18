@@ -89,3 +89,20 @@ def zfits_event_source(
                 r0.digicam_baseline = event.baseline
 
         yield data
+
+
+def count_number_events(file_list):
+    """
+    This function counts the number of events in each file of file list and returns the sum.
+    It is useful for fixed size array creation.
+
+    :param file_list: list of zfits files
+    :return: n_events: int
+    """
+    n_events = 0
+    for filename in file_list:
+        zfits = protozfitsreader.ZFile(filename)
+        n_events += zfits.numrows
+
+    return n_events
+
