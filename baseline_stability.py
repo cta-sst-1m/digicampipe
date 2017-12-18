@@ -1,19 +1,22 @@
-from digicampipe.calib.camera import filter
+import numpy as np
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
 from digicamviewer.viewer import EventViewer
 from os.path import expanduser
 from optparse import OptionParser
+import matplotlib.pyplot as plt
+import os.path
+
 
 if __name__ == '__main__':
 
     home_absolute_path = expanduser('~')
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='/sst1m/raw/2017/12/04/SST1M01/')
+                      default=os.path.realpath('digicampipe/tests/resources'))
     parser.add_option('-f' , '--file', dest='filename', help='file basename e.g. CRAB_01_0_000.%03d.fits.fz',
-                      default='SST1M01_20171204.%03d.fits.fz', type=str)
+                      default='example_100evts.000.fits.fz', type=str)
     # parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
     # parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
     #                   default=False)
@@ -35,18 +38,28 @@ if __name__ == '__main__':
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
     # Noisy pixels not taken into account
-    pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
-
+    # pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
+    n_events = 50000
     ####################
     ##### ANALYSIS #####
     ####################
+    digicam_baseline = np.zeros((len(digicam_geometry.pix_id), n_events))
 
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
-    # Clean pixels
 
-    data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=pixel_not_wanted)
-    # Compute baseline with clocked triggered events (sliding average over n_bins)
+    for i, data in zip(range(n_events), data_stream):
+
+        for tel_id in data.r0.tels_with_data:
+
+            digicam_baseline[..., i] = data.r0.tel[tel_id].digicam_baseline
+
+    plt.figure()
+    plt.plot(digicam_baseline[0])
+    plt.plot(digicam_baseline[1])
+    plt.plot(digicam_baseline[2])
+    plt.plot(digicam_baseline[1200])
+    plt.show()
 
     #with plt.style.context('ggplot'):
     display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
