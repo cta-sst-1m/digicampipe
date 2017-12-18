@@ -37,3 +37,12 @@ your prompt should look similar to this this:
 Run the tests on your machine:
 
     pytest -vv digicampipe
+
+## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
+
+In the `digicampipe` directory run:
+
+    make html
+
+This should create the documentation in `digicampipe/build/html`.
+You can open the html files with your favorite web browser.
