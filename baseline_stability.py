@@ -41,7 +41,6 @@ if __name__ == '__main__':
     # Noisy pixels not taken into account
     # pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
     n_events = zfits.count_number_events(file_list=file_list)
-    print(n_events)
     ####################
     ##### ANALYSIS #####
     ####################

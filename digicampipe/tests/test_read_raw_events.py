@@ -299,7 +299,7 @@ def test_count_number_event():
 
     from digicampipe.io.zfits import count_number_events
     n_files = 10
-    files = [example_file_path]*n_files # create a list of files
+    files = [example_file_path] * n_files  # create a list of files
 
     assert count_number_events(files) == n_files * EVENTS_IN_EXAMPLE_FILE
 
