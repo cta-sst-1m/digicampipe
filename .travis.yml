@@ -22,4 +22,4 @@ script:
   - pytest -vv digicampipe
   - python -c "from digicampipe.io.protozfitsreader import ZFile"
   - python -c "import protozfitsreader"
-
+  - make html
