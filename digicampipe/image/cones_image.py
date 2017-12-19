@@ -309,7 +309,7 @@ class ConesImage(object):
         res = optimize.minimize(get_neg_hexagonalicity_with_mask, pos_results[np.argmax(hex_results)],
                                 args=(image_cones, 6*self.r1, 6*self.r2, (60, 120, 180, 240, 300)),
                                 bounds=bounds, method='TNC',
-                                options={'disp': True, 'eps': .1, 'xtol': 1e-5, 'maxiter': 2000})
+                                options={'disp': False, 'eps': .1, 'xtol': 1e-5, 'maxiter': 2000})
         if -res.fun > 0.75:
             self.center_fitted = res.x
             hex_result = -res.fun
@@ -360,22 +360,15 @@ class ConesImage(object):
                 hdu.writeto(cone_filename, overwrite=True)
                 print('cone saved to ', cone_filename)
         if output_dir is not None:
-            plt.ioff()
-        else:
-            plt.ion()
-        fig = plt.figure(figsize=(8,6), dpi=600)
-        ax = plt.gca()
-        plt.imshow(self.image_cone, cmap='gray')
-        plt.autoscale(False)
-        plt.plot(self.center_fitted[0]-pixels_x_min, self.center_fitted[1]-pixels_y_min, 'y+')
-        plt.grid(None)
-        plt.axis('off')
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
-        if output_dir is None:
-            plt.show()
-            fig.canvas.flush_events()
-        else:
+            fig = plt.figure(figsize=(8,6), dpi=600)
+            ax = plt.gca()
+            plt.imshow(self.image_cone, cmap='gray')
+            plt.autoscale(False)
+            plt.plot(self.center_fitted[0]-pixels_x_min, self.center_fitted[1]-pixels_y_min, 'y+')
+            plt.grid(None)
+            plt.axis('off')
+            ax.get_xaxis().set_visible(False)
+            ax.get_yaxis().set_visible(False)
             if self.filename is not None:
                 output_filename = self.filename.replace('.fits', '-cone.png')
             else:
