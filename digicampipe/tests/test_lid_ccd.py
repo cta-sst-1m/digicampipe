@@ -1,4 +1,5 @@
 from digicampipe.image.sky_image import *
+from digicampipe.image.cones_image import *
 
 from pkg_resources import resource_filename
 from glob import glob
@@ -36,5 +37,14 @@ def test_find_stars():
     assert nsolved > 0
 
 
+def test_cone_simu():
+    # create an image  with a geometry compatible to the camera with known angle, spacing between pixels etc...
+    cones_img = ConesImage('test',digicam_config_file='./resources/camera_config.cfg')
+    cones_img.get_cone(radius_mask=2.1, save_to_file=False)
+    cones_img.plot_cones_presence(radius_mask=2.1)
+    assert cones_img.simu_match(std_error_max_px=0.5)
+
+
 if __name__ == '__main__':
-    test_find_stars()
+#    test_find_stars()
+    test_cone_simu()

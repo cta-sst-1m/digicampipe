@@ -5,17 +5,20 @@ from cts_core.camera import Camera
 from astropy import units as u
 from matplotlib.patches import Circle, Arrow
 import numpy as np
+from decimal import *
 import os
 
 
 class ConesImage(object):
-    def __init__(self, image, image_cone=None, output_dir=None, digicam_config_file='./resources/camera_config.cfg'):
+    def __init__(self, image, image_cone=None, output_dir=None,
+                 digicam_config_file='./tests/resources/camera_config.cfg'):
         """
         constructor of a ConesImage object.
         :param image: fit filename or numpy array containing the lid CCD image.
         If set to 'test', a test image is created.
         :param image_cone: optional fit filename of the cone image. the fit file is created calling get_cone()
         :param output_dir: optional directory where to put the original lid CCD image in case of test
+        :param digicam_config_file: path to the digicam configuration file
         """
         self.filename = None
         # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
@@ -25,43 +28,16 @@ class ConesImage(object):
         pixels_pos_mm = pixels_pos_mm.dot(np.array([[0, -1], [1, 0]]))
         pixels_v1 = pixels_pos_mm[digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
         pixels_v2 = pixels_pos_mm[digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
-        # plot_points(self.pixels_pos_mm[:, 0], self.pixels_pos_mm[:, 1])
         index_to_pos = np.array([pixels_v1, pixels_v2]).transpose()
         relative_pos = (pixels_pos_mm - pixels_pos_mm[0, :]).transpose()
         self.pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
-        self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
-        self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
+        #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
+        # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
+        self.pixels_nvs -= np.mean(self.pixels_nvs, axis=1).reshape(2, 1)
+        self.pixels_pos_true = None  # true position of pixels only know in the simu case
         if type(image) is str:
             if image == 'test':
-                angle_rot = 3.5 / 180 * np.pi
-                offset = np.array((25, 5))
-                image = np.zeros((2472, 3296))
-                center = (np.array(image.shape[::-1]) - 1) / 2
-                r1 = 38.3 * np.array((np.cos(angle_rot), np.sin(angle_rot)))
-                r2 = 38.3 * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
-                v1_lattice = 2 * r1 - r2
-                v2_lattice = r1 + r2
-                print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
-                for nv1, nv2 in self.pixels_nvs.transpose():
-                    for i in range(10, -1, -1):
-                        image = set_hexagon(image, center + offset + nv1 * v1_lattice + nv2 * v2_lattice,
-                                            r1=(i+7)/20 * r1, r2=(i+7)/20 * r2, value=1-i/10)
-                    image = set_hexagon(image, center + offset + nv1 * v1_lattice + nv2 * v2_lattice,
-                                        r1=6/20 * r1, r2=6/20 * r2, value=0)
-                image += 0. * np.random.randn(image.shape[0], image.shape[1])
-                image[0, 0] = 10000
-                if output_dir is not None:
-                    fig = plt.figure()
-                    ax = plt.gca()
-                    plt.imshow(image, cmap='gray', vmin=0, vmax=10)
-                    plt.grid(None)
-                    plt.axis('off')
-                    ax.get_xaxis().set_visible(False)
-                    ax.get_yaxis().set_visible(False)
-                    output_filename = os.path.join(output_dir, 'cones-original.png')
-                    plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
-                    plt.close(fig)
-                    print(output_filename, 'saved.')
+                image = self.cones_simu(offset=(-4.3, -2.1), angle_deg=10, pixel_radius=35, output_dir=output_dir)
             else:
                 self.filename = image
                 image = fits.open(image)[0].data
@@ -85,6 +61,8 @@ class ConesImage(object):
         self.r1 = None  # radius of the hexagon pixel
         self.r2 = None  # radius of the hexagon (after r1 in anticlockwise)
         self.r3 = None  # radius of the hexagon (after r2 in anticlockwise)
+        # position of all pixel predicted from fit, call plot_cones_presence() to compute it.
+        self.pixels_pos_predict = None
         # individual cone image, call get_cone() function to compute it
         if image_cone is None:
             self.image_cone = None
@@ -103,6 +81,53 @@ class ConesImage(object):
             self.r2 = np.array((np.real(hdu.header['r2']), np.imag(hdu.header['r2'])))
             self.r3 = np.array((np.real(hdu.header['r3']), np.imag(hdu.header['r3'])))
 
+    def cones_simu(self, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
+                   noise_ampl=0., output_dir=None):
+        """
+        function to create a test cones image according to given parameters
+        :param offset: offest of the center of the camera geometry with respect to the center of the test image
+        :param angle_deg: angle of the camera geometry
+        :param image_shape: shape of the test image (npixel_y, npixel_x)
+        :param pixel_radius: length of the radius of an hexagonal pixel (from the center of the hexagon to the border)
+        :param noise_ampl: amplitude of random noise added to the test image (gaussian)
+        :param output_dir: optional directory where to put the original lid CCD image
+        :return:
+        """
+        angle_rot = angle_deg / 180 * np.pi
+        offset = np.array(offset)
+        image = np.zeros(image_shape)
+        center = (np.array(image.shape[::-1]) - 1) / 2
+        r1 = pixel_radius * np.array((np.cos(angle_rot), np.sin(angle_rot)))
+        r2 = pixel_radius * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
+        r3 = pixel_radius * np.array((np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot)))
+        v1_lattice = r1 + r2
+        v2_lattice = r2 + r3
+        self.pixels_pos_true = (center + offset).reshape(2, 1) + \
+                               np.array([v1_lattice, v2_lattice]).transpose().dot(self.pixels_nvs)
+        n_pixels = self.pixels_nvs.shape[1]
+        print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
+        for pixel in range(n_pixels):
+            pos_true = self.pixels_pos_true[:, pixel]
+            for i in range(10, -1, -1):
+                image = set_hexagon(image, pos_true, r1=(i + 8) / 20 * r1, r2=(i + 8) / 20 * r2, value=1 - i / 10)
+            image = set_hexagon(image, pos_true, r1=7 / 20 * r1, r2=7 / 20 * r2, value=0)
+        image += noise_ampl * np.random.randn(image.shape[0], image.shape[1])
+        # add bright pixels so test image can pass the same cleaning procedure as the true images
+        image[0:100, 0:100] = 200 * np.ones((100, 100))
+        if output_dir is not None:
+            fig = plt.figure(figsize=(8, 6), dpi=600)
+            ax = plt.gca()
+            plt.imshow(image, cmap='gray', vmin=0, vmax=10)
+            plt.grid(None)
+            plt.axis('off')
+            ax.get_xaxis().set_visible(False)
+            ax.get_yaxis().set_visible(False)
+            output_filename = os.path.join(output_dir, 'cones-original.png')
+            plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
+            plt.close(fig)
+            print(output_filename, 'saved.')
+        return image
+
     def plot_cones(self, radius_mask=None, output_dir=None):
         """
         If radius_mask is None, plot the lid CCD image after filtering, otherwise plot the cones contents of the image.
@@ -114,7 +139,7 @@ class ConesImage(object):
         """
         if output_dir is not None:
             plt.ioff()
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.gca()
         if type(self.image_cones) is not np.ndarray:
             raise AttributeError([self.filename, ' must be a fit file'])
@@ -125,6 +150,7 @@ class ConesImage(object):
         else:
             image_cones = self.image_cones
         plt.imshow(image_cones, cmap='gray')
+        plt.autoscale(False)
         if radius_mask is not None:
             if self.center_fitted is None:
                 center = (np.array(self.image_cones.shape)[::-1] - 1) / 2
@@ -146,6 +172,7 @@ class ConesImage(object):
         ax.get_yaxis().set_visible(False)
         if output_dir is None:
             plt.show()
+            fig.canvas.flush_events()
         else:
             if self.filename is not None:
                 if radius_mask is not None:
@@ -197,37 +224,36 @@ class ConesImage(object):
             if percent_done > last_precent:
                 print(percent_done, '%')
                 last_precent = percent_done
-            hex = -get_neg_hexagonalicity_with_mask((pixel_x, pixel_y), image_cones, self.r1, self.r2,
-                                                    rotations=rotations)
-            scan_result[pixel_y, pixel_x] = hex
+            hexagonalicity = -get_neg_hexagonalicity_with_mask((pixel_x, pixel_y), image_cones,
+                                                               3*self.r1, 3*self.r2, rotations=rotations)
+            scan_result[pixel_y, pixel_x] = hexagonalicity
         if output_dir is not None:
             plt.ioff()
         else:
             plt.ion()
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.subplot(1, 2, 2)
         vmin = np.min(scan_result[scan_result > 0])
         vmax = np.max(scan_result[scan_result > 0])
         plt.imshow(scan_result, cmap='gray', vmin=vmin, vmax=vmax)
+        plt.autoscale(False)
         max_y, max_x = np.unravel_index(np.argmax(scan_result), dims=scan_result.shape)
         plt.plot(max_x, max_y, 'r+')
-        plt.xlim((np.min(pixels_x), np.max(pixels_x)))
-        plt.ylim((np.min(pixels_y), np.max(pixels_y)))
         plt.grid(None)
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax = plt.subplot(1, 2, 1)
         plt.imshow(image_cones * scan_area, cmap='gray')
+        plt.autoscale(False)
         plt.plot(max_x, max_y, 'r+')
-        plt.xlim((np.min(pixels_x), np.max(pixels_x)))
-        plt.ylim((np.min(pixels_y), np.max(pixels_y)))
         plt.grid(None)
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         if output_dir is None:
             plt.show()
+            fig.canvas.flush_events()
         else:
             if self.filename is not None:
                 output_filename = self.filename.replace('.fits', '-hexagonalicity.png')
@@ -263,32 +289,37 @@ class ConesImage(object):
                            center_tested - self.r3))
         bounds = ((np.min(points[:, 0]), np.max(points[:, 0])),
                   (np.min(points[:, 1]), np.max(points[:, 1])))
-        offsets= (0*self.r1, (self.r1+self.r2)/3, self.r1, self.r2, (self.r2+self.r3)/3, self.r3,
+        offsets = (0*self.r1, (self.r1+self.r2)/3, self.r1, self.r2, (self.r2+self.r3)/3, self.r3,
                   (self.r3-self.r1)/3, -self.r1, (-self.r1-self.r2)/3, -self.r2,
                   (-self.r2-self.r3)/3, -self.r3, (-self.r3+self.r1)/3)
         results = []
         for i, offset in enumerate(offsets):
             res = optimize.minimize(get_neg_hexagonalicity_with_mask,
-                                    center_tested+offset, args=(image_cones, self.r1, self.r2, (60, 300)),
+                                    center_tested + offset, args=(image_cones, self.r1, self.r2, (60, 300)),
                                     bounds=bounds, method='TNC',
-                                    options={'disp': False, 'eps': 1, 'xtol': 1e-2, 'maxiter': 200})
+                                    options={'disp': False, 'eps': 1, 'xtol': 1e-1, 'maxiter': 100})
             results.append(res)
-            print('fit', i+1, '/', len(offsets))
-            if -res.fun > 0.5:
+            print('fit', i+1, '/', len(offsets), 'at', res.x, 'done: hex=', -res.fun)
+            if -res.fun > 0.85:
                 break
+        print('refine fit')
         hex_results = np.array([-res.fun for res in results])
         pos_results = np.array([res.x for res in results])
-        self.center_fitted = pos_results[np.argmax(hex_results)]
         # fine fit for best result
-        res = optimize.minimize(get_neg_hexagonalicity_with_mask,
-                                self.center_fitted, args=(image_cones, self.r1, self.r2, (60, 120, 180, 240, 300)),
+        res = optimize.minimize(get_neg_hexagonalicity_with_mask, pos_results[np.argmax(hex_results)],
+                                args=(image_cones, 6*self.r1, 6*self.r2, (60, 120, 180, 240, 300)),
                                 bounds=bounds, method='TNC',
-                                options={'disp': False, 'eps': .01, 'xtol': 1e-4, 'maxiter': 200})
-        results.append(res)
-        hex_results = np.array([-res.fun for res in results])
-        pos_results = np.array([res.x for res in results])
-        self.center_fitted = pos_results[np.argmax(hex_results)]
-        hex_result = hex_results[np.argmax(hex_results)]
+                                options={'disp': True, 'eps': .1, 'xtol': 1e-5, 'maxiter': 2000})
+        if -res.fun > 0.75:
+            self.center_fitted = res.x
+            hex_result = -res.fun
+        else:
+            print('WARNING: hexagonalicity is small.')
+            results.append(res)
+            hex_results = np.array([-res.fun for res in results])
+            pos_results = np.array([res.x for res in results])
+            self.center_fitted = pos_results[np.argmax(hex_results)]
+            hex_result = hex_results[np.argmax(hex_results)]
         print('pixel center found: ', self.center_fitted, 'with hex=', hex_result)
         print(self.center_fitted - center_image, 'px from center')
         points_fitted = points - center_tested + np.array(self.center_fitted)
@@ -320,26 +351,30 @@ class ConesImage(object):
             hdu.header['r3'] = (self.r3[0] + 1j * self.r3[1], '3rd radius of the hexagon')
             if self.filename is not None:
                 cone_filename = self.filename.replace('.fits', '-cone.fits')
-            else:
+            elif output_dir is not None:
                 cone_filename = os.path.join(output_dir, 'cone.fits')
-            hdu.writeto(cone_filename, overwrite=True)
-            print('cone saved to ', cone_filename)
+            else:
+                print('WARNING in ConesImage::get_cone(): cone not saved as no filenane nor output_dir was given.')
+                cone_filename = None
+            if cone_filename is not None:
+                hdu.writeto(cone_filename, overwrite=True)
+                print('cone saved to ', cone_filename)
         if output_dir is not None:
             plt.ioff()
         else:
             plt.ion()
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.gca()
         plt.imshow(self.image_cone, cmap='gray')
+        plt.autoscale(False)
         plt.plot(self.center_fitted[0]-pixels_x_min, self.center_fitted[1]-pixels_y_min, 'y+')
-        plt.xlim((-0.5, pixels_x_max-pixels_x_min-0.5))
-        plt.ylim((-0.5, pixels_y_max-pixels_y_min-0.5))
         plt.grid(None)
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         if output_dir is None:
             plt.show()
+            fig.canvas.flush_events()
         else:
             if self.filename is not None:
                 output_filename = self.filename.replace('.fits', '-cone.png')
@@ -359,20 +394,21 @@ class ConesImage(object):
         """
         if output_dir is not None:
             plt.ioff()
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        fig = plt.figure(figsize=(8,6), dpi=600)
+        ax = fig.gca()
         if radius_mask is not None:
             mask = self.get_fft_mask(radius=radius_mask)
             fft_image_cones = self.fft_image_cones * mask
         else:
             fft_image_cones = self.fft_image_cones
-        plt.imshow(np.abs(np.fft.fftshift(fft_image_cones)), cmap='gray')
+        plt.imshow(np.log(1 + np.abs(np.fft.fftshift(fft_image_cones))), cmap='gray')
         plt.grid(None)
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         if output_dir is None:
             plt.show()
+            fig.canvas.flush_events()
         else:
             if self.filename is not None:
                 if radius_mask is not None:
@@ -411,19 +447,18 @@ class ConesImage(object):
         The distances are stored in self.v[12]_lattice and the radius are stored in self.r[123]
         :param output_dir: optional directory where to put the auto-correlation of the FFT image.
         """
-        fft_image_cones_shifted = signal.convolve2d(np.abs(self.fft_image_cones), high_pass_filter_77,
+        fft_image_cones_shifted = signal.convolve2d(np.fft.fftshift(np.abs(self.fft_image_cones)),
+                                                    high_pass_filter_77,
                                                     mode='same', boundary='wrap')
-        fft_image_cones_shifted = np.fft.fftshift(fft_image_cones_shifted)
         fft_image_cones_shifted[fft_image_cones_shifted < 0] = 0
-        ks_base, auto_correlation_saved, center_peaks = get_peaks_separation(fft_image_cones_shifted, crop_range=802)
+        ks_base, auto_correlation_saved, center_peaks = get_peaks_separation(fft_image_cones_shifted, crop_range=800)
         if output_dir is not None:
             plt.ioff()
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
+            fig = plt.figure(figsize=(8,6), dpi=600)
+            ax = fig.gca()
             plt.imshow(auto_correlation_saved, cmap='gray')
+            plt.autoscale(False)
             plt.plot(center_peaks[:, 0], center_peaks[:, 1], 'y+')
-            plt.xlim((0, auto_correlation_saved.shape[1]))
-            plt.ylim((0, auto_correlation_saved.shape[0]))
             k1_points = np.array((np.zeros((2,)), ks_base[0, :])) + center_peaks[0, :]
             k2_points = np.array((np.zeros((2,)), ks_base[1, :])) + center_peaks[0, :]
             plt.plot(k1_points[:, 0], k1_points[:, 1], 'b-', linewidth=1)
@@ -437,15 +472,18 @@ class ConesImage(object):
             plt.close(fig)
             print(output_filename, 'saved.')
         self.ks = ks_base
-        self.v1_lattice, self.v2_lattice = reciprocal_to_lattice_space(self.ks[0, :], self.ks[1, :], self.fft_image_cones.shape[::-1])
+        v1, v2 = reciprocal_to_lattice_space(self.ks[0, :], self.ks[1, :],
+                                             self.fft_image_cones.shape[::-1])
+        self.v1_lattice, self.v2_lattice = get_consecutive_hex_radius(v1, v2)
+        v3 = self.v2_lattice - self.v1_lattice
+        print("v1=", self.v1_lattice, "|v1|=", np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1]))
+        print("v2=", self.v2_lattice, "|v2|=", np.abs(self.v2_lattice[0] + 1j * self.v2_lattice[1]))
+        print("v3=", v3, "|v3|=", np.abs(v3[0] + 1j * v3[1]))
         r3 = (self.v1_lattice + self.v2_lattice) / 3
         r1 = self.v1_lattice - r3
         r2 = self.v2_lattice - r3
         self.r1, self.r2 = get_consecutive_hex_radius(r1, r2)
         self.r3 = self.r2 - self.r1
-        print("r1=", self.r1, "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]))
-        print("r2=", self.r2, "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]))
-        print("r3=", self.r3, "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]))
 
     def plot_cones_presence(self, radius_mask=None, output_dir=None):
         """
@@ -468,7 +506,7 @@ class ConesImage(object):
             plt.ioff()
         else:
             plt.ion()
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.gca()
         plt.imshow(cone_presence, cmap='gray')
         plt.grid(None)
@@ -477,6 +515,7 @@ class ConesImage(object):
         ax.get_yaxis().set_visible(False)
         if output_dir is None:
             plt.show()
+            fig.canvas.flush_events()
         else:
             if self.filename is not None:
                 output_filename = self.filename.replace('.fits', '-cones-presence.png')
@@ -494,16 +533,15 @@ class ConesImage(object):
             del cone_presence_fft_shifted
             if output_dir is not None:
                 plt.ioff()
-                fig = plt.figure()
-                ax = fig.add_subplot(111)
+                fig = plt.figure(figsize=(8,6), dpi=600)
+                ax = fig.gca()
                 plt.imshow(auto_correlation, cmap='gray')
+                plt.autoscale(False)
                 plt.plot(center_peaks[:, 0], center_peaks[:, 1], 'y+')
-                plt.xlim((0, auto_correlation.shape[1]))
-                plt.ylim((0, auto_correlation.shape[0]))
                 k1_points = np.array((0 * ks[0, :], ks[0, :])) + center_peaks[0, :]
                 k2_points = np.array((0 * ks[0, :], ks[1, :])) + center_peaks[0, :]
-                plt.plot(k1_points[:, 0], k1_points[:, 1], 'b-', linewidth=1)
-                plt.plot(k2_points[:, 0], k2_points[:, 1], 'r-', linewidth=1)
+                plt.plot(k1_points[:, 0], k1_points[:, 1], 'b-', linewidth=0.2)
+                plt.plot(k2_points[:, 0], k2_points[:, 1], 'r-', linewidth=0.2)
                 plt.grid(None)
                 if self.filename is not None:
                     output_filename = self.filename.replace('.fits', '-cones-sep.png')
@@ -521,75 +559,76 @@ class ConesImage(object):
             print("v1=", v1, "|v1|=", v1_length)
             print("v2=", v2, "|v2|=", v2_length)
             print("v3=", v3, "|v3|=", v3_length)
+            mean, median, std = sigma_clipped_stats(cone_presence, sigma=3.0, iters=5)
+            baseline_sub = cone_presence - median
+            baseline_sub[cone_presence < 0] = 0
+            daofind = DAOStarFinder(fwhm=3.0, threshold=10. * std)
+            sources = daofind(baseline_sub)
+            center_peaks = np.array([sources['xcentroid'], sources['ycentroid']]).transpose()
+            order = np.argsort(sources['mag'])
+            n_peak_kept = np.min([3000, order.shape[0]])
+            center_peaks = center_peaks[order[0:n_peak_kept], :]
             pixels_fit_px = []
-            pixels_fit_sigma = []
-            nfail = 0
-            print('fit all peaks')
-            for i1 in range(-100, 100):
-                for i2 in range(-100, 100):
-                    peak_pos_aprox = self.center_fitted + i1 * v1 + i2 * v2
-                    crop_px1 = np.floor(peak_pos_aprox - radius_mask)
-                    crop_px1 = np.maximum(crop_px1, (0, 0))
-                    crop_px1 = np.minimum(crop_px1, (cone_presence.shape[1] - 1, cone_presence.shape[0] - 1))
-                    crop_px1 = crop_px1.astype(int)
-                    crop_px2 = np.ceil(peak_pos_aprox + radius_mask)
-                    crop_px2 = np.maximum(crop_px2, (0, 0))
-                    crop_px2 = np.minimum(crop_px2, (cone_presence.shape[1] - 1, cone_presence.shape[0] - 1))
-                    crop_px2 = crop_px2.astype(int)
-                    if np.any(crop_px2 - crop_px1 <= np.round(radius_mask)):
-                        continue
-                    crop_center = (crop_px2 - crop_px1 - 1.) / 2
-                    # print('fit around:', peak_pos_aprox)
-                    peak_crop, crop_px1, crop_px2 = crop_image(cone_presence, crop_px1, crop_px2)
-                    max_pos_crop = np.argmax(peak_crop)
-                    [max_pos_y, max_pos_x] = np.unravel_index(max_pos_crop, peak_crop.shape)
-                    init_amplitude = peak_crop[max_pos_y, max_pos_x] - np.min(peak_crop)
-                    init_param = (init_amplitude, max_pos_x, max_pos_y, 4, 4, 0, np.min(peak_crop))
-                    fit_result, success = FitGauss2D(peak_crop.transpose(), ip=init_param)
-                    amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg = fit_result
-                    if 0 < success <= 4 and 0 < xsigma < 6 and 0 < ysigma < 6 and\
-                                            -5 < xcenter - crop_center[0] < 5 and -5 < ycenter - crop_center[1] < 5:
-                        # print('SUCCESS: xcenter:', np.round(xcenter + crop_px1[0], 2),
-                        #       'ycenter:', np.round(ycenter + crop_px1[0], 2),
-                        #       'xsigma:', np.round(xsigma,2), 'ysigma:', np.round(ysigma,2))
-                        pixels_fit_px.append(np.array([xcenter, ycenter]) + crop_px1)
-                        pixels_fit_sigma.append(np.array([xsigma, ysigma]))
-                    else:
-                        # print('FAIL: xcenter:', np.round(xcenter, 2), 'ycenter:', np.round(ycenter, 2),
-                        #       'xsigma:', np.round(xsigma, 2), 'ysigma:', np.round(ysigma, 2))
-                        nfail += 1
-                    if np.mod(len(pixels_fit_px)+nfail, 100) == 0:
-                        print(len(pixels_fit_px)+nfail, 'fits done')
+            inv_vs = np.linalg.pinv(np.array([v1, v2]).transpose())
+            for i in range(n_peak_kept):
+                rel_pos = (center_peaks[i, :] - self.center_fitted).reshape((2, 1))
+                nvs_float = inv_vs.dot(rel_pos)
+                if np.all(np.abs(np.mod(nvs_float % 1 + 0.5, 1) - 0.5) < radius_mask / v1_length):
+                    pixels_fit_px.append(center_peaks[i, :])
             pixels_fit_px = np.array(pixels_fit_px)
-            pixels_fit_sigma = np.array(pixels_fit_sigma)
-            print('success =', pixels_fit_px.shape[0], '/', pixels_fit_px.shape[0] + nfail)
             print('look for pixels geometry:')
-            best_match_nv1, best_match_nv2 = 0, 0
-            best_match_v1, best_match_v2 = v1, v2
+            print('v1=', v1, 'v2=', v2, 'v3=', v3)
+            r1 = (v1 + v2) / 3
+            r2 = (v2 + v3) / 3
+            r3 = (v3 - v1) / 3
+            print('r1=', r1, 'r2=', r2, 'r3=', r3)
+            nv_prec = Decimal('0.1')
+            pixels_nvs_dec = [[Decimal(n1).quantize(nv_prec, rounding=ROUND_HALF_EVEN),
+                               Decimal(n2).quantize(nv_prec, rounding=ROUND_HALF_EVEN)]
+                              for [n1, n2] in self.pixels_nvs.transpose()]
+            pixels_nvs_set = set(map(tuple, pixels_nvs_dec))
             best_matching_nvs = 0
-            for v1_test, v2_test in [[v1, v2], [v2, v3], [v3, -v1], [-v1, -v2], [-v2, -v3], [-v3, v1]]:
+            best_match_nv1, best_match_nv2 = None, None
+            best_match_v1, best_match_v2 = None, None
+            for v1_test, v2_test in [[v1, v2], [v2, v3]]:  # , [v3, -v1], [-v1, -v2], [-v2, -v3], [-v3, v1]]:
                 v_matrix = np.array([v1_test, v2_test]).transpose()
-                pixels_fit_nvs = np.round(np.linalg.pinv(v_matrix).dot((pixels_fit_px - self.center_fitted).transpose()))
-                pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs.transpose().astype(int)))
-                for nv1 in range(-10, 10):
-                    for nv2 in range(-10, 10):
-                        pixels_nvs = map(tuple, self.pixels_nvs.transpose() + np.array([nv1, nv2]))
-                        matching_nvs = len(pixels_fit_nvs_set.intersection(pixels_nvs))
-                        if matching_nvs > best_matching_nvs:
-                            best_matching_nvs = matching_nvs
-                            best_match_nv1, best_match_nv2 = nv1, nv2
-                            best_match_v1, best_match_v2 = v1_test, v2_test
+                for r in r1, r2:
+                    for nv1 in range(-10, 10):
+                        for nv2 in range(-10, 10):
+                            pixels_fit_px_shifted = pixels_fit_px - self.center_fitted\
+                                                    - nv1 * v1_test - nv2 * v2_test - r
+                            pixels_fit_nvs = np.linalg.pinv(v_matrix).dot((pixels_fit_px_shifted).transpose())
+                            pixels_fit_nvs_dec = [[Decimal(n1).quantize(nv_prec, rounding=ROUND_HALF_EVEN),
+                                                   Decimal(n2).quantize(nv_prec, rounding=ROUND_HALF_EVEN)]
+                                                  for [n1, n2] in pixels_fit_nvs.transpose()]
+                            pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs_dec))
+                            matching_nvs = len(pixels_fit_nvs_set.intersection(pixels_nvs_set))
+                            if matching_nvs > best_matching_nvs:
+                                best_matching_nvs = matching_nvs
+                                best_match_nv1, best_match_nv2 = nv1, nv2
+                                best_match_v1, best_match_v2 = v1_test, v2_test
+                                best_match_r = r
+                            if matching_nvs == 1296:
+                                print('perfect solution: nv1=', nv1, 'nv2=', nv2,
+                                      'v1=', v1_test, 'v2=', v2_test, 'r=', r)
             v1, v2 = best_match_v1, best_match_v2
-            print('best base: v1=', v1, ', v2=', v2)
-            print('best match: nv1 =', best_match_nv1, ', nv2 =', best_match_nv2)
+            v3 = v2 - v1
+            print('best base: v1=', v1, ', v2=', v2, 'v3=', v3)
+            print('best match: nv1=', best_match_nv1, ', nv2=', best_match_nv2, '')
             v_matrix = np.array([v1, v2]).transpose()
-            self.center_fitted += best_match_nv1 * v1 + best_match_nv2 * v2
-            pixels_fit_nvs = np.round(np.linalg.pinv(v_matrix).dot((pixels_fit_px - self.center_fitted).transpose()))
-            pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs.transpose().astype(int)))
-            nvs_fit_matching_set = pixels_fit_nvs_set.intersection(map(tuple, self.pixels_nvs.transpose()))
-            is_fit_matching = np.array([x in nvs_fit_matching_set for x in map(tuple, pixels_fit_nvs.transpose())])
+            self.center_fitted += best_match_nv1 * v1 + best_match_nv2 * v2 + best_match_r
+            pixels_fit_nvs = np.linalg.pinv(v_matrix).dot((pixels_fit_px - self.center_fitted).transpose())
+            pixels_fit_nvs_dec = [[Decimal(n1).quantize(nv_prec, rounding=ROUND_HALF_EVEN),
+                                   Decimal(n2).quantize(nv_prec, rounding=ROUND_HALF_EVEN)]
+                                  for [n1, n2] in pixels_fit_nvs.transpose()]
+            pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs_dec))
+            nvs_fit_matching_set = pixels_fit_nvs_set.intersection(pixels_nvs_set)
+            if len(nvs_fit_matching_set) != best_matching_nvs:
+                print('ERROR reproducing best matching solution')
+                return
+            is_fit_matching = np.array([tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
             fit_not_matching = is_fit_matching == 0
-            is_pixel_fitted = np.array([x in nvs_fit_matching_set for x in map(tuple, self.pixels_nvs.transpose())])
+            is_pixel_fitted = np.array([tuple(nv) in nvs_fit_matching_set for nv in pixels_nvs_dec])
             pixels_not_fitted = is_pixel_fitted == 0
             print(np.sum(is_fit_matching), 'fits in best match,', np.sum(fit_not_matching), 'outside')
             print('global fit of lattice base vectors, center was ', self.center_fitted)
@@ -600,20 +639,27 @@ class ConesImage(object):
             self.v1_lattice = precise_vs[:, 0]
             self.v2_lattice = precise_vs[:, 1]
             self.center_fitted = precise_vs[:, 2]
+            self.pixels_pos_predict = precise_vs.dot(np.vstack((self.pixels_nvs, np.ones((1, self.pixels_nvs.shape[1])))))
             pixels_geom_px = precise_vs.dot(np.vstack((self.pixels_nvs,  np.ones((1, self.pixels_nvs.shape[1])))))
-            print("v1=", self.v1_lattice, "|v1|=", np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1]))
-            print("v2=", self.v2_lattice, "|v2|=", np.abs(self.v2_lattice[0] + 1j * self.v2_lattice[1]))
+            v1_length = np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1])
+            v2_length = np.abs(self.v2_lattice[0] + 1j * self.v2_lattice[1])
+            v3 = self.v2_lattice - self.v1_lattice
+            v3_length = np.abs(v3[0] + 1j * v3[1])
+            print("v1=", self.v1_lattice, "|v1|=", v1_length)
+            print("v2=", self.v2_lattice, "|v2|=", v2_length)
+            print("v3=", v3, "|v3|=", v3_length)
             center_image = (np.array(self.image_cones.shape[::-1]) - 1) / 2
             print("center=", self.center_fitted, ',', self.center_fitted - center_image, 'from center')
-            fig = plt.figure()
+            fig = plt.figure(figsize=(8,6), dpi=600)
             ax = plt.gca()
             plt.imshow(cone_presence, cmap='gray')
             plt.autoscale(False)
+            """
             for center_pixel in pixels_geom_px[:, is_pixel_fitted].transpose():
-                circle = Circle((center_pixel[0], center_pixel[1]), radius=radius_mask + 10, fill=False, color='g')
+                circle = Circle((center_pixel[0], center_pixel[1]), radius=v1_length/2 - 1, fill=False, color='g')
                 ax.add_artist(circle)
             for center_pixel in pixels_geom_px[:, pixels_not_fitted].transpose():
-                circle = Circle((center_pixel[0], center_pixel[1]), radius=radius_mask + 10, fill=False, color='r')
+                circle = Circle((center_pixel[0], center_pixel[1]), radius=v1_length/2 - 1, fill=False, color='r')
                 ax.add_artist(circle)
             plt.errorbar(pixels_fit_px[is_fit_matching, 0], pixels_fit_px[is_fit_matching, 1],
                          xerr=pixels_fit_sigma[is_fit_matching, 0] * 3, yerr=pixels_fit_sigma[is_fit_matching, 1] * 3,
@@ -621,6 +667,11 @@ class ConesImage(object):
             plt.errorbar(pixels_fit_px[fit_not_matching, 0], pixels_fit_px[fit_not_matching, 1],
                          xerr=pixels_fit_sigma[fit_not_matching, 0] * 3, yerr=pixels_fit_sigma[fit_not_matching, 1] * 3,
                          fmt='y', linestyle='none', elinewidth=1)
+            """
+            plt.plot(pixels_geom_px[0, is_pixel_fitted],  pixels_geom_px[1, is_pixel_fitted], 'gx', ms=5, mew=0.1)
+            plt.plot(pixels_geom_px[0, pixels_not_fitted], pixels_geom_px[1, pixels_not_fitted], 'rx', ms=5, mew=0.1)
+            plt.plot(pixels_fit_px[is_fit_matching, 0], pixels_fit_px[is_fit_matching, 1], 'b+', ms=5, mew=0.1)
+            plt.plot(pixels_fit_px[fit_not_matching, 0], pixels_fit_px[fit_not_matching, 1], 'y+', ms=5, mew=0.1)
             plt.grid(None)
             plt.axis('off')
             ax.get_xaxis().set_visible(False)
@@ -630,10 +681,11 @@ class ConesImage(object):
             good_residuals = np.abs(residuals[0, :] + 1j * residuals[1, :]) < 2.
             bad_residuals = good_residuals == 0
             print(np.sum(good_residuals), "residuals below threshold,", np.sum(bad_residuals), "above.")
-            print('mean(residuals)=', np.mean(residuals[:, good_residuals], axis=1),
-                  'std(residual)=', np.std(residuals[:, good_residuals], axis=1))
+            # print('mean(residuals)=', np.mean(residuals[:, good_residuals], axis=1),
+            #       'std(residual)=', np.std(residuals[:, good_residuals], axis=1))
             if output_dir is None:
                 plt.show()
+                fig.canvas.flush_events()
             else:
                 if self.filename is not None:
                     output_filename = self.filename.replace('.fits', '-cones-presence-filtered.png')
@@ -642,20 +694,20 @@ class ConesImage(object):
                 plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
                 print(output_filename, 'saved.')
-            fig = plt.figure()
+            fig = plt.figure(figsize=(8,6), dpi=600)
             ax = plt.gca()
             plt.imshow(self.image_cones, cmap='gray')
             plt.autoscale(False)
-            ploted_residuals = residuals[:, good_residuals].transpose()
-            ploted_prediction = pixels_px_prediction[:, good_residuals].transpose()
-            for residual, center_pixel in zip(ploted_residuals, ploted_prediction):
-                arrow = Arrow(center_pixel[0], center_pixel[1], residual[0]*10, residual[1]*10,
+            plotted_residuals = residuals[:, good_residuals].transpose()
+            plotted_prediction = pixels_px_prediction[:, good_residuals].transpose()
+            for residual, center_pixel in zip(plotted_residuals, plotted_prediction):
+                arrow = Arrow(center_pixel[0], center_pixel[1], residual[0]*100, residual[1]*100,
                               color='b', width=15., linewidth=1)
                 ax.add_artist(arrow)
-            ploted_residuals = residuals[:, bad_residuals].transpose()
-            ploted_prediction = pixels_px_prediction[:, bad_residuals].transpose()
-            for residual, center_pixel in zip(ploted_residuals, ploted_prediction):
-                arrow = Arrow(center_pixel[0], center_pixel[1], residual[0]*10, residual[1]*10,
+            plotted_residuals = residuals[:, bad_residuals].transpose()
+            plotted_prediction = pixels_px_prediction[:, bad_residuals].transpose()
+            for residual, center_pixel in zip(plotted_residuals, plotted_prediction):
+                arrow = Arrow(center_pixel[0], center_pixel[1], residual[0]*100, residual[1]*100,
                               color='r', width=15., linewidth=1)
                 ax.add_artist(arrow)
             plt.grid(None)
@@ -664,6 +716,7 @@ class ConesImage(object):
             ax.get_yaxis().set_visible(False)
             if output_dir is None:
                 plt.show()
+                fig.canvas.flush_events()
             else:
                 if self.filename is not None:
                     output_filename = self.filename.replace('.fits', '-cones-fit-residuals.png')
@@ -672,3 +725,24 @@ class ConesImage(object):
                 plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
                 print(output_filename, 'saved.')
+
+    def simu_match(self, std_error_max_px=0.5):
+        if self.pixels_pos_true is None:
+            raise InvalidOperation('simu_match() can only be called from simulated cones')
+        # as camera is invarient by 60 deg rotation, we try the 3 possibilities:
+        diffs = []
+        offsets = []
+        for i in range(3):
+            angle = i * 2 / 3 * np.pi
+            R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+            pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
+                          self.center_fitted.reshape(2, 1)
+            diffs.append(np.std(pos_predict - self.pixels_pos_true))
+            offsets.append(np.mean(pos_predict - self.pixels_pos_true, axis=1))
+        print('error on pixel position: ', np.min(diffs))
+        print('offset=', offsets[np.argmin(diffs)])
+        angle = np.argmin(diffs) * 2 / 3 * np.pi
+        R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+        self.pixels_pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
+                          self.center_fitted.reshape(2, 1)
+        return np.std(self.pixels_pos_predict - self.pixels_pos_true) < std_error_max_px

@@ -1,4 +1,5 @@
 from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
 import numpy as np
 import scipy
 from skimage.draw import polygon
@@ -8,6 +9,7 @@ import cv2
 from scipy import signal, ndimage, optimize
 import copy
 import numbers
+from photutils import DAOStarFinder
 
 
 def crop_image(image, crop_pixel1, crop_pixel2):
@@ -205,6 +207,8 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
     crop_fft = fft_image_shifted[min_crop_x:max_crop_x, min_crop_y:max_crop_y]
     # plot_image(crop_fft)
     auto_correlation = signal.fftconvolve(crop_fft, crop_fft[::-1, ::-1], mode='same')
+    auto_correlation_saved = auto_correlation
+    """
     auto_correlation_saved = copy.deepcopy(auto_correlation)
     center_peaks = []
     for i in range(81):
@@ -226,7 +230,16 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
             for iy, y in enumerate(range(max_pos_y - 20, max_pos_y + 20)):
                 auto_correlation[y, x] -= gaussian_function(ix, iy)
     center_peaks = np.array(center_peaks)
+    """
     auto_correlation[auto_correlation < 0] = 0
+    mean, median, std = sigma_clipped_stats(auto_correlation, sigma=3.0, iters=5)
+    baseline_sub = auto_correlation - median
+    baseline_sub[baseline_sub < 0] = 0
+    daofind = DAOStarFinder(fwhm=3.0, threshold=10. * std)
+    sources = daofind(baseline_sub)
+    center_peaks = np.array([sources['xcentroid'], sources['ycentroid']]).transpose()
+    order = np.argsort(sources['mag'])
+    center_peaks = center_peaks[order[0:100], :]
     ks = center_peaks[1:, :] - center_peaks[0, :]
     ks_complex = ks[:, 0] + 1j * ks[:, 1]
     angles = np.angle(ks_complex)
@@ -266,7 +279,10 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
 def get_image_hexagonalicity(image, rotations=(60, 300)):
     # init = clock()
     image[image != 0] -= np.mean(image)
-    image = image.astype(float) / np.std(image)
+    std_image = np.std(image)
+    if std_image == 0:
+        return 0  #in case someting got realy wrong durring fit.
+    image = image.astype(float) / std_image
     # plot_image(image, wait=True)
     hexagonalicity = 0
     for rot in rotations:
