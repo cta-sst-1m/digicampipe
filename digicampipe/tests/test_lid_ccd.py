@@ -37,9 +37,12 @@ def test_find_stars():
     assert nsolved > 0
 
 
+camera_config_file = resource_filename('digicampipe', 'tests/resources/camera_config.cfg')
+
+
 def test_cone_simu():
     # create an image  with a geometry compatible to the camera with known angle, spacing between pixels etc...
-    cones_img = ConesImage('test',digicam_config_file='./resources/camera_config.cfg')
+    cones_img = ConesImage('test',digicam_config_file=camera_config_file)
     cones_img.get_cone(radius_mask=2.1, save_to_file=False)
     cones_img.plot_cones_presence(radius_mask=2.1)
     assert cones_img.simu_match(std_error_max_px=0.5)
