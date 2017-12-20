@@ -20,7 +20,7 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  - bash ./docs/deploy_to_gh-pages.sh
+  - bash ./docs/deploy-to-gh-pages.sh
 
 env:
   global:
