@@ -1,6 +1,10 @@
 # digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
 DigiCam pipeline based on ctapipe
 
+# Documentation
+
+The documentation can be found here: [Digicampipe documentation](https://calispac.github.io/digicampipe)
+
 # Installation
 
 ## Anaconda
