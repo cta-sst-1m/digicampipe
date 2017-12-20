@@ -20,11 +20,12 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  - cd docs/
-  - make html
-  - sh push_to_gh-pages.sh
-  - cd ../
+  - bash ./docs/deploy_to_gh-pages.sh
 
+env:
+  global:
+    - GITHUB_REPO: "calispac/digicampipe"
+    - secure: "kLTHK+/IvcLsozvC7cpphcn7MDSlKY0GTAYjlB/R4kR5BTlMVUJXVEYz1JPjUqdMQFu4OgurwAOi6P6G9Z3bhaBCMS9gBozEEOTWdtbc230NoSC3D02H+LPkYpmAvjMx9sW2l2rbSD03okXc/TK+IEcbBkosb/4fOB+YM77zWQ6JeDHrbDX11bFuLk2LbErCOal9Nxpiex6+6KDUyLVdxV4wcdOrTOJkCRL4/fJOUBejX1JGClpUMbMosxlFz+tcJ5hrLP9XFzfyMrcND3LBItjORJfD5VPdGCrNqAAHO0n0NT+TqTPwcoaMEXjhOm3lYw2u2kq8LEqBa1f5BxehR6y04xFy60QM7wyqYLg/C9TpYsCsp4iFvKAKcqn1IvBKV9P6xgPCGmgGf7a5YeoBcMMowatT7GKwCeF44TpBYl1lew2WxKWhtpmwjzsC5D6hJXxAkMAf96SIEK5J+cfeWI0T57eEfZlU0j/0ztxnlzIHkhre8oacUUlEGE2vxRLVEvr7GCfj81SpuRbyw0Yi+QtYF5VPNCUsNnTk7HUGPvUpmXo1ZCzn0FJ2NvFV2gd4MERHYK9WISR9wSeWEt4yTJ2N4pTFvxzHCEzL0uzCv0tpnVUVv2YfPu0hBHhVBHHPd3A3nCRIs9UuXN+O61aYEKwdFrC1yRiWMBBT+ZLuXa8="
 after_success:
 
   - cd docs/
