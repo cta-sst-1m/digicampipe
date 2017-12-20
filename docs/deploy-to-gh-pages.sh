@@ -1,8 +1,8 @@
 #!/bin/bash
 # See https://medium.com/@nthgergo/publishing-gh-pages-with-travis-ci-53a8270e87db
-set -o errexit
 
-rm -rf public
+cd docs/
+rm -rf public/
 mkdir public
 
 # config
@@ -11,9 +11,8 @@ git config --global user.name "Travis CI"
 
 # build the documentation (CHANGE THIS)
 
-cd docs/
 make html
-cp -r build/html public/
+cp -r build/html/. public/
 make clean
 
 # deploy
@@ -21,4 +20,4 @@ cd public
 git init
 git add .
 git commit -m "Deploy to Github Pages"
-git push --force --quiet "https://${GITHUB_TOKEN}@$github.com/${GITHUB_REPO}.git" master:gh-pages
+git push --force --quiet "https://${GH_TOKEN}@${GH_REF}" master:gh-pages
