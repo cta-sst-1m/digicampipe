@@ -15,6 +15,7 @@ cp -r build/html/. public/
 make clean
 
 # deploy
+
 cd public
 git init
 git add .
