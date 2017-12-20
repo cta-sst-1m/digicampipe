@@ -52,7 +52,7 @@ templates_path = ['.templates']
 # You can specify multiple suffix as a list of string:
 #
 
-source_parsers = {'.md': CommonMarkParser,}
+source_parsers = {'.md': CommonMarkParser}
 
 
 source_suffix = ['.rst', '.md']
@@ -167,8 +167,6 @@ texinfo_documents = [
      author, 'digicampipe', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
 
 # -- Options for Epub output ----------------------------------------------
 
