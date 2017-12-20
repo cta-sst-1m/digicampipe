@@ -2,7 +2,6 @@
 # See https://medium.com/@nthgergo/publishing-gh-pages-with-travis-ci-53a8270e87db
 
 cd docs/
-rm -rf public/
 mkdir public
 
 # config
@@ -20,4 +19,6 @@ cd public
 git init
 git add .
 git commit -m "Deploy to Github Pages"
-git push --force --quiet "https://${GH_TOKEN}@${GH_REF}" master:gh-pages
+git push --force --quiet "https://${GITHUB_TOKEN}@${GITHUB_REPO}" master:gh-pages
+cd ..
+rm -rf public/
