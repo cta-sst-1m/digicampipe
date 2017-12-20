@@ -42,6 +42,7 @@ Run the tests on your machine:
 
 In the `digicampipe` directory run:
 
+    cd docs/
     make html
 
 This should create the documentation in `digicampipe/build/html`.
