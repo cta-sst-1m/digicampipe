@@ -8,7 +8,7 @@ mkdir public
 git config --global user.email "nobody@nobody.org"
 git config --global user.name "Travis CI"
 
-# build the documentation (CHANGE THIS)
+# build the documentation
 
 make html
 cp -r build/html/. public/
