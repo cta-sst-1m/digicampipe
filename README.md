@@ -51,3 +51,6 @@ In the `digicampipe` directory run:
 
 This should create the documentation in `digicampipe/docs/build/html`.
 You can open the html files with your favorite web browser.
+To delete the documentation us:
+
+    make clean
