@@ -26,5 +26,3 @@ after_success:
   - cd docs/
   - make html
   - ./push.sh
-  - make clean
-  - cd ../
