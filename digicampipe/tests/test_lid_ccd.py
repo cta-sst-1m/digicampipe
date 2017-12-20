@@ -44,10 +44,11 @@ def test_cone_simu():
     # create an image  with a geometry compatible to the camera with known angle, spacing between pixels etc...
     cones_img = ConesImage('test',digicam_config_file=camera_config_file)
     cones_img.get_cone(radius_mask=2.1, save_to_file=False)
-    cones_img.plot_cones_presence(radius_mask=2.1)
+    cones_img.fit_camera_geometry()
+    cones_img.refine_camera_geometry()
     assert cones_img.simu_match(std_error_max_px=0.5)
 
 
 if __name__ == '__main__':
-#    test_find_stars()
+    #test_find_stars()
     test_cone_simu()

@@ -235,7 +235,7 @@ def get_peaks_separation(fft_image_shifted, center=None, crop_range=None, radius
     mean, median, std = sigma_clipped_stats(auto_correlation, sigma=3.0, iters=5)
     baseline_sub = auto_correlation - median
     baseline_sub[baseline_sub < 0] = 0
-    daofind = DAOStarFinder(fwhm=3.0, threshold=10. * std)
+    daofind = DAOStarFinder(fwhm=3.0, threshold=std)
     sources = daofind(baseline_sub)
     center_peaks = np.array([sources['xcentroid'], sources['ycentroid']]).transpose()
     order = np.argsort(sources['mag'])
