@@ -29,4 +29,4 @@ script:
   - travis-sphinx build --source=docs/
 
 after_success:
-  - travis-sphinx delpoy
+  - travis-sphinx deploy
