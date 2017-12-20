@@ -21,8 +21,8 @@ install:
 script:
   - pytest -vv digicampipe
   - cd docs/
-  - make htlm
-  - ./push_to_gh-pages.sh
+  - make html
+  - sh push_to_gh-pages.sh
   - cd ../
 
 after_success:
