@@ -49,5 +49,5 @@ In the `digicampipe` directory run:
     cd docs/
     make html
 
-This should create the documentation in `digicampipe/build/html`.
+This should create the documentation in `digicampipe/docs/build/html`.
 You can open the html files with your favorite web browser.
