@@ -1,5 +1,9 @@
 """
-Container structures for data that should be read or written to disk
+Container structures for data that should be read or written to disk. The main data container is DataContainer()
+and holds the containers of each data processing level. The data processing levels start from R0 up to DL2,
+where R0 holds the cameras raw data and DL2 the air shower high-level parameters.
+In general each major pipeline step is associated with a given data level. Please keep in mind that the data level definition and the associated fields might change rapidly
+as there is no final data level definition.
 """
 
 from astropy import units as u
@@ -76,6 +80,29 @@ class DL1Container(Container):
 class R0CameraContainer(Container):
     """
     Storage of raw data from a single telescope
+
+    :param pixel_flags: a ndarray to flag the pixels
+    :type pixel_flags: ndarray (n_pixels, ) (bool)
+    :param adc_samples: a ndarray (n_pixels, n_samples) containing the waveforms in each pixel
+    :type adc_samples: ndarray (n_pixels, n_samples, ) (uint16)
+    :param baseline: baseline holder for baseline computation using clocked triggers
+    :type baseline: ndarray (n_pixels, ) (float)
+    :param digicam_baseline: baseline computed by DigiCam of pre-samples (using 1024 samples)
+    :type digicam_baseline: ndarray (n_pixels, ) (uint16)
+    :param standard_deviation: baseline standard deviation holder for baseline computed using clocked triggers
+    :type standard deviation: ndarray (n_pixels, ) (float)
+    :param dark_baseline: baseline holder for baseline computed in dark condition (lid closed)
+    :type dark_baseline: ndarray (n_pixels, ) (float)
+    :param hv_off_baseline: baseline computed with sensors just bellow breakdown voltage (or without bias voltage applied)
+    :type hv_off_baseline: ndarray (n_pixels, ) (float)
+    :param camera_event_id: unique event identification provided by DigiCam
+    :type camera_event_id: (int)
+    :param camera_event_number: event number within the first trigger of operation
+    :type camera_event_number: (int)
+    :param local_camera_clock: time stamp from internal DigiCam clock (ns)
+    :type local_camera_clock: (float)
+    :param gps_time: time stamp provided by a precise external clock (synchronized between hardware components)
+
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
     adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")
@@ -209,13 +236,18 @@ class ReconstructedContainer(Container):
 
 
 class DataContainer(Container):
-    """ Top-level container for all event information """
+    """ Top-level container for all event information.
+    Each field is representing a specific data processing level from (R0 to DL2)
+    Please keep in mind that the data level definition and the associated fields might change rapidly
+    as there is not a final data format. The data levels R0, R1, DL1, contains sub-containers for each telescope.
+    After DL2 the data is not processed at the telescope level.
+    """
     r0 = Field(R0Container(), "Raw Data")
-    r1 = Field(R1Container(), "R1 Calibrated Data")
+    r1 = Field(R1Container(), "Raw Common Data")
     dl0 = Field(DL0Container(), "DL0 Data Volume Reduced Data")
     dl1 = Field(DL1Container(), "DL1 Calibrated image")
     dl2 = Field(ReconstructedContainer(), "Reconstructed Shower Information")
-    inst = Field(InstrumentContainer(), "instrumental information (deprecated)")
+    inst = Field(InstrumentContainer(), "Instrumental information")
 
 
 def load_from_pickle_gz(file):
@@ -245,3 +277,4 @@ def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
             break
 
     writer.close()
+
