@@ -25,8 +25,9 @@ def find_pixel_positions(camera_config_file, source_x=0.*u.mm, source_y=0.*u.mm)
 def generate_geometry_from_camera(camera, source_x=0.*u.mm, source_y=0.*u.mm):
     """
     Generate the SST-1M geometry from the CTS configuration
-    :param cts: a CTS instance
-    :param available_board:  which board per sector are available (dict)
+    :param camera: a CTS instance
+    :param source_x:  x coord
+    :param source_y:  y coord
     :return: the geometry for visualisation and the list of "good" pixels
     """
     pix_x = []
