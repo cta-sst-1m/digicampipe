@@ -20,11 +20,11 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  - cd docs/
-  - make html
-  - make clean
-  - cd ../
-  - travis-sphinx build --source=docs/
 
 after_success:
-  - travis-sphinx deploy
+
+  - cd docs/
+  - make html
+  - ./push.sh
+  - make clean
+  - cd ../
