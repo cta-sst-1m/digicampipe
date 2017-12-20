@@ -25,4 +25,4 @@ after_success:
 
   - cd docs/
   - make html
-  - ./push.sh
+  - ./push_to_gh-pages.sh
