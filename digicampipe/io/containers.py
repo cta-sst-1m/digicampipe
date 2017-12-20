@@ -80,8 +80,6 @@ class R0CameraContainer(Container):
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
     adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")
-    num_samples = Field(int, "number of time samples for telescope")
-    num_pixels = Field(int, "number of pixels in camera")
     baseline = Field(ndarray, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")

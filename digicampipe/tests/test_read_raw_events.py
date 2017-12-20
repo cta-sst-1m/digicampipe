@@ -12,7 +12,7 @@ example_file_path = pkg_resources.resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'example_10evts.fits.fz'
+        'example_10_evts.000.fits.fz'
     )
 )
 
@@ -293,3 +293,14 @@ def test_baseline():
     # not vary too much between events, so I had a look at these.
     assert baseline_deviation_between_events.max() < 60
     assert baseline_deviation_between_events.mean() < 2
+
+
+def test_count_number_event():
+
+    from digicampipe.io.zfits import count_number_events
+    n_files = 10
+    files = [example_file_path] * n_files  # create a list of files
+
+    assert count_number_events(files) == n_files * EVENTS_IN_EXAMPLE_FILE
+
+

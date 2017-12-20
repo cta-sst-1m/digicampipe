@@ -45,6 +45,8 @@ def zfits_event_source(
     cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
     data = DataContainer()
 
+    loaded_telescopes = []
+
     for event in protozfitsreader.ZFile(url):
         if max_events is not None and event.event_id > max_events:
             break
@@ -61,12 +63,15 @@ def zfits_event_source(
 
         for tel_id in data.r0.tels_with_data:
 
-            data.inst.num_channels[tel_id] = event.num_channels
-            data.inst.num_pixels[tel_id] = event.n_pixels
-            data.inst.geom[tel_id] = geometry
-            data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
-            data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
-            data.inst.patch_matrix[tel_id] = patch_matrix
+            if tel_id not in loaded_telescopes:
+                data.inst.num_channels[tel_id] = event.num_channels
+                data.inst.num_pixels[tel_id] = event.n_pixels
+                data.inst.geom[tel_id] = geometry
+                data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = patch_matrix
+                data.inst.num_samples[tel_id] = event.num_samples
+                loaded_telescopes.append(tel_id)
 
             r0 = data.r0.tel[tel_id]
             r0.camera_event_number = event.event_number
@@ -83,6 +88,21 @@ def zfits_event_source(
                 r0.trigger_output_patch19 = event.trigger_output_patch19
                 r0.digicam_baseline = event.baseline
 
-            data.inst.num_samples[tel_id] = event.num_samples
-
         yield data
+
+
+def count_number_events(file_list):
+    """
+    This function counts the number of events in each file of file list and returns the sum.
+    It is useful for fixed size array creation.
+
+    :param file_list: list of zfits files
+    :return: n_events: int
+    """
+    n_events = 0
+    for filename in file_list:
+        zfits = protozfitsreader.ZFile(filename)
+        n_events += zfits.numrows
+
+    return n_events
+
