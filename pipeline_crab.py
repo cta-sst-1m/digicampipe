@@ -121,6 +121,7 @@ if __name__ == '__main__':
 
         with plt.style.context('ggplot'):
             display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
+            # display.next(step=10)
             display.draw()
             pass
     else:

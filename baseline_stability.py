@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=0, type=int)
     parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=0, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
-                      , default=home_absolute_path + '/ctasoft/CTS/config/camera_config.cfg')
+                      , default='digicampipe/tests/resources/camera_config.cfg')
 
     (options, args) = parser.parse_args()
 

@@ -1,6 +1,10 @@
 # digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
 DigiCam pipeline based on ctapipe
 
+# Documentation
+
+The documentation can be found here: [Digicampipe documentation](https://calispac.github.io/digicampipe)
+
 # Installation
 
 ## Anaconda
@@ -37,3 +41,13 @@ your prompt should look similar to this this:
 Run the tests on your machine:
 
     pytest -vv digicampipe
+
+## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
+
+In the `digicampipe` directory run:
+
+    cd docs/
+    make html
+
+This should create the documentation in `digicampipe/build/html`.
+You can open the html files with your favorite web browser.
