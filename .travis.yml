@@ -20,9 +20,6 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  - cd docs/
-  - make hmtl
-  - cd ../
 #   - bash ./docs/deploy-to-gh-pages.sh
 
 env:
@@ -39,5 +36,9 @@ deploy:
   skip_cleanup: True
   github_token: $GITHUB_TOKEN
   local_dir: docs/build/html/
+  script:
+    - cd docs/
+    - make html
+    - cd ../
   on:
     branch: master
