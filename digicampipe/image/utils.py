@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from time import clock
 import cv2
 from scipy import signal, ndimage, optimize
-import copy
 import numbers
 from photutils import DAOStarFinder
 

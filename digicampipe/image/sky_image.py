@@ -4,10 +4,12 @@ from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
+from digicampipe.image.nova_client import Client
 from matplotlib.patches import Circle, Rectangle, Arrow
 import tempfile
 from subprocess import run
 import os
+import shutil
 
 
 class SkyImage(object):
@@ -60,8 +62,15 @@ class SkyImage(object):
         self.image_stars[self.image_stars < threshold] = 0
 
     def calculate_galactic_coordinates(self):
+        if shutil.which('solve-field') is not None:
+            self.calculate_galactic_coordinates_local()
+        else:
+            print('astrometry does not seem to be installed, using nova web service')
+            self.calculate_galactic_coordinates_nova()
+
+    def calculate_galactic_coordinates_local(self):
         """
-        Use astrometry.net to determine galactic coordinates based on stars found.
+        Use astrometry.net installed locally to determine galactic coordinates based on stars found.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             hdu = fits.PrimaryHDU(self.image_stars)
@@ -115,6 +124,15 @@ class SkyImage(object):
             except FileNotFoundError:
                 self.stars_pixel = None
 
+    def calculate_galactic_coordinates_nova(self):
+        """
+        Use the nova web service to determine galactic coordinates based on stars found.
+        """
+        args = {}
+        args['apiurl'] = 'http://nova.astrometry.net/api/'
+        c = Client(args)
+        c.login(opt.apikey)
+
 
 class LidCCDImage(object):
     """
@@ -124,12 +142,14 @@ class LidCCDImage(object):
                  threshold=None, scale_low_images_deg=None, scale_high_images_deg=None,
                  guess_ra_dec=None, guess_radius=None):
         if type(filename) is not str:
-            raise AttributeError('filename must be a string')
+            raise AttributeError('filename must be a string.')
         self.filename = filename
         if type(crop_pixels1) is not list:
-            raise AttributeError('crop_pixels1 must be a list of pixels')
+            raise AttributeError('crop_pixels1 must be a list of pixels.')
         if type(crop_pixels2) is not list:
-            raise AttributeError('crop_pixels2 must be a list of pixels')
+            raise AttributeError('crop_pixels2 must be a list of pixels.')
+        if len(crop_pixels1) != len(crop_pixels2):
+            raise AttributeError('crop_pixels1 and crop_pixels2 lists must have the same length.')
         image = fits.open(self.filename)[0].data
         self.image_shape = image.shape
         self.crop_pixels1 = []

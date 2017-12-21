@@ -50,5 +50,5 @@ def test_cone_simu():
 
 
 if __name__ == '__main__':
-    #test_find_stars()
+    test_find_stars()
     test_cone_simu()
