@@ -21,7 +21,7 @@ install:
 script:
   - pytest -vv digicampipe
   - cd docs/
-  - make htlm
+  - make hmtl
   - cd ../
 #   - bash ./docs/deploy-to-gh-pages.sh
 
