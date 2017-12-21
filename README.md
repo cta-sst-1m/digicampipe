@@ -1,8 +1,6 @@
 # digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
 DigiCam pipeline based on ctapipe
 
-# Documentation
-
 The documentation can be found here: [Digicampipe documentation](https://calispac.github.io/digicampipe)
 
 # Installation
@@ -49,5 +47,8 @@ In the `digicampipe` directory run:
     cd docs/
     make html
 
-This should create the documentation in `digicampipe/build/html`.
+This should create the documentation in `digicampipe/docs/build/html`.
 You can open the html files with your favorite web browser.
+To delete the documentation us:
+
+    make clean

@@ -10,7 +10,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda env create -f environment.yml
+  - conda env create -f environment.yml --quiet
   - source activate digicampipe
   - pip install -r requirements.txt
   - pip install .
@@ -20,9 +20,25 @@ install:
   - ls -larth src
 script:
   - pytest -vv digicampipe
-  - python -c "from digicampipe.io.protozfitsreader import ZFile"
-  - python -c "import protozfitsreader"
-  - cd docs/
-  - make html
-  - make clean
-  - cd ../
+#   - bash ./docs/deploy-to-gh-pages.sh
+
+env:
+  global:
+    - GITHUB_REPO: github.com/calispac/digicampipe.git
+    - secure: kLTHK+/IvcLsozvC7cpphcn7MDSlKY0GTAYjlB/R4kR5BTlMVUJXVEYz1JPjUqdMQFu4OgurwAOi6P6G9Z3bhaBCMS9gBozEEOTWdtbc230NoSC3D02H+LPkYpmAvjMx9sW2l2rbSD03okXc/TK+IEcbBkosb/4fOB+YM77zWQ6JeDHrbDX11bFuLk2LbErCOal9Nxpiex6+6KDUyLVdxV4wcdOrTOJkCRL4/fJOUBejX1JGClpUMbMosxlFz+tcJ5hrLP9XFzfyMrcND3LBItjORJfD5VPdGCrNqAAHO0n0NT+TqTPwcoaMEXjhOm3lYw2u2kq8LEqBa1f5BxehR6y04xFy60QM7wyqYLg/C9TpYsCsp4iFvKAKcqn1IvBKV9P6xgPCGmgGf7a5YeoBcMMowatT7GKwCeF44TpBYl1lew2WxKWhtpmwjzsC5D6hJXxAkMAf96SIEK5J+cfeWI0T57eEfZlU0j/0ztxnlzIHkhre8oacUUlEGE2vxRLVEvr7GCfj81SpuRbyw0Yi+QtYF5VPNCUsNnTk7HUGPvUpmXo1ZCzn0FJ2NvFV2gd4MERHYK9WISR9wSeWEt4yTJ2N4pTFvxzHCEzL0uzCv0tpnVUVv2YfPu0hBHhVBHHPd3A3nCRIs9UuXN+O61aYEKwdFrC1yRiWMBBT+ZLuXa8=
+
+# after_success:
+
+  # - cd docs/
+
+deploy:
+  provider: pages
+  skip_cleanup: True
+  github_token: $GITHUB_TOKEN
+  local_dir: docs/build/html/
+  script:
+    - cd docs/
+    - make html
+    - cd ../
+  on:
+    branch: master
