@@ -14,7 +14,7 @@ def plot_alpha(datas, **kwargs):
     ax1.hist(datas['alpha'][mask], bins='auto', **kwargs)
 
 
-def correct_alpha(datas, source_x, source_y): #cyril
+def correct_alpha(datas, source_x, source_y):  # cyril
     """
     datas['cen_x'] = datas['cen_x'] - source_x
     datas['cen_y'] = datas['cen_y'] - source_y
@@ -31,16 +31,16 @@ def correct_alpha(datas, source_x, source_y): #cyril
 
     xx = datas['cen_x'] - source_x
     yy = datas['cen_y'] - source_y
-    datas['r'] = np.sqrt(xx**2.0 +yy**2.0)
+    datas['r'] = np.sqrt(xx**2.0 + yy**2.0)
     datas['phi'] = np.arctan2(yy, xx)
     datas['alpha'] = np.arccos(np.sin(datas['phi']) * np.sin(datas['psi']) + np.cos(datas['phi']) * np.cos(datas['psi']))
     datas['alpha'] = np.remainder(datas['alpha'], np.pi/2)
     datas['alpha'] = np.rad2deg(datas['alpha'])    # conversion to degrees
     datas['miss'] = datas['r'] * np.sin(datas['alpha'])
     return datas
-	
 
-def alpha_cyril(datas, source_x, source_y): #cyril from prod_alpha_plot.c
+
+def alpha_cyril(datas, source_x, source_y):  # cyril from prod_alpha_plot.c
 
     x = datas['cen_x'] - source_x
     y = datas['cen_y'] - source_y
@@ -51,17 +51,18 @@ def alpha_cyril(datas, source_x, source_y): #cyril from prod_alpha_plot.c
     for i in range(len(alpha)):
         if alpha[i] > np.pi/2.0:
             alpha[i] = np.pi - alpha[i]
-    #delta_alpha=np.arctan2(source_y,source_x)-np.arctan2(-1.0*datas['cen_y'],-1.0*datas['cen_x']);
-    #alpha_r = alpha + delta_alpha;
-    #miss_c = r*TMath::Sin(alpha_c);
-    #miss_r = r*TMath::Sin(alpha_r);
+    # delta_alpha=np.arctan2(source_y,source_x)-np.arctan2(-1.0*datas['cen_y'],-1.0*datas['cen_x']);
+    # alpha_r = alpha + delta_alpha;
+    # miss_c = r*TMath::Sin(alpha_c);
+    # miss_r = r*TMath::Sin(alpha_r);
     datas['alpha'] = alpha
     datas['alpha'] = np.rad2deg(datas['alpha'])    # conversion to degrees
     datas['miss'] = datas['r'] * np.sin(datas['alpha'])
     return datas
 
+
 """
-    def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
+def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
 
     alpha = np.sin(datas['miss']/datas['r'])
     alpha2 = np.arctan2(-datas['cen_y'], -datas['cen_x']) - datas['psi'] + np.pi
@@ -97,7 +98,7 @@ def alpha_cyril(datas, source_x, source_y): #cyril from prod_alpha_plot.c
     return datas
 """
 
-def alpha_etienne(datas, source_x, source_y): #etienne's code from scan_crab_cluster.c
+def alpha_etienne(datas, source_x, source_y):  # etienne's code from scan_crab_cluster.c
 
     d_x = np.cos(datas['psi'])
     d_y = np.sin(datas['psi'])
@@ -131,19 +132,19 @@ if __name__ == '__main__':
     parser.add_option("-u", "--upper_cut", dest="upper_cut", help="upper cut on length/width ratio", default=3, type=float)
     (options, args) = parser.parse_args()
 
-    #settings
+    # settings
     lw_min = options.lower_cut
     lw_max = options.upper_cut
-    bin_size = options.bining #degrees
+    bin_size = options.bining  # degrees
     num_steps = options.steps
     output_filename = options.output
 
-    #data loading
+    # data loading
     data = np.load(options.path)
-    mask = np.ones(data['size'].shape[0], dtype=bool) 
+    mask = np.ones(data['size'].shape[0], dtype=bool)
 
-    #application of cuts
-    mask = (data['size'] > 0) & (data['length']/data['width'] > lw_min)  &  (data['length']/data['width'] < lw_max) & (data['border'] == 0)
+    # application of cuts
+    mask = (data['size'] > 0) & (data['length']/data['width'] > lw_min) & (data['length']/data['width'] < lw_max) & (data['border'] == 0)
 
     data_cor = dict()
     for key, val in data.items():
@@ -153,52 +154,51 @@ if __name__ == '__main__':
 
     x_crab_start = -500
     y_crab_start = -500
-    x_crab_end   = 500 
-    y_crab_end   = 500
+    x_crab_end = 500
+    y_crab_end = 500
 
-    x_crab = np.linspace(x_crab_start,x_crab_end,num_steps)
-    y_crab = np.linspace(y_crab_start,y_crab_end,num_steps)
+    x_crab = np.linspace(x_crab_start, x_crab_end, num_steps)
+    y_crab = np.linspace(y_crab_start, y_crab_end, num_steps)
 
-    #print(min(data['cen_x']),max(data['cen_x']))
-    #print(min(data['cen_y']),max(data['cen_y']))
-    #x_crab_centre = 40 
-    #y_crab_centre = 13.5 
+    # print(min(data['cen_x']), max(data['cen_x']))
+    # print(min(data['cen_y']), max(data['cen_y']))
+    # x_crab_centre = 40
+    # y_crab_centre = 13.5
 
     i = 0
     for x in x_crab:
-        print(round(i/len(x_crab)*100,2), '/',100) #progress
+        print(round(i/len(x_crab)*100,2), '/',100)  # progress
         for y in y_crab:
-            #x = x_crab_centre
-            #y = y_crab_centre
-            
-            #alpha computing
-            #data_cor2 = correct_alpha(data_cor, source_x=x, source_y=y) 
-            #data_cor2 = alpha_cyril(data_cor, source_x=x, source_y=y)  #OK
-            data_cor2 = alpha_etienne(data_cor, source_x=x, source_y=y) #OK
-            #data_cor2 = alpha_roland(data_cor,source_x=x, source_y=y)
-            
-            #'first bin' sellection + simplified r-min criterion (source musn't be inside the elipse)
+            # x = x_crab_centre
+            # y = y_crab_centre
+
+            # alpha computing
+            # data_cor2 = correct_alpha(data_cor, source_x=x, source_y=y)
+            # data_cor2 = alpha_cyril(data_cor, source_x=x, source_y=y)  # OK
+            data_cor2 = alpha_etienne(data_cor, source_x=x, source_y=y)  # OK
+            # data_cor2 = alpha_roland(data_cor,source_x=x, source_y=y)
+
+            # 'first bin' sellection + simplified r-min criterion (source musn't be inside the elipse)
             # - with use of the second criterion, number of events in pixel differs from the case without the criterion only about 1% max..
             # - plots look the same
             data_cor_bin = dict()
             mask2 = (data_cor2['alpha'] < bin_size) & (data_cor2['r'] - data_cor2['length']/2.0 > 0)
-            #mask3 = (data_cor2['alpha'] < bin_size)
-            #if abs((len(mask2[mask2 == True])-len(mask3[mask3 == True]))/len(mask3[mask3 == True]))>0.01:
-            #	print((len(mask2[mask2 == True])-len(mask3[mask3 == True]))/len(mask3[mask3 == True]))
+            # mask3 = (data_cor2['alpha'] < bin_size)
+            # if abs((len(mask2[mask2 == True])-len(mask3[mask3 == True]))/len(mask3[mask3 == True]))>0.01:
+            # 	print((len(mask2[mask2 == True])-len(mask3[mask3 == True]))/len(mask3[mask3 == True]))
             for key, val in data_cor2.items():
                 data_cor_bin[key] = val[mask2]
-            
-            
-            
-            #output lists
+
+
+            # output lists
             x_pos.append(x)
             y_pos.append(y)
             N.append(data_cor_bin['alpha'].shape[0])
-            
-            #plot_alpha(data_cor2)
-            #plt.show()
+
+            # plot_alpha(data_cor2)
+            # plt.show()
         i += 1
 
-    #save output		
-    np.savez(output_filename, x=x_pos, y=y_pos, N=N) #save to npz
-    np.savetxt(output_filename+'.txt',np.transpose([x_pos,y_pos,N]),fmt='%1.3f %1.3f %d')	#save to txt
+    # save output
+    np.savez(output_filename, x=x_pos, y=y_pos, N=N)  # save to npz
+    np.savetxt(output_filename+'.txt', np.transpose([x_pos,y_pos,N]), fmt='%1.3f %1.3f %d')	# save to txt
