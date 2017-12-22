@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='../../sst-1m_data/20171030/')
+                      default='/sst1m/raw/2017/09/28/CRAB_01/')
     parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab", type=str)
     parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
                       default=False)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
-    dark_baseline = np.load(directory + 'dark_1_18.npz')
+    dark_baseline = np.load(directory + 'dark.npz')
     hillas_filename = options.output
 
     # Source coordinates (in camera frame)
