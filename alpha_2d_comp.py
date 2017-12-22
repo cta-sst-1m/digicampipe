@@ -98,8 +98,8 @@ def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
     return datas
 """
 
-def alpha_etienne(datas, source_x, source_y):  # etienne's code from scan_crab_cluster.c
 
+def alpha_etienne(datas, source_x, source_y):  # etienne's code from scan_crab_cluster.c
 
     d_x = np.cos(datas['psi'])
     d_y = np.sin(datas['psi'])
