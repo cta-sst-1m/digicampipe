@@ -16,14 +16,14 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='/sst1m/raw/2017/09/28/CRAB_01/')
-    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
+                      default='../../sst-1m_data/20171030/')
+    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab", type=str)
     parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
                       default=False)
-    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=4, type=int)
-    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=23, type=int)
+    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=19, type=int)
+    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=91, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
-                      , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
+                      , default='../CTS/config/camera_config.cfg')
 
     (options, args) = parser.parse_args()
     do_display = options.display  # interactive mode
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
-    dark_baseline = np.load(directory + 'dark.npz')
+    dark_baseline = np.load(directory + 'dark_1_18.npz')
     hillas_filename = options.output
 
     # Source coordinates (in camera frame)
