@@ -45,7 +45,7 @@ def lima_significance(N_on, N_off, alpha):  # Li and Ma, 1983
 
     sign_lima = np.sqrt(2.0*(N_on*np.log(((1.0+alpha)/alpha) * (N_on/(N_on+N_off))) + N_off*np.log((1.0+alpha) * (N_off/(N_on+N_off)))))
     return sign_lima
-	
+
 
 if __name__ == '__main__':
 

@@ -100,6 +100,7 @@ def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
 
 def alpha_etienne(datas, source_x, source_y):  # etienne's code from scan_crab_cluster.c
 
+
     d_x = np.cos(datas['psi'])
     d_y = np.sin(datas['psi'])
     to_c_x = source_x - datas['cen_x']
@@ -167,7 +168,7 @@ if __name__ == '__main__':
 
     i = 0
     for x in x_crab:
-        print(round(i/len(x_crab)*100,2), '/',100)  # progress
+        print(round(i/len(x_crab)*100, 2), '/', 100)  # progress
         for y in y_crab:
             # x = x_crab_centre
             # y = y_crab_centre
@@ -189,7 +190,6 @@ if __name__ == '__main__':
             for key, val in data_cor2.items():
                 data_cor_bin[key] = val[mask2]
 
-
             # output lists
             x_pos.append(x)
             y_pos.append(y)
@@ -201,4 +201,4 @@ if __name__ == '__main__':
 
     # save output
     np.savez(output_filename, x=x_pos, y=y_pos, N=N)  # save to npz
-    np.savetxt(output_filename+'.txt', np.transpose([x_pos,y_pos,N]), fmt='%1.3f %1.3f %d')	# save to txt
+    np.savetxt(output_filename+'.txt', np.transpose([x_pos, y_pos, N]), fmt='%1.3f %1.3f %d') # save to txt

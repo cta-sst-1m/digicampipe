@@ -9,7 +9,7 @@ def plot_alpha2d(data):  # plot original data
     N = data['N'].reshape((len(np.unique(data['y'])), len(np.unique(data['x']))))
     x, y = np.meshgrid(np.unique(data['x']), np.unique(data['y']))
 
-    fig = plt.figure(figsize=(9,8))
+    fig = plt.figure(figsize=(9, 8))
     ax1 = fig.add_subplot(111)
     pcm = ax1.pcolormesh(x, y, N, rasterized=True, cmap='nipy_spectral')
     ax1.set_ylabel('FOV Y [mm]')
@@ -35,7 +35,7 @@ def plot_alpha2d_mod(data, floor_value, r_max):  # plot based on Etienne's histo
             if x[0, i]**2.0 + y[j, 0]**2.0 > r_max**2.0:
                 N[i, j] = floor_value
 
-    fig = plt.figure(figsize=(9,8))
+    fig = plt.figure(figsize=(9, 8))
     ax1 = fig.add_subplot(111)
     pcm = ax1.pcolormesh(x, y, N, rasterized=True, cmap='nipy_spectral')
     ax1.set_ylabel('FOV Y [mm]')
