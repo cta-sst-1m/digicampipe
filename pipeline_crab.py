@@ -17,13 +17,13 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
                       default='/sst1m/raw/2017/09/28/CRAB_01/')
-    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab.txt", type=str)
+    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab", type=str)
     parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
                       default=False)
-    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=4, type=int)
-    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=23, type=int)
+    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=19, type=int)
+    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=91, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
-                      , default='/home/alispach/ctasoft/CTS/config/camera_config.cfg')
+                      , default='digicampipe/tests/resources/camera_config.cfg')
 
     (options, args) = parser.parse_args()
     do_display = options.display  # interactive mode
