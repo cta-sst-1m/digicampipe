@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 """
 Client for nova API (from astrometry.net), under GPL3
+Modified by Yves Renier on 20/12/2017 for porting to python3
 """
 import os
 import sys
@@ -16,7 +17,7 @@ import json
 
 def json2python(data):
     try:
-        return json.loads(data)
+        return json.loads(data.decode('utf-8'))
     except:
         pass
     return None
@@ -24,8 +25,11 @@ python2json = json.dumps
 
 class MalformedResponse(Exception):
     pass
+
+
 class RequestError(Exception):
     pass
+
 
 class Client(object):
     default_url = 'http://nova.astrometry.net/api/'
@@ -45,11 +49,11 @@ class Client(object):
         '''
         if self.session is not None:
             args.update({ 'session' : self.session })
-        print('Python:', args)
+        #print('Python:', args)
         json = python2json(args)
-        print('Sending json:', json)
+        #print('Sending json:', json)
         url = self.get_url(service)
-        print('Sending to URL:', url)
+        #print('Sending to URL:', url)
 
         # If we're sending a file, format a multipart/form-data
         if file_args is not None:
@@ -93,15 +97,15 @@ class Client(object):
             fp = StringIO()
             g = MyGenerator(fp)
             g.flatten(mp)
-            data = fp.getvalue()
+            data = fp.getvalue().encode('utf-8')
             headers = {'Content-type': mp.get('Content-type')}
 
         else:
             # Else send x-www-form-encoded
             data = {'request-json': json}
-            print('Sending form data:', data)
-            data = urlencode(data)
-            print('Sending data:', data)
+            #print('Sending form data:', data)
+            data = urlencode(data).encode('utf-8')
+            #print('Sending data:', data)
             headers = {}
 
         request = Request(url=url, headers=headers, data=data)
@@ -112,6 +116,8 @@ class Client(object):
             print('Got json:', txt)
             result = json2python(txt)
             print('Got result:', result)
+            if result is None:
+                return None
             stat = result.get('status')
             print('Got status:', stat)
             if stat == 'error':
@@ -120,9 +126,7 @@ class Client(object):
             return result
         except HTTPError as e:
             print('HTTPError', e)
-            txt = e.read()
-            open('err.html', 'wb').write(txt)
-            print('Wrote error text to err.html')
+            return None
 
     def login(self, apikey):
         args = { 'apikey' : apikey }
@@ -239,6 +243,8 @@ class Client(object):
 
     def sub_status(self, sub_id, justdict=False):
         result = self.send_request('submissions/%s' % sub_id)
+        if result is None:
+            return None
         if justdict:
             return result
         return result.get('status')

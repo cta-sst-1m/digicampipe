@@ -23,7 +23,10 @@ install:
   - echo "what is in the src folder??"
   - ls -larth src
 script:
+  - export NOVA_API_KEY=$NOVA_API_KEY
   - pytest -vv digicampipe
   - python -c "from digicampipe.io.protozfitsreader import ZFile"
   - python -c "import protozfitsreader"
-
+env:
+  global:
+    - secure: eRXRUIxaepn9mNSq3YwjAatyQuOFuKCmLQpv3Xk2EWo3qAvIxNVDzdrMvVaX3E8YEUAxqkieWaULWsIp4PqkCBbOdvdgFb97EnxWXXbiHV0W0AEt3IjiM3Ao+WYSuQUNtgHL4v4ItM3g0g8gfUsCYdb7h/JxA2NSH6T5/CaMUWRzSJUknW9DKMH+8RrrN4zxE5iFpjOVPBzinWN9EYm/otyligmOf/zexPMohjwohYNYgKoatyJGYQdigdUS3rNgQPUjD1jAcz8lCFfRnesLU+BBXCm+YL7GGZ/0VtlmIijqefyYcIyU95JQyBGAJp20gqV9tWzs2cKCjkv3Ep0NpAREIWvAihCdpoTeMG5X3YWXg4wqjkhUQQZX3PvP5S0vFb9yKeaFVehWv+ECWEz03h2TGxHwDAWrSbJ1ANOlNCpUoTs946ICkw27zNKnB7r/As9PjcTpHx8dMHi2ZxSR3Uz2Pa8nN/TzvmMxgDoavSkOzoZF+RsP7y5CDuEaEl8iNnvd39kKozn079uZpNg6ijfC2bgmo0ngQN1s0Mw4wyuoe9TVp+WPL2my1P+pDLPO3vCP+4hCqbeTCW3kHC6bbCaXTm4UQM3/3asa5roe+ob0xJsP8qLGqP8Xpl3rwFJyH4PQ/gql+YEbFmHF3beGcmuYcUzCDZqHHx/vbFuKtLg=

@@ -1,10 +1,13 @@
 from digicampipe.image.kernels import *
 from digicampipe.image.utils import *
+from digicampipe.image.nova_client import Client
 from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
-from digicampipe.image.nova_client import Client
+from urllib.request import urlopen
+from urllib.parse import urlencode
+from urllib.error import HTTPError
 from matplotlib.patches import Circle, Rectangle, Arrow
 import tempfile
 from subprocess import run
@@ -78,7 +81,7 @@ class SkyImage(object):
             hdu.writeto(outfile, overwrite=True)
             arguments = ['solve-field', outfile, '--no-plots', # '--no-background-subtraction', '--no-verify-uniformize',
                          # '--ra', str(83.2), '--dec', str(26.2), '--radius', str(10),
-                         '-t ', '--depth', '60']
+                         '--depth', '60']
             if self.guess_ra_dec is not None and self.guess_radius is not None:
                 arguments.append('--ra')
                 arguments.append(str(self.guess_ra_dec[0]))
@@ -128,10 +131,129 @@ class SkyImage(object):
         """
         Use the nova web service to determine galactic coordinates based on stars found.
         """
-        args = {}
-        args['apiurl'] = 'http://nova.astrometry.net/api/'
-        c = Client(args)
-        c.login(opt.apikey)
+        import time
+        from photutils import DAOStarFinder
+        from astropy.table import Table
+
+        apiurl='http://nova.astrometry.net/api/'
+        c = Client(apiurl=apiurl)
+        api_key = os.environ.get('NOVA_API_KEY', None)
+        if api_key is None:
+            raise EnvironmentError('NOVA_API_KEY environment variable must be set')
+        c.login(api_key)
+        jobs = c.myjobs()
+        mean, median, std = sigma_clipped_stats(self.image_stars, sigma=3.0, iters=5)
+        baseline_sub = self.image_stars - median
+        baseline_sub[baseline_sub < 0] = 0
+        daofind = DAOStarFinder(fwhm=3.0, threshold=std)
+        sources = daofind(baseline_sub)
+        self.sources_pixel = np.array([sources['xcentroid'], sources['ycentroid']])
+        order = np.argsort(sources['mag'])
+        n_peak = np.min([len(order), 100])
+        self.sources_pixel = self.sources_pixel[:, order[0:n_peak]]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stars_filename = os.path.join(tmpdir, 'stars.txt')
+            f = open(stars_filename, "w")
+            for source in self.sources_pixel.transpose():
+                f.write(str(round(source[0], 6)) + "\t" + str(round(source[1], 6)) + "\n")
+            f.close()
+            kwargs = dict(
+                allow_commercial_use='n',
+                allow_modifications='n',
+                publicly_visible='y',
+                )
+            if self.guess_ra_dec is not None and self.guess_radius is not None:
+                kwargs['center_ra'] = str(self.guess_ra_dec[0])
+                kwargs['center_dec'] = str(self.guess_ra_dec[1])
+                kwargs['radius'] = str(self.guess_radius)
+            if self.scale_low_deg is not None or self.scale_high_deg is not None:
+                kwargs['scale_units'] = 'degwidth'
+                kwargs['scale_type'] = 'ul'
+            if self.scale_low_deg is not None:
+                kwargs['scale_lower'] = str(self.scale_low_deg)
+            if self.scale_high_deg is not None:
+                kwargs['scale_upper'] = str(self.scale_high_deg)
+            upres = c.upload(stars_filename, **kwargs)
+            stat = upres['status']
+            if stat != 'success':
+                print('Upload failed: status', stat)
+                print(upres)
+                return
+            sub_id = upres['subid']
+            if sub_id is None:
+                print("error getting submission id!")
+                return
+            while True:
+                stat = c.sub_status(sub_id, justdict=True)
+                print('Got status:', stat)
+                if stat is None:
+                    continue
+                jobs = stat.get('jobs', [])
+                if len(jobs):
+                    for j in jobs:
+                        if j is not None:
+                            break
+                    if j is not None:
+                        print('Selecting job id', j)
+                        solved_id = j
+                        break
+                time.sleep(5)
+            while True:
+                stat = c.job_status(solved_id, justdict=True)
+                print('Got job status:', stat)
+                if stat.get('status', '') in ['success', 'failure']:
+                    success = (stat['status'] == 'success')
+                    break
+                time.sleep(5)
+            retrieve_urls = []
+            if success:
+                wcs_file = os.path.join(tmpdir, 'stars.wcs')
+                corr_file = os.path.join(tmpdir, 'stars.corr')
+                retrieve_urls.append((apiurl.replace('/api/', '/wcs_file/%i' % solved_id), wcs_file))
+                retrieve_urls.append((apiurl.replace('/api/', '/corr_file/%i' % solved_id), corr_file))
+            for url, fn in retrieve_urls:
+                print('Retrieving file from', url, 'to', fn)
+                f = None
+                while f is None:
+                    try:
+                        f = urlopen(url)
+                    except HTTPError as err:
+                        print("ERROR", err, "getting url", url)
+                        f = None
+                        break
+                if f is None:
+                    continue
+                txt = f.read()
+                w = open(fn, 'wb')
+                w.write(txt)
+                w.close()
+                print('Wrote to', fn)
+            # coordinate system
+            self.wcs = None
+            self.reference_pixel = None
+            self.reference_ra_dec = None
+            self.cd_matrix = None
+            if success:
+                try:
+                    header_wcs = fits.open(wcs_file)[0].header
+                    self.wcs = WCS(header_wcs)
+                    # reference point
+                    self.reference_pixel = (header_wcs['CRPIX1'], header_wcs['CRPIX2'])
+                    self.reference_ra_dec = (header_wcs['CRVAL1'], header_wcs['CRVAL2'])
+                    # transformation matrix
+                    self.cd_matrix = np.array(((header_wcs['CD1_1'], header_wcs['CD1_2']),
+                                               (header_wcs['CD2_1'], header_wcs['CD2_2'])))
+                except FileNotFoundError:
+                    pass
+            # stars position in image
+            self.stars_pixel = None
+            if success:
+                try:
+                    stars_data = fits.open(corr_file)[1].data
+                    self.stars_pixel = np.array((stars_data['index_x'], stars_data['index_y']))
+                except FileNotFoundError:
+                    pass
 
 
 class LidCCDImage(object):
@@ -156,7 +278,7 @@ class LidCCDImage(object):
         self.crop_pixels2 = []
         self.sky_images = []
         self.sky_images_shape = []
-        print('divide', filename, 'in ', len(crop_pixels1), 'sub-areas')
+        print('divide', filename, 'in', len(crop_pixels1), 'sub-areas')
         for crop_pixel1, crop_pixel2 in zip(crop_pixels1, crop_pixels2):
             image_cropped, crop_pixel1, crop_pixel2 = crop_image(filename, crop_pixel1, crop_pixel2)
             ratios = [self.image_shape[0] / image_cropped.shape[0], self.image_shape[1] / image_cropped.shape[1]]
