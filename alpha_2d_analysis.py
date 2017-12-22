@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from alpha_2d_plot import plot_alpha2d
 
 
-
-def plot_aperture(x0,y0,r,col):	
+def plot_aperture(x0, y0, r, col):
 	phi = np.linspace(0,2*np.pi,1000)
 	x = r*np.cos(phi) + x0
 	y = r*np.sin(phi) + y0
@@ -14,7 +13,7 @@ def plot_aperture(x0,y0,r,col):
 	ax1.plot(x,y,'-',color=col)
 
 
-def plot_onoffcirc(x0,y0):
+def plot_onoffcirc(x0, y0):
 	phi = np.linspace(0,2*np.pi,1000)
 	r = np.sqrt(x0**2.0 + y0**2.0)
 	x = r*np.cos(phi)
@@ -23,24 +22,24 @@ def plot_onoffcirc(x0,y0):
 	ax1.plot(x,y,'k--')
 	
 	
-def count_aperture(data,x0,y0,r):
+def count_aperture(data, x0, y0, r):
 	
 	N = data['N'][np.sqrt((data['x']-x0)**2 + (data['y']-y0)**2) <= r]
 	N = sum(N)
 	return N
 	
 
-def off_aperture1(x0,y0):
+def off_aperture1(x0, y0):
 	return -x0,-y0
 	
 	
-def off_aperture3(x0,y0):	
+def off_aperture3(x0, y0):
 	x = np.array([-x0,-y0,y0])
 	y = np.array([-y0,x0,-x0])
 	return x,y
 
 
-def lima_significance(N_on,N_off,alpha): # Li and Ma, 1983
+def lima_significance(N_on, N_off, alpha): # Li and Ma, 1983
 	sign_lima = np.sqrt( 2.0*( N_on*np.log( ((1.0+alpha)/alpha) * (N_on/(N_on+N_off)) ) + N_off*np.log( (1.0+alpha) * (N_off/(N_on+N_off)) ) ) )
 	return sign_lima
 	

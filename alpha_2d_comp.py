@@ -203,16 +203,3 @@ if __name__ == '__main__':
 	np.savez(output_filename, x=x_pos, y=y_pos, N=N) #save to npz
 	np.savetxt(output_filename+'.txt',np.transpose([x_pos,y_pos,N]),fmt='%1.3f %1.3f %d')	#save to txt
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-

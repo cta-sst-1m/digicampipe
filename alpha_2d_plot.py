@@ -18,7 +18,7 @@ def plot_alpha2d(data): #plot original data
 	cbar.set_label('N of events')
 	
 
-def plot_alpha2d_mod(data,floor_value,r_max): #plot based on Etienne's histo_crab.py code
+def plot_alpha2d_mod(data, floor_value, r_max): #plot based on Etienne's histo_crab.py code
 	
 	N = data['N'].reshape((len(np.unique(data['y'])), len(np.unique(data['x']))))
 	x,y = np.meshgrid(np.unique(data['x']),np.unique(data['y']))
@@ -51,4 +51,3 @@ if __name__ == '__main__':
 	plot_alpha2d(data)
 	plot_alpha2d_mod(data,floor_value = 0,r_max = 444.0)
 	plt.show()
-
