@@ -1,6 +1,8 @@
 # digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
 DigiCam pipeline based on ctapipe
 
+The documentation can be found here: [Digicampipe documentation](https://calispac.github.io/digicampipe)
+
 # Installation
 
 ## Anaconda
@@ -38,9 +40,24 @@ Run the tests on your machine:
 
     pytest -vv digicampipe
 
+## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
+
+In the `digicampipe` directory run:
+
+    cd docs/
+    make html
+
+This should create the documentation in `digicampipe/docs/build/html`.
+You can open the html files with your favorite web browser.
+To delete the documentation us:
+
+    make clean
+
 ## Pointing using lid CCD images
 
-To be able to determine the pointing using stars reflections on the lid, you need to install astrometry.net:
+To be able to determine the pointing using stars reflections on the lid, astrometry.net is needed. 
+If not installed locally, the web service will be used instead.
+To install astrometry.net:
 
     sudo apt-get install astrometry.net
     

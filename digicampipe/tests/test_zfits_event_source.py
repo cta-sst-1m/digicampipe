@@ -1,9 +1,6 @@
-import pytest
-
 from digicampipe.io.zfits import zfits_event_source
 import pkg_resources
 import os
-import numpy as np
 import warnings
 
 from cts_core.camera import Camera
@@ -17,7 +14,7 @@ example_file_path = pkg_resources.resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'example_100evts.fits.fz'
+        'example_100_evts.000.fits.fz'
     )
 )
 
@@ -42,12 +39,11 @@ def test_and_benchmark_simple_event_source(benchmark):
                 example_file_path,
                 camera=digicam,
                 camera_geometry=digicam_geometry,
-                expert_mode=False,
-            ):
+                expert_mode=False,):
             pass
 
-def test_and_benchmark_expert_event_source(benchmark):
 
+def test_and_benchmark_expert_event_source(benchmark):
 
     @benchmark
     def expert_loop():
@@ -55,6 +51,5 @@ def test_and_benchmark_expert_event_source(benchmark):
                 example_file_path,
                 camera=digicam,
                 camera_geometry=digicam_geometry,
-                expert_mode=True,
-            ):
+                expert_mode=True,):
             pass
