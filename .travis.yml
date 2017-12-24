@@ -27,7 +27,7 @@ install:
 script:
 
   - export NOVA_API_KEY=$NOVA_API_KEY
-  - travis_wait pytest -vv digicampipe
+  - travis_wait 30 pytest -vv digicampipe
   - make -C docs/ html
 
 env:
