@@ -201,6 +201,8 @@ class SkyImage(object):
                 time.sleep(5)
             while True:
                 stat = c.job_status(solved_id, justdict=True)
+                if stat is None:
+                    continue
                 print('Got job status:', stat)
                 if stat.get('status', '') in ['success', 'failure']:
                     success = (stat['status'] == 'success')
