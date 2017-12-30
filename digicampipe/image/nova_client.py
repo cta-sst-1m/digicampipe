@@ -154,6 +154,8 @@ class Client(object):
                                 ('downsample_factor', None, int),
                                 ('tweak_order', None, int),
                                 ('crpix_center', None, bool),
+                                ('x', None, list),
+                                ('y', None, list),
                                 # image_width, image_height
                                 ]:
             if key in kwargs:
@@ -180,6 +182,11 @@ class Client(object):
         except IOError:
             print('File %s does not exist' % fn)
             raise
+
+    def submit(self, **kwargs):
+        args = self._get_upload_args(**kwargs)
+        result = self.send_request('upload', args)
+        return result
 
     def submission_images(self, subid):
         result = self.send_request('submission_images', {'subid':subid})
@@ -232,6 +239,19 @@ class Client(object):
             print('Calibration:', result)
 
         return stat
+
+    def set_tag(self, image_id, tag):
+        url = self.apiurl.replace('/api/','/user_image/%s/tags/new/' % image_id)
+        data = {'text': tag}
+        request = Request(url, urlencode(data).encode())
+        try:
+            print('add tag', tag, 'to image', image_id)
+            f = urlopen(request)
+            txt = f.read()
+            print('Got json:', txt)
+        except HTTPError as e:
+            print('Setting of new tag failed with HTTPError', e)
+            return None
 
     def annotate_data(self,job_id):
         """

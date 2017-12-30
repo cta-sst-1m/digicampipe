@@ -13,6 +13,7 @@ import tempfile
 from subprocess import run
 import os
 import shutil
+from hashlib import sha1
 
 
 class SkyImage(object):
@@ -135,13 +136,15 @@ class SkyImage(object):
         from photutils import DAOStarFinder
         from astropy.table import Table
 
-        apiurl='http://nova.astrometry.net/api/'
+        # apiurl='http://nova.astrometry.net/api/'
+        apiurl='http://supernova.astrometry.net/api/'
         c = Client(apiurl=apiurl)
-        api_key = os.environ.get('NOVA_API_KEY', None)
+        # api_key = os.environ.get('NOVA_API_KEY', None)
+        api_key = os.environ.get('SUPERNOVA_API_KEY', None)
         if api_key is None:
-            raise EnvironmentError('NOVA_API_KEY environment variable must be set')
+            # raise EnvironmentError('NOVA_API_KEY environment variable must be set')
+            raise EnvironmentError('SUPERNOVA_API_KEY environment variable must be set')
         c.login(api_key)
-        jobs = c.myjobs()
         mean, median, std = sigma_clipped_stats(self.image_stars, sigma=3.0, iters=5)
         baseline_sub = self.image_stars - median
         baseline_sub[baseline_sub < 0] = 0
@@ -151,54 +154,65 @@ class SkyImage(object):
         order = np.argsort(sources['mag'])
         n_peak = np.min([len(order), 100])
         self.sources_pixel = self.sources_pixel[:, order[0:n_peak]]
+        self.sources_pixel.flags.writeable = False
 
+        tag = str(sha1((np.round(self.sources_pixel, 2).flatten())).hexdigest())
+        existing_jobs = c.jobs_by_tag(tag, True)
         with tempfile.TemporaryDirectory() as tmpdir:
-            stars_filename = os.path.join(tmpdir, 'stars.txt')
-            f = open(stars_filename, "w")
-            for source in self.sources_pixel.transpose():
-                f.write(str(round(source[0], 6)) + "\t" + str(round(source[1], 6)) + "\n")
-            f.close()
-            kwargs = dict(
-                allow_commercial_use='n',
-                allow_modifications='n',
-                publicly_visible='y',
-                )
-            if self.guess_ra_dec is not None and self.guess_radius is not None:
-                kwargs['center_ra'] = str(self.guess_ra_dec[0])
-                kwargs['center_dec'] = str(self.guess_ra_dec[1])
-                kwargs['radius'] = str(self.guess_radius)
-            if self.scale_low_deg is not None or self.scale_high_deg is not None:
-                kwargs['scale_units'] = 'degwidth'
-                kwargs['scale_type'] = 'ul'
-            if self.scale_low_deg is not None:
-                kwargs['scale_lower'] = str(self.scale_low_deg)
-            if self.scale_high_deg is not None:
-                kwargs['scale_upper'] = str(self.scale_high_deg)
-            upres = c.upload(stars_filename, **kwargs)
-            stat = upres['status']
-            if stat != 'success':
-                print('Upload failed: status', stat)
-                print(upres)
-                return
-            sub_id = upres['subid']
-            if sub_id is None:
-                print("error getting submission id!")
-                return
-            while True:
-                stat = c.sub_status(sub_id, justdict=True)
-                print('Got status:', stat)
-                if stat is None:
-                    continue
-                jobs = stat.get('jobs', [])
-                if len(jobs):
-                    for j in jobs:
+            if len(existing_jobs['job_ids']) == 0:
+                #stars_filename = os.path.join(tmpdir, 'stars.txt')
+                #f = open(stars_filename, "w")
+                #for source in self.sources_pixel.transpose():
+                #    f.write(str(round(source[0], 6)) + "\t" + str(round(source[1], 6)) + "\n")
+                #f.close()
+                kwargs = dict(
+                    allow_commercial_use='n',
+                    allow_modifications='n',
+                    publicly_visible='y',
+                    x=self.sources_pixel[0, :],
+                    y=self.sources_pixel[1, :])
+                if self.guess_ra_dec is not None and self.guess_radius is not None:
+                    kwargs['center_ra'] = str(self.guess_ra_dec[0])
+                    kwargs['center_dec'] = str(self.guess_ra_dec[1])
+                    kwargs['radius'] = str(self.guess_radius)
+                if self.scale_low_deg is not None or self.scale_high_deg is not None:
+                    kwargs['scale_units'] = 'degwidth'
+                    kwargs['scale_type'] = 'ul'
+                if self.scale_low_deg is not None:
+                    kwargs['scale_lower'] = str(self.scale_low_deg)
+                if self.scale_high_deg is not None:
+                    kwargs['scale_upper'] = str(self.scale_high_deg)
+                #upres = c.upload(stars_filename, **kwargs)
+                upres = c.submit(**kwargs)
+                stat = upres['status']
+                if stat != 'success':
+                    print('Upload failed: status', stat)
+                    print(upres)
+                    return
+                sub_id = upres['subid']
+                if sub_id is None:
+                    print("error getting submission id!")
+                    return
+                while True:
+                    stat = c.sub_status(sub_id, justdict=True)
+                    print('Got status:', stat)
+                    if stat is None:
+                        continue
+                    jobs = stat.get('jobs', [])
+                    images = stat.get('user_images', [])
+                    if len(jobs):
+                        for j, i in zip(jobs, images):
+                            if j is not None:
+                                break
                         if j is not None:
+                            print('Selecting job id', j)
+                            solved_id = j
+                            image_id = i
                             break
-                    if j is not None:
-                        print('Selecting job id', j)
-                        solved_id = j
-                        break
-                time.sleep(5)
+                    time.sleep(5)
+                c.set_tag(image_id, tag)
+            else:
+                solved_id = existing_jobs['job_ids'][0]
             while True:
                 stat = c.job_status(solved_id, justdict=True)
                 if stat is None:
@@ -391,7 +405,7 @@ class LidCCDImage(object):
         image_treated = np.zeros(self.image_shape)
         vizier_blue = Vizier(columns=['all'], column_filters={"Bjmag": "<12"}, row_limit=-1, catalog=['I/271/out'])
         vizier_red = Vizier(columns=['all'], column_filters={"Rmag": "<12"}, row_limit=-1, catalog=['I/271/out'])
-        vizier_green = Vizier(columns=['all'], column_filters={"Vmag": "<12"}, row_limit=-1, catalog=['I/271/out'])
+        vizier_green = Vizier(columns=['all'], column_filters={"Vmag": "<12"}, row_limit=-1, catalog=['VI/135/out'])
         vizier_gamma = Vizier(columns=['all'], row_limit=-1, catalog=['J/ApJS/197/34'])
         for (sky_image, crop_pixel1, crop_pixel2) in zip(self.sky_images, self.crop_pixels1, self.crop_pixels2):
             image_treated[crop_pixel1[1]:crop_pixel2[1], crop_pixel1[0]:crop_pixel2[0]] = np.log(1+sky_image.image_stars)
