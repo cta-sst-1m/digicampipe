@@ -1,14 +1,13 @@
+import numbers
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy
+from scipy import signal
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
-import numpy as np
-import scipy
-from skimage.draw import polygon
-import matplotlib.pyplot as plt
-from time import clock
-import cv2
-from scipy import signal, ndimage, optimize
-import numbers
 from photutils import DAOStarFinder
+import cv2
+from skimage.draw import polygon
 
 
 def crop_image(image, crop_pixel1, crop_pixel2):

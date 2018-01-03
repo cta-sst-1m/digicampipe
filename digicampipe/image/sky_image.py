@@ -1,19 +1,28 @@
-from digicampipe.image.kernels import *
-from digicampipe.image.utils import *
-from digicampipe.image.nova_client import Client
+import os
+import shutil
+import tempfile
+from subprocess import run
+from hashlib import sha1
+from urllib.request import urlopen
+from urllib.error import HTTPError
+
+import numpy as np
+from scipy import signal
+from matplotlib.patches import Circle, Rectangle
+
+from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
 from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
-from urllib.request import urlopen
-from urllib.parse import urlencode
-from urllib.error import HTTPError
-from matplotlib.patches import Circle, Rectangle, Arrow
-import tempfile
-from subprocess import run
-import os
-import shutil
-from hashlib import sha1
+
+from digicampipe.image.kernels import (
+    gauss,
+    high_pass_filter_2525,
+)
+from digicampipe.image.utils import crop_image
+from digicampipe.image.nova_client import Client
 
 
 class SkyImage(object):
