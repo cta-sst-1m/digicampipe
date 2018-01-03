@@ -1,13 +1,31 @@
 from pkg_resources import resource_filename
-from digicampipe.utils import geometry
-from digicampipe.image.kernels import *
-from digicampipe.image.utils import *
-from cts_core.camera import Camera
-from astropy import units as u
-from matplotlib.patches import Circle, Arrow
-import numpy as np
-from decimal import *
+from digicampipe.image.utils import (
+    get_neg_hexagonalicity_with_mask,
+    set_hexagon,
+    get_peaks_separation,
+    make_repetitive_mask,
+    set_circle,
+    reciprocal_to_lattice_space,
+    get_consecutive_hex_radius,
+    crop_image,
+    FitGauss2D,
+)
 import os
+import decimal
+from decimal import Decimal, ROUND_HALF_EVEN
+import numpy as np
+from scipy import signal, optimize
+from astropy import units as u
+from astropy.io import fits
+import matplotlib.pyplot as plt
+
+from digicampipe.utils import geometry
+from digicampipe.image.kernels import (
+    gauss,
+    high_pass_filter_77,
+    high_pass_filter_2525,
+)
+from cts_core.camera import Camera
 
 camera_config_file = resource_filename(
     'digicampipe',
@@ -319,7 +337,7 @@ class ConesImage(object):
         To calculate the convolution of cone image on filtered lid CCD image.
         """
         if self.image_cone is None:
-            raise InvalidOperation('cone image not determined, call get_cone() before get_cones_presence().')
+            raise decimal.InvalidOperation('cone image not determined, call get_cone() before get_cones_presence().')
         self.cone_presence = signal.fftconvolve(self.image_cones, self.image_cone, mode='same')
         self.cone_presence = signal.fftconvolve(self.cone_presence, high_pass_filter_2525, mode='same')
         self.cone_presence[self.cone_presence < 0] = 0
@@ -624,6 +642,7 @@ class ConesImage(object):
         plt.close(fig)
         print(output_filename, 'saved.')
 
+<<<<<<< HEAD
 
 def simu_match(cones_image, true_positions, std_error_max_px=0.5):
     if cones_image.pixels_pos_predict is None:
@@ -633,6 +652,26 @@ def simu_match(cones_image, true_positions, std_error_max_px=0.5):
     offsets = []
     for i in range(3):
         angle = i * 2 / 3 * np.pi
+=======
+    def simu_match(self, std_error_max_px=0.5):
+        if self.pixels_pos_true is None:
+            raise decimal.InvalidOperation('simu_match() can only be called from simulated cones.')
+        if self.pixels_pos_predict is None:
+            self.fit_camera_geometry()
+        # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
+        diffs = []
+        offsets = []
+        for i in range(3):
+            angle = i * 2 / 3 * np.pi
+            R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+            pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
+                          self.center_fitted.reshape(2, 1)
+            diffs.append(np.std(pos_predict - self.pixels_pos_true))
+            offsets.append(np.mean(pos_predict - self.pixels_pos_true, axis=1))
+        print('error on pixel position: ', np.min(diffs))
+        print('offset=', offsets[np.argmin(diffs)])
+        angle = np.argmin(diffs) * 2 / 3 * np.pi
+>>>>>>> lid_ccd
         R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
         pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
                       cones_image.center_fitted.reshape(2, 1)
