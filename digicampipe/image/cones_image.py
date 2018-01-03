@@ -642,7 +642,6 @@ class ConesImage(object):
         plt.close(fig)
         print(output_filename, 'saved.')
 
-<<<<<<< HEAD
 
 def simu_match(cones_image, true_positions, std_error_max_px=0.5):
     if cones_image.pixels_pos_predict is None:
@@ -652,26 +651,7 @@ def simu_match(cones_image, true_positions, std_error_max_px=0.5):
     offsets = []
     for i in range(3):
         angle = i * 2 / 3 * np.pi
-=======
-    def simu_match(self, std_error_max_px=0.5):
-        if self.pixels_pos_true is None:
-            raise decimal.InvalidOperation('simu_match() can only be called from simulated cones.')
-        if self.pixels_pos_predict is None:
-            self.fit_camera_geometry()
-        # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
-        diffs = []
-        offsets = []
-        for i in range(3):
-            angle = i * 2 / 3 * np.pi
-            R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-            pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
-                          self.center_fitted.reshape(2, 1)
-            diffs.append(np.std(pos_predict - self.pixels_pos_true))
-            offsets.append(np.mean(pos_predict - self.pixels_pos_true, axis=1))
-        print('error on pixel position: ', np.min(diffs))
-        print('offset=', offsets[np.argmin(diffs)])
-        angle = np.argmin(diffs) * 2 / 3 * np.pi
->>>>>>> lid_ccd
+
         R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
         pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
                       cones_image.center_fitted.reshape(2, 1)
