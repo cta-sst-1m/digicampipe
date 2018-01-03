@@ -6,7 +6,7 @@ import scipy
 from scipy import signal
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
- from photutils import DAOStarFinder
+from photutils import DAOStarFinder
 from skimage.draw import polygon
 
 
