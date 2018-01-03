@@ -1,6 +1,3 @@
-from digicampipe.image.sky_image import LidCCDObservation
-from digicampipe.image.cones_image import ConesImage, cones_simu
-
 from pkg_resources import resource_filename
 from glob import glob
 
@@ -10,6 +7,7 @@ example_lid_CCD_image_file_paths = glob(
 
 
 def test_find_stars():
+    from digicampipe.image.sky_image import LidCCDObservation
     # find stars in lid CCD images:
     crop_pixels1 = [  # (850, 50),
         # (550, 500),
@@ -38,6 +36,9 @@ def test_find_stars():
 
 
 def test_cone_simu():
+    from digicampipe.image.cones_image import ConesImage, cones_simu
+    from digicampipe.image.cones_image import simu_match
+
     # create an image  with a geometry compatible to the camera with
     # known angle, spacing between pixels etc...
     test_image, true_positions = cones_simu(
@@ -50,7 +51,6 @@ def test_cone_simu():
     cones_img.fit_camera_geometry()
     cones_img.refine_camera_geometry()
 
-    from digicampipe.image.cones_image import simu_match
     assert simu_match(cones_img, true_positions, std_error_max_px=0.5)
 
 
