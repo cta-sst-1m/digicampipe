@@ -1,13 +1,15 @@
-import numbers
-import numpy as np
-import cv2  # opencv has a problem when imported after something with tensorflow, so I import it high up :-|
-import matplotlib.pyplot as plt
-import scipy
-from scipy import signal
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
-from photutils import DAOStarFinder
+import numpy as np
+import scipy
 from skimage.draw import polygon
+import matplotlib.pyplot as plt
+import cv2
+from scipy import signal
+import numbers
+
+
+from photutils import DAOStarFinder
 
 
 def crop_image(image, crop_pixel1, crop_pixel2):
