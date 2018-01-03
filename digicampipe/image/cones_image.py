@@ -37,7 +37,14 @@ class ConesImage(object):
         self.pixels_pos_true = None  # true position of pixels only know in the simu case
         if type(image) is str:
             if image == 'test':
-                image = self.cones_simu(offset=(-4.3, -2.1), angle_deg=10, pixel_radius=35, output_dir=output_dir)
+                image = cones_simu(
+                    self.pixels_nvs,
+                    self.pixels_pos_true,
+                    offset=(-4.3, -2.1),
+                    angle_deg=10,
+                    pixel_radius=35,
+                    output_dir=output_dir,
+                )
             else:
                 self.filename = image
                 image = fits.open(image)[0].data
