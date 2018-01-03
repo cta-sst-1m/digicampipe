@@ -1,3 +1,4 @@
+from pkg_resources import resource_filename
 from digicampipe.utils import geometry
 from digicampipe.image.kernels import *
 from digicampipe.image.utils import *
@@ -8,16 +9,19 @@ import numpy as np
 from decimal import *
 import os
 
+camera_config_file = resource_filename(
+    'digicampipe',
+    'tests/resources/camera_config.cfg')
+
 
 class ConesImage(object):
     def __init__(self, image, image_cone=None, output_dir=None,
-                 digicam_config_file='./tests/resources/camera_config.cfg',
+                 digicam_config_file=camera_config_file,
                  pixels_pos_true=None
                  ):
         """
         constructor of a ConesImage object.
         :param image: fit filename or numpy array containing the lid CCD image.
-        If set to 'test', a test image is created.
         :param image_cone: optional fit filename of the cone image. the fit file is created calling get_cone()
         :param output_dir: optional directory where to put the original lid CCD image in case of test
         :param digicam_config_file: path to the digicam configuration file
@@ -26,17 +30,8 @@ class ConesImage(object):
         self.pixels_nvs = get_pixel_nvs(digicam_config_file)
         self.pixels_pos_true = pixels_pos_true  # true position of pixels only know in the simu case
         if type(image) is str:
-            if image == 'test':
-                image, self.pixels_pos_true = cones_simu(
-                    self.pixels_nvs,
-                    offset=(-4.3, -2.1),
-                    angle_deg=10,
-                    pixel_radius=35,
-                    output_dir=output_dir,
-                )
-            else:
-                self.filename = image
-                image = fits.open(image)[0].data
+            self.filename = image
+            image = fits.open(image)[0].data
         if type(image) is not np.ndarray:
             raise AttributeError('image must be a filename or a numpy.ndarray')
         # high pass filter
@@ -705,7 +700,7 @@ def cones_simu(pixels_nvs=None, offset=(0,0), angle_deg=0, image_shape=(2472, 32
     return image, pixels_pos_true
 
 
-def get_pixel_nvs(digicam_config_file='./tests/resources/camera_config.cfg'):
+def get_pixel_nvs(digicam_config_file=camera_config_file):
     # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
     digicam = Camera(_config_file=digicam_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
