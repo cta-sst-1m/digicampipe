@@ -655,7 +655,7 @@ class ConesImage(object):
         return np.std(self.pixels_pos_predict - self.pixels_pos_true) < std_error_max_px
 
 
-def cones_simu(pixels_nvs, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
+def cones_simu(pixels_nvs=None, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
                noise_ampl=0., output_dir=None):
     """
     function to create a test cones image according to given parameters
@@ -667,6 +667,8 @@ def cones_simu(pixels_nvs, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), 
     :param output_dir: optional directory where to put the original lid CCD image
     :return:
     """
+    if pixels_nvs is None:
+        pixels_nvs = get_pixel_nvs()
     angle_rot = angle_deg / 180 * np.pi
     offset = np.array(offset)
     image = np.zeros(image_shape)
