@@ -1,5 +1,5 @@
 from digicampipe.image.sky_image import LidCCDObservation
-from digicampipe.image.cones_image import ConesImage
+from digicampipe.image.cones_image import ConesImage, cones_simu
 
 from pkg_resources import resource_filename
 from glob import glob
@@ -37,12 +37,14 @@ def test_find_stars():
     assert nsolved > 0
 
 
-camera_config_file = resource_filename('digicampipe', 'tests/resources/camera_config.cfg')
-
-
 def test_cone_simu():
+    test_image, true_positions = cones_simu(
+        offset=(-4.3, -2.1),
+        angle_deg=10,
+        pixel_radius=35,
+    )
     # create an image  with a geometry compatible to the camera with known angle, spacing between pixels etc...
-    cones_img = ConesImage('test',digicam_config_file=camera_config_file)
+    cones_img = ConesImage(test_image, pixels_pos_true=true_positions)
     cones_img.get_cone(radius_mask=2.1, save_to_file=False)
     cones_img.fit_camera_geometry()
     cones_img.refine_camera_geometry()
