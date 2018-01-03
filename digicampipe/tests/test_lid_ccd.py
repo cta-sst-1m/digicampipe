@@ -44,11 +44,13 @@ def test_cone_simu():
         pixel_radius=35,
     )
     # create an image  with a geometry compatible to the camera with known angle, spacing between pixels etc...
-    cones_img = ConesImage(test_image, pixels_pos_true=true_positions)
+    cones_img = ConesImage(test_image)
     cones_img.get_cone(radius_mask=2.1, save_to_file=False)
     cones_img.fit_camera_geometry()
     cones_img.refine_camera_geometry()
-    assert cones_img.simu_match(std_error_max_px=0.5)
+
+    from digicampipe.image.cones_image import simu_match
+    assert simu_match(cones_img, true_positions, std_error_max_px=0.5)
 
 
 if __name__ == '__main__':

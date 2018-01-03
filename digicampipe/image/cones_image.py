@@ -16,8 +16,7 @@ camera_config_file = resource_filename(
 
 class ConesImage(object):
     def __init__(self, image, image_cone=None, output_dir=None,
-                 digicam_config_file=camera_config_file,
-                 pixels_pos_true=None
+                 digicam_config_file=camera_config_file
                  ):
         """
         constructor of a ConesImage object.
@@ -28,7 +27,6 @@ class ConesImage(object):
         """
         self.filename = None
         self.pixels_nvs = get_pixel_nvs(digicam_config_file)
-        self.pixels_pos_true = pixels_pos_true  # true position of pixels only know in the simu case
         if type(image) is str:
             self.filename = image
             image = fits.open(image)[0].data
@@ -626,28 +624,27 @@ class ConesImage(object):
         plt.close(fig)
         print(output_filename, 'saved.')
 
-    def simu_match(self, std_error_max_px=0.5):
-        if self.pixels_pos_true is None:
-            raise InvalidOperation('simu_match() can only be called from simulated cones.')
-        if self.pixels_pos_predict is None:
-            self.fit_camera_geometry()
-        # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
-        diffs = []
-        offsets = []
-        for i in range(3):
-            angle = i * 2 / 3 * np.pi
-            R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-            pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
-                          self.center_fitted.reshape(2, 1)
-            diffs.append(np.std(pos_predict - self.pixels_pos_true))
-            offsets.append(np.mean(pos_predict - self.pixels_pos_true, axis=1))
-        print('error on pixel position: ', np.min(diffs))
-        print('offset=', offsets[np.argmin(diffs)])
-        angle = np.argmin(diffs) * 2 / 3 * np.pi
+
+def simu_match(cones_image, true_positions, std_error_max_px=0.5):
+    if cones_image.pixels_pos_predict is None:
+        cones_image.fit_camera_geometry()
+    # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
+    diffs = []
+    offsets = []
+    for i in range(3):
+        angle = i * 2 / 3 * np.pi
         R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-        self.pixels_pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
-                                  self.center_fitted.reshape(2, 1)
-        return np.std(self.pixels_pos_predict - self.pixels_pos_true) < std_error_max_px
+        pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
+                      cones_image.center_fitted.reshape(2, 1)
+        diffs.append(np.std(pos_predict - true_positions))
+        offsets.append(np.mean(pos_predict - true_positions, axis=1))
+    print('error on pixel position: ', np.min(diffs))
+    print('offset=', offsets[np.argmin(diffs)])
+    angle = np.argmin(diffs) * 2 / 3 * np.pi
+    R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+    cones_image.pixels_pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
+                              cones_image.center_fitted.reshape(2, 1)
+    return np.std(cones_image.pixels_pos_predict - true_positions) < std_error_max_px
 
 
 def cones_simu(pixels_nvs=None, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,

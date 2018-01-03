@@ -10,7 +10,6 @@ def get_cone_position_simu(output_dir=None):
     )
     cones_img = ConesImage(
         test_image,
-        pixels_pos_true=true_positions,
         output_dir=output_dir,
     )
     cones_img.plot_cones(output_dir=output_dir)
@@ -27,7 +26,7 @@ def get_cone_position_simu(output_dir=None):
     cones_img.fit_camera_geometry()
     cones_img.refine_camera_geometry()
     cones_img.plot_camera_geometry(output_dir=output_dir)
-    return cones_img.pixels_pos_predict, cones_img.pixels_pos_true
+    return cones_img.pixels_pos_predict, true_positions
 
 
 def get_cones_position(filename, output_dir=None):
