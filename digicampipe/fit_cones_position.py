@@ -1,8 +1,18 @@
-from digicampipe.image.cones_image import ConesImage
+from digicampipe.image.cones_image import ConesImage, cones_simu
 
 
 def get_cone_position_simu(output_dir=None):
-    cones_img = ConesImage('test', output_dir=output_dir)
+    test_image, true_positions = cones_simu(
+        offset=(-4.3, -2.1),
+        angle_deg=10,
+        pixel_radius=35,
+        output_dir=output_dir,
+    )
+    cones_img = ConesImage(
+        test_image,
+        pixels_pos_true=true_positions,
+        output_dir=output_dir,
+    )
     cones_img.plot_cones(output_dir=output_dir)
     cones_img.plot_fft_cones(output_dir=output_dir)
     cones_img.get_cones_separation_reciprocal(output_dir=output_dir)
