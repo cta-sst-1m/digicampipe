@@ -11,7 +11,9 @@ import os
 
 class ConesImage(object):
     def __init__(self, image, image_cone=None, output_dir=None,
-                 digicam_config_file='./tests/resources/camera_config.cfg'):
+                 digicam_config_file='./tests/resources/camera_config.cfg',
+                 pixels_pos_true=None
+                 ):
         """
         constructor of a ConesImage object.
         :param image: fit filename or numpy array containing the lid CCD image.
@@ -34,12 +36,11 @@ class ConesImage(object):
         #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
         # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
         self.pixels_nvs -= np.mean(self.pixels_nvs, axis=1).reshape(2, 1)
-        self.pixels_pos_true = None  # true position of pixels only know in the simu case
+        self.pixels_pos_true = pixels_pos_true  # true position of pixels only know in the simu case
         if type(image) is str:
             if image == 'test':
-                image = cones_simu(
+                image, self.pixels_pos_true = cones_simu(
                     self.pixels_nvs,
-                    self.pixels_pos_true,
                     offset=(-4.3, -2.1),
                     angle_deg=10,
                     pixel_radius=35,
@@ -666,7 +667,7 @@ class ConesImage(object):
         return np.std(self.pixels_pos_predict - self.pixels_pos_true) < std_error_max_px
 
 
-def cones_simu(pixels_nvs, pixels_pos_true, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
+def cones_simu(pixels_nvs, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
                noise_ampl=0., output_dir=None):
     """
     function to create a test cones image according to given parameters
@@ -711,4 +712,4 @@ def cones_simu(pixels_nvs, pixels_pos_true, offset=(0,0), angle_deg=0, image_sha
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
-    return image
+    return image, pixels_pos_true
