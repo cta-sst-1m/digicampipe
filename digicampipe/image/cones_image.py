@@ -1,12 +1,30 @@
-from digicampipe.utils import geometry
-from digicampipe.image.kernels import *
-from digicampipe.image.utils import *
-from cts_core.camera import Camera
-from astropy import units as u
-from matplotlib.patches import Circle, Arrow
-import numpy as np
-from decimal import *
+from digicampipe.image.utils import (
+    get_neg_hexagonalicity_with_mask,
+    set_hexagon,
+    get_peaks_separation,
+    make_repetitive_mask,
+    set_circle,
+    reciprocal_to_lattice_space,
+    get_consecutive_hex_radius,
+    crop_image,
+    FitGauss2D,
+)
 import os
+import decimal
+from decimal import Decimal, ROUND_HALF_EVEN
+import numpy as np
+from scipy import signal, optimize
+from astropy import units as u
+from astropy.io import fits
+import matplotlib.pyplot as plt
+
+from digicampipe.utils import geometry
+from digicampipe.image.kernels import (
+    gauss,
+    high_pass_filter_77,
+    high_pass_filter_2525,
+)
+from cts_core.camera import Camera
 
 
 class ConesImage(object):
@@ -376,7 +394,7 @@ class ConesImage(object):
         To calculate the convolution of cone image on filtered lid CCD image.
         """
         if self.image_cone is None:
-            raise InvalidOperation('cone image not determined, call get_cone() before get_cones_presence().')
+            raise decimal.InvalidOperation('cone image not determined, call get_cone() before get_cones_presence().')
         self.cone_presence = signal.fftconvolve(self.image_cones, self.image_cone, mode='same')
         self.cone_presence = signal.fftconvolve(self.cone_presence, high_pass_filter_2525, mode='same')
         self.cone_presence[self.cone_presence < 0] = 0
@@ -683,7 +701,7 @@ class ConesImage(object):
 
     def simu_match(self, std_error_max_px=0.5):
         if self.pixels_pos_true is None:
-            raise InvalidOperation('simu_match() can only be called from simulated cones.')
+            raise decimal.InvalidOperation('simu_match() can only be called from simulated cones.')
         if self.pixels_pos_predict is None:
             self.fit_camera_geometry()
         # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
