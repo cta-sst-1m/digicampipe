@@ -713,5 +713,5 @@ def get_pixel_nvs(digicam_config_file=camera_config_file):
     pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
     #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
     # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
-    pixels_nvs -= np.mean(self.pixels_nvs, axis=1).reshape(2, 1)
+    pixels_nvs -= np.mean(pixels_nvs, axis=1).reshape(2, 1)
     return pixels_nvs
