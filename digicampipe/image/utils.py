@@ -4,7 +4,6 @@ import numpy as np
 import scipy
 from skimage.draw import polygon
 import matplotlib.pyplot as plt
-from time import clock
 import cv2
 from scipy import signal, ndimage, optimize
 import numbers
