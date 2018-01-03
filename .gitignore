@@ -1,7 +1,15 @@
 build/
 __pycache__
+
+# files created by scripts
+digicampipe/tests/resources/cone.fits
+digicampipe/tests/resources/cones_1509411741-cone.fits
+digicampipe/tests/resources/*.png
+digicampipe/tests/resources/stars_on_lid/*.png
+
+#Pycharm config
 .idea/*
-digicampipe/.idea/*
+
 # Byte-compiled / optimized / DLL files
 *.py[cod]
 *$py.class
