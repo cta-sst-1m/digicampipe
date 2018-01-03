@@ -85,52 +85,6 @@ class ConesImage(object):
             self.r2 = np.array((np.real(hdu.header['r2']), np.imag(hdu.header['r2'])))
             self.r3 = np.array((np.real(hdu.header['r3']), np.imag(hdu.header['r3'])))
 
-    def cones_simu(self, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
-                   noise_ampl=0., output_dir=None):
-        """
-        function to create a test cones image according to given parameters
-        :param offset: offest of the center of the camera geometry with respect to the center of the test image
-        :param angle_deg: angle of the camera geometry
-        :param image_shape: shape of the test image (npixel_y, npixel_x)
-        :param pixel_radius: length of the radius of an hexagonal pixel (from the center of the hexagon to the border)
-        :param noise_ampl: amplitude of random noise added to the test image (gaussian)
-        :param output_dir: optional directory where to put the original lid CCD image
-        :return:
-        """
-        angle_rot = angle_deg / 180 * np.pi
-        offset = np.array(offset)
-        image = np.zeros(image_shape)
-        center = (np.array(image.shape[::-1]) - 1) / 2
-        r1 = pixel_radius * np.array((np.cos(angle_rot), np.sin(angle_rot)))
-        r2 = pixel_radius * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
-        r3 = pixel_radius * np.array((np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot)))
-        v1_lattice = r1 + r2
-        v2_lattice = r2 + r3
-        self.pixels_pos_true = (center + offset).reshape(2, 1) + \
-                               np.array([v1_lattice, v2_lattice]).transpose().dot(self.pixels_nvs)
-        n_pixels = self.pixels_nvs.shape[1]
-        print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
-        for pixel in range(n_pixels):
-            pos_true = self.pixels_pos_true[:, pixel]
-            for i in range(10, -1, -1):
-                image = set_hexagon(image, pos_true, r1=(i + 8) / 20 * r1, r2=(i + 8) / 20 * r2, value=1 - i / 10)
-            image = set_hexagon(image, pos_true, r1=7 / 20 * r1, r2=7 / 20 * r2, value=0)
-        image += noise_ampl * np.random.randn(image.shape[0], image.shape[1])
-        # add bright pixels so test image can pass the same cleaning procedure as the true images
-        image[0:100, 0:100] = 200 * np.ones((100, 100))
-        if output_dir is not None:
-            fig = plt.figure(figsize=(8, 6), dpi=600)
-            ax = plt.gca()
-            plt.imshow(image, cmap='gray', vmin=0, vmax=10)
-            plt.grid(None)
-            plt.axis('off')
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
-            output_filename = os.path.join(output_dir, 'cones-original.png')
-            plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
-            plt.close(fig)
-            print(output_filename, 'saved.')
-        return image
 
     def plot_cones(self, output_dir, radius_mask=None):
         """
@@ -703,3 +657,51 @@ class ConesImage(object):
         self.pixels_pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
                                   self.center_fitted.reshape(2, 1)
         return np.std(self.pixels_pos_predict - self.pixels_pos_true) < std_error_max_px
+
+
+def cones_simu(pixels_nvs, pixels_pos_true, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
+               noise_ampl=0., output_dir=None):
+    """
+    function to create a test cones image according to given parameters
+    :param offset: offest of the center of the camera geometry with respect to the center of the test image
+    :param angle_deg: angle of the camera geometry
+    :param image_shape: shape of the test image (npixel_y, npixel_x)
+    :param pixel_radius: length of the radius of an hexagonal pixel (from the center of the hexagon to the border)
+    :param noise_ampl: amplitude of random noise added to the test image (gaussian)
+    :param output_dir: optional directory where to put the original lid CCD image
+    :return:
+    """
+    angle_rot = angle_deg / 180 * np.pi
+    offset = np.array(offset)
+    image = np.zeros(image_shape)
+    center = (np.array(image.shape[::-1]) - 1) / 2
+    r1 = pixel_radius * np.array((np.cos(angle_rot), np.sin(angle_rot)))
+    r2 = pixel_radius * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
+    r3 = pixel_radius * np.array((np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot)))
+    v1_lattice = r1 + r2
+    v2_lattice = r2 + r3
+    pixels_pos_true = (center + offset).reshape(2, 1) + \
+                           np.array([v1_lattice, v2_lattice]).transpose().dot(pixels_nvs)
+    n_pixels = pixels_nvs.shape[1]
+    print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
+    for pixel in range(n_pixels):
+        pos_true = pixels_pos_true[:, pixel]
+        for i in range(10, -1, -1):
+            image = set_hexagon(image, pos_true, r1=(i + 8) / 20 * r1, r2=(i + 8) / 20 * r2, value=1 - i / 10)
+        image = set_hexagon(image, pos_true, r1=7 / 20 * r1, r2=7 / 20 * r2, value=0)
+    image += noise_ampl * np.random.randn(image.shape[0], image.shape[1])
+    # add bright pixels so test image can pass the same cleaning procedure as the true images
+    image[0:100, 0:100] = 200 * np.ones((100, 100))
+    if output_dir is not None:
+        fig = plt.figure(figsize=(8, 6), dpi=600)
+        ax = plt.gca()
+        plt.imshow(image, cmap='gray', vmin=0, vmax=10)
+        plt.grid(None)
+        plt.axis('off')
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        output_filename = os.path.join(output_dir, 'cones-original.png')
+        plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+        print(output_filename, 'saved.')
+    return image
