@@ -1,3 +1,4 @@
+from digicampipe.image.utils import crop_image
 import os
 import shutil
 import tempfile
@@ -20,7 +21,6 @@ from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 
 from digicampipe.image.kernels import gauss, high_pass_filter_2525
-from digicampipe.image.utils import crop_image
 from digicampipe.image.nova_client import Client
 
 
