@@ -1,5 +1,5 @@
-from digicampipe.image.sky_image import *
-from digicampipe.image.cones_image import *
+from digicampipe.image.sky_image import LidCCDObservation
+from digicampipe.image.cones_image import ConesImage
 
 from pkg_resources import resource_filename
 from glob import glob
