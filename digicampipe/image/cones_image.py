@@ -23,19 +23,7 @@ class ConesImage(object):
         :param digicam_config_file: path to the digicam configuration file
         """
         self.filename = None
-        # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
-        digicam = Camera(_config_file=digicam_config_file)
-        digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-        pixels_pos_mm = np.array([digicam_geometry.pix_x.to(u.mm), digicam_geometry.pix_y.to(u.mm)]).transpose()
-        pixels_pos_mm = pixels_pos_mm.dot(np.array([[0, -1], [1, 0]]))
-        pixels_v1 = pixels_pos_mm[digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
-        pixels_v2 = pixels_pos_mm[digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
-        index_to_pos = np.array([pixels_v1, pixels_v2]).transpose()
-        relative_pos = (pixels_pos_mm - pixels_pos_mm[0, :]).transpose()
-        self.pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
-        #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
-        # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
-        self.pixels_nvs -= np.mean(self.pixels_nvs, axis=1).reshape(2, 1)
+        self.pixels_nvs = get_pixel_nvs(digicam_config_file)
         self.pixels_pos_true = pixels_pos_true  # true position of pixels only know in the simu case
         if type(image) is str:
             if image == 'test':
@@ -713,3 +701,20 @@ def cones_simu(pixels_nvs, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), 
         plt.close(fig)
         print(output_filename, 'saved.')
     return image, pixels_pos_true
+
+
+def get_pixel_nvs(digicam_config_file='./tests/resources/camera_config.cfg'):
+    # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
+    digicam = Camera(_config_file=digicam_config_file)
+    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
+    pixels_pos_mm = np.array([digicam_geometry.pix_x.to(u.mm), digicam_geometry.pix_y.to(u.mm)]).transpose()
+    pixels_pos_mm = pixels_pos_mm.dot(np.array([[0, -1], [1, 0]]))
+    pixels_v1 = pixels_pos_mm[digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
+    pixels_v2 = pixels_pos_mm[digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
+    index_to_pos = np.array([pixels_v1, pixels_v2]).transpose()
+    relative_pos = (pixels_pos_mm - pixels_pos_mm[0, :]).transpose()
+    pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
+    #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
+    # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
+    pixels_nvs -= np.mean(self.pixels_nvs, axis=1).reshape(2, 1)
+    return pixels_nvs
