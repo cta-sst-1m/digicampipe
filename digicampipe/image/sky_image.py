@@ -8,19 +8,18 @@ from urllib.error import HTTPError
 
 import numpy as np
 from scipy import signal
-from matplotlib.patches import Circle, Rectangle
 
-from astropy.io import fits
-from astropy.stats import sigma_clipped_stats
 from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 
-from digicampipe.image.kernels import (
-    gauss,
-    high_pass_filter_2525,
-)
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
+
+from digicampipe.image.kernels import gauss, high_pass_filter_2525
 from digicampipe.image.utils import crop_image
 from digicampipe.image.nova_client import Client
 
