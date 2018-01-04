@@ -38,10 +38,16 @@ class ConesImage(object):
         self,
         image,
         image_cone=None,
-        output_dir=None,
         digicam_config_file=camera_config_file
     ):
         """
+        find cones positions from a picture of the photo detection plane.
+        Usage :
+            1. create ConesImage,
+            2. extract a cone with get_cone(),
+            3. get cones position using fit_camera_geometry()
+            4. (optional) refine positions using refine_camera_geometry()
+
         Parameters
         ----------
         image : 2d-array

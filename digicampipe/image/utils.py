@@ -1,4 +1,3 @@
-from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 import numpy as np
 import scipy
@@ -6,7 +5,6 @@ from skimage.draw import polygon
 import matplotlib.pyplot as plt
 import cv2
 from scipy import signal
-import numbers
 
 
 from photutils import DAOStarFinder
@@ -160,29 +158,11 @@ def crop_image(image, crop_pixel1, crop_pixel2):
 
 
 def average_images(images):
-    if type(images) is not list:
-        print((
-            'ERROR in average_images(): '
-            'images must be a list of filenames or numpy.ndarray'))
-        return None
-    nimage = len(images)
-    if nimage == 0:
-        print('ERROR in average_images(): empty list of images')
-        return None
-    if type(images[0]) is not np.ndarray:
-        print('ERROR in average_images(): images must be numpy.ndarray')
-        return None
-    first_image_shape = images[0].shape
-    image_average = np.zeros(first_image_shape)
-    for image in images:
-        if type(image) is not np.ndarray:
-            print('WARNING in average_images(): image is not a numpy.ndarray')
-            continue
-        if first_image_shape != image.shape:
-            print('ERROR in average_images(): images are not of same sizes')
-            return None
-        image_average += image / nimage
-    return image_average
+    # convert to array, if it not already is an ndarray.
+    images = np.asarray(images)
+    # conversion to 3D array only works, if all images are of equal size.
+    assert images.ndim == 3
+    return images.mean(axis=-1)
 
 
 def set_circle(image, center=(0, 0), radius=10, value=1):
@@ -448,7 +428,6 @@ def get_peaks_separation(
 
 
 def get_image_hexagonalicity(image, rotations=(60, 300)):
-    # init = clock()
     image[image != 0] -= np.mean(image)
     std_image = np.std(image)
     if std_image == 0:
@@ -466,7 +445,6 @@ def get_image_hexagonalicity(image, rotations=(60, 300)):
         # print("relative_distance", relative_distance)
         # plot_image(difference, wait=False, vmin=-1, vmax=1)
         hexagonalicity += (1 - relative_distance) / len(rotations)
-    # end = clock()
     # print('hex=', hexagonalicity, "in", end - init)
     return hexagonalicity
 
@@ -503,10 +481,8 @@ def get_neg_hexagonalicity_with_mask(
     image_center = (np.array(image.shape[::-1]) - 1) / 2
     displacement = image_center - center
 #    plot_image(image)
-#    init = clock()
     M = np.float32([[1, 0, displacement[0]], [0, 1, displacement[1]]])
     image = cv2.warpAffine(image, M, image.shape[::-1])
-#    end = clock()
 #    print("displacement=", displacement, "in", end - init)
 #    plot_image(image)
     # vectors defining the hexagonal mask used
@@ -537,7 +513,6 @@ def get_neg_hexagonalicity_with_mask(
     mask_hexa = np.zeros_like(image_crop)
     mask_hexa = set_hexagon(mask_hexa, center=center_crop, r1=r1, r2=r2)
 #    plot_image(image_crop * mask_hexa, wait=False)
-#    end = clock()
 #    print("mask in", end - init)
     return -get_image_hexagonalicity(
         image_crop * mask_hexa, rotations=rotations)
@@ -624,14 +599,14 @@ def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
     return Gauss2D
 
 
-def FitGauss2D(Data, ip=None):
-    """ Fits 2D gaussian to Data with optional Initial conditions
+def FitGauss2D(data, initial_param=None):
+    """ Fits 2D gaussian to data with optional Initial conditions
 
     ip=(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
     Example:
     >>> X,Y=np.indices((40,40),dtype=np.float)
-    >>> Data=np.exp(-(((X-25)/5)**2 +((Y-15)/10)**2)/2) + 1
-    >>> FitGauss2D(Data)
+    >>> data=np.exp(-(((X-25)/5)**2 +((Y-15)/10)**2)/2) + 1
+    >>> FitGauss2D(data)
     (
         array([
             1.00000000e+00,
@@ -649,10 +624,10 @@ def FitGauss2D(Data, ip=None):
 
     # Estimate the initial parameters from moments
     # and also set rot angle to be 0
-    if ip is None:
+    if initial_param is None:
         # Remove ellipticity from the end in parameter list
-        ip = moments2D(Data)[:-1]
-    Xcoords, Ycoords = np.indices(Data.shape)
+        ip = moments2D(data)[:-1]
+    Xcoords, Ycoords = np.indices(data.shape)
 
     def errfun(ip):
         dXcoords = Xcoords - ip[1]
@@ -662,8 +637,9 @@ def FitGauss2D(Data, ip=None):
         # Taking a sqrt(weight) here so that
         # while scipy takes square of this array it will become 1/r weight.
         return np.ravel(
-            (Gaussian2D(*ip)(*np.indices(Data.shape)) - Data) /
+            (Gaussian2D(*ip)(*np.indices(data.shape)) - data) /
             np.sqrt(Weights)
         )
+
     p, success = scipy.optimize.leastsq(errfun, ip, maxfev=1000)
     return p, success
