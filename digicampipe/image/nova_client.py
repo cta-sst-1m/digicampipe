@@ -290,6 +290,7 @@ class Client(object):
         )
         return result
 
+
 if __name__ == '__main__':
     print("Running with args %s" % sys.argv)
     import optparse
