@@ -9,7 +9,7 @@ from digicampipe.image.utils import (
     get_consecutive_hex_radius,
     Rectangle,
     CroppedImage,
-    FitGauss2D,
+    fit_gauss_2d,
 )
 import os
 import decimal
@@ -484,7 +484,7 @@ class ConesImage(object):
                 [max_pos_y, max_pos_x] = np.unravel_index(max_pos_crop, crop.image.shape)
                 init_amplitude = crop.image[max_pos_y, max_pos_x] - np.min(crop.image)
                 init_param = (init_amplitude, max_pos_x, max_pos_y, sigma_peak, sigma_peak, 0, np.min(crop.image))
-                fit_result, success = FitGauss2D(crop.image.transpose(), ip=init_param)
+                fit_result, success = fit_gauss_2d(crop.image.transpose(), initial_param=init_param)
                 amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg = fit_result
 
                 if 0 < success <= 4 and 0 < xsigma < 2*sigma_peak and 0 < ysigma < 2*sigma_peak and \

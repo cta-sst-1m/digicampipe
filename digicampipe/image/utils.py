@@ -338,7 +338,7 @@ def reciprocal_to_lattice_space(a1, a2, shape):
     return (b1, b2)
 
 
-def moments2D(inpData):  # from https://github.com/indiajoe/HandyTools4Astronomers
+def moments_2d(inpData):  # from https://github.com/indiajoe/HandyTools4Astronomers
     """ Returns the (amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg, e) estimated from moments in the 2d input array Data """
     # Taking median of the 4 edges points as background
     bkg = np.median(np.hstack((inpData[0, :], inpData[-1, :], inpData[:, 0], inpData[:, -1])))
@@ -363,7 +363,7 @@ def moments2D(inpData):  # from https://github.com/indiajoe/HandyTools4Astronome
     return amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg, e
 
 
-def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):  # from https://github.com/indiajoe/HandyTools4Astronomers
+def gaussian_2d(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):  # from https://github.com/indiajoe/HandyTools4Astronomers
     """ Returns a 2D Gaussian function with input parameters. rotation input rot should be in degress """
     rot=np.deg2rad(rot)  # Converting to radians
     Xc=xcenter*np.cos(rot) - ycenter*np.sin(rot)  # Centers in rotated coordinates
@@ -378,16 +378,16 @@ def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):  # from h
     return Gauss2D
 
 
-def FitGauss2D(data, initial_param=None):  # from https://github.com/indiajoe/HandyTools4Astronomers
+def fit_gauss_2d(data, initial_param=None):  # from https://github.com/indiajoe/HandyTools4Astronomers
     """ Fits 2D gaussian to Data with optional Initial conditions ip=(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
     Example:
     >>> X,Y=np.indices((40,40),dtype=np.float)
     >>> data=np.exp(-(((X-25)/5)**2 +((Y-15)/10)**2)/2) + 1
-    >>> FitGauss2D(data)
+    >>> fit_gauss_2d(data)
     (array([  1.00000000e+00,   2.50000000e+01,   1.50000000e+01, 5.00000000e+00,   1.00000000e+01,   2.09859373e-07, 1]), 2)
      """
     if initial_param is None:   # Estimate the initial parameters form moments and also set rot angle to be 0
-        ip=moments2D(data)[:-1]   # Remove ellipticity from the end in parameter list
+        initial_param = moments_2d(data)[:-1]   # Remove ellipticity from the end in parameter list
     Xcoords, Ycoords = np.indices(data.shape)
     def errfun(ip):
         dXcoords = Xcoords - ip[1]
@@ -395,6 +395,6 @@ def FitGauss2D(data, initial_param=None):  # from https://github.com/indiajoe/Ha
         # Taking radius as the weights for least square fitting
         Weights = np.sqrt(np.square(dXcoords) + np.square(dYcoords) + 1e-6)
         # Taking a sqrt(weight) here so that while scipy takes square of this array it will become 1/r weight.
-        return np.ravel((Gaussian2D(*ip)(*np.indices(data.shape)) - data)/np.sqrt(Weights))
-    p, success = scipy.optimize.leastsq(errfun, ip, maxfev=1000)
+        return np.ravel((gaussian_2d(*ip)(*np.indices(data.shape)) - data) / np.sqrt(Weights))
+    p, success = scipy.optimize.leastsq(errfun, initial_param, maxfev=1000)
     return p, success
