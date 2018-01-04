@@ -58,10 +58,7 @@ class SkyImage(object):
         self.stars_pixel = None
         self.wcs = None
         if calculate:
-            self.calculate_galactic_coordinates(
-                scale_low_deg=scale_low_deg,
-                scale_high_deg=scale_high_deg
-            )
+            self.calculate_galactic_coordinates()
 
     def subtract_static_image(self, image_static, threshold=None):
         """subtract image_static to the filtered image to keep only the moving spikes.
@@ -182,7 +179,6 @@ class SkyImage(object):
         """
         import time
         from photutils import DAOStarFinder
-        from astropy.table import Table
 
         # apiurl='http://nova.astrometry.net/api/'
         apiurl = 'http://supernova.astrometry.net/api/'
@@ -263,6 +259,8 @@ class SkyImage(object):
                     jobs = stat.get('jobs', [])
                     images = stat.get('user_images', [])
                     if len(jobs):
+                        i = None
+                        j = None
                         for j, i in zip(jobs, images):
                             if j is not None:
                                 break
