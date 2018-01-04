@@ -12,6 +12,75 @@ import numbers
 from photutils import DAOStarFinder
 
 
+class Rectangle:
+    def __init__(self, left, bottom, right, top):
+        self.left = left
+        self.bottom = bottom
+        self.right = right
+        self.top = top
+        if left > right:
+            self.left, self.right = right, left
+        else:
+            self.left, self.right = left, right
+        if bottom > top:
+            self.bottom, self.top = top, bottom
+        else:
+            self.bottom, self.top = bottom, top
+
+    def __str__(self):
+        return "Rectangle(left=, bottom=, right=, top=)" % (
+            self.left, self.bottom, self.right, self.top)
+
+    def width(self):
+        return self.right - self.left
+
+    def height(self):
+        return self.top - self.bottom
+
+    def center(self):
+        center_x = (self.left + self.right) / 2
+        center_y = (self.bottom + self.top) / 2
+        return (center_x, center_y)
+
+
+class CroppedImage:
+    def __init__(self, image, rectangle, strict_limit=True):
+        npixel_y, npixel_x = image.shape
+        if strict_limit:
+            if not (
+                0 <= rectangle.left < npixel_x and
+                0 <= rectangle.bottom < npixel_y
+            ):
+                raise AttributeError(
+                    "invalid crop_pixel position:", rectangle,
+                    "image size is: ", image.shape)
+            if not (
+                0 < rectangle.right < npixel_x and
+                0 < rectangle.top < npixel_y
+            ):
+                raise AttributeError(
+                    "invalid crop_pixel position:", rectangle,
+                    "image size is: ", image.shape)
+        else:
+            rectangle.left = max((0, rectangle.left))
+            rectangle.bottom = max((0, rectangle.bottom))
+            rectangle.right = min((npixel_x - 1, rectangle.right))
+            rectangle.top = min((npixel_y - 1, rectangle.top))
+            if (
+                rectangle.left == rectangle.right or
+                rectangle.bottom == rectangle.top
+            ):
+                raise AttributeError(
+                    "empty crop region:", rectangle,
+                    "image size is: ", image.shape
+                )
+        self.image = image[
+            rectangle.bottom:rectangle.top,
+            rectangle.left:rectangle.right
+        ]
+        self.rectangle = rectangle
+
+
 def crop_image(image, crop_pixel1, crop_pixel2):
     """return sub-image out of image
 
@@ -88,6 +157,7 @@ def crop_image(image, crop_pixel1, crop_pixel2):
         crop_pixel1,
         crop_pixel2,
     )
+
 
 
 def average_images(images):

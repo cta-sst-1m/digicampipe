@@ -1,4 +1,3 @@
-from digicampipe.image.utils import crop_image
 import os
 import shutil
 import tempfile
@@ -21,6 +20,7 @@ from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 
 from digicampipe.image.kernels import gauss, high_pass_filter_2525
+from digicampipe.image.utils import CroppedImage
 from digicampipe.image.nova_client import Client
 
 
@@ -354,8 +354,7 @@ class LidCCDImage(object):
     def __init__(
         self,
         filename,
-        crop_pixels1,
-        crop_pixels2,
+        rectangles,
         image_static=None,
         threshold=None,
         scale_low_images_deg=None,
@@ -366,44 +365,35 @@ class LidCCDImage(object):
         if type(filename) is not str:
             raise AttributeError('filename must be a string.')
         self.filename = filename
-        if type(crop_pixels1) is not list:
-            raise AttributeError('crop_pixels1 must be a list of pixels.')
-        if type(crop_pixels2) is not list:
-            raise AttributeError('crop_pixels2 must be a list of pixels.')
-        if len(crop_pixels1) != len(crop_pixels2):
-            raise AttributeError(
-                'crop_pixels1 and crop_pixels2 lists '
-                'must have the same length.'
-            )
         image = fits.open(self.filename)[0].data
         self.image_shape = image.shape
-        self.crop_pixels1 = []
-        self.crop_pixels2 = []
+        self.crop_rectangles = []
         self.sky_images = []
         self.sky_images_shape = []
-        print('divide', filename, 'in', len(crop_pixels1), 'sub-areas')
-        for crop_pixel1, crop_pixel2 in zip(crop_pixels1, crop_pixels2):
-            image_cropped, crop_pixel1, crop_pixel2 = crop_image(
-                filename, crop_pixel1, crop_pixel2)
+        print(
+            'divide', filename, 'in', len(rectangles),
+            'sub-areacrop_pixels1, crop_pixels2crop_pixels1, crop_pixels2s')
+
+        for rect in rectangles:
+            crop = CroppedImage(image, rect)
             ratios = [
-                self.image_shape[0] / image_cropped.shape[0],
-                self.image_shape[1] / image_cropped.shape[1]
+                self.image_shape[0] / crop.image.shape[0],
+                self.image_shape[1] / crop.image.shape[1]
             ]
             scale_low_crop_deg = scale_low_images_deg / np.max(ratios)
             scale_high_crop_deg = scale_high_images_deg / np.min(ratios)
-            self.crop_pixels1.append(crop_pixel1)
-            self.crop_pixels2.append(crop_pixel2)
-            self.sky_images_shape.append(image_cropped.shape)
+            self.sky_images_shape.append(crop.image.shape)
             sky_image = SkyImage(
-                image_cropped,
+                crop.image,
                 image_static=image_static,
                 threshold=threshold,
                 scale_low_deg=scale_low_crop_deg,
                 scale_high_deg=scale_high_crop_deg,
                 guess_ra_dec=guess_ra_dec,
-                guess_radius=guess_radius
+                guess_radius=guess_radius,
             )
             self.sky_images.append(sky_image)
+            self.crop_rectangles.append(crop.rectangle)
         self.center_px = None
         self.center_ra_dec = None
         self.CD = None
@@ -426,7 +416,7 @@ class LidCCDImage(object):
         Using of the 1st coordinates found instead.
         """
         wcs_list = []
-        for sky_image, crop_pixel1 in zip(self.sky_images, self.crop_pixels1):
+        for sky_image in self.sky_images:
             if sky_image.reference_ra_dec is not None:
                 wcs_list.append(sky_image.wcs)
         if len(wcs_list) > 0:
@@ -434,10 +424,10 @@ class LidCCDImage(object):
 
     def print_summary(self):
         print('matching result for', self.filename)
-        for sky_image, crop_pixel1 in zip(self.sky_images, self.crop_pixels1):
+        for sky_image, rect in zip(self.sky_images, self.crop_rectangles):
             if sky_image.reference_ra_dec is not None:
-                print('x pix =', sky_image.reference_pixel[0]+crop_pixel1[0])
-                print('y pix =', sky_image.reference_pixel[1]+crop_pixel1[1])
+                print('x pix =', sky_image.reference_pixel[0] + rect.left)
+                print('y pix =', sky_image.reference_pixel[1] + rect.bottom)
                 print('x ra =', sky_image.reference_ra_dec[0])
                 print('y de =', sky_image.reference_ra_dec[1])
                 print('CD =', sky_image.cd_matrix)
@@ -457,31 +447,26 @@ class LidCCDImage(object):
         if type(lid_image) is not np.ndarray:
             raise AttributeError([self.filename, ' must be a fit file'])
         plt.imshow(lid_image, cmap='gray')
-        for sky_image, crop_pixel1, crop_pixel2 in zip(
-                self.sky_images,
-                self.crop_pixels1,
-                self.crop_pixels2
-        ):
+
+        for sky_image, rect in zip(self.sky_images, self.crop_rectangles):
             if sky_image.sources_pixel is not None:
                 for i in range(min(sky_image.sources_pixel.shape[1], 30)):
-                    pixel_x = sky_image.sources_pixel[0, i] + crop_pixel1[0]
-                    pixel_y = sky_image.sources_pixel[1, i] + crop_pixel1[1]
+                    pixel_x = sky_image.sources_pixel[0, i] + rect.left
+                    pixel_y = sky_image.sources_pixel[1, i] + rect.bottom
                     circle = Circle(
                         (pixel_x, pixel_y), radius=9, fill=False, color='r')
                     ax.add_artist(circle)
             if sky_image.stars_pixel is not None:
                 for i in range(sky_image.stars_pixel.shape[1]):
-                    pixel_x = sky_image.stars_pixel[0, i] + crop_pixel1[0]
-                    pixel_y = sky_image.stars_pixel[1, i] + crop_pixel1[1]
+                    pixel_x = sky_image.stars_pixel[0, i] + rect.left
+                    pixel_y = sky_image.stars_pixel[1, i] + rect.bottom
                     circle = Circle(
                         (pixel_x, pixel_y), radius=11, fill=False, color='g')
                     ax.add_artist(circle)
-            width = crop_pixel2[0] - crop_pixel1[0]
-            height = crop_pixel2[1] - crop_pixel1[1]
             rect = Rectangle(
-                crop_pixel1,
-                width=width,
-                height=height,
+                (rect.left, rect.bottom),
+                width=rect.width(),
+                height=rect.height(),
                 fill=False,
                 color='k',
                 linestyle='dashdot'
@@ -533,29 +518,19 @@ class LidCCDImage(object):
             columns=['all'],
             row_limit=-1,
             catalog=['J/ApJS/197/34'])
-        for sky_image, crop_pixel1, crop_pixel2 in zip(
-                self.sky_images,
-                self.crop_pixels1,
-                self.crop_pixels2
-        ):
-            image_treated[
-                crop_pixel1[1]:crop_pixel2[1],
-                crop_pixel1[0]:crop_pixel2[0]
-            ] = np.log(1+sky_image.image_stars)
 
+        for (sky_image, rect) in zip(self.sky_images, self.crop_rectangles):
+            image_treated[rect.bottom:rect.top, rect.left:rect.right] = np.log(1+sky_image.image_stars)
             if sky_image.sources_pixel is not None:
                 for i in range(min(sky_image.sources_pixel.shape[1], 30)):
-                    pixel_x = sky_image.sources_pixel[0, i] + crop_pixel1[0]
-                    pixel_y = sky_image.sources_pixel[1, i] + crop_pixel1[1]
-                    circle = Circle(
-                        (pixel_x, pixel_y), radius=20, fill=False, color='w')
+                    pixel_x = sky_image.sources_pixel[0, i] + rect.left
+                    pixel_y = sky_image.sources_pixel[1, i] + rect.bottom
+                    circle = Circle((pixel_x, pixel_y), radius=20, fill=False, color='w')
                     ax.add_artist(circle)
             if sky_image.wcs is not None:
-                self.center_px = np.array(
-                    (self.image_shape[1], self.image_shape[0])
-                    ).reshape(1, 2) / 2
-                self.center_ra_dec = sky_image.wcs.wcs_pix2world(
-                    self.center_px - crop_pixel1, 1)[0]
+                self.center_px = np.array((self.image_shape[1], self.image_shape[0])).reshape(1, 2) / 2
+                crop_origin = np.array([rect.left, rect.bottom])
+                self.center_ra_dec = sky_image.wcs.wcs_pix2world(self.center_px - crop_origin, 1)[0]
                 print('image center (ra, dec):', self.center_ra_dec)
                 center_coordinate = SkyCoord(
                     ra=self.center_ra_dec[0] * u.degree,
@@ -576,15 +551,9 @@ class LidCCDImage(object):
                         radius = 18 - star_mag
                     else:
                         radius = 5
-                    circle = Circle(
-                        (
-                            star_px[0] + crop_pixel1[0],
-                            star_px[1] + crop_pixel1[1]
-                        ),
-                        radius=radius,
-                        fill=False,
-                        color='b'
-                    )
+
+                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.right), radius=radius,
+                                    fill=False, color='b')
                     ax.add_artist(circle)
                 result_red = vizier_red.query_region(
                     center_coordinate,
@@ -601,15 +570,9 @@ class LidCCDImage(object):
                         radius = 18 - star_mag
                     else:
                         radius = 5
-                    circle = Circle(
-                        (
-                            star_px[0] + crop_pixel1[0],
-                            star_px[1] + crop_pixel1[1]
-                        ),
-                        radius=radius,
-                        fill=False,
-                        color='r'
-                    )
+
+                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.right), radius=radius,
+                                    fill=False, color='r')
                     ax.add_artist(circle)
                 result_green = vizier_green.query_region(
                     center_coordinate,
@@ -627,15 +590,9 @@ class LidCCDImage(object):
                         radius = 18 - star_mag
                     else:
                         radius = 5
-                    circle = Circle(
-                        (
-                            star_px[0] + crop_pixel1[0],
-                            star_px[1] + crop_pixel1[1]
-                        ),
-                        radius=radius,
-                        fill=False,
-                        color='g'
-                    )
+
+                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.right), radius=radius,
+                                    fill=False, color='g')
                     ax.add_artist(circle)
                 result_gamma = vizier_gamma.query_region(
                     center_coordinate,
@@ -646,54 +603,19 @@ class LidCCDImage(object):
                     (result_gamma['RAJ2000'], result_gamma['DEJ2000'])
                 ).transpose()  # .reshape((-1,2))
                 gamma_stars_name = result_gamma['Name']
-                gamma_stars_px = sky_image.wcs.wcs_world2pix(
-                    gamma_stars_ra_dec, 1)
-                for star_px, gamma_star_name in zip(
-                    gamma_stars_px, gamma_stars_name
-                ):
-                    circle = Circle(
-                        (
-                            star_px[0] + crop_pixel1[0],
-                            star_px[1] + crop_pixel1[1]
-                        ),
-                        radius=20,
-                        fill=False,
-                        color='Y'
-                    )
+
+                gamma_stars_px = sky_image.wcs.wcs_world2pix(gamma_stars_ra_dec, 1)
+                for star_px, gamma_star_name in zip(gamma_stars_px, gamma_stars_name):
+                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.bottom), radius=20,
+                                    fill=False, color='Y')
                     ax.add_artist(circle)
-                    ax.text(
-                        star_px[0] + crop_pixel1[0],
-                        star_px[1] + crop_pixel1[1],
-                        gamma_star_name,
-                        color='Y'
-                    )
-                crab_nebula_px = sky_image.wcs.wcs_world2pix(
-                    83.640187, 22.044295, 1)
-                circle = Circle(
-                    (
-                        crab_nebula_px[0] + crop_pixel1[0],
-                        crab_nebula_px[1] + crop_pixel1[1]
-                    ),
-                    radius=20,
-                    fill=False,
-                    color='Y')
+                    ax.text(star_px[0] + rect.left, star_px[1] + rect.bottom, gamma_star_name, color='Y')
+                crab_nebula_px = sky_image.wcs.wcs_world2pix(83.640187, 22.044295, 1)
+                circle = Circle((crab_nebula_px[0] + rect.left, crab_nebula_px[1] + rect.bottom), radius=20,
+                                fill=False, color='Y')
                 ax.add_artist(circle)
-                ax.text(
-                    crab_nebula_px[0] + crop_pixel1[0],
-                    crab_nebula_px[1] + crop_pixel1[1],
-                    'Crab Pulsar',
-                    color='Y'
-                )
-            width = crop_pixel2[0] - crop_pixel1[0]
-            height = crop_pixel2[1] - crop_pixel1[1]
-            rect = Rectangle(
-                crop_pixel1,
-                width=width,
-                height=height,
-                fill=False,
-                color='y',
-                linestyle='dashdot'
-            )
+                ax.text(crab_nebula_px[0] + rect.left, crab_nebula_px[1] + rect.right, 'Crab Pulsar', color='Y')
+            rect = Rectangle(crop_origin, width=rect.width(), height=rect.height(), fill=False, color='y', linestyle='dashdot')
             ax.add_artist(rect)
         # plt.imshow(image_treated, cmap='gray')
         plt.plot(0, 0, 'w+')
@@ -713,7 +635,7 @@ class LidCCDImage(object):
 class LidCCDObservation:
     """regroups several LidCCDImages. Useful to find moving stars.
     """
-    def __init__(self, filenames, crop_pixels1, crop_pixels2, threshold=None,
+    def __init__(self, filenames, rectangles, threshold=None,
                  scale_low_images_deg=None, scale_high_images_deg=None,
                  guess_ra_dec=None, guess_radius=None):
         """
@@ -724,14 +646,11 @@ class LidCCDObservation:
         ----------
         filenames : list of strings
             containing the path to lid CCD images (fits files).
-        crop_pixels1: list of points
-            defining the upper left corner of the region of interest in pixels
-        crop_pixels2: list of points
-            defining the lower right corner of the region of interest in pixels
         threshold: float
             pixels with a smaller value than threshold
             after subtraction are set to 0. Default at 100x the
-            average pixel value after subtraction.
+        rectangles :
+            list of rectangles defining the regions of interest in pixels
         scale_low_images_deg : float(?)
             minimum field of view (in degrees) considered during fitting.
         scale_high_images_deg : float(?)
@@ -749,13 +668,11 @@ class LidCCDObservation:
         for filename in filenames:
             lidccd_image = LidCCDImage(
                 filename,
-                crop_pixels1,
-                crop_pixels2,
+                rectangles=rectangles,
                 scale_low_images_deg=scale_low_images_deg,
                 scale_high_images_deg=scale_high_images_deg,
                 guess_ra_dec=guess_ra_dec,
-                guess_radius=guess_radius,
-            )
+                guess_radius=guess_radius)
             if image_shape is None:
                 image_shape = lidccd_image.image_shape
             elif image_shape != lidccd_image.image_shape:
