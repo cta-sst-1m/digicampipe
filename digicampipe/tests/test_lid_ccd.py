@@ -7,7 +7,7 @@ example_lid_CCD_image_file_paths = glob(
 )
 
 
-def test_find_stars():
+def test_find_stars(method='local'):
     from digicampipe.image.sky_image import LidCCDObservation
     from digicampipe.image.utils import Rectangle
     # find stars in lid CCD images:
@@ -18,7 +18,8 @@ def test_find_stars():
         scale_low_images_deg=8.,
         scale_high_images_deg=12.,
         guess_ra_dec=(83.2, 26.2),
-        guess_radius=10
+        guess_radius=10,
+        method=method
         )
     nsolved = 0
     for lidccd_image in lidccd_obs.lidccd_images:
@@ -47,5 +48,5 @@ def test_cone_simu():
 
 
 if __name__ == '__main__':
-    test_find_stars()
+    test_find_stars(method='remote')
     test_cone_simu()

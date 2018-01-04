@@ -73,8 +73,8 @@ class SkyImage(object):
             threshold = np.std(self.image_stars)
         self.image_stars[self.image_stars < threshold] = 0
 
-    def calculate_galactic_coordinates(self):
-        if shutil.which('solve-field') is not None:
+    def calculate_galactic_coordinates(self, method='local'):
+        if method == 'local' and shutil.which('solve-field') is not None:
             self.calculate_galactic_coordinates_local()
         else:
             print('astrometry does not seem to be installed, using nova web service')
@@ -295,7 +295,7 @@ class LidCCDImage(object):
         self.crop_rectangles = []
         self.sky_images = []
         self.sky_images_shape = []
-        print('divide', filename, 'in', len(rectangles), 'sub-areacrop_pixels1, crop_pixels2crop_pixels1, crop_pixels2s')
+        print('divide', filename, 'in', len(rectangles), 'sub-areas')
         for rect in rectangles:
             crop = CroppedImage(image, rect)
             ratios = [self.image_shape[0] / crop.image.shape[0], self.image_shape[1] / crop.image.shape[1]]
@@ -318,9 +318,9 @@ class LidCCDImage(object):
         for sky_image, static_image in zip(self.sky_images, static_images):
             sky_image.subtract_static_image(static_image, threshold=threshold)
 
-    def calculate_galactic_coordinates(self):
+    def calculate_galactic_coordinates(self, method='local'):
         for sky_image in self.sky_images:
-            sky_image.calculate_galactic_coordinates()
+            sky_image.calculate_galactic_coordinates(method=method)
         self.combine_coordinates()
 
     def combine_coordinates(self):
@@ -489,7 +489,7 @@ class LidCCDObservation:
     """
     def __init__(self, filenames, rectangles, threshold=None,
                  scale_low_images_deg=None, scale_high_images_deg=None,
-                 guess_ra_dec=None, guess_radius=None):
+                 guess_ra_dec=None, guess_radius=None, method='local'):
         """
         Create a lid ccd observation from several pictures of the lid CCD camera.
         Pointing is determined for each of the regions defined.
@@ -501,10 +501,11 @@ class LidCCDObservation:
         :param scale_high_images_deg: maximum field of view (in degrees) considered during fitting.
         :param guess_ra_dec: aproximate pointing coordinates
         :param guess_radius: radius of pointing  coordinates around guess_ra_dec tried during determination
+        :param method: if method is "local", we look for local installation of astrometry.net, otherwise we use web service.
         """
         self.lidccd_images = []
         image_shape = None
-        if type(filenames) is not list or len(filenames) == 0:
+        if len(filenames) == 0:
             raise AttributeError('filenames must be a non-empty list')
         for filename in filenames:
             lidccd_image = LidCCDImage(filename, rectangles=rectangles,
@@ -527,7 +528,7 @@ class LidCCDObservation:
         # perform computation of coordinates
         for lidccd_image in self.lidccd_images:
             lidccd_image.subtract_static_images(static_images, threshold=threshold)
-            lidccd_image.calculate_galactic_coordinates()
+            lidccd_image.calculate_galactic_coordinates(method=method)
 
     def print_summary(self):
         for lidccd_image in self.lidccd_images:

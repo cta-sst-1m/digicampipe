@@ -34,14 +34,16 @@ camera_config_file = resource_filename(
 
 
 class ConesImage(object):
-    def __init__(self, image, image_cone=None, output_dir=None,
-                 digicam_config_file=camera_config_file
-                 ):
+    def __init__(self, image, image_cone=None, digicam_config_file=camera_config_file):
         """
-        constructor of a ConesImage object.
+        find cones positions from a picture of the photo detection plane.
+        Usage :
+            1. create ConesImage,
+            2. extract a cone with get_cone(),
+            3. get cones position using fit_camera_geometry()
+            4. (optional) refine positions using refine_camera_geometry()
         :param image: fit filename or numpy array containing the lid CCD image.
         :param image_cone: optional fit filename of the cone image. the fit file is created calling get_cone()
-        :param output_dir: optional directory where to put the original lid CCD image in case of test
         :param digicam_config_file: path to the digicam configuration file
         """
         self.filename = None
