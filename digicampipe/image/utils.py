@@ -13,11 +13,22 @@ from photutils import DAOStarFinder
 
 
 def crop_image(image, crop_pixel1, crop_pixel2):
-    """
-    :param image: 2D array of the image data with a shape = (vertical size, horizontal size)
-    :param crop_pixel1: iterable of 2 ints: position (pos_x , pos_y) of one corner of the returned region
-    :param crop_pixel2: iterable of 2 ints: position (pos_x , pos_y) of the opposite corner of the returned region
-    :return: the cropped image, the 1st corner and the opposite corner positions
+    """return sub-image out of image
+
+    Parameters
+    ----------
+    image : 2d-array
+        image data with a shape = (height, width)
+    crop_pixel1 : iterable of 2 ints
+        position (pos_x , pos_y) of one corner of the returned region
+    crop_pixel2 : iterable of 2 ints
+        position (pos_x , pos_y) of the opposite corner of the returned region
+
+    Returns
+    -------
+    tuple of (image, 1st corner, 2nd corner)
+        the corners reflect the actual region used for cropping,
+        ignoring areas outside the available image
     """
     if type(image) is str:
         image = fits.open(image)[0].data
