@@ -572,13 +572,12 @@ def moments2D(inpData):
     return amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg, e
 
 
-def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
+def gaussian_2d(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
     """ Returns a 2D Gaussian function with input parameters.
-
     rotation input rot should be in degress
-
     from https://github.com/indiajoe/HandyTools4Astronomers
     """
+    # Now lets define the 2D gaussian function
     rot = np.deg2rad(rot)  # Converting to radians
     # Centers in rotated coordinates
     Xc = xcenter*np.cos(rot) - ycenter*np.sin(rot)
@@ -599,7 +598,7 @@ def Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
     return Gauss2D
 
 
-def FitGauss2D(data, initial_param=None):
+def fit_gauss_2d(data, initial_param=None):
     """ Fits 2D gaussian to data with optional Initial conditions
 
     ip=(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
@@ -626,7 +625,8 @@ def FitGauss2D(data, initial_param=None):
     # and also set rot angle to be 0
     if initial_param is None:
         # Remove ellipticity from the end in parameter list
-        ip = moments2D(data)[:-1]
+        initial_param = moments2D(data)[:-1]
+
     Xcoords, Ycoords = np.indices(data.shape)
 
     def errfun(ip):
@@ -637,9 +637,8 @@ def FitGauss2D(data, initial_param=None):
         # Taking a sqrt(weight) here so that
         # while scipy takes square of this array it will become 1/r weight.
         return np.ravel(
-            (Gaussian2D(*ip)(*np.indices(data.shape)) - data) /
+            (gaussian_2d(*ip)(*np.indices(data.shape)) - data) /
             np.sqrt(Weights)
         )
-
-    p, success = scipy.optimize.leastsq(errfun, ip, maxfev=1000)
+    p, success = scipy.optimize.leastsq(errfun, initial_param, maxfev=1000)
     return p, success

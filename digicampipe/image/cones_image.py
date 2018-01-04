@@ -9,7 +9,7 @@ from digicampipe.image.utils import (
     get_consecutive_hex_radius,
     Rectangle,
     CroppedImage,
-    FitGauss2D,
+    fit_gauss_2d,
 )
 import os
 import decimal
@@ -711,7 +711,7 @@ class ConesImage(object):
                     0,
                     np.min(crop.image)
                 )
-                fit_result, success = FitGauss2D(
+                fit_result, success = fit_gauss_2d(
                     crop.image.transpose(), ip=init_param)
                 (
                     amplitude,
@@ -732,6 +732,7 @@ class ConesImage(object):
                 ):
                     self.pixels_fit_px.append(
                         np.array([xcenter, ycenter]) + crop_px1)
+
                 else:
                     nfail += 1
                 if np.mod(len(self.pixels_fit_px) + nfail, 100) == 0:
