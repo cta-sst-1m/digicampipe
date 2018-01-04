@@ -1,46 +1,53 @@
-from digicampipe.utils import geometry
-from digicampipe.image.kernels import *
-from digicampipe.image.utils import *
-from cts_core.camera import Camera
-from astropy import units as u
-from matplotlib.patches import Circle, Arrow
-import numpy as np
-from decimal import *
+from pkg_resources import resource_filename
+from digicampipe.image.utils import (
+    get_neg_hexagonalicity_with_mask,
+    set_hexagon,
+    get_peaks_separation,
+    make_repetitive_mask,
+    set_circle,
+    reciprocal_to_lattice_space,
+    get_consecutive_hex_radius,
+    crop_image,
+    FitGauss2D,
+)
 import os
+import decimal
+from decimal import Decimal, ROUND_HALF_EVEN
+import numpy as np
+from scipy import signal, optimize
+from astropy import units as u
+from astropy.io import fits
+import matplotlib.pyplot as plt
+
+from digicampipe.utils import geometry
+from digicampipe.image.kernels import (
+    gauss,
+    high_pass_filter_77,
+    high_pass_filter_2525,
+)
+from cts_core.camera import Camera
+
+camera_config_file = resource_filename(
+    'digicampipe',
+    'tests/resources/camera_config.cfg')
 
 
 class ConesImage(object):
     def __init__(self, image, image_cone=None, output_dir=None,
-                 digicam_config_file='./tests/resources/camera_config.cfg'):
+                 digicam_config_file=camera_config_file
+                 ):
         """
         constructor of a ConesImage object.
         :param image: fit filename or numpy array containing the lid CCD image.
-        If set to 'test', a test image is created.
         :param image_cone: optional fit filename of the cone image. the fit file is created calling get_cone()
         :param output_dir: optional directory where to put the original lid CCD image in case of test
         :param digicam_config_file: path to the digicam configuration file
         """
         self.filename = None
-        # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
-        digicam = Camera(_config_file=digicam_config_file)
-        digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-        pixels_pos_mm = np.array([digicam_geometry.pix_x.to(u.mm), digicam_geometry.pix_y.to(u.mm)]).transpose()
-        pixels_pos_mm = pixels_pos_mm.dot(np.array([[0, -1], [1, 0]]))
-        pixels_v1 = pixels_pos_mm[digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
-        pixels_v2 = pixels_pos_mm[digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
-        index_to_pos = np.array([pixels_v1, pixels_v2]).transpose()
-        relative_pos = (pixels_pos_mm - pixels_pos_mm[0, :]).transpose()
-        self.pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
-        #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
-        # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
-        self.pixels_nvs -= np.mean(self.pixels_nvs, axis=1).reshape(2, 1)
-        self.pixels_pos_true = None  # true position of pixels only know in the simu case
+        self.pixels_nvs = get_pixel_nvs(digicam_config_file)
         if type(image) is str:
-            if image == 'test':
-                image = self.cones_simu(offset=(-4.3, -2.1), angle_deg=10, pixel_radius=35, output_dir=output_dir)
-            else:
-                self.filename = image
-                image = fits.open(image)[0].data
+            self.filename = image
+            image = fits.open(image)[0].data
         if type(image) is not np.ndarray:
             raise AttributeError('image must be a filename or a numpy.ndarray')
         # high pass filter
@@ -85,52 +92,6 @@ class ConesImage(object):
             self.r2 = np.array((np.real(hdu.header['r2']), np.imag(hdu.header['r2'])))
             self.r3 = np.array((np.real(hdu.header['r3']), np.imag(hdu.header['r3'])))
 
-    def cones_simu(self, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
-                   noise_ampl=0., output_dir=None):
-        """
-        function to create a test cones image according to given parameters
-        :param offset: offest of the center of the camera geometry with respect to the center of the test image
-        :param angle_deg: angle of the camera geometry
-        :param image_shape: shape of the test image (npixel_y, npixel_x)
-        :param pixel_radius: length of the radius of an hexagonal pixel (from the center of the hexagon to the border)
-        :param noise_ampl: amplitude of random noise added to the test image (gaussian)
-        :param output_dir: optional directory where to put the original lid CCD image
-        :return:
-        """
-        angle_rot = angle_deg / 180 * np.pi
-        offset = np.array(offset)
-        image = np.zeros(image_shape)
-        center = (np.array(image.shape[::-1]) - 1) / 2
-        r1 = pixel_radius * np.array((np.cos(angle_rot), np.sin(angle_rot)))
-        r2 = pixel_radius * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
-        r3 = pixel_radius * np.array((np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot)))
-        v1_lattice = r1 + r2
-        v2_lattice = r2 + r3
-        self.pixels_pos_true = (center + offset).reshape(2, 1) + \
-                               np.array([v1_lattice, v2_lattice]).transpose().dot(self.pixels_nvs)
-        n_pixels = self.pixels_nvs.shape[1]
-        print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
-        for pixel in range(n_pixels):
-            pos_true = self.pixels_pos_true[:, pixel]
-            for i in range(10, -1, -1):
-                image = set_hexagon(image, pos_true, r1=(i + 8) / 20 * r1, r2=(i + 8) / 20 * r2, value=1 - i / 10)
-            image = set_hexagon(image, pos_true, r1=7 / 20 * r1, r2=7 / 20 * r2, value=0)
-        image += noise_ampl * np.random.randn(image.shape[0], image.shape[1])
-        # add bright pixels so test image can pass the same cleaning procedure as the true images
-        image[0:100, 0:100] = 200 * np.ones((100, 100))
-        if output_dir is not None:
-            fig = plt.figure(figsize=(8, 6), dpi=600)
-            ax = plt.gca()
-            plt.imshow(image, cmap='gray', vmin=0, vmax=10)
-            plt.grid(None)
-            plt.axis('off')
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
-            output_filename = os.path.join(output_dir, 'cones-original.png')
-            plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
-            plt.close(fig)
-            print(output_filename, 'saved.')
-        return image
 
     def plot_cones(self, output_dir, radius_mask=None):
         """
@@ -376,7 +337,7 @@ class ConesImage(object):
         To calculate the convolution of cone image on filtered lid CCD image.
         """
         if self.image_cone is None:
-            raise InvalidOperation('cone image not determined, call get_cone() before get_cones_presence().')
+            raise decimal.InvalidOperation('cone image not determined, call get_cone() before get_cones_presence().')
         self.cone_presence = signal.fftconvolve(self.image_cones, self.image_cone, mode='same')
         self.cone_presence = signal.fftconvolve(self.cone_presence, high_pass_filter_2525, mode='same')
         self.cone_presence[self.cone_presence < 0] = 0
@@ -679,25 +640,92 @@ class ConesImage(object):
         plt.close(fig)
         print(output_filename, 'saved.')
 
-    def simu_match(self, std_error_max_px=0.5):
-        if self.pixels_pos_true is None:
-            raise InvalidOperation('simu_match() can only be called from simulated cones.')
-        if self.pixels_pos_predict is None:
-            self.fit_camera_geometry()
-        # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
-        diffs = []
-        offsets = []
-        for i in range(3):
-            angle = i * 2 / 3 * np.pi
-            R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-            pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
-                          self.center_fitted.reshape(2, 1)
-            diffs.append(np.std(pos_predict - self.pixels_pos_true))
-            offsets.append(np.mean(pos_predict - self.pixels_pos_true, axis=1))
-        print('error on pixel position: ', np.min(diffs))
-        print('offset=', offsets[np.argmin(diffs)])
-        angle = np.argmin(diffs) * 2 / 3 * np.pi
+
+def simu_match(cones_image, true_positions, std_error_max_px=0.5):
+    if cones_image.pixels_pos_predict is None:
+        cones_image.fit_camera_geometry()
+    # as camera is invariant by 60 deg rotation, we try the 3 possibilities:
+    diffs = []
+    offsets = []
+    for i in range(3):
+        angle = i * 2 / 3 * np.pi
+
         R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-        self.pixels_pos_predict = R.dot(self.pixels_pos_predict - self.center_fitted.reshape(2, 1)) + \
-                                  self.center_fitted.reshape(2, 1)
-        return np.std(self.pixels_pos_predict - self.pixels_pos_true) < std_error_max_px
+        pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
+                      cones_image.center_fitted.reshape(2, 1)
+        diffs.append(np.std(pos_predict - true_positions))
+        offsets.append(np.mean(pos_predict - true_positions, axis=1))
+    print('error on pixel position: ', np.min(diffs))
+    print('offset=', offsets[np.argmin(diffs)])
+    angle = np.argmin(diffs) * 2 / 3 * np.pi
+    R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+    cones_image.pixels_pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
+                              cones_image.center_fitted.reshape(2, 1)
+    return np.std(cones_image.pixels_pos_predict - true_positions) < std_error_max_px
+
+
+def cones_simu(pixels_nvs=None, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
+               noise_ampl=0., output_dir=None):
+    """
+    function to create a test cones image according to given parameters
+    :param offset: offest of the center of the camera geometry with respect to the center of the test image
+    :param angle_deg: angle of the camera geometry
+    :param image_shape: shape of the test image (npixel_y, npixel_x)
+    :param pixel_radius: length of the radius of an hexagonal pixel (from the center of the hexagon to the border)
+    :param noise_ampl: amplitude of random noise added to the test image (gaussian)
+    :param output_dir: optional directory where to put the original lid CCD image
+    :return:
+    """
+    if pixels_nvs is None:
+        pixels_nvs = get_pixel_nvs()
+    angle_rot = angle_deg / 180 * np.pi
+    offset = np.array(offset)
+    image = np.zeros(image_shape)
+    center = (np.array(image.shape[::-1]) - 1) / 2
+    r1 = pixel_radius * np.array((np.cos(angle_rot), np.sin(angle_rot)))
+    r2 = pixel_radius * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
+    r3 = pixel_radius * np.array((np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot)))
+    v1_lattice = r1 + r2
+    v2_lattice = r2 + r3
+    pixels_pos_true = (center + offset).reshape(2, 1) + \
+                           np.array([v1_lattice, v2_lattice]).transpose().dot(pixels_nvs)
+    n_pixels = pixels_nvs.shape[1]
+    print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
+    for pixel in range(n_pixels):
+        pos_true = pixels_pos_true[:, pixel]
+        for i in range(10, -1, -1):
+            image = set_hexagon(image, pos_true, r1=(i + 8) / 20 * r1, r2=(i + 8) / 20 * r2, value=1 - i / 10)
+        image = set_hexagon(image, pos_true, r1=7 / 20 * r1, r2=7 / 20 * r2, value=0)
+    image += noise_ampl * np.random.randn(image.shape[0], image.shape[1])
+    # add bright pixels so test image can pass the same cleaning procedure as the true images
+    image[0:100, 0:100] = 200 * np.ones((100, 100))
+    if output_dir is not None:
+        fig = plt.figure(figsize=(8, 6), dpi=600)
+        ax = plt.gca()
+        plt.imshow(image, cmap='gray', vmin=0, vmax=10)
+        plt.grid(None)
+        plt.axis('off')
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        output_filename = os.path.join(output_dir, 'cones-original.png')
+        plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+        print(output_filename, 'saved.')
+    return image, pixels_pos_true
+
+
+def get_pixel_nvs(digicam_config_file=camera_config_file):
+    # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
+    digicam = Camera(_config_file=digicam_config_file)
+    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
+    pixels_pos_mm = np.array([digicam_geometry.pix_x.to(u.mm), digicam_geometry.pix_y.to(u.mm)]).transpose()
+    pixels_pos_mm = pixels_pos_mm.dot(np.array([[0, -1], [1, 0]]))
+    pixels_v1 = pixels_pos_mm[digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
+    pixels_v2 = pixels_pos_mm[digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
+    index_to_pos = np.array([pixels_v1, pixels_v2]).transpose()
+    relative_pos = (pixels_pos_mm - pixels_pos_mm[0, :]).transpose()
+    pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
+    #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
+    # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
+    pixels_nvs -= np.mean(pixels_nvs, axis=1).reshape(2, 1)
+    return pixels_nvs

@@ -5,8 +5,10 @@ import scipy
 from skimage.draw import polygon
 import matplotlib.pyplot as plt
 import cv2
-from scipy import signal, ndimage, optimize
+from scipy import signal
 import numbers
+
+
 from photutils import DAOStarFinder
 
 
