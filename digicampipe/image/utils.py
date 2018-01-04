@@ -292,18 +292,30 @@ def get_peaks_separation(
     for i in range(81):
         auto_correlation[auto_correlation < 0] = 0
         max_pos = np.argmax(auto_correlation)
-        [max_pos_y, max_pos_x] = np.unravel_index(max_pos, auto_correlation.shape)
-        region_fit = auto_correlation[max_pos_y - 20:max_pos_y + 20, max_pos_x - 20:max_pos_x + 20]
-        init_amplitude = auto_correlation[max_pos_y, max_pos_x] - np.mean(region_fit)
+        [max_pos_y, max_pos_x] = np.unravel_index(
+            max_pos, auto_correlation.shape)
+        region_fit = auto_correlation[
+            max_pos_y - 20:max_pos_y + 20,
+            max_pos_x - 20:max_pos_x + 20
+        ]
+        init_amplitude = (
+            auto_correlation[max_pos_y, max_pos_x] -
+            np.mean(region_fit)
+        )
         init_param = (init_amplitude, 20, 20, 1, 1, 0, np.mean(region_fit))
         fit_result, success = FitGauss2D(region_fit.transpose(), ip=init_param)
         amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg = fit_result
         if success != 1 or xsigma > 5 or ysigma > 5:
-            auto_correlation = set_circle(auto_correlation, center=(max_pos_x, max_pos_y), radius=10, value=0)
-            # print('WARNING: fit of the peak failed in get_peaks_separation()')
+            auto_correlation = set_circle(
+                auto_correlation,
+                center=(max_pos_x, max_pos_y), radius=10, value=0)
+            # print(
+                'WARNING: fit of the peak failed in get_peaks_separation()')
             continue
-        gaussian_function = Gaussian2D(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
-        center_peaks.append(np.array((xcenter + max_pos_x - 20, ycenter + max_pos_y - 20)))
+        gaussian_function = Gaussian2D(
+            amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
+        center_peaks.append(
+            np.array((xcenter + max_pos_x - 20, ycenter + max_pos_y - 20)))
         for ix, x in enumerate(range(max_pos_x - 20, max_pos_x + 20)):
             for iy, y in enumerate(range(max_pos_y - 20, max_pos_y + 20)):
                 auto_correlation[y, x] -= gaussian_function(ix, iy)
