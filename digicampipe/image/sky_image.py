@@ -513,17 +513,23 @@ class LidCCDImage(object):
             catalog=['J/ApJS/197/34'])
 
         for (sky_image, rect) in zip(self.sky_images, self.crop_rectangles):
-            image_treated[rect.bottom:rect.top, rect.left:rect.right] = np.log(1+sky_image.image_stars)
+            image_treated[
+                rect.bottom:rect.top, rect.left:rect.right
+            ] = np.log(1+sky_image.image_stars)
             if sky_image.sources_pixel is not None:
                 for i in range(min(sky_image.sources_pixel.shape[1], 30)):
                     pixel_x = sky_image.sources_pixel[0, i] + rect.left
                     pixel_y = sky_image.sources_pixel[1, i] + rect.bottom
-                    circle = Circle((pixel_x, pixel_y), radius=20, fill=False, color='w')
+                    circle = Circle(
+                        (pixel_x, pixel_y), radius=20, fill=False, color='w')
                     ax.add_artist(circle)
             if sky_image.wcs is not None:
-                self.center_px = np.array((self.image_shape[1], self.image_shape[0])).reshape(1, 2) / 2
+                self.center_px = np.array(
+                    (self.image_shape[1], self.image_shape[0])
+                ).reshape(1, 2) / 2
                 crop_origin = np.array([rect.left, rect.bottom])
-                self.center_ra_dec = sky_image.wcs.wcs_pix2world(self.center_px - crop_origin, 1)[0]
+                self.center_ra_dec = sky_image.wcs.wcs_pix2world(
+                    self.center_px - crop_origin, 1)[0]
                 print('image center (ra, dec):', self.center_ra_dec)
                 center_coordinate = SkyCoord(
                     ra=self.center_ra_dec[0] * u.degree,
@@ -545,8 +551,11 @@ class LidCCDImage(object):
                     else:
                         radius = 5
 
-                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.right), radius=radius,
-                                    fill=False, color='b')
+                    circle = Circle(
+                        (star_px[0] + rect.left, star_px[1] + rect.right),
+                        radius=radius,
+                        fill=False,
+                        color='b')
                     ax.add_artist(circle)
                 result_red = vizier_red.query_region(
                     center_coordinate,
@@ -564,8 +573,11 @@ class LidCCDImage(object):
                     else:
                         radius = 5
 
-                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.right), radius=radius,
-                                    fill=False, color='r')
+                    circle = Circle(
+                        (star_px[0] + rect.left, star_px[1] + rect.right),
+                        radius=radius,
+                        fill=False,
+                        color='r')
                     ax.add_artist(circle)
                 result_green = vizier_green.query_region(
                     center_coordinate,
@@ -584,8 +596,11 @@ class LidCCDImage(object):
                     else:
                         radius = 5
 
-                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.right), radius=radius,
-                                    fill=False, color='g')
+                    circle = Circle(
+                        (star_px[0] + rect.left, star_px[1] + rect.right),
+                        radius=radius,
+                        fill=False,
+                        color='g')
                     ax.add_artist(circle)
                 result_gamma = vizier_gamma.query_region(
                     center_coordinate,
