@@ -133,15 +133,24 @@ class ConesImage(object):
                 np.real(hdu.header['r3']), np.imag(hdu.header['r3'])))
 
     def plot_cones(self, output_dir, radius_mask=None):
-        """
-        If radius_mask is None, plot the lid CCD image after filtering, otherwise plot the cones contents of the image.
-        The cones contents is obtained applying a mask of radius radius_mask around each peak of the FFT and doing the
+        """ plot the lid CCD image after filtering
+
+        If radius_mask is None
+        otherwise plot the cones contents of the image.
+
+        The cones contents is obtained applying a mask of radius radius_mask
+        around each peak of the FFT and doing the
         inverse FFT transformation.
-        :param radius_mask: optional radius of the mask used for each peak in the FFT
-        :param output_dir: directory where to put the resulting image.
+
+        Parameter
+        ---------
+        radius_mask :
+            optional radius of the mask used for each peak in the FFT
+        output_dir :
+            directory where to put the resulting image.
         """
         plt.ioff()
-        fig = plt.figure(figsize=(8,6), dpi=600)
+        fig = plt.figure(figsize=(8, 6), dpi=600)
         ax = plt.gca()
         if type(self.image_cones) is not np.ndarray:
             raise AttributeError([self.filename, ' must be a fit file'])
@@ -685,10 +694,28 @@ class ConesImage(object):
                 max_pos_crop = np.argmax(crop.image)
                 [max_pos_y, max_pos_x] = np.unravel_index(
                     max_pos_crop, crop.image.shape)
-                init_amplitude = crop.image[max_pos_y, max_pos_x] - np.min(crop.image)
-                init_param = (init_amplitude, max_pos_x, max_pos_y, sigma_peak, sigma_peak, 0, np.min(crop.image))
-                fit_result, success = FitGauss2D(crop.image.transpose(), ip=init_param)
-                amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg = fit_result
+                init_amplitude = (
+                    crop.image[max_pos_y, max_pos_x] - np.min(crop.image))
+                init_param = (
+                    init_amplitude,
+                    max_pos_x,
+                    max_pos_y,
+                    sigma_peak,
+                    sigma_peak,
+                    0,
+                    np.min(crop.image)
+                )
+                fit_result, success = FitGauss2D(
+                    crop.image.transpose(), ip=init_param)
+                (
+                    amplitude,
+                    xcenter,
+                    ycenter,
+                    xsigma,
+                    ysigma,
+                    rot,
+                    bkg
+                ) = fit_result
 
                 if (
                     0 < success <= 4 and
