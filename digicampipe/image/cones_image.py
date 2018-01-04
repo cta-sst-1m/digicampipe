@@ -255,6 +255,7 @@ class ConesImage(object):
         vmin = np.min(scan_result[scan_result > 0])
         vmax = np.max(scan_result[scan_result > 0])
         plt.imshow(scan_result, cmap='gray', vmin=vmin, vmax=vmax)
+        plt.autoscale(False)
         max_y, max_x = np.unravel_index(
             np.argmax(scan_result),
             dims=scan_result.shape
@@ -273,8 +274,6 @@ class ConesImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        plt.xlim([np.min(pixels_x)-0.5, np.max(pixels_x)+0.5])
-        plt.ylim([np.min(pixels_y)-0.5, np.max(pixels_y)+0.5])
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
