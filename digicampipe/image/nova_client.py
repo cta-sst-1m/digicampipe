@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """
 Client for nova API (from astrometry.net), under GPL3
 Modified by Yves Renier on 20/12/2017 for porting to python3
@@ -11,9 +11,10 @@ from urllib.request import urlopen, Request, HTTPError
 from urllib.parse import urlencode, quote
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
-from email.mime.application  import MIMEApplication
+from email.mime.application import MIMEApplication
 from email.encoders import encode_noop
 import json
+
 
 def json2python(data):
     try:
@@ -21,7 +22,10 @@ def json2python(data):
     except:
         pass
     return None
+
+
 python2json = json.dumps
+
 
 class MalformedResponse(Exception):
     pass
@@ -34,8 +38,10 @@ class RequestError(Exception):
 class Client(object):
     default_url = 'http://nova.astrometry.net/api/'
 
-    def __init__(self,
-                 apiurl = default_url):
+    def __init__(
+        self,
+        apiurl=default_url
+    ):
         self.session = None
         self.apiurl = apiurl
 
@@ -48,22 +54,21 @@ class Client(object):
         args: dict
         '''
         if self.session is not None:
-            args.update({ 'session' : self.session })
-        #print('Python:', args)
+            args.update({'session': self.session})
         json = python2json(args)
-        #print('Sending json:', json)
         url = self.get_url(service)
-        #print('Sending to URL:', url)
 
         # If we're sending a file, format a multipart/form-data
         if file_args is not None:
             m1 = MIMEBase('text', 'plain')
-            m1.add_header('Content-disposition', 'form-data; name="request-json"')
+            m1.add_header(
+                'Content-disposition', 'form-data; name="request-json"')
             m1.set_payload(json)
 
-            m2 = MIMEApplication(file_args[1],'octet-stream',encode_noop)
-            m2.add_header('Content-disposition',
-                          'form-data; name="file"; filename="%s"' % file_args[0])
+            m2 = MIMEApplication(file_args[1], 'octet-stream', encode_noop)
+            m2.add_header(
+                'Content-disposition',
+                'form-data; name="file"; filename="%s"' % file_args[0])
 
             mp = MIMEMultipart('form-data', None, [m1, m2])
 
@@ -76,6 +81,7 @@ class Client(object):
                     Generator.__init__(self, fp, mangle_from_=False,
                                        maxheaderlen=0)
                     self.root = root
+
                 def _write_headers(self, msg):
                     # We don't want to write the top-level headers;
                     # they go into Request(headers) instead.
@@ -85,7 +91,7 @@ class Client(object):
                     # doesn't provide the flexibility to override, so we
                     # have to copy-n-paste-n-modify.
                     for h, v in msg.items():
-                        print(('%s: %s\r\n' % (h,v)), end='', file=self._fp)
+                        print(('%s: %s\r\n' % (h, v)), end='', file=self._fp)
                     # A blank line always separates headers from body
                     print('\r\n', end='', file=self._fp)
 
@@ -103,9 +109,7 @@ class Client(object):
         else:
             # Else send x-www-form-encoded
             data = {'request-json': json}
-            #print('Sending form data:', data)
             data = urlencode(data).encode('utf-8')
-            #print('Sending data:', data)
             headers = {}
 
         request = Request(url=url, headers=headers, data=data)
@@ -129,7 +133,7 @@ class Client(object):
             return None
 
     def login(self, apikey):
-        args = { 'apikey' : apikey }
+        args = {'apikey': apikey}
         result = self.send_request('login', args)
         sess = result.get('session')
         print('Got session:', sess)
@@ -139,25 +143,26 @@ class Client(object):
 
     def _get_upload_args(self, **kwargs):
         args = {}
-        for key,default,typ in [('allow_commercial_use', 'd', str),
-                                ('allow_modifications', 'd', str),
-                                ('publicly_visible', 'y', str),
-                                ('scale_units', None, str),
-                                ('scale_type', None, str),
-                                ('scale_lower', None, float),
-                                ('scale_upper', None, float),
-                                ('scale_est', None, float),
-                                ('scale_err', None, float),
-                                ('center_ra', None, float),
-                                ('center_dec', None, float),
-                                ('radius', None, float),
-                                ('downsample_factor', None, int),
-                                ('tweak_order', None, int),
-                                ('crpix_center', None, bool),
-                                ('x', None, list),
-                                ('y', None, list),
-                                # image_width, image_height
-                                ]:
+        for key, default, typ in [
+            ('allow_commercial_use', 'd', str),
+            ('allow_modifications', 'd', str),
+            ('publicly_visible', 'y', str),
+            ('scale_units', None, str),
+            ('scale_type', None, str),
+            ('scale_lower', None, float),
+            ('scale_upper', None, float),
+            ('scale_est', None, float),
+            ('scale_err', None, float),
+            ('center_ra', None, float),
+            ('center_dec', None, float),
+            ('radius', None, float),
+            ('downsample_factor', None, int),
+            ('tweak_order', None, int),
+            ('crpix_center', None, bool),
+            ('x', None, list),
+            ('y', None, list),
+            # image_width, image_height
+        ]:
             if key in kwargs:
                 val = kwargs.pop(key)
                 val = typ(val)
@@ -189,18 +194,25 @@ class Client(object):
         return result
 
     def submission_images(self, subid):
-        result = self.send_request('submission_images', {'subid':subid})
+        result = self.send_request('submission_images', {'subid': subid})
         return result.get('image_ids')
 
     def overlay_plot(self, service, outfn, wcsfn, wcsext=0):
         from astrometry.util import util as anutil
         wcs = anutil.Tan(wcsfn, wcsext)
-        params = dict(crval1 = wcs.crval[0], crval2 = wcs.crval[1],
-                      crpix1 = wcs.crpix[0], crpix2 = wcs.crpix[1],
-                      cd11 = wcs.cd[0], cd12 = wcs.cd[1],
-                      cd21 = wcs.cd[2], cd22 = wcs.cd[3],
-                      imagew = wcs.imagew, imageh = wcs.imageh)
-        result = self.send_request(service, {'wcs':params})
+        params = dict(
+            crval1=wcs.crval[0],
+            crval2=wcs.crval[1],
+            crpix1=wcs.crpix[0],
+            crpix2=wcs.crpix[1],
+            cd11=wcs.cd[0],
+            cd12=wcs.cd[1],
+            cd21=wcs.cd[2],
+            cd22=wcs.cd[3],
+            imagew=wcs.imagew,
+            imageh=wcs.imageh
+        )
+        result = self.send_request(service, {'wcs': params})
         print('Result status:', result['status'])
         plotdata = result['plot']
         plotdata = base64.b64decode(plotdata)
@@ -241,7 +253,8 @@ class Client(object):
         return stat
 
     def set_tag(self, image_id, tag):
-        url = self.apiurl.replace('/api/','/user_image/%s/tags/new/' % image_id)
+        url = self.apiurl.replace(
+            '/api/', '/user_image/%s/tags/new/' % image_id)
         data = {'text': tag}
         request = Request(url, urlencode(data).encode())
         try:
@@ -253,7 +266,7 @@ class Client(object):
             print('Setting of new tag failed with HTTPError', e)
             return None
 
-    def annotate_data(self,job_id):
+    def annotate_data(self, job_id):
         """
         :param job_id: id of job
         :return: return data for annotations
@@ -277,69 +290,139 @@ class Client(object):
         )
         return result
 
+
 if __name__ == '__main__':
-    print("Running with args %s"%sys.argv)
+    print("Running with args %s" % sys.argv)
     import optparse
     parser = optparse.OptionParser()
     parser.add_option('--server', dest='server', default=Client.default_url,
                       help='Set server base URL (eg, %default)')
-    parser.add_option('--apikey', '-k', dest='apikey',
-                      help='API key for Astrometry.net web service; if not given will check AN_API_KEY environment variable')
-    parser.add_option('--upload', '-u', dest='upload', help='Upload a file')
-    parser.add_option('--wait', '-w', dest='wait', action='store_true', help='After submitting, monitor job status')
-    parser.add_option('--wcs', dest='wcs', help='Download resulting wcs.fits file, saving to given filename; implies --wait if --urlupload or --upload')
-    parser.add_option('--newfits', dest='newfits', help='Download resulting new-image.fits file, saving to given filename; implies --wait if --urlupload or --upload')
-    parser.add_option('--kmz', dest='kmz', help='Download resulting kmz file, saving to given filename; implies --wait if --urlupload or --upload')
-    parser.add_option('--annotate','-a',dest='annotate',help='store information about annotations in give file, JSON format; implies --wait if --urlupload or --upload')
-    parser.add_option('--urlupload', '-U', dest='upload_url', help='Upload a file at specified url')
-    parser.add_option('--scale-units', dest='scale_units',
-                      choices=('arcsecperpix', 'arcminwidth', 'degwidth', 'focalmm'), help='Units for scale estimate')
-    #parser.add_option('--scale-type', dest='scale_type',
-    #                  choices=('ul', 'ev'), help='Scale bounds: lower/upper or estimate/error')
-    parser.add_option('--scale-lower', dest='scale_lower', type=float, help='Scale lower-bound')
-    parser.add_option('--scale-upper', dest='scale_upper', type=float, help='Scale upper-bound')
-    parser.add_option('--scale-est', dest='scale_est', type=float, help='Scale estimate')
-    parser.add_option('--scale-err', dest='scale_err', type=float, help='Scale estimate error (in PERCENT), eg "10" if you estimate can be off by 10%')
-    parser.add_option('--ra', dest='center_ra', type=float, help='RA center')
-    parser.add_option('--dec', dest='center_dec', type=float, help='Dec center')
-    parser.add_option('--radius', dest='radius', type=float, help='Search radius around RA,Dec center')
-    parser.add_option('--downsample', dest='downsample_factor', type=int, help='Downsample image by this factor')
-    parser.add_option('--parity', dest='parity', choices=('0','1'), help='Parity (flip) of image')
-    parser.add_option('--tweak-order', dest='tweak_order', type=int, help='SIP distortion order (default: 2)')
-    parser.add_option('--crpix-center', dest='crpix_center', action='store_true', default=None, help='Set reference point to center of image?')
-    parser.add_option('--sdss', dest='sdss_wcs', nargs=2, help='Plot SDSS image for the given WCS file; write plot to given PNG filename')
-    parser.add_option('--galex', dest='galex_wcs', nargs=2, help='Plot GALEX image for the given WCS file; write plot to given PNG filename')
-    parser.add_option('--jobid', '-i', dest='solved_id', type=int,help='retrieve result for jobId instead of submitting new image')
-    parser.add_option('--substatus', '-s', dest='sub_id', help='Get status of a submission')
-    parser.add_option('--jobstatus', '-j', dest='job_id', help='Get status of a job')
-    parser.add_option('--jobs', '-J', dest='myjobs', action='store_true', help='Get all my jobs')
-    parser.add_option('--jobsbyexacttag', '-T', dest='jobs_by_exact_tag', help='Get a list of jobs associated with a given tag--exact match')
-    parser.add_option('--jobsbytag', '-t', dest='jobs_by_tag', help='Get a list of jobs associated with a given tag')
-    parser.add_option( '--private', '-p',
+    parser.add_option(
+        '--apikey', '-k', dest='apikey',
+        help=(
+            'API key for Astrometry.net web service; if not given '
+            'will check AN_API_KEY environment variable'))
+    parser.add_option(
+        '--upload', '-u', dest='upload', help='Upload a file')
+    parser.add_option(
+        '--wait', '-w', dest='wait', action='store_true',
+        help='After submitting, monitor job status')
+    parser.add_option(
+        '--wcs', dest='wcs',
+        help=(
+            'Download resulting wcs.fits file, saving to given filename; '
+            'implies --wait if --urlupload or --upload'))
+    parser.add_option(
+        '--newfits', dest='newfits',
+        help=(
+            'Download resulting new-image.fits file, saving to given '
+            'filename; implies --wait if --urlupload or --upload'))
+    parser.add_option(
+        '--kmz', dest='kmz',
+        help=(
+            'Download resulting kmz file, saving to given filename; '
+            'implies --wait if --urlupload or --upload'))
+    parser.add_option(
+        '--annotate', '-a', dest='annotate',
+        help=(
+            'store information about annotations in give file, JSON format;'
+            ' implies --wait if --urlupload or --upload'))
+    parser.add_option(
+        '--urlupload', '-U', dest='upload_url',
+        help='Upload a file at specified url')
+    parser.add_option(
+        '--scale-units', dest='scale_units',
+        choices=('arcsecperpix', 'arcminwidth', 'degwidth', 'focalmm'),
+        help='Units for scale estimate')
+    parser.add_option(
+        '--scale-lower', dest='scale_lower', type=float,
+        help='Scale lower-bound')
+    parser.add_option(
+        '--scale-upper', dest='scale_upper', type=float,
+        help='Scale upper-bound')
+    parser.add_option(
+        '--scale-est', dest='scale_est', type=float, help='Scale estimate')
+    parser.add_option(
+        '--scale-err', dest='scale_err', type=float,
+        help=(
+            'Scale estimate error (in PERCENT), eg "10" '
+            'if you estimate can be off by 10%'))
+    parser.add_option(
+        '--ra', dest='center_ra', type=float, help='RA center')
+    parser.add_option(
+        '--dec', dest='center_dec', type=float, help='Dec center')
+    parser.add_option(
+        '--radius', dest='radius', type=float,
+        help='Search radius around RA,Dec center')
+    parser.add_option(
+        '--downsample', dest='downsample_factor', type=int,
+        help='Downsample image by this factor')
+    parser.add_option(
+        '--parity', dest='parity', choices=('0', '1'),
+        help='Parity (flip) of image')
+    parser.add_option(
+        '--tweak-order', dest='tweak_order', type=int,
+        help='SIP distortion order (default: 2)')
+    parser.add_option(
+        '--crpix-center', dest='crpix_center', action='store_true',
+        default=None, help='Set reference point to center of image?')
+    parser.add_option(
+        '--sdss', dest='sdss_wcs', nargs=2,
+        help=(
+            'Plot SDSS image for the given WCS file; '
+            'write plot to given PNG filename'))
+    parser.add_option(
+        '--galex', dest='galex_wcs', nargs=2,
+        help=(
+            'Plot GALEX image for the given WCS file; '
+            'write plot to given PNG filename'))
+    parser.add_option(
+        '--jobid', '-i', dest='solved_id', type=int,
+        help='retrieve result for jobId instead of submitting new image')
+    parser.add_option(
+        '--substatus', '-s', dest='sub_id', help='Get status of a submission')
+    parser.add_option(
+        '--jobstatus', '-j', dest='job_id', help='Get status of a job')
+    parser.add_option(
+        '--jobs', '-J', dest='myjobs', action='store_true',
+        help='Get all my jobs')
+    parser.add_option(
+        '--jobsbyexacttag', '-T', dest='jobs_by_exact_tag',
+        help='Get a list of jobs associated with a given tag--exact match')
+    parser.add_option(
+        '--jobsbytag', '-t', dest='jobs_by_tag',
+        help='Get a list of jobs associated with a given tag')
+    parser.add_option(
+        '--private', '-p',
         dest='public',
         action='store_const',
         const='n',
         default='y',
         help='Hide this submission from other users')
-    parser.add_option('--allow_mod_sa','-m',
+    parser.add_option(
+        '--allow_mod_sa', '-m',
         dest='allow_mod',
         action='store_const',
         const='sa',
         default='d',
-        help='Select license to allow derivative works of submission, but only if shared under same conditions of original license')
-    parser.add_option('--no_mod','-M',
+        help=(
+            'Select license to allow derivative works of submission, '
+            'but only if shared under same conditions of original license'))
+    parser.add_option(
+        '--no_mod', '-M',
         dest='allow_mod',
         action='store_const',
         const='n',
         default='d',
         help='Select license to disallow derivative works of submission')
-    parser.add_option('--no_commercial','-c',
+    parser.add_option(
+        '--no_commercial', '-c',
         dest='allow_commercial',
         action='store_const',
         const='n',
         default='d',
         help='Select license to disallow commercial use of submission')
-    opt,args = parser.parse_args()
+    opt, args = parser.parse_args()
 
     if opt.apikey is None:
         # try the environment
@@ -379,7 +462,7 @@ if __name__ == '__main__':
                 kwargs.update(scale_upper=opt.scale_upper)
 
         for key in ['scale_units', 'center_ra', 'center_dec', 'radius',
-                    'downsample_factor', 'tweak_order', 'crpix_center',]:
+                    'downsample_factor', 'tweak_order', 'crpix_center', ]:
             if getattr(opt, key) is not None:
                 kwargs[key] = getattr(opt, key)
         if opt.parity is not None:
@@ -421,7 +504,7 @@ if __name__ == '__main__':
         while True:
             stat = c.job_status(opt.solved_id, justdict=True)
             print('Got job status:', stat)
-            if stat.get('status','') in ['success']:
+            if stat.get('status', '') in ['success']:
                 success = (stat['status'] == 'success')
                 break
             time.sleep(5)
@@ -437,10 +520,11 @@ if __name__ == '__main__':
             url = opt.server.replace('/api/', '/kml_file/%i/' % opt.solved_id)
             retrieveurls.append((url, opt.kmz))
         if opt.newfits:
-            url = opt.server.replace('/api/', '/new_fits_file/%i/' % opt.solved_id)
+            url = opt.server.replace(
+                '/api/', '/new_fits_file/%i/' % opt.solved_id)
             retrieveurls.append((url, opt.newfits))
 
-        for url,fn in retrieveurls:
+        for url, fn in retrieveurls:
             print('Retrieving file from', url, 'to', fn)
             f = urlopen(url)
             txt = f.read()
@@ -451,7 +535,7 @@ if __name__ == '__main__':
 
         if opt.annotate:
             result = c.annotate_data(opt.solved_id)
-            with open(opt.annotate,'w') as f:
+            with open(opt.annotate, 'w') as f:
                 f.write(python2json(result))
 
     if opt.wait:
@@ -480,5 +564,3 @@ if __name__ == '__main__':
     if opt.myjobs:
         jobs = c.myjobs()
         print(jobs)
-
-
