@@ -49,5 +49,14 @@ def get_cones_position(filename, output_dir=None):
 
 
 if __name__ == '__main__':
-    pos_predict, pos_true = get_cone_position_simu(output_dir='./tests/resources/')
-    pos_predict = get_cones_position('./tests/resources/cones_1509411741.fits', output_dir='./tests/resources/')
+    from pkg_resources import resource_filename
+
+    example_lid_CCD_image_file_path = resource_filename('digicampipe',
+                                                        'tests/resources/cones_1509411741.fits')
+    pos_predict, pos_true = get_cone_position_simu(
+        output_dir='./tests/resources/'
+    )
+    pos_predict = get_cones_position(
+        example_lid_CCD_image_file_path,
+        output_dir='./tests/resources/'
+    )

@@ -37,10 +37,6 @@ class SkyImage(object):
     def __init__(self, image, image_static=None, threshold=None,
                  scale_low_deg=None, scale_high_deg=None, calculate=False,
                  guess_ra_dec=None, guess_radius=None):
-        if type(image) is str:
-            image = fits.open(self.filename)[0].data
-        if type(image) is not np.ndarray:
-            raise AttributeError('image must be a filename or a numpy.ndarray')
         # high pass filter
         self.image_stars = signal.convolve2d(
             image, high_pass_filter_2525, mode='same', boundary='symm')
