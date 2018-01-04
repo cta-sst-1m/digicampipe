@@ -159,7 +159,6 @@ def crop_image(image, crop_pixel1, crop_pixel2):
     )
 
 
-
 def average_images(images):
     if type(images) is not list:
         print((
