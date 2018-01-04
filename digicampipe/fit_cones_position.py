@@ -8,10 +8,7 @@ def get_cone_position_simu(output_dir=None):
         pixel_radius=35,
         output_dir=output_dir,
     )
-    cones_img = ConesImage(
-        test_image,
-        output_dir=output_dir,
-    )
+    cones_img = ConesImage(test_image)
     cones_img.plot_cones(output_dir=output_dir)
     cones_img.plot_fft_cones(output_dir=output_dir)
     cones_img.get_cones_separation_reciprocal(output_dir=output_dir)
@@ -30,7 +27,7 @@ def get_cone_position_simu(output_dir=None):
 
 
 def get_cones_position(filename, output_dir=None):
-    cones_img = ConesImage(filename, './tests/resources/cones_1509411741-cone.fits')
+    cones_img = ConesImage(filename)
     cones_img.plot_cones(output_dir=output_dir)
     cones_img.plot_fft_cones(output_dir=output_dir)
     cones_img.get_cones_separation_reciprocal(output_dir=output_dir)
