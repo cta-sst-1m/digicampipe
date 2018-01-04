@@ -866,8 +866,11 @@ class ConesImage(object):
             'r=',
             best_match_r)
         print('best match: nv1=', best_match_nv1, ', nv2=', best_match_nv2)
-        pixels_fit_nvs = np.linalg.pinv(v_matrix[:, 0:2]
-            ).dot((self.pixels_fit_px - self.center_fitted).transpose())
+        pixels_fit_nvs = np.linalg.pinv(
+            v_matrix[:, 0:2]
+        ).dot(
+            (self.pixels_fit_px - self.center_fitted).transpose()
+        )
         pixels_fit_nvs_dec = [
             [
                 Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
