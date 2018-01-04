@@ -716,17 +716,30 @@ class LidCCDObservation:
                  scale_low_images_deg=None, scale_high_images_deg=None,
                  guess_ra_dec=None, guess_radius=None):
         """
-        Create a lid ccd observation from several pictures of the lid CCD camera.
+        Create a LidCCDObservation from several pictures of the lid CCD camera.
         Pointing is determined for each of the regions defined.
-        :param filenames: list of strings containing the path to lid CCD images (fits files).
-        :param crop_pixels1: list of points defining the upper left corner of the region of interest in pixels
-        :param crop_pixels2: list of points defining the lower right corner of the region of interest in pixels
-        :param threshold: threshold: pixels with a smaller value than threshold after subtraction are set to 0. Default at 100x the
+
+        Parameters
+        ----------
+        filenames : list of strings
+            containing the path to lid CCD images (fits files).
+        crop_pixels1: list of points
+            defining the upper left corner of the region of interest in pixels
+        crop_pixels2: list of points
+            defining the lower right corner of the region of interest in pixels
+        threshold: float
+            pixels with a smaller value than threshold
+            after subtraction are set to 0. Default at 100x the
             average pixel value after subtraction.
-        :param scale_low_images_deg: minimum field of view (in degrees) considered during fitting.
-        :param scale_high_images_deg: maximum field of view (in degrees) considered during fitting.
-        :param guess_ra_dec: aproximate pointing coordinates
-        :param guess_radius: radius of pointing  coordinates around guess_ra_dec tried during determination
+        scale_low_images_deg : float(?)
+            minimum field of view (in degrees) considered during fitting.
+        scale_high_images_deg : float(?)
+            maximum field of view (in degrees) considered during fitting.
+        guess_ra_dec : (?)
+            aproximate pointing coordinates
+        guess_radius: float(?)
+            radius of pointing coordinates around guess_ra_dec
+            tried during determination
         """
         self.lidccd_images = []
         image_shape = None
