@@ -10,44 +10,53 @@ import numbers
 from photutils import DAOStarFinder
 
 
-def crop_image(image, crop_pixel1, crop_pixel2):
-    """
-    :param image: 2D array of the image data with a shape = (vertical size, horizontal size)
-    :param crop_pixel1: iterable of 2 ints: position (pos_x , pos_y) of one corner of the returned region
-    :param crop_pixel2: iterable of 2 ints: position (pos_x , pos_y) of the opposite corner of the returned region
-    :return: the cropped image, the 1st corner and the opposite corner positions
-    """
-    if type(image) is str:
-        image = fits.open(image)[0].data
-    if type(image) is not np.ndarray:
-        raise AttributeError("image must be a filename or a numpy array.")
-    if crop_pixel1 is not list and len(crop_pixel1) is not 2:
-        raise AttributeError("crop_pixel1 must be a list of 2 ints", "(position in px of one corner of the crop area).")
-    if crop_pixel2 is not list and len(crop_pixel1) is not 2:
-        raise AttributeError("crop_pixel2 must be a list of 2 ints",
-                             "(position in px of the other corner of the crop area).")
-    crop_xmin, crop_ymin = crop_pixel1
-    crop_xmax, crop_ymax = crop_pixel2
-    if not isinstance(crop_xmin, numbers.Integral) or not isinstance(crop_ymin, numbers.Integral):
-        print('Warning in crop_image(): crop_pixel1 does not contain ints')
-        crop_xmin = int(crop_xmin)
-        crop_ymin = int(crop_ymin)
-    if not isinstance(crop_xmax, numbers.Integral) or not isinstance(crop_ymax, numbers.Integral):
-        print('Warning in crop_image(): crop_pixel2 does not contain ints')
-        crop_xmax = int(crop_xmax)
-        crop_ymax = int(crop_ymax)
-    npixel_y, npixel_x = image.shape
-    if not (0 <= crop_xmin < npixel_x and 0 <= crop_ymin < npixel_y):
-        raise AttributeError("invalid crop_pixel position:", crop_pixel1, crop_pixel2, "image size is: ", image.shape)
-    if not (0 < crop_xmax < npixel_x and 0 < crop_ymax < npixel_y):
-        raise AttributeError("invalid crop_pixel position:", crop_pixel1, crop_pixel2, "image size is: ", image.shape)
-    if crop_xmin > crop_xmax:
-        crop_xmin, crop_xmax = crop_xmax, crop_xmin
-    if crop_ymin > crop_ymax:
-        crop_ymin, crop_ymax = crop_ymax, crop_ymin
-    crop_pixel1 = crop_xmin, crop_ymin
-    crop_pixel2 = crop_xmax, crop_ymax
-    return image[crop_ymin:crop_ymax, crop_xmin:crop_xmax], crop_pixel1, crop_pixel2
+class Rectangle:
+    def __init__(self, left, bottom, right, top):
+        self.left = left
+        self.bottom = bottom
+        self.right = right
+        self.top = top
+        if left > right:
+            self.left, self.right = right, left
+        else:
+            self.left, self.right = left, right
+        if bottom > top:
+            self.bottom, self.top = top, bottom
+        else:
+            self.bottom, self.top = bottom, top
+
+    def __str__(self):
+        return "Rectangle(left=, bottom=, right=, top=)" % self.left, self.bottom, self.right, self.top
+
+    def width(self):
+        return self.right - self.left
+
+    def height(self):
+        return self.top - self.bottom
+
+    def center(self):
+        center_x = (self.left + self.right) / 2
+        center_y = (self.bottom + self.top) / 2
+        return (center_x, center_y)
+
+
+class CroppedImage:
+    def __init__(self, image, rectangle, strict_limit=True):
+        npixel_y, npixel_x = image.shape
+        if strict_limit:
+            if not (0 <= rectangle.left < npixel_x and 0 <= rectangle.bottom < npixel_y):
+                raise AttributeError("invalid crop_pixel position:", rectangle, "image size is: ", image.shape)
+            if not (0 < rectangle.right < npixel_x and 0 < rectangle.top < npixel_y):
+                raise AttributeError("invalid crop_pixel position:", rectangle, "image size is: ", image.shape)
+        else:
+            rectangle.left = max((0, rectangle.left))
+            rectangle.bottom = max((0, rectangle.bottom))
+            rectangle.right = min((npixel_x -1, rectangle.right))
+            rectangle.top = min((npixel_y - 1, rectangle.top))
+            if rectangle.left == rectangle.right or rectangle.bottom == rectangle.top:
+                raise AttributeError("empty crop region:", rectangle, "image size is: ", image.shape)
+        self.image = image[rectangle.bottom:rectangle.top, rectangle.left:rectangle.right]
+        self.rectangle = rectangle
 
 
 def average_images(images):

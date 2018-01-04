@@ -506,23 +506,21 @@ class ConesImage(object):
         for i1 in range(-100, 100):
             for i2 in range(-100, 100):
                 peak_pos_aprox = self.center_fitted + i1 * self.v1_lattice + i2 * self.v2_lattice
-                crop_px1 = np.floor(peak_pos_aprox - radius_mask)
-                crop_px1 = np.maximum(crop_px1, (0, 0))
-                crop_px1 = np.minimum(crop_px1, (self.cone_presence.shape[1] - 1, self.cone_presence.shape[0] - 1))
-                crop_px1 = crop_px1.astype(int)
-                crop_px2 = np.ceil(peak_pos_aprox + radius_mask)
-                crop_px2 = np.maximum(crop_px2, (0, 0))
-                crop_px2 = np.minimum(crop_px2, (self.cone_presence.shape[1] - 1, self.cone_presence.shape[0] - 1))
-                crop_px2 = crop_px2.astype(int)
-                if np.any(crop_px2 - crop_px1 <= np.round(radius_mask)):
-                    continue
-                crop_center = (crop_px2 - crop_px1 - 1.) / 2
-                peak_crop, crop_px1, crop_px2 = crop_image(self.cone_presence, crop_px1, crop_px2)
-                max_pos_crop = np.argmax(peak_crop)
-                [max_pos_y, max_pos_x] = np.unravel_index(max_pos_crop, peak_crop.shape)
-                init_amplitude = peak_crop[max_pos_y, max_pos_x] - np.min(peak_crop)
-                init_param = (init_amplitude, max_pos_x, max_pos_y, sigma_peak, sigma_peak, 0, np.min(peak_crop))
-                fit_result, success = FitGauss2D(peak_crop.transpose(), ip=init_param)
+                crop_px1 = np.floor(peak_pos_aprox - radius_mask).astype(int)
+                crop_px2 = np.ceil(peak_pos_aprox + radius_mask).astype(int)
+                rectangle = Rectangle(left=crop_px1[0], bottom=crop_px1[1], right=crop_px2[0], top=crop_px2[1])
+                try:
+                    crop = CroppedImage(self.cone_presence, rectangle=rectangle, strict_limit=False)
+                except AttributeError:
+                    continue  # expected peak position outside of the image
+                if np.any([crop.rectangle.width(), crop.rectangle.height()] <= np.round(radius_mask)):
+                    continue  # cropped area too small
+                crop_center = (np.array(crop.image.shape[::-1]) - 1) / 2
+                max_pos_crop = np.argmax(crop.image)
+                [max_pos_y, max_pos_x] = np.unravel_index(max_pos_crop, crop.image.shape)
+                init_amplitude = crop.image[max_pos_y, max_pos_x] - np.min(crop.image)
+                init_param = (init_amplitude, max_pos_x, max_pos_y, sigma_peak, sigma_peak, 0, np.min(crop.image))
+                fit_result, success = FitGauss2D(crop.image.transpose(), ip=init_param)
                 amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg = fit_result
 
                 if 0 < success <= 4 and 0 < xsigma < 2*sigma_peak and 0 < ysigma < 2*sigma_peak and \
@@ -532,7 +530,7 @@ class ConesImage(object):
                 else:
                     nfail += 1
                 if np.mod(len(self.pixels_fit_px) + nfail, 100) == 0:
-                    print(len(self.pixels_fit_px) + nfail, 'fits done, (', len(self.pixels_fit_px),'successful)')
+                    print(len(self.pixels_fit_px) + nfail, 'fits done, (', len(self.pixels_fit_px),'successful )')
         self.pixels_fit_px = np.array(self.pixels_fit_px)
 
     def fit_camera_geometry(self, radius_mask=15.1, sigma_peak=4, offset_max=3):
