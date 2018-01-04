@@ -22,6 +22,8 @@ def json2python(data):
     except:
         pass
     return None
+
+
 python2json = json.dumps
 
 
