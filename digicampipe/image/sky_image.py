@@ -612,18 +612,44 @@ class LidCCDImage(object):
                 ).transpose()  # .reshape((-1,2))
                 gamma_stars_name = result_gamma['Name']
 
-                gamma_stars_px = sky_image.wcs.wcs_world2pix(gamma_stars_ra_dec, 1)
-                for star_px, gamma_star_name in zip(gamma_stars_px, gamma_stars_name):
-                    circle = Circle((star_px[0] + rect.left, star_px[1] + rect.bottom), radius=20,
-                                    fill=False, color='Y')
+                gamma_stars_px = sky_image.wcs.wcs_world2pix(
+                    gamma_stars_ra_dec, 1)
+                for star_px, gamma_star_name in zip(
+                        gamma_stars_px, gamma_stars_name
+                ):
+                    circle = Circle(
+                        (star_px[0] + rect.left, star_px[1] + rect.bottom),
+                        radius=20,
+                        fill=False,
+                        color='Y')
                     ax.add_artist(circle)
-                    ax.text(star_px[0] + rect.left, star_px[1] + rect.bottom, gamma_star_name, color='Y')
-                crab_nebula_px = sky_image.wcs.wcs_world2pix(83.640187, 22.044295, 1)
-                circle = Circle((crab_nebula_px[0] + rect.left, crab_nebula_px[1] + rect.bottom), radius=20,
-                                fill=False, color='Y')
+                    ax.text(
+                        star_px[0] + rect.left,
+                        star_px[1] + rect.bottom,
+                        gamma_star_name, color='Y')
+                crab_nebula_px = sky_image.wcs.wcs_world2pix(
+                    83.640187, 22.044295, 1)
+                circle = Circle(
+                    (
+                        crab_nebula_px[0] + rect.left,
+                        crab_nebula_px[1] + rect.bottom
+                    ),
+                    radius=20,
+                    fill=False,
+                    color='Y')
                 ax.add_artist(circle)
-                ax.text(crab_nebula_px[0] + rect.left, crab_nebula_px[1] + rect.right, 'Crab Pulsar', color='Y')
-            rect = Rectangle(crop_origin, width=rect.width(), height=rect.height(), fill=False, color='y', linestyle='dashdot')
+                ax.text(
+                    crab_nebula_px[0] + rect.left,
+                    crab_nebula_px[1] + rect.right,
+                    'Crab Pulsar',
+                    color='Y')
+            rect = Rectangle(
+                crop_origin,
+                width=rect.width(),
+                height=rect.height(),
+                fill=False,
+                color='y',
+                linestyle='dashdot')
             ax.add_artist(rect)
         # plt.imshow(image_treated, cmap='gray')
         plt.plot(0, 0, 'w+')
