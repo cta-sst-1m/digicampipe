@@ -645,7 +645,7 @@ class ConesImage(object):
         if self.cone_presence is None:
             self.get_cones_presence()
         plt.ioff()
-        fig = plt.figure(figsize=(8,6), dpi=600)
+        fig = plt.figure(figsize=(8, 6), dpi=600)
         ax = plt.gca()
         plt.imshow(self.cone_presence, cmap='gray')
         plt.grid(None)
@@ -743,13 +743,22 @@ class ConesImage(object):
         offset_max=3
     ):
         """
-        Fit peaks positions in the convolution of cone image on filtered lid CCD image.
-        Find the best orientation and position for the camera geometry to match the peaks.
-        :param radius_mask: radius around expected peak used in peak fitting
-        :param sigma_peak: estimated sigma_peak of peaks. Used as initial value used in fit. Also, if the fitted
-        sigma is larger than 2x this value, the peak is discarded.
-        :param offset_max: maximum offset of the peak with respect to the expectied position.
-        If the fitted offset is large, the peak is discarded.
+        Fit peaks positions in the convolution of cone image
+        on filtered lid CCD image. Find the best orientation and position for
+        the camera geometry to match the peaks.
+
+        Parameter
+        ---------
+
+        radius_mask :
+            radius around expected peak used in peak fitting
+        sigma_peak :
+            estimated sigma_peak of peaks. Used as initial value used in fit.
+            Also, if the fitted
+            sigma is larger than 2x this value, the peak is discarded.
+        offset_max :
+            maximum offset of the peak with respect to the expectied position.
+            If the fitted offset is large, the peak is discarded.
         """
         print("find pixels in lid CCD image")
         if self.cone_presence is None:
