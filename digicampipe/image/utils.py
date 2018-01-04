@@ -566,7 +566,7 @@ def gaussian_2d(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
 def fit_gauss_2d(data, initial_param=None):
     """ Fits 2D gaussian to data with optional Initial conditions
 
-    ip=(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
+    initial_param=(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg)
     Example:
     >>> X,Y=np.indices((40,40),dtype=np.float)
     >>> data=np.exp(-(((X-25)/5)**2 +((Y-15)/10)**2)/2) + 1
