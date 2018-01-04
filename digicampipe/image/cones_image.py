@@ -943,18 +943,28 @@ class ConesImage(object):
         plt.imshow(self.image_cones, cmap='gray')
         # plt.imshow(self.cone_presence, cmap='gray')
         plt.autoscale(False)
-        plt.plot(self.pixels_pos_predict[0, is_pixel_fitted],  self.pixels_pos_predict[1, is_pixel_fitted], 'gx', ms=5, mew=0.2)
-        plt.plot(self.pixels_pos_predict[0, pixels_not_fitted], self.pixels_pos_predict[1, pixels_not_fitted], 'rx', ms=5, mew=0.2)
-        plt.plot(self.pixels_fit_px[is_fit_matching, 0], self.pixels_fit_px[is_fit_matching, 1], 'b+', ms=5, mew=0.2)
-        plt.plot(self.pixels_fit_px[fit_not_matching, 0], self.pixels_fit_px[fit_not_matching, 1], 'y+', ms=5, mew=0.2)
+        plt.plot(
+            self.pixels_pos_predict[0, is_pixel_fitted],
+            self.pixels_pos_predict[1, is_pixel_fitted], 'gx', ms=5, mew=0.2)
+        plt.plot(
+            self.pixels_pos_predict[0, pixels_not_fitted],
+            self.pixels_pos_predict[1, pixels_not_fitted], 'rx', ms=5, mew=0.2)
+        plt.plot(
+            self.pixels_fit_px[is_fit_matching, 0],
+            self.pixels_fit_px[is_fit_matching, 1], 'b+', ms=5, mew=0.2)
+        plt.plot(
+            self.pixels_fit_px[fit_not_matching, 0],
+            self.pixels_fit_px[fit_not_matching, 1], 'y+', ms=5, mew=0.2)
         plt.grid(None)
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         if self.filename is not None:
-            output_filename = self.filename.replace('.fits', '-cones-presence-filtered.png')
+            output_filename = self.filename.replace(
+                '.fits', '-cones-presence-filtered.png')
         else:
-            output_filename = os.path.join(output_dir, 'cones-presence-filtered.png')
+            output_filename = os.path.join(
+                output_dir, 'cones-presence-filtered.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
@@ -968,23 +978,36 @@ def simu_match(cones_image, true_positions, std_error_max_px=0.5):
     offsets = []
     for i in range(3):
         angle = i * 2 / 3 * np.pi
-
-        R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-        pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
-                      cones_image.center_fitted.reshape(2, 1)
+        R = np.array([
+            [np.cos(angle), np.sin(angle)],
+            [-np.sin(angle), np.cos(angle)]])
+        pos_predict = R.dot(
+            cones_image.pixels_pos_predict -
+            cones_image.center_fitted.reshape(2, 1)
+        ) + cones_image.center_fitted.reshape(2, 1)
         diffs.append(np.std(pos_predict - true_positions))
         offsets.append(np.mean(pos_predict - true_positions, axis=1))
     print('error on pixel position: ', np.min(diffs))
     print('offset=', offsets[np.argmin(diffs)])
     angle = np.argmin(diffs) * 2 / 3 * np.pi
     R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
-    cones_image.pixels_pos_predict = R.dot(cones_image.pixels_pos_predict - cones_image.center_fitted.reshape(2, 1)) + \
-                              cones_image.center_fitted.reshape(2, 1)
-    return np.std(cones_image.pixels_pos_predict - true_positions) < std_error_max_px
+    cones_image.pixels_pos_predict = R.dot(
+        cones_image.pixels_pos_predict -
+        cones_image.center_fitted.reshape(2, 1)
+    ) + cones_image.center_fitted.reshape(2, 1)
+    error = np.std(cones_image.pixels_pos_predict - true_positions)
+    return error < std_error_max_px
 
 
-def cones_simu(pixels_nvs=None, offset=(0,0), angle_deg=0, image_shape=(2472, 3296), pixel_radius=38.3,
-               noise_ampl=0., output_dir=None):
+def cones_simu(
+    pixels_nvs=None,
+    offset=(0, 0),
+    angle_deg=0,
+    image_shape=(2472, 3296),
+    pixel_radius=38.3,
+    noise_ampl=0.,
+    output_dir=None,
+):
     """
     function to create a test cones image according to given parameters
     :param offset: offest of the center of the camera geometry with respect to the center of the test image
