@@ -1025,21 +1025,40 @@ def cones_simu(
     image = np.zeros(image_shape)
     center = (np.array(image.shape[::-1]) - 1) / 2
     r1 = pixel_radius * np.array((np.cos(angle_rot), np.sin(angle_rot)))
-    r2 = pixel_radius * np.array((np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
-    r3 = pixel_radius * np.array((np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot)))
+    r2 = pixel_radius * np.array(
+        (np.cos(np.pi / 3 + angle_rot), np.sin(np.pi / 3 + angle_rot)))
+    r3 = pixel_radius * np.array(
+        (np.cos(np.pi * 2 / 3 + angle_rot), np.sin(np.pi * 2 / 3 + angle_rot))
+    )
     v1_lattice = r1 + r2
     v2_lattice = r2 + r3
-    pixels_pos_true = (center + offset).reshape(2, 1) + \
-                           np.array([v1_lattice, v2_lattice]).transpose().dot(pixels_nvs)
+    pixels_pos_true = (
+        (center + offset).reshape(2, 1) +
+        np.array([v1_lattice, v2_lattice]).transpose().dot(pixels_nvs)
+    )
     n_pixels = pixels_nvs.shape[1]
-    print('test lattice with v1=', v1_lattice, 'v2=', v2_lattice, 'offset=', offset)
+    print(
+        'test lattice with v1=', v1_lattice,
+        'v2=', v2_lattice,
+        'offset=', offset)
     for pixel in range(n_pixels):
         pos_true = pixels_pos_true[:, pixel]
         for i in range(10, -1, -1):
-            image = set_hexagon(image, pos_true, r1=(i + 8) / 20 * r1, r2=(i + 8) / 20 * r2, value=1 - i / 10)
-        image = set_hexagon(image, pos_true, r1=7 / 20 * r1, r2=7 / 20 * r2, value=0)
+            image = set_hexagon(
+                image,
+                pos_true,
+                r1=(i + 8) / 20 * r1,
+                r2=(i + 8) / 20 * r2,
+                value=1 - i / 10)
+        image = set_hexagon(
+            image,
+            pos_true,
+            r1=7 / 20 * r1,
+            r2=7 / 20 * r2,
+            value=0)
     image += noise_ampl * np.random.randn(image.shape[0], image.shape[1])
-    # add bright pixels so test image can pass the same cleaning procedure as the true images
+    # add bright pixels so test image can pass the same
+    # cleaning procedure as the true images
     image[0:100, 0:100] = 200 * np.ones((100, 100))
     if output_dir is not None:
         fig = plt.figure(figsize=(8, 6), dpi=600)
@@ -1057,17 +1076,21 @@ def cones_simu(
 
 
 def get_pixel_nvs(digicam_config_file=camera_config_file):
-    # Camera and Geometry objects (mapping, pixel, patch + x,y coordinates pixels)
+    '''Camera and Geometry objects
+    (mapping, pixel, patch + x,y coordinates pixels)
+    '''
     digicam = Camera(_config_file=digicam_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-    pixels_pos_mm = np.array([digicam_geometry.pix_x.to(u.mm), digicam_geometry.pix_y.to(u.mm)]).transpose()
+    pixels_pos_mm = np.array(
+        [digicam_geometry.pix_x.to(u.mm), digicam_geometry.pix_y.to(u.mm)]
+    ).transpose()
     pixels_pos_mm = pixels_pos_mm.dot(np.array([[0, -1], [1, 0]]))
-    pixels_v1 = pixels_pos_mm[digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
-    pixels_v2 = pixels_pos_mm[digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
+    pixels_v1 = pixels_pos_mm[
+        digicam_geometry.neighbors[0][1], :] - pixels_pos_mm[0, :]
+    pixels_v2 = pixels_pos_mm[
+        digicam_geometry.neighbors[0][0], :] - pixels_pos_mm[0, :]
     index_to_pos = np.array([pixels_v1, pixels_v2]).transpose()
     relative_pos = (pixels_pos_mm - pixels_pos_mm[0, :]).transpose()
     pixels_nvs = np.linalg.pinv(index_to_pos).dot(relative_pos)
-    #self.pixels_nvs -= np.round(np.mean(self.pixels_nvs, axis=1)).reshape(2, 1)
-    # self.pixels_nvs = np.round(self.pixels_nvs).astype(int)
     pixels_nvs -= np.mean(pixels_nvs, axis=1).reshape(2, 1)
     return pixels_nvs
