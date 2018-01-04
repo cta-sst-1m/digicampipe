@@ -824,19 +824,29 @@ class ConesImage(object):
             'r=',
             best_match_r)
         print('best match: nv1=', best_match_nv1, ', nv2=', best_match_nv2)
-        pixels_fit_nvs = np.linalg.pinv(v_matrix[:,0:2]).dot((self.pixels_fit_px - self.center_fitted).transpose())
-        pixels_fit_nvs_dec = [[Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
-                               Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3]
-                              for [n1, n2] in pixels_fit_nvs.transpose()]
+        pixels_fit_nvs = np.linalg.pinv(v_matrix[:, 0:2]
+            ).dot((self.pixels_fit_px - self.center_fitted).transpose())
+        pixels_fit_nvs_dec = [
+            [
+                Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
+                Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3
+            ]
+            for n1, n2 in pixels_fit_nvs.transpose()]
         pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs_dec))
         nvs_fit_matching_set = pixels_fit_nvs_set.intersection(pixels_nvs_set)
         if len(nvs_fit_matching_set) != best_matching_nvs:
-            print('ERROR reproducing best matching solution: got', len(nvs_fit_matching_set),
-                  'matches instead of', best_matching_nvs)
+            print(
+                'ERROR reproducing best matching solution: got',
+                len(nvs_fit_matching_set),
+                'matches instead of',
+                best_matching_nvs)
             return
-        is_fit_matching = np.array([tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
+        is_fit_matching = np.array(
+            [tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
         fit_not_matching = is_fit_matching == 0
-        print(np.sum(is_fit_matching), 'fits in best match,', np.sum(fit_not_matching), 'outside')
+        print(
+            np.sum(is_fit_matching), 'fits in best match,',
+            np.sum(fit_not_matching), 'outside')
 
     def refine_camera_geometry(self):
         """
@@ -845,19 +855,29 @@ class ConesImage(object):
         nv_prec = Decimal('0.1')
         v_matrix = np.array([self.v1_lattice, self.v2_lattice]).transpose()
         pixels_fit_nvs = np.linalg.pinv(v_matrix).dot((self.pixels_fit_px - self.center_fitted).transpose())
-        pixels_fit_nvs_dec = [[Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
-                               Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3]
-                              for [n1, n2] in pixels_fit_nvs.transpose()]
+        pixels_fit_nvs_dec = [
+            [
+                Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
+                Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3
+            ]
+            for n1, n2 in pixels_fit_nvs.transpose()
+        ]
         pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs_dec))
-        pixels_nvs_dec = [[Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
-                           Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3]
-                          for [n1, n2] in self.pixels_nvs.transpose()]
+        pixels_nvs_dec = [
+            [
+                Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
+                Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3
+            ]
+            for n1, n2 in self.pixels_nvs.transpose()
+        ]
         pixels_nvs_set = set(map(tuple, pixels_nvs_dec))
         nvs_fit_matching_set = pixels_fit_nvs_set.intersection(pixels_nvs_set)
-        is_fit_matching = np.array([tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
+        is_fit_matching = np.array(
+            [tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
         print('global fit of lattice base vectors...')
         n_matching = np.sum(is_fit_matching)
-        nvs = np.vstack((pixels_fit_nvs[:, is_fit_matching], np.ones((1, n_matching))))
+        nvs = np.vstack(
+            (pixels_fit_nvs[:, is_fit_matching], np.ones((1, n_matching))))
         pxs = self.pixels_fit_px[is_fit_matching, :].transpose()
         precise_vs = pxs.dot(np.linalg.pinv(nvs))
         self.v1_lattice = precise_vs[:, 0]
@@ -868,33 +888,57 @@ class ConesImage(object):
         self.r3 = self.v3_lattice - self.r2
         self.center_fitted = precise_vs[:, 2]
         self.pixels_pos_predict = precise_vs.dot(np.vstack((self.pixels_nvs, np.ones((1, self.pixels_nvs.shape[1])))))
-        print("v1=", self.v1_lattice, "|v1|=", np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1]))
-        print("v2=", self.v2_lattice, "|v2|=", np.abs(self.v2_lattice[0] + 1j * self.v2_lattice[1]))
-        print("v3=", self.v3_lattice, "|v3|=", np.abs(self.v3_lattice[0] + 1j * self.v3_lattice[1]))
-        print("r1=", self.r1, "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]))
-        print("r2=", self.r2, "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]))
-        print("r3=", self.r3, "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]))
+        print(
+            "v1=", self.v1_lattice,
+            "|v1|=", np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1]))
+        print(
+            "v2=", self.v2_lattice,
+            "|v2|=", np.abs(self.v2_lattice[0] + 1j * self.v2_lattice[1]))
+        print(
+            "v3=", self.v3_lattice,
+            "|v3|=", np.abs(self.v3_lattice[0] + 1j * self.v3_lattice[1]))
+        print(
+            "r1=", self.r1,
+            "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]))
+        print(
+            "r2=", self.r2,
+            "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]))
+        print(
+            "r3=", self.r3,
+            "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]))
         center_image = (np.array(self.image_cones.shape[::-1]) - 1) / 2
-        print("center=", self.center_fitted, ',', self.center_fitted - center_image, 'from center')
+        print(
+            "center=", self.center_fitted,
+            ',', self.center_fitted - center_image, 'from center')
 
     def plot_camera_geometry(self, output_dir):
         nv_prec = Decimal('1')
         v_matrix = np.array([self.v1_lattice, self.v2_lattice]).transpose()
         pixels_fit_nvs = np.linalg.pinv(v_matrix).dot((self.pixels_fit_px - self.center_fitted).transpose())
-        pixels_fit_nvs_dec = [[Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
-                               Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3]
-                              for [n1, n2] in pixels_fit_nvs.transpose()]
+        pixels_fit_nvs_dec = [
+            [
+                Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
+                Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3
+            ]
+            for n1, n2 in pixels_fit_nvs.transpose()
+        ]
         pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs_dec))
-        pixels_nvs_dec = [[Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
-                           Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3]
-                          for [n1, n2] in self.pixels_nvs.transpose()]
+        pixels_nvs_dec = [
+            [
+                Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
+                Decimal(n2*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3
+            ]
+            for n1, n2 in self.pixels_nvs.transpose()
+        ]
         pixels_nvs_set = set(map(tuple, pixels_nvs_dec))
         nvs_fit_matching_set = pixels_fit_nvs_set.intersection(pixels_nvs_set)
-        is_fit_matching = np.array([tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
+        is_fit_matching = np.array(
+            [tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
         fit_not_matching = is_fit_matching == 0
-        is_pixel_fitted = np.array([tuple(nv) in nvs_fit_matching_set for nv in pixels_nvs_dec])
+        is_pixel_fitted = np.array(
+            [tuple(nv) in nvs_fit_matching_set for nv in pixels_nvs_dec])
         pixels_not_fitted = is_pixel_fitted == 0
-        fig = plt.figure(figsize=(8,6), dpi=600)
+        fig = plt.figure(figsize=(8, 6), dpi=600)
         ax = plt.gca()
         plt.imshow(self.image_cones, cmap='gray')
         # plt.imshow(self.cone_presence, cmap='gray')
