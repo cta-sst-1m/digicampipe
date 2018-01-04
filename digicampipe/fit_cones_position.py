@@ -27,7 +27,10 @@ def get_cone_position_simu(output_dir=None):
 
 
 def get_cones_position(filename, output_dir=None):
-    cones_img = ConesImage(filename)
+    from astropy.io import fits
+
+    image = fits.open(filename)[0].data
+    cones_img = ConesImage(image)
     cones_img.plot_cones(output_dir=output_dir)
     cones_img.plot_fft_cones(output_dir=output_dir)
     cones_img.get_cones_separation_reciprocal(output_dir=output_dir)

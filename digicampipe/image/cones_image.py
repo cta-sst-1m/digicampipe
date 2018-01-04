@@ -51,23 +51,15 @@ class ConesImage(object):
         Parameters
         ----------
         image : 2d-array
-            fit filename or numpy array containing the lid CCD image.
+            array containing the lid CCD image.
         image_cone :
             optional fit filename of the cone image.
             the fit file is created calling get_cone()
-        output_dir :
-            optional directory where to put the original
-            lid CCD image in case of test
         digicam_config_file :
             path to the digicam configuration file
         """
         self.filename = None
         self.pixels_nvs = get_pixel_nvs(digicam_config_file)
-        if type(image) is str:
-            self.filename = image
-            image = fits.open(image)[0].data
-        if type(image) is not np.ndarray:
-            raise AttributeError('image must be a filename or a numpy.ndarray')
         # high pass filter
         self.image_cones = signal.convolve2d(
             image, high_pass_filter_77, mode='same', boundary='symm')
@@ -584,7 +576,7 @@ class ConesImage(object):
         """calculate the distance between 2 neighbour pixels
 
         (as vectors) and 3 consecutive radius.
-        The distances are stored in self.v[12]_lattice
+        The distances are stored in self.v[123]_lattice
         and the radius are stored in self.r[123]
 
         output_dir :
@@ -788,6 +780,7 @@ class ConesImage(object):
         best_matching_nvs = 0
         best_match_nv1, best_match_nv2 = None, None
         best_match_v1, best_match_v2 = None, None
+        best_match_r = None
         for v1_test, v2_test in [
             [self.v1_lattice, self.v2_lattice],
             [self.v2_lattice, self.v3_lattice]
@@ -804,7 +797,7 @@ class ConesImage(object):
                             r
                         )
                         pixels_fit_nvs = np.linalg.pinv(v_matrix).dot(
-                            (pixels_fit_px_shifted).transpose())
+                            pixels_fit_px_shifted.transpose())
                         pixels_fit_nvs_dec = [
                             [
                                 Decimal(n1*3).quantize(

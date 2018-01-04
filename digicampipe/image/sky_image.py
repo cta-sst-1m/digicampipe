@@ -513,6 +513,7 @@ class LidCCDImage(object):
             image_treated[
                 rect.bottom:rect.top, rect.left:rect.right
             ] = np.log(1+sky_image.image_stars)
+            crop_origin = np.array([rect.left, rect.bottom])
             if sky_image.sources_pixel is not None:
                 for i in range(min(sky_image.sources_pixel.shape[1], 30)):
                     pixel_x = sky_image.sources_pixel[0, i] + rect.left
@@ -524,7 +525,6 @@ class LidCCDImage(object):
                 self.center_px = np.array(
                     (self.image_shape[1], self.image_shape[0])
                 ).reshape(1, 2) / 2
-                crop_origin = np.array([rect.left, rect.bottom])
                 self.center_ra_dec = sky_image.wcs.wcs_pix2world(
                     self.center_px - crop_origin, 1)[0]
                 print('image center (ra, dec):', self.center_ra_dec)
@@ -680,15 +680,15 @@ class LidCCDObservation:
             after subtraction are set to 0. Default at 100x the
         rectangles :
             list of rectangles defining the regions of interest in pixels
-        scale_low_images_deg : float(?)
+        scale_low_images_deg : float
             minimum field of view (in degrees) considered during fitting.
-        scale_high_images_deg : float(?)
+        scale_high_images_deg : float
             maximum field of view (in degrees) considered during fitting.
-        guess_ra_dec : (?)
-            aproximate pointing coordinates
-        guess_radius: float(?)
-            radius of pointing coordinates around guess_ra_dec
-            tried during determination
+        guess_ra_dec : 2-tuple of float
+            approximate pointing coordinates (Right Ascension, Declination)
+        guess_radius: float
+            radius (in degrees) of pointing coordinates around
+            guess_ra_dec tried during determination
         method: bool
             if method is "local", we look for local installation of
             astrometry.net, otherwise we use web service.
@@ -732,10 +732,10 @@ class LidCCDObservation:
         for lidccd_image in self.lidccd_images:
             lidccd_image.print_summary()
 
-    def plot_image_solved(self, outpout_dir=None):
+    def plot_image_solved(self):
         for lidccd_image in self.lidccd_images:
-            lidccd_image.plot_image_solved(outpout_dir)
+            lidccd_image.plot_image_solved()
 
-    def plot_image_treated(self, outpout_dir=None):
+    def plot_image_treated(self):
         for lidccd_image in self.lidccd_images:
-            lidccd_image.plot_image_treated(outpout_dir)
+            lidccd_image.plot_image_treated()

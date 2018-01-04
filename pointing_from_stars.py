@@ -10,7 +10,7 @@ example_lid_CCD_image_file_paths = glob(
 )
 
 
-def get_pointing():
+def get_pointing(method='local'):
     rectangles = [Rectangle(350, 900, 770, 1550), Rectangle(850, 1800, 1300, 2400)]
     lidccd_obs = LidCCDObservation(
         example_lid_CCD_image_file_paths,
@@ -18,7 +18,8 @@ def get_pointing():
         scale_low_images_deg=8.,
         scale_high_images_deg=12.,
         guess_ra_dec=(83.2, 26.2),
-        guess_radius=10
+        guess_radius=10,
+        method=method
         )
     lidccd_obs.plot_image_solved()
     lidccd_obs.plot_image_treated()
@@ -26,4 +27,4 @@ def get_pointing():
 
 
 if __name__ == '__main__':
-    get_pointing()
+    get_pointing(method='local')
