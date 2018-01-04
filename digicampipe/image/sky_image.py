@@ -646,7 +646,8 @@ class LidCCDImage(object):
                     (result_gamma['RAJ2000'], result_gamma['DEJ2000'])
                 ).transpose()  # .reshape((-1,2))
                 gamma_stars_name = result_gamma['Name']
-                gamma_stars_px = sky_image.wcs.wcs_world2pix(gamma_stars_ra_dec, 1)
+                gamma_stars_px = sky_image.wcs.wcs_world2pix(
+                    gamma_stars_ra_dec, 1)
                 for star_px, gamma_star_name in zip(
                     gamma_stars_px, gamma_stars_name
                 ):
