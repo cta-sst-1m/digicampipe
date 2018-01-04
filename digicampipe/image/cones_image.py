@@ -1013,12 +1013,24 @@ def cones_simu(
 ):
     """
     function to create a test cones image according to given parameters
-    :param offset: offest of the center of the camera geometry with respect to the center of the test image
-    :param angle_deg: angle of the camera geometry
-    :param image_shape: shape of the test image (npixel_y, npixel_x)
-    :param pixel_radius: length of the radius of an hexagonal pixel (from the center of the hexagon to the border)
-    :param noise_ampl: amplitude of random noise added to the test image (gaussian)
-    :param output_dir: optional directory where to put the original lid CCD image
+
+    Parameters
+    ----------
+
+    offset:
+        offest of the center of the camera geometry with respect
+        to the center of the test image
+    angle_deg :
+        angle of the camera geometry
+    image_shape :
+        shape of the test image (npixel_y, npixel_x)
+    pixel_radius:
+        length of the radius of an hexagonal pixel
+        (from the center of the hexagon to the border)
+    noise_ampl :
+        amplitude of random noise added to the test image (gaussian)
+    output_dir:
+        optional directory where to put the original lid CCD image
     :return:
     """
     if pixels_nvs is None:
