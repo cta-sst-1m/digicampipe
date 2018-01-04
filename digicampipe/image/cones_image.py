@@ -990,7 +990,10 @@ def simu_match(cones_image, true_positions, std_error_max_px=0.5):
     print('error on pixel position: ', np.min(diffs))
     print('offset=', offsets[np.argmin(diffs)])
     angle = np.argmin(diffs) * 2 / 3 * np.pi
-    R = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+    R = np.array([
+        [np.cos(angle), np.sin(angle)],
+        [-np.sin(angle), np.cos(angle)]
+    ])
     cones_image.pixels_pos_predict = R.dot(
         cones_image.pixels_pos_predict -
         cones_image.center_fitted.reshape(2, 1)
