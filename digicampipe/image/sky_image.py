@@ -345,14 +345,12 @@ class LidCCDImage(object):
                 print('y de =', sky_image.reference_ra_dec[1])
                 print('CD =', sky_image.cd_matrix)
 
-    def plot_image_solved(self, output_dir=None):
+    def plot_image_solved(self):
         """
         Superimpose found stars on the lid CCD image for each area of interest.
         If coordinates were found, it also shows the stars from the astrometry.net results.
-        :param output_dir: directory where the resulting plot will be saved.
         """
-        if output_dir is not None:
-            plt.ioff()
+        plt.ioff()
         fig = plt.figure()
         ax = plt.gca()
         lid_image = fits.open(self.filename)[0].data
@@ -379,22 +377,17 @@ class LidCCDImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        if output_dir is None:
-            plt.show()
-        else:
-            output_filename = self.filename.replace('.fits', '-solved.png')
-            plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
-            plt.close(fig)
-            print(output_filename, 'saved.')
+        output_filename = self.filename.replace('.fits', '-solved.png')
+        plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+        print(output_filename, 'saved.')
 
-    def plot_image_treated(self, output_dir=None):
+    def plot_image_treated(self):
         """
         Superimpose stars and gamma sources on the lid CCD image.
-        Internet acces is needed for the Vizier requests.
-        :param output_dir: directory where the resulting plot will be saved.
+        Internet access is needed for the Vizier requests.
         """
-        if output_dir is not None:
-            plt.ioff()
+        plt.ioff()
         fig = plt.figure()
         ax = plt.gca()
         lid_image = fits.open(self.filename)[0].data
@@ -484,13 +477,10 @@ class LidCCDImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        if output_dir is None:
-            plt.show()
-        else:
-            output_filename = self.filename.replace('.fits', '-treated.png')
-            plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
-            plt.close(fig)
-            print(output_filename, 'saved.')
+        output_filename = self.filename.replace('.fits', '-treated.png')
+        plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+        print(output_filename, 'saved.')
 
 
 class LidCCDObservation:
