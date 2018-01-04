@@ -58,7 +58,6 @@ class ConesImage(object):
         digicam_config_file :
             path to the digicam configuration file
         """
-        self.filename = None
         self.pixels_nvs = get_pixel_nvs(digicam_config_file)
         # high pass filter
         self.image_cones = signal.convolve2d(
@@ -130,7 +129,7 @@ class ConesImage(object):
             self.r3 = np.array((
                 np.real(hdu.header['r3']), np.imag(hdu.header['r3'])))
 
-    def plot_cones(self, output_dir, radius_mask=None):
+    def plot_cones(self, output_filename=None, radius_mask=None):
         """ plot the lid CCD image after filtering
 
         If radius_mask is None
@@ -144,14 +143,17 @@ class ConesImage(object):
         ---------
         radius_mask :
             optional radius of the mask used for each peak in the FFT
-        output_dir :
-            directory where to put the resulting image.
+        output_filename :
+            path where to put the resulting image.
         """
+        if output_filename is None:
+            if radius_mask is None:
+                output_filename='cones.png'
+            else:
+                output_filename='cones-filtered.png'
         plt.ioff()
         fig = plt.figure(figsize=(8, 6), dpi=600)
         ax = plt.gca()
-        if type(self.image_cones) is not np.ndarray:
-            raise AttributeError([self.filename, ' must be a fit file'])
         if radius_mask is not None:
             mask = self.get_fft_mask(radius=radius_mask)
             image_cones = np.real(np.fft.ifft2(self.fft_image_cones * mask))
@@ -179,18 +181,6 @@ class ConesImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        if self.filename is not None:
-            if radius_mask is not None:
-                output_filename = self.filename.replace(
-                    '.fits', '-cones-filtered.png')
-            else:
-                output_filename = self.filename.replace('.fits', '-cones.png')
-        else:
-            if radius_mask is not None:
-                output_filename = os.path.join(
-                    output_dir, 'cones-filtered.png')
-            else:
-                output_filename = os.path.join(output_dir, 'cones.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
@@ -198,7 +188,7 @@ class ConesImage(object):
     def scan_cone_position(
         self,
         radius_mask,
-        output_dir,
+        output_filename='hexagonalicity.png',
         center_scan=None,
         rotations=(60, 300)
     ):
@@ -210,8 +200,8 @@ class ConesImage(object):
         radius_mask:
             radius of the mask used for extracting
             pixels from image (see plot_cones())
-        output_dir:
-            directory where to put the resulting image.
+        output_filename:
+            path where to put the resulting image.
         center_scan:
             optional position of the center of the camera's pixel.
             Center of image is used if None (default)
@@ -285,28 +275,23 @@ class ConesImage(object):
         ax.get_yaxis().set_visible(False)
         plt.xlim([np.min(pixels_x)-0.5, np.max(pixels_x)+0.5])
         plt.ylim([np.min(pixels_y)-0.5, np.max(pixels_y)+0.5])
-        if self.filename is not None:
-            output_filename = self.filename.replace(
-                '.fits', '-hexagonalicity.png')
-        else:
-            output_filename = os.path.join(output_dir, 'hexagonalicity.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
 
-    def get_cone(self, radius_mask, output_dir=None, save_to_file=True):
-        """find the center of a camera's pixel
-
+    def get_cone(self, radius_mask, output_filename=None, cone_filename=None):
+        """find the center of a camera's pixel.
+        The pixel image along with important parameter can be save for future use
+        using the cone_filename parameter.
         Parameter
         ---------
         radius_mask :
             radius of the mask used for extracting pixels
             from image (see plot_cones())
-        output_dir :
-            optional directory where to put the resulting image.
-        save_to_file : boolean (default = True),
-            should the resulting image be saved to a fit files along
-            with important parameters ?
+        output_filename : optional,
+            path where to put the resulting cone image.
+        cone_filename : optional, name of the fits file where to save
+            the cone image along with important parameters.
         """
         if type(radius_mask) is not float:
             raise AttributeError('radius_mask must be a float.')
@@ -410,7 +395,7 @@ class ConesImage(object):
         mask_hexa = set_hexagon(
             mask_hexa, center=center_crop, r1=self.r1, r2=self.r2)
         self.image_cone = image_crop * mask_hexa
-        if save_to_file:
+        if cone_filename is not None:
             hdu = fits.PrimaryHDU(self.image_cone)
             hdu.header['center'] = (
                 self.center_fitted[0] + 1j * self.center_fitted[1],
@@ -443,19 +428,9 @@ class ConesImage(object):
             hdu.header['r3'] = (
                 self.r3[0] + 1j * self.r3[1],
                 '3rd radius of the hexagon')
-            if self.filename is not None:
-                cone_filename = self.filename.replace('.fits', '-cone.fits')
-            elif output_dir is not None:
-                cone_filename = os.path.join(output_dir, 'cone.fits')
-            else:
-                print(
-                    'WARNING in ConesImage::get_cone(): cone not saved as '
-                    'no filenane nor output_dir was given.')
-                cone_filename = None
-            if cone_filename is not None:
-                hdu.writeto(cone_filename, overwrite=True)
-                print('cone saved to ', cone_filename)
-        if output_dir is not None:
+            hdu.writeto(cone_filename, overwrite=True)
+            print('cone saved to ', cone_filename)
+        if output_filename is not None:
             plt.ioff()
             fig = plt.figure(figsize=(8, 6), dpi=600)
             ax = plt.gca()
@@ -470,10 +445,6 @@ class ConesImage(object):
             plt.axis('off')
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
-            if self.filename is not None:
-                output_filename = self.filename.replace('.fits', '-cone.png')
-            else:
-                output_filename = os.path.join(output_dir, 'cone.png')
             plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
             plt.close(fig)
             print(output_filename, 'saved.')
@@ -492,7 +463,7 @@ class ConesImage(object):
             self.cone_presence, high_pass_filter_2525, mode='same')
         self.cone_presence[self.cone_presence < 0] = 0
 
-    def plot_fft_cones(self, output_dir, radius_mask=None):
+    def plot_fft_cones(self, output_filename=None, radius_mask=None):
         """plot the FFT of the filtered lid CCD image.
 
         If radius_mask is given, everything more distant than it from
@@ -500,10 +471,17 @@ class ConesImage(object):
         radius_mask :
             radius in pixels of circular mask around each peak.
             Default = no mask.
-        output_dir :
-            optional directory where to put the resulting image.
+        output_filename :
+            path where to put the resulting image.
+            default to 'cones-fft.png' without mask or
+            'cones-fft-masked.png' with mask
         """
         plt.ioff()
+        if output_filename is None:
+            if radius_mask is None:
+                output_filename='cones-fft.png'
+            else:
+                output_filename='cones-fft-masked.png'
         fig = plt.figure(figsize=(8, 6), dpi=600)
         ax = fig.gca()
         if radius_mask is not None:
@@ -517,19 +495,6 @@ class ConesImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        if self.filename is not None:
-            if radius_mask is not None:
-                output_filename = self.filename.replace(
-                    '.fits', '-cones-fft-masked.png')
-            else:
-                output_filename = self.filename.replace(
-                    '.fits', '-cones-fft.png')
-        else:
-            if radius_mask is not None:
-                output_filename = os.path.join(
-                    output_dir, 'cones-fft-masked.png')
-            else:
-                output_filename = os.path.join(output_dir, 'cones-fft.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
@@ -572,15 +537,15 @@ class ConesImage(object):
                     value=1)
         return np.fft.ifftshift(mask)
 
-    def get_cones_separation_reciprocal(self, output_dir=None):
+    def get_cones_separation_reciprocal(self, output_filename=None):
         """calculate the distance between 2 neighbour pixels
 
         (as vectors) and 3 consecutive radius.
         The distances are stored in self.v[123]_lattice
         and the radius are stored in self.r[123]
 
-        output_dir :
-            optional directory where to put the
+        output_filename :
+            optional path where to put the
             auto-correlation of the FFT image.
         """
         fft_image_cones_shifted = signal.convolve2d(
@@ -592,7 +557,7 @@ class ConesImage(object):
         ks_base, auto_correlation_saved, center_peaks = get_peaks_separation(
             fft_image_cones_shifted,
             crop_range=800)
-        if output_dir is not None:
+        if output_filename is not None:
             plt.ioff()
             fig = plt.figure(figsize=(8, 6), dpi=600)
             plt.imshow(auto_correlation_saved, cmap='gray')
@@ -605,12 +570,6 @@ class ConesImage(object):
             plt.plot(k1_points[:, 0], k1_points[:, 1], 'b-', linewidth=1)
             plt.plot(k2_points[:, 0], k2_points[:, 1], 'r-', linewidth=1)
             plt.grid(None)
-            if self.filename is not None:
-                output_filename = self.filename.replace(
-                    '.fits', '-cones-sep-reciprocal.png')
-            else:
-                output_filename = os.path.join(
-                    output_dir, 'cones-sep-reciprocal.png')
             plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
             plt.close(fig)
             print(output_filename, 'saved.')
@@ -635,10 +594,11 @@ class ConesImage(object):
         print("r2=", self.r2, "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]))
         print("r3=", self.r3, "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]))
 
-    def plot_cones_presence(self, output_dir):
+    def plot_cones_presence(self, output_filename='cones-presence.png'):
         """
         Plot convolution of cone image on filtered lid CCD image.
-        :param output_dir: directory where to put the resulting images.
+        :param output_filename: directory where to put the resulting images.
+            default to 'cones-presence.png'
         """
         if self.cone_presence is None:
             self.get_cones_presence()
@@ -650,11 +610,6 @@ class ConesImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        if self.filename is not None:
-            output_filename = self.filename.replace(
-                '.fits', '-cones-presence.png')
-        else:
-            output_filename = os.path.join(output_dir, 'cones-presence.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
@@ -950,10 +905,24 @@ class ConesImage(object):
             "center=", self.center_fitted,
             ',', self.center_fitted - center_image, 'from center')
 
-    def plot_camera_geometry(self, output_dir):
+    def plot_camera_geometry(self, output_filename='cones-presence-filtered.png'):
+        """
+        Plot the lid CCD image along with the camera geometry:
+        - blue cross are shown for each of the detected pixel which match
+        the best camera geometry found.
+        - yellow cross are shown for each of the detected pixel which does not match
+        the best camera geometry found.
+        - green cross are shown for each pixel of the best camera geometry found
+        with a detected pixel
+        - red cross are shown for each pixel of the best camera geometry found
+        without a detected pixel
+        :param output_filename: path for the resulting image
+        """
         nv_prec = Decimal('1')
         v_matrix = np.array([self.v1_lattice, self.v2_lattice]).transpose()
-        pixels_fit_nvs = np.linalg.pinv(v_matrix).dot((self.pixels_fit_px - self.center_fitted).transpose())
+        pixels_fit_nvs = np.linalg.pinv(v_matrix).dot(
+            (self.pixels_fit_px - self.center_fitted).transpose()
+        )
         pixels_fit_nvs_dec = [
             [
                 Decimal(n1*3).quantize(nv_prec, rounding=ROUND_HALF_EVEN)/3,
@@ -998,12 +967,6 @@ class ConesImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        if self.filename is not None:
-            output_filename = self.filename.replace(
-                '.fits', '-cones-presence-filtered.png')
-        else:
-            output_filename = os.path.join(
-                output_dir, 'cones-presence-filtered.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
@@ -1048,7 +1011,7 @@ def cones_simu(
     image_shape=(2472, 3296),
     pixel_radius=38.3,
     noise_ampl=0.,
-    output_dir=None,
+    output_filename=None,
 ):
     """
     function to create a test cones image according to given parameters
@@ -1068,8 +1031,8 @@ def cones_simu(
         (from the center of the hexagon to the border)
     noise_ampl :
         amplitude of random noise added to the test image (gaussian)
-    output_dir:
-        optional directory where to put the original lid CCD image
+    output_filename:
+        optional path where to put the original lid CCD image
     :return:
     """
     if pixels_nvs is None:
@@ -1114,7 +1077,7 @@ def cones_simu(
     # add bright pixels so test image can pass the same
     # cleaning procedure as the true images
     image[0:100, 0:100] = 200 * np.ones((100, 100))
-    if output_dir is not None:
+    if output_filename is not None:
         fig = plt.figure(figsize=(8, 6), dpi=600)
         ax = plt.gca()
         plt.imshow(image, cmap='gray', vmin=0, vmax=10)
@@ -1122,7 +1085,6 @@ def cones_simu(
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        output_filename = os.path.join(output_dir, 'cones-original.png')
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
@@ -1130,9 +1092,9 @@ def cones_simu(
 
 
 def get_pixel_nvs(digicam_config_file=camera_config_file):
-    '''Camera and Geometry objects
+    """Camera and Geometry objects
     (mapping, pixel, patch + x,y coordinates pixels)
-    '''
+    """
     digicam = Camera(_config_file=digicam_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
     pixels_pos_mm = np.array(

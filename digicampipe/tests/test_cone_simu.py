@@ -11,7 +11,7 @@ def test_cone_simu():
         pixel_radius=35,
     )
     cones_img = ConesImage(test_image)
-    cones_img.get_cone(radius_mask=2.1, save_to_file=False)
+    cones_img.get_cone(radius_mask=2.1)
     cones_img.fit_camera_geometry()
     cones_img.refine_camera_geometry()
 
