@@ -7,7 +7,8 @@ from digicampipe.image.utils import (
     set_circle,
     reciprocal_to_lattice_space,
     get_consecutive_hex_radius,
-    crop_image,
+    Rectangle,
+    CroppedImage,
     FitGauss2D,
 )
 import os
