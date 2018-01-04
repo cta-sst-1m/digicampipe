@@ -712,7 +712,7 @@ class ConesImage(object):
                     np.min(crop.image)
                 )
                 fit_result, success = fit_gauss_2d(
-                    crop.image.transpose(), ip=init_param)
+                    crop.image.transpose(), initial_param=init_param)
                 (
                     amplitude,
                     xcenter,
