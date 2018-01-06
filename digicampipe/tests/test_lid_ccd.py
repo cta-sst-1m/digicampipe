@@ -1,3 +1,4 @@
+import pytest
 from pkg_resources import resource_filename
 from glob import glob
 
@@ -6,6 +7,7 @@ example_lid_CCD_image_file_paths = glob(
 )
 
 
+@pytest.mark.slow
 def test_find_stars(method='local'):
     from digicampipe.image.sky_image import LidCCDObservation
     from digicampipe.image.utils import Rectangle
