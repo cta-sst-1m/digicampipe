@@ -40,6 +40,10 @@ Run the tests on your machine:
 
     pytest -vv digicampipe
 
+If you want to execute only very fast tests do:
+
+    pytest -c quick_test.ini digicampipe
+
 ## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
 
 In the `digicampipe` directory run:
@@ -52,3 +56,27 @@ You can open the html files with your favorite web browser.
 To delete the documentation us:
 
     make clean
+
+## Pointing using lid CCD images
+
+To be able to determine the pointing using stars reflections on the lid, astrometry.net is needed.
+If not installed locally, the web service will be used instead.
+To install astrometry.net:
+
+    sudo apt-get install astrometry.net
+
+You will need to download catalogs too:
+
+    mkdir ~/astrometry-data
+    cd ~/astrometry-data
+    wget http://broiler.astrometry.net/~dstn/4200/wget.sh
+    chmod +x wget.sh
+    ./wget.sh
+
+Grab a beer as it will take a while ... Also, indexes 4203 and lower are probably not needed.
+
+Then add the folowing line to /etc/astrmetry.cfg:
+
+    add_path ~/astrometry-data
+
+That's it, you are ready to go.

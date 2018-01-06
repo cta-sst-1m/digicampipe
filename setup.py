@@ -29,5 +29,7 @@ setup(
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
-    package_data={'': ['tests/resources/*']},
+    package_data={
+        '': ['tests/resources/*', 'tests/resources/stars_on_lid/*'],
+    },
 )
