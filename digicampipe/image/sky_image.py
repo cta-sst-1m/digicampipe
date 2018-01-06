@@ -52,9 +52,6 @@ class SkyImage(object):
         if image_static is not None:
             self.subtract_static_image(image_static, threshold=threshold)
         self.sources_pixel = None
-        self.reference_pixel = None
-        self.reference_ra_dec = None
-        self.cd_matrix = None
         self.stars_pixel = None
         self.wcs = None
         if calculate:
@@ -103,11 +100,6 @@ class SkyImage(object):
                 'solve-field',
                 outfile,
                 '--no-plots',
-                # '--no-background-subtraction',
-                # '--no-verify-uniformize',
-                # '--ra', str(83.2),
-                # '--dec', str(26.2),
-                # '--radius', str(10),
                 '--depth', '60',
             ]
             if (
@@ -149,28 +141,15 @@ class SkyImage(object):
                 header_wcs = fits.open(
                     os.path.join(tmpdir, 'stars.wcs'))[0].header
                 self.wcs = WCS(header_wcs)
-                # reference point
-                self.reference_pixel = (
-                    header_wcs['CRPIX1'], header_wcs['CRPIX2'])
-                self.reference_ra_dec = (
-                    header_wcs['CRVAL1'], header_wcs['CRVAL2'])
-                # transformation matrix
-                self.cd_matrix = np.array((
-                    (header_wcs['CD1_1'], header_wcs['CD1_2']),
-                    (header_wcs['CD2_1'], header_wcs['CD2_2'])
-                ))
             except FileNotFoundError:
-                self.wcs = None
-                self.reference_pixel = None
-                self.reference_ra_dec = None
-                self.cd_matrix = None
+                pass
             # stars position in image
             try:
                 stars_data = fits.open(
                     os.path.join(tmpdir, 'stars-indx.xyls'))[1].data
                 self.stars_pixel = np.array((stars_data['X'], stars_data['Y']))
             except FileNotFoundError:
-                self.stars_pixel = None
+                pass
 
     def calculate_galactic_coordinates_nova(self):
         """determine galactic coordinates based on stars found.
@@ -209,14 +188,6 @@ class SkyImage(object):
         existing_jobs = c.jobs_by_tag(tag, True)
         with tempfile.TemporaryDirectory() as tmpdir:
             if len(existing_jobs['job_ids']) == 0:
-                # stars_filename = os.path.join(tmpdir, 'stars.txt')
-                # f = open(stars_filename, "w")
-                # for source in self.sources_pixel.transpose():
-                #     f.write((
-                #         str(round(source[0], 6)) + "\t" +
-                #         str(round(source[1], 6)) + "\n"
-                #     ))
-                # f.close()
                 kwargs = dict(
                     allow_commercial_use='n',
                     allow_modifications='n',
@@ -313,23 +284,10 @@ class SkyImage(object):
                 print('Wrote to', fn)
             # coordinate system
             self.wcs = None
-            self.reference_pixel = None
-            self.reference_ra_dec = None
-            self.cd_matrix = None
             if success:
                 try:
                     header_wcs = fits.open(wcs_file)[0].header
                     self.wcs = WCS(header_wcs)
-                    # reference point
-                    self.reference_pixel = (
-                        header_wcs['CRPIX1'], header_wcs['CRPIX2'])
-                    self.reference_ra_dec = (
-                        header_wcs['CRVAL1'], header_wcs['CRVAL2'])
-                    # transformation matrix
-                    self.cd_matrix = np.array((
-                        (header_wcs['CD1_1'], header_wcs['CD1_2']),
-                        (header_wcs['CD2_1'], header_wcs['CD2_2'])
-                    ))
                 except FileNotFoundError:
                     pass
             # stars position in image
@@ -417,11 +375,11 @@ class LidCCDImage(object):
         print('matching result for', self.filename)
         for sky_image, rect in zip(self.sky_images, self.crop_rectangles):
             if sky_image.reference_ra_dec is not None:
-                print('x pix =', sky_image.reference_pixel[0] + rect.left)
-                print('y pix =', sky_image.reference_pixel[1] + rect.bottom)
-                print('x ra =', sky_image.reference_ra_dec[0])
-                print('y de =', sky_image.reference_ra_dec[1])
-                print('CD =', sky_image.cd_matrix)
+                print('x pix =', sky_image.wcs.wcs.crpix[0] + rect.left)
+                print('y pix =', sky_image.wcs.wcs.crpix[1] + rect.bottom)
+                print('x ra =', sky_image.wcs.wcs.crval[0])
+                print('y de =', sky_image.wcs.wcs.crval[1])
+                print('CD =', sky_image.wcs.wcs.cd)
 
     def plot_image_solved(self):
         """
