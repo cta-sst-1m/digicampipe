@@ -366,7 +366,7 @@ class LidCCDImage(object):
         """
         wcs_list = []
         for sky_image in self.sky_images:
-            if sky_image.reference_ra_dec is not None:
+            if sky_image.wcs is not None:
                 wcs_list.append(sky_image.wcs)
         if len(wcs_list) > 0:
             self.wcs = wcs_list[0]
@@ -374,7 +374,7 @@ class LidCCDImage(object):
     def print_summary(self):
         print('matching result for', self.filename)
         for sky_image, rect in zip(self.sky_images, self.crop_rectangles):
-            if sky_image.reference_ra_dec is not None:
+            if sky_image.wcs is not None:
                 print('x pix =', sky_image.wcs.wcs.crpix[0] + rect.left)
                 print('y pix =', sky_image.wcs.wcs.crpix[1] + rect.bottom)
                 print('x ra =', sky_image.wcs.wcs.crval[0])
