@@ -8,6 +8,7 @@ from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
+import events_image  #
 
 from optparse import OptionParser
 
@@ -114,6 +115,10 @@ if __name__ == '__main__':
                                        boundary_threshold=boundary_threshold)
     # Return only showers with total number of p.e. above min_photon
     data_stream = filter.filter_shower(data_stream, min_photon=min_photon)
+    
+    # Save cleaned events - pixels and corresponding values 
+    data_stream = events_image.save_events(data_stream)
+    
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(data_stream, reclean=reclean, shower_distance=shower_distance)
 

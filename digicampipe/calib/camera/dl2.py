@@ -1,12 +1,9 @@
 from ctapipe.image import hillas
 import numpy as np
 import astropy.units as u
-import events_image  #
 
 def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
-    
-    image_all = []  #
-    
+        
     for i, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
@@ -44,16 +41,8 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None
-        
-        # saving cleaned event images
-        pix_x, pix_y, image = events_image.make_image(geom, image)  #
-        event_number = event.r0.event_id  #
-        image = np.hstack((event_number, image))  # [event_ number, image_values]
-        image_all.append(image)  #
 
         yield event
-        
-    events_image.save_image(pix_x, pix_y, image_all)  # save cleared images for all events
     
 
 def find_mask_near_center(geom, cen_x, cen_y, distance):
