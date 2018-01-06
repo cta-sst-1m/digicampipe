@@ -30,10 +30,10 @@ if __name__ == '__main__':
 
     # Input/Output files
     directory = options.directory
-    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
+    filename = directory + 'SST1M01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
-    dark_baseline = np.load(directory + 'dark.npz')
+    dark_baseline = np.load(directory + 'dark_1_18.npz')
     hillas_filename = options.output
 
     # Source coordinates (in camera frame)
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
-    min_photon = 20
+    min_photon = 150
 
     ####################
     ##### ANALYSIS #####
@@ -126,5 +126,5 @@ if __name__ == '__main__':
             pass
     else:
         # Save the hillas parameters
-        # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+        save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
         save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
