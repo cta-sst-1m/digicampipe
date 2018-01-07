@@ -131,5 +131,5 @@ if __name__ == '__main__':
             pass
     else:
         # Save the hillas parameters
-        save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+        #save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
         save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
