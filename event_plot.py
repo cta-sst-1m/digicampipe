@@ -1,7 +1,7 @@
 # Ploting of selected events
 ############################
 
-# If one wants to plot also Hillas ellipse, txt output from pipeline is neccessary.
+# If one wants to plot also Hillas ellipse txt output from pipeline is neccessary.
 
 import numpy as np
 import events_image
@@ -12,8 +12,8 @@ from optparse import OptionParser
 
 def plot_event(pix_x, pix_y, image, event_no):
     
-    real_event_no = image[event_no,0]  # the first value in the vector is REAL event number - the save value as saved in the file with Hillas parameters
-    image = image[event_no,1:]
+    real_event_no = image[event_no, 0]  # the first value in the vector is REAL event number - the save value as saved in the file with Hillas parameters
+    image = image[event_no, 1:]
     print(real_event_no, event_no)
     fig = plt.figure(figsize=(10, 9))
     ax1 = fig.add_subplot(111)
@@ -77,6 +77,8 @@ if __name__ == '__main__':
 
     if options.hillas != False:
         hillas = np.loadtxt(options.hillas)
+        #border_flag = hillas[event_no, 13]
+        #print(border_flag)
         plot_hillas(hillas, event_no)
 
     plt.show()

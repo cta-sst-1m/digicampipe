@@ -56,4 +56,4 @@ def save_events(event_stream):
 
         yield event
 
-    save_image(pix_x, pix_y, image_all)  # save cleared images for all events
+    save_image(pix_x, pix_y, image_all)  # save cleaned images for all events
