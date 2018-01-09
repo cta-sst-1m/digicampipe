@@ -25,6 +25,9 @@ if __name__ == '__main__':
     parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=91, type=int)
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
                       , default='digicampipe/tests/resources/camera_config.cfg')
+    
+    parser.add_option('-i', "--picture_threshold", dest='picture_threshold', help='Picture threshold', default=15, type=int)  # For searching of the best configuration
+    parser.add_option('-b', "--boundary_threshold", dest='boundary_threshold', help='Boundary threshold', default=10, type=int)  #
 
     (options, args) = parser.parse_args()
     do_display = options.display  # interactive mode
@@ -81,8 +84,8 @@ if __name__ == '__main__':
                                    peak_position)
 
     # Image cleaning configuration
-    picture_threshold = 25
-    boundary_threshold = 5
+    picture_threshold = options.picture_threshold  #
+    boundary_threshold = options.boundary_threshold  #
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
@@ -117,7 +120,9 @@ if __name__ == '__main__':
     data_stream = filter.filter_shower(data_stream, min_photon=min_photon)
     
     # Save cleaned events - pixels and corresponding values 
-    data_stream = events_image.save_events(data_stream)
+    filename_pix = 'pixels.txt'
+    filename_eventsimage = '../pipeline_parametermap/events_image_paramentermap_'+ str(options.picture_threshold) + str(options.boundary_threshold)+'.txt'
+    data_stream = events_image.save_events(data_stream, filename_pix, filename_eventsimage)
     
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(data_stream, reclean=reclean, shower_distance=shower_distance)

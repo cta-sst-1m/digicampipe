@@ -76,7 +76,7 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
             dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
             """
             
-            # 
+            # repaired piece of code from Cyril. The commented version above leads to border_flag = 1 in almost all events.
             recursion = True
             while recursion:
                 recursion = False
@@ -86,7 +86,7 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
                             dl1_camera.cleaning_mask[j] = True
                             recursion = True
             
-            dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)
+            # dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)  # Etienne doesn't use dilatation
 
             num_neighbors = np.sum(geom.neighbor_matrix[dl1_camera.cleaning_mask], axis=-1)
             dl1_camera.on_border = np.any(num_neighbors < 6)

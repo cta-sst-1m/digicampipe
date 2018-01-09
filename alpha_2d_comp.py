@@ -125,7 +125,7 @@ def alpha_etienne(datas, source_x, source_y):  # etienne's code from scan_crab_c
 if __name__ == '__main__':
 
     parser = OptionParser()
-    parser.add_option("-p", "--path", dest="path", help="path to data files", default='../../sst-1m_data/20171030/output_crab_dark1_18_noaddrow_minphot80.npz')
+    parser.add_option("-p", "--path", dest="path", help="path to data files", default='../../sst-1m_data/20171030/output_crab_test.npz')
     parser.add_option("-o", "--output", dest="output", help="output filename", default="alpha_2d", type=str)
     parser.add_option("-b", "--bining", dest="bining", help="size of bins in alpha histogram [degrees]", default=4, type=float)
     parser.add_option("-s", "--steps", dest="steps", help="number of steps, resolution of 2d alpha plot", default=100, type=int)

@@ -20,10 +20,10 @@ def make_image(geom: CameraGeometry, image, container=False):
     return pix_x, pix_y, image
 
 
-def save_image(pix_x, pix_y, image):
+def save_image(pix_x, pix_y, image, filename_pix, filename_eventsimage):
 
-    np.savetxt('pixels.txt', np.vstack((pix_x, pix_y)), '%1.4f')
-    np.savetxt('events_image.txt', image, '%1.5f')
+    np.savetxt(filename_pix, np.vstack((pix_x, pix_y)), '%1.4f')
+    np.savetxt(filename_eventsimage, image, '%1.5f')
 
 
 def load_image(pixels_file, events_file):
@@ -34,7 +34,7 @@ def load_image(pixels_file, events_file):
     return pixels, events
 
 
-def save_events(event_stream):
+def save_events(event_stream, filename_pix, filename_eventsimage):
 
     image_all = []
 
@@ -56,4 +56,4 @@ def save_events(event_stream):
 
         yield event
 
-    save_image(pix_x, pix_y, image_all)  # save cleaned images for all events
+    save_image(pix_x, pix_y, image_all, filename_pix, filename_eventsimage)  # save cleaned images for all events
