@@ -12,6 +12,7 @@ example_lid_CCD_image_file_paths = glob(
 
 def get_pointing(method='local'):
     rectangles = [Rectangle(350, 900, 770, 1550), Rectangle(850, 1800, 1300, 2400)]
+    #rectangles = [Rectangle(350, 100, 1300, 2400)]
     lidccd_obs = LidCCDObservation(
         example_lid_CCD_image_file_paths,
         rectangles=rectangles,

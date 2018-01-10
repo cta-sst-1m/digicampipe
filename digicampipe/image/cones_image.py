@@ -11,7 +11,6 @@ from digicampipe.image.utils import (
     CroppedImage,
     fit_gauss_2d,
 )
-import os
 import decimal
 from decimal import Decimal, ROUND_HALF_EVEN
 import numpy as np

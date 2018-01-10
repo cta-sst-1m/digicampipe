@@ -13,11 +13,12 @@ from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
-
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, Rectangle
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
+from astropy.table import Table
+from photutils import DAOStarFinder
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
 
 from digicampipe.image.kernels import gauss, high_pass_filter_2525
 from digicampipe.image.utils import CroppedImage
@@ -93,14 +94,30 @@ class SkyImage(object):
         Uses astrometry.net installed locally
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            hdu = fits.PrimaryHDU(self.image_stars)
+            #get stars and save them to fits file
+            mean, median, std = sigma_clipped_stats(
+                self.image_stars, sigma=3.0, iters=5)
+            baseline_sub = self.image_stars - median
+            baseline_sub[baseline_sub < 0] = 0
+            daofind = DAOStarFinder(fwhm=3.0, threshold=std)
+            sources = daofind(baseline_sub)
+            self.sources_pixel = np.array(
+                [sources['xcentroid'], sources['ycentroid']])
+            order = np.argsort(sources['mag'])
+            n_peak = np.min([len(order), 100])
+            self.sources_pixel = self.sources_pixel[:, order[0:n_peak]]
+            t = Table(self.sources_pixel.transpose(), names=('X', 'Y'))
             outfile = os.path.join(tmpdir, 'stars.fits')
-            hdu.writeto(outfile, overwrite=True)
+            t.write(outfile, format='fits')
+
+            # run astrometry.net
             arguments = [
                 'solve-field',
                 outfile,
                 '--no-plots',
-                '--depth', '60',
+                #'--depth', '60',
+                '-w', str(self.image_stars.shape[1]),
+                '-e', str(self.image_stars.shape[0]),
             ]
             if (
                 self.guess_ra_dec is not None and
@@ -126,16 +143,6 @@ class SkyImage(object):
                 arguments.append(str(self.scale_high_deg))
             run(arguments)
 
-            # sources position in image
-            try:
-                sources_data = fits.open(
-                    os.path.join(tmpdir, 'stars.axy'))[1].data
-                self.sources_pixel = np.array(
-                    (sources_data['X'], sources_data['Y'])
-                )
-            except FileNotFoundError:
-                self.sources_pixel = None
-
             # coordinate system
             try:
                 header_wcs = fits.open(
@@ -157,8 +164,6 @@ class SkyImage(object):
         Uses the nova web service
         """
         import time
-        from photutils import DAOStarFinder
-
         # apiurl='http://nova.astrometry.net/api/'
         apiurl = 'http://supernova.astrometry.net/api/'
         c = Client(apiurl=apiurl)
@@ -181,8 +186,6 @@ class SkyImage(object):
         order = np.argsort(sources['mag'])
         n_peak = np.min([len(order), 100])
         self.sources_pixel = self.sources_pixel[:, order[0:n_peak]]
-        self.sources_pixel.flags.writeable = False
-
         tag = str(
             sha1((np.round(self.sources_pixel, 2).flatten())).hexdigest())
         existing_jobs = c.jobs_by_tag(tag, True)
@@ -340,6 +343,7 @@ class LidCCDImage(object):
                 scale_high_deg=scale_high_crop_deg,
                 guess_ra_dec=guess_ra_dec,
                 guess_radius=guess_radius,
+                calculate=True
             )
             self.sky_images.append(sky_image)
             self.crop_rectangles.append(crop.rectangle)
@@ -364,12 +368,16 @@ class LidCCDImage(object):
         !!!! not implemented yet. !!!
         Using of the 1st coordinates found instead.
         """
-        wcs_list = []
-        for sky_image in self.sky_images:
+        #wcs_list = []
+        sources_pixel=[]
+        for sky_image, rect in zip(self.sky_images, self.crop_rectangles):
+            sources_pixel.append(sky_image.sources_pixel + np.array([rect.left, rect.bottom], ndmin=2).transpose())
+        """
             if sky_image.wcs is not None:
                 wcs_list.append(sky_image.wcs)
         if len(wcs_list) > 0:
             self.wcs = wcs_list[0]
+        """
 
     def print_summary(self):
         print('matching result for', self.filename)
@@ -441,6 +449,7 @@ class LidCCDImage(object):
             raise AttributeError([self.filename, ' must be a fit file'])
         plt.imshow(lid_image, cmap='gray')
         image_treated = np.zeros(self.image_shape)
+        """
         vizier_blue = Vizier(
             columns=['all'],
             column_filters={"Bjmag": "<12"},
@@ -451,6 +460,7 @@ class LidCCDImage(object):
             column_filters={"Rmag": "<12"},
             row_limit=-1,
             catalog=['I/271/out'])
+        """
         vizier_green = Vizier(
             columns=['all'],
             column_filters={"Vmag": "<12"},
@@ -483,6 +493,7 @@ class LidCCDImage(object):
                 center_coordinate = SkyCoord(
                     ra=self.center_ra_dec[0] * u.degree,
                     dec=self.center_ra_dec[1] * u.degree, frame='icrs')
+                """
                 result_blue = vizier_blue.query_region(
                     center_coordinate,
                     radius=Angle(5, "deg"),
@@ -501,7 +512,7 @@ class LidCCDImage(object):
                         radius = 5
 
                     circle = Circle(
-                        (star_px[0] + rect.left, star_px[1] + rect.right),
+                        (star_px[0] + rect.left, star_px[1] + rect.bottom),
                         radius=radius,
                         fill=False,
                         color='b')
@@ -523,11 +534,12 @@ class LidCCDImage(object):
                         radius = 5
 
                     circle = Circle(
-                        (star_px[0] + rect.left, star_px[1] + rect.right),
+                        (star_px[0] + rect.left, star_px[1] + rect.bottom),
                         radius=radius,
                         fill=False,
                         color='r')
                     ax.add_artist(circle)
+                """
                 result_green = vizier_green.query_region(
                     center_coordinate,
                     radius=Angle(5, "deg"),
@@ -536,7 +548,7 @@ class LidCCDImage(object):
                 green_stars_ra_dec = np.array(
                     (result_green['RA_ICRS_'], result_green['DE_ICRS_'])
                 ).transpose()  # .reshape((-1,2))
-                green_stars_mag = result_blue['Vmag']
+                green_stars_mag = result_green['Vmag']
                 green_stars_px = sky_image.wcs.wcs_world2pix(
                     green_stars_ra_dec, 1)
                 for star_px, star_mag in zip(green_stars_px, green_stars_mag):
@@ -546,7 +558,7 @@ class LidCCDImage(object):
                         radius = 5
 
                     circle = Circle(
-                        (star_px[0] + rect.left, star_px[1] + rect.right),
+                        (star_px[0] + rect.left, star_px[1] + rect.bottom),
                         radius=radius,
                         fill=False,
                         color='g')
@@ -589,7 +601,7 @@ class LidCCDImage(object):
                 ax.add_artist(circle)
                 ax.text(
                     crab_nebula_px[0] + rect.left,
-                    crab_nebula_px[1] + rect.right,
+                    crab_nebula_px[1] + rect.bottom,
                     'Crab Pulsar',
                     color='Y')
             rect = Rectangle(
