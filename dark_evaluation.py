@@ -12,6 +12,7 @@ Options:
   -h --help     Show this screen.
   -i <file>, --input=<file>  input file [default: {example_file}]
   -o <dir>, --outdir=<dir>  output directory [default: .]
+
 '''
 from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
@@ -35,8 +36,9 @@ example_file_path = pkg_resources.resource_filename(
         )
     )
 __doc__ = __doc__.format(
-    example_file = example_file_path
+    example_file=example_file_path
     )
+
 
 def main(output_directory, files):
     camera_config_file = pkg_resources.resource_filename(
@@ -50,7 +52,6 @@ def main(output_directory, files):
 
     dark_file_path = path.join(output_directory, 'dark.npz')
     dark_trigger_file_path = path.join(output_directory, 'bias_curve_dark.npz')
-
 
     thresholds = np.arange(0, 400, 10)
     unwanted_patch = [306, 318, 330, 342, 200]
