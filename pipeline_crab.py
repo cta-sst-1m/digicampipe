@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+'''
+
+Usage:
+  pipeline_crab.py [options] <files>...
+
+Options:
+  -h --help     Show this screen.
+  --display     Display rather than output data
+  -o <path>, --outfile_path=<path>   path to the output file
+  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
+  --min_photon <int>     Filtering on big showers [default: 20]
+'''
 from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
@@ -8,33 +21,23 @@ from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
+from docopt import docopt
+import pkg_resources
+from os import path
 
-from optparse import OptionParser
+def main(args):
 
-if __name__ == '__main__':
-
-
-    parser = OptionParser()
-    parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='/sst1m/raw/2017/09/28/CRAB_01/')
-    parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab", type=str)
-    parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
-                      default=False)
-    parser.add_option('-s', "--file_start", dest='file_start', help='file number start', default=19, type=int)
-    parser.add_option('-e', "--file_end", dest='file_end', help='file number end', default=91, type=int)
-    parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
-                      , default='digicampipe/tests/resources/camera_config.cfg')
-
-    (options, args) = parser.parse_args()
-    do_display = options.display  # interactive mode
+    digicam_config_file = pkg_resources.resource_filename(
+        'digicampipe',
+        path.join(
+            'tests',
+            'resources',
+            'camera_config.cfg'
+        )
+    )
 
     # Input/Output files
-    directory = options.directory
-    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
-    digicam_config_file = options.camera_config_file
-    dark_baseline = np.load(directory + 'dark.npz')
-    hillas_filename = options.output
+    dark_baseline = np.load(args['--baseline_path'])
 
     # Source coordinates (in camera frame)
     source_x = 0. * u.mm
@@ -85,14 +88,14 @@ if __name__ == '__main__':
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
-    min_photon = 20
+
 
     ####################
     ##### ANALYSIS #####
     ####################
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
+    data_stream = event_stream(file_list=args['<files>'], expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=pixel_not_wanted)
     # Compute baseline with clocked triggered events (sliding average over n_bins)
@@ -113,11 +116,11 @@ if __name__ == '__main__':
                                        picture_threshold=picture_threshold,
                                        boundary_threshold=boundary_threshold)
     # Return only showers with total number of p.e. above min_photon
-    data_stream = filter.filter_shower(data_stream, min_photon=min_photon)
+    data_stream = filter.filter_shower(data_stream, min_photon=args['--min_photon'])
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(data_stream, reclean=reclean, shower_distance=shower_distance)
 
-    if do_display:
+    if args['--display']:
 
         with plt.style.context('ggplot'):
             display = EventViewer(data_stream, n_samples=50, camera_config_file=digicam_config_file, scale='lin')#, limits_colormap=[10, 500])
@@ -125,6 +128,11 @@ if __name__ == '__main__':
             display.draw()
             pass
     else:
-        # Save the hillas parameters
-        # save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
-        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
+        save_hillas_parameters_in_text(data_stream=data_stream, output_filename=args['--outfile_path'])
+
+
+if __name__ == '__main__':
+    args = docopt(__doc__)
+    print(args)
+    args['--min_photon'] = int(args['--min_photon'])
+    main(args)

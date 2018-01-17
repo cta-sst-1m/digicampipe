@@ -19,25 +19,19 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
             mask = dl1_camera.cleaning_mask
             image[~mask] = 0.
+            moments_first = hillas.hillas_parameters(geom, image)
 
-            try:
+            if reclean:
 
-                moments_first = hillas.hillas_parameters(geom, image)
-
-                if reclean:
-
-                    mask_near_center = find_mask_near_center(geom=geom,
-                                                             cen_x=moments_first.cen_x,
-                                                             cen_y=moments_first.cen_y,
-                                                             distance=shower_distance)
-                    dl1_camera.cleaning_mask = dl1_camera.cleaning_mask & mask_near_center
-                    image[~dl1_camera.cleaning_mask] = 0
-                    moments = hillas.hillas_parameters(geom, image)
-                else:
-                    moments = moments_first
-            except HillasParameterizationError:
-                print('could not recompute Hillas')
-                moments = None
+                mask_near_center = find_mask_near_center(geom=geom,
+                                                         cen_x=moments_first.cen_x,
+                                                         cen_y=moments_first.cen_y,
+                                                         distance=shower_distance)
+                dl1_camera.cleaning_mask = dl1_camera.cleaning_mask & mask_near_center
+                image[~dl1_camera.cleaning_mask] = 0
+                moments = hillas.hillas_parameters(geom, image)
+            else:
+                moments = moments_first
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None
