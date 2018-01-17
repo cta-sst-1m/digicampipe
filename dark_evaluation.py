@@ -104,7 +104,6 @@ def main(output_directory, files):
 
 if __name__ == "__main__":
     args = docopt(__doc__)
-    print(args)
     main(
         output_directory=args['<output_directory>'],
         files=args['<files>']

@@ -59,7 +59,6 @@ def main(baseline_file_path, files):
 
 if __name__ == "__main__":
     args = docopt(__doc__)
-    print(args)
     main(
         baseline_file_path=args['<baseline_file_path>'],
         files=args['<files>']
