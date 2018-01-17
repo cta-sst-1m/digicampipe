@@ -24,6 +24,7 @@ import pkg_resources
 from os import path
 from docopt import docopt
 
+
 def main(baseline_file_path, files):
     camera_config_file = pkg_resources.resource_filename(
         'digicampipe',
