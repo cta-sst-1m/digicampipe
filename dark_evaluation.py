@@ -1,4 +1,4 @@
-from digicampipe.calib.camera import filter
+from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve
@@ -6,7 +6,7 @@ from cts_core.camera import Camera
 from digicampipe.utils import geometry
 import matplotlib.pyplot as plt
 import numpy as np
-
+from tqdm import tqdm
 
 if __name__ == '__main__':
     # Data configuration
@@ -28,6 +28,7 @@ if __name__ == '__main__':
 
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
+    data_stream = r0.fill_trigger_input_7(data_stream)
     data_stream = filter.set_patches_to_zero(data_stream, unwanted_patch=unwanted_patch)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
@@ -40,9 +41,8 @@ if __name__ == '__main__':
 
     data_stream = save_dark(data_stream, directory + dark_filename)
 
-    for i, data in enumerate(data_stream):
-
-        print(i)
+    for _ in tqdm(data_stream):
+        pass
 
     data_dark = np.load(directory + dark_filename)
     data_rate = np.load(directory + trigger_filename)
