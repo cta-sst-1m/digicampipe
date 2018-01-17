@@ -4,8 +4,6 @@ Extract baseline from observations.
 
     Example call:
     baseline.py ./baseline.npz path/to/SST1M01_20171030.002.fits.fz
-    speed is ~100 events/second.
-    duration ~2minutes.
 
 Usage:
   baseline.py <baseline_file_path> <files>...
