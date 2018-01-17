@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+'''
+Extract
+
+Usage:
+  dark_evaluation.py <output_directory> <files>...
+
+Options:
+  -h --help     Show this screen.
+'''
 from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
@@ -8,26 +18,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 import pkg_resources
-import os
+from os import path
+from docopt import docopt
 
-if __name__ == '__main__':
-    # Data configuration
-
-    directory = '/home/dneise/ctasoft/sst1m_crab/'
-    filename = directory + 'SST1M01_20171030.%03d.fits.fz'
-    file_list = [filename % number for number in [2]]
+def main(output_directory, files):
     camera_config_file = pkg_resources.resource_filename(
         'digicampipe',
-        os.path.join(
+        path.join(
             'tests',
             'resources',
             'camera_config.cfg'
         )
     )
 
-    dark_filename = 'dark.npz'
+    dark_file_path = path.join(output_directory, 'dark.npz')
+    dark_trigger_file_path = path.join(output_directory, 'bias_curve_dark.npz')
 
-    trigger_filename = 'bias_curve_dark.npz'
+
     thresholds = np.arange(0, 400, 10)
     unwanted_patch = [306, 318, 330, 342, 200]
     unwanted_cluster = [200]
@@ -37,19 +44,28 @@ if __name__ == '__main__':
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
+    data_stream = event_stream(
+        file_list=files,
+        expert_mode=True,
+        camera_geometry=digicam_geometry,
+        camera=digicam
+    )
     data_stream = r0.fill_trigger_input_7(data_stream)
-    data_stream = filter.set_patches_to_zero(data_stream, unwanted_patch=unwanted_patch)
+    data_stream = filter.set_patches_to_zero(
+        data_stream,
+        unwanted_patch=unwanted_patch)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 
-    data_stream = save_bias_curve(data_stream,
-                                  thresholds=thresholds,
-                                  blinding=blinding,
-                                  output_filename=directory + trigger_filename,
-                                  unwanted_cluster=unwanted_cluster)
+    data_stream = save_bias_curve(
+        data_stream,
+        thresholds=thresholds,
+        blinding=blinding,
+        output_filename=dark_trigger_file_path,
+        unwanted_cluster=unwanted_cluster
+    )
 
-    data_stream = save_dark(data_stream, directory + dark_filename)
+    data_stream = save_dark(data_stream, dark_file_path)
 
     for _ in tqdm(data_stream):
         pass
@@ -69,7 +85,12 @@ if __name__ == '__main__':
 
     fig = plt.figure()
     axis = fig.add_subplot(111)
-    axis.errorbar(data_rate['threshold'], data_rate['rate'] * 1E9, yerr=data_rate['rate_error'] * 1E9, label='Blinding : {}'.format(blinding))
+    axis.errorbar(
+        x=data_rate['threshold'],
+        y=data_rate['rate'] * 1E9,
+        yerr=data_rate['rate_error'] * 1E9,
+        label='Blinding : {}'.format(blinding)
+    )
     axis.set_ylabel('rate [Hz]')
     axis.set_xlabel('threshold [LSB]')
     axis.set_yscale('log')
@@ -77,4 +98,11 @@ if __name__ == '__main__':
     plt.show()
 
 
-    ## Filter the events for display
+    # Filter the events for display
+if __name__ == "__main__":
+    args = docopt(__doc__)
+    print(args)
+    main(
+        output_directory=args['<output_directory>'],
+        files=args['<files>']
+    )
