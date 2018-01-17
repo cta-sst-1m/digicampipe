@@ -6,10 +6,12 @@ Extract dark.npz and bias_curve_dark.npz from observations.
     dark_evaluation.py . path/to/SST1M01_20171030.002.fits.fz
 
 Usage:
-  dark_evaluation.py <output_directory> <files>...
+  dark_evaluation.py [-o <dir>] [-i <file>]...
 
 Options:
   -h --help     Show this screen.
+  -i <file>, --input=<file>  input file [default: {example_file}]
+  -o <dir>, --outdir=<dir>  output directory [default: .]
 '''
 from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
@@ -23,6 +25,18 @@ from tqdm import tqdm
 import pkg_resources
 from os import path
 from docopt import docopt
+
+example_file_path = pkg_resources.resource_filename(
+        'digicampipe',
+        path.join(
+            'tests',
+            'resources',
+            'example_100_evts.000.fits.fz'
+        )
+    )
+__doc__ = __doc__.format(
+    example_file = example_file_path
+    )
 
 def main(output_directory, files):
     camera_config_file = pkg_resources.resource_filename(
