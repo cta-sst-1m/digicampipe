@@ -4,6 +4,8 @@ Extract dark.npz and bias_curve_dark.npz from observations.
 
     Example call:
     dark_evaluation.py . path/to/SST1M01_20171030.002.fits.fz
+    speed is ~100 events/second.
+    duration ~2minutes.
 
 Usage:
   dark_evaluation.py <output_directory> <files>...
