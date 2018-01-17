@@ -38,7 +38,7 @@ example_file_path = pkg_resources.resource_filename(
         )
     )
 __doc__ = __doc__.format(
-    example_file=example_file_path
+    example_file=path.relpath(example_file_path)
     )
 
 
