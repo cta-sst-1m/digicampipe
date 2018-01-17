@@ -7,6 +7,8 @@ from digicampipe.utils import geometry
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
+import pkg_resources
+import os
 
 if __name__ == '__main__':
     # Data configuration
@@ -14,7 +16,15 @@ if __name__ == '__main__':
     directory = '/home/dneise/ctasoft/sst1m_crab/'
     filename = directory + 'SST1M01_20171030.%03d.fits.fz'
     file_list = [filename % number for number in [2]]
-    camera_config_file = '/home/dneise/ctasoft/digicampipe/digicampipe/tests/resources/camera_config.cfg'
+    camera_config_file = pkg_resources.resource_filename(
+        'digicampipe',
+        os.path.join(
+            'tests',
+            'resources',
+            'camera_config.cfg'
+        )
+    )
+
     dark_filename = 'dark.npz'
 
     trigger_filename = 'bias_curve_dark.npz'
