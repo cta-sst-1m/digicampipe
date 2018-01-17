@@ -73,8 +73,8 @@ def main(output_directory, files):
     for _ in tqdm(data_stream):
         pass
 
-    data_dark = np.load(directory + dark_filename)
-    data_rate = np.load(directory + trigger_filename)
+    data_dark = np.load(dark_file_path)
+    data_rate = np.load(dark_trigger_file_path)
 
     plt.figure()
     plt.hist(data_dark['baseline'], bins='auto')
