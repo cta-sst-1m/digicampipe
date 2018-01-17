@@ -50,10 +50,10 @@ def main(output_directory, files):
         camera_geometry=digicam_geometry,
         camera=digicam
     )
-    data_stream = r0.fill_trigger_input_7(data_stream)
     data_stream = filter.set_patches_to_zero(
         data_stream,
         unwanted_patch=unwanted_patch)
+    data_stream = r0.fill_trigger_input_7(data_stream)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 
