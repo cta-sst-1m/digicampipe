@@ -6,13 +6,15 @@ Extract dark.npz and bias_curve_dark.npz from observations.
     dark_evaluation.py . path/to/SST1M01_20171030.002.fits.fz
 
 Usage:
-  dark_evaluation.py [-o <dir>] [-i <file>]...
+  dark_evaluation.py [options] [-i <file>]...
 
 Options:
   -h --help     Show this screen.
   -i <file>, --input=<file>  input file [default: {example_file}]
   -o <dir>, --outdir=<dir>  output directory [default: .]
-
+  --unwanted_patches=<integers>   list of integers with commas [default: 306, 318, 330, 342, 200]
+  --unwanted_clusters=<integers>   list of integers with commas [default: 200]
+  --unblind   do not use blind
 '''
 from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
@@ -40,7 +42,13 @@ __doc__ = __doc__.format(
     )
 
 
-def main(output_directory, files):
+def main(
+    output_directory,
+    files,
+    unwanted_patches,
+    unwanted_clusters,
+    blinding
+):
     camera_config_file = pkg_resources.resource_filename(
         'digicampipe',
         path.join(
@@ -54,9 +62,6 @@ def main(output_directory, files):
     dark_trigger_file_path = path.join(output_directory, 'bias_curve_dark.npz')
 
     thresholds = np.arange(0, 400, 10)
-    unwanted_patch = [306, 318, 330, 342, 200]
-    unwanted_cluster = [200]
-    blinding = True
 
     digicam = Camera(_config_file=camera_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
@@ -70,7 +75,7 @@ def main(output_directory, files):
     )
     data_stream = filter.set_patches_to_zero(
         data_stream,
-        unwanted_patch=unwanted_patch)
+        unwanted_patch=unwanted_patches)
     data_stream = r0.fill_trigger_input_7(data_stream)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
@@ -80,7 +85,7 @@ def main(output_directory, files):
         thresholds=thresholds,
         blinding=blinding,
         output_filename=dark_trigger_file_path,
-        unwanted_cluster=unwanted_cluster
+        unwanted_cluster=unwanted_clusters
     )
 
     data_stream = save_dark(data_stream, dark_file_path)
@@ -119,7 +124,15 @@ def main(output_directory, files):
 
 if __name__ == "__main__":
     args = docopt(__doc__)
+    args['--unwanted_patches'] = [
+        int(x) for x in args['--unwanted_patches'].split(',')]
+    args['--unwanted_clusters'] = [
+        int(x) for x in args['--unwanted_clusters'].split(',')]
+
     main(
-        output_directory=args['<output_directory>'],
-        files=args['<files>']
+        output_directory=args['--outdir'],
+        files=args['--input'],
+        unwanted_patches=args['--unwanted_patches'],
+        unwanted_clusters=args['--unwanted_clusters'],
+        blinding=not args['--unblind'],
     )
