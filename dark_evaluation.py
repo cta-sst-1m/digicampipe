@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 '''
-Extract
+Extract dark.npz and bias_curve_dark.npz from observations.
+
+    Example call:
+    dark_evaluation.py . path/to/SST1M01_20171030.002.fits.fz
 
 Usage:
   dark_evaluation.py <output_directory> <files>...
