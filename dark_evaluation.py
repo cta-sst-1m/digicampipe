@@ -75,33 +75,6 @@ def main(output_directory, files):
     for _ in tqdm(data_stream):
         pass
 
-    data_dark = np.load(dark_file_path)
-    data_rate = np.load(dark_trigger_file_path)
-
-    plt.figure()
-    plt.hist(data_dark['baseline'], bins='auto')
-    plt.xlabel('dark baseline [LSB]')
-    plt.ylabel('count')
-
-    plt.figure()
-    plt.hist(data_dark['standard_deviation'], bins='auto')
-    plt.xlabel('dark std [LSB]')
-    plt.ylabel('count')
-
-    fig = plt.figure()
-    axis = fig.add_subplot(111)
-    axis.errorbar(
-        x=data_rate['threshold'],
-        y=data_rate['rate'] * 1E9,
-        yerr=data_rate['rate_error'] * 1E9,
-        label='Blinding : {}'.format(blinding)
-    )
-    axis.set_ylabel('rate [Hz]')
-    axis.set_xlabel('threshold [LSB]')
-    axis.set_yscale('log')
-    axis.legend(loc='best')
-    plt.show()
-
 
     # Filter the events for display
 if __name__ == "__main__":
