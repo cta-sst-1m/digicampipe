@@ -8,8 +8,6 @@ import astropy.units as u
 
 
 if __name__ == '__main__':
-    # Data configuration
-
     directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(3, 23)]
@@ -45,7 +43,9 @@ if __name__ == '__main__':
     plt.legend()
 
     sectors = [1, 3]
-    pixel_not_in_intersil = [pixel.ID for pixel in digicam.Pixels if pixel.sector in sectors]
+    pixel_not_in_intersil = [
+        pixel.ID for pixel in digicam.Pixels if pixel.sector in sectors
+    ]
 
     print(len(pixel_not_in_intersil))
 
