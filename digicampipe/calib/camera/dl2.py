@@ -5,7 +5,7 @@ import astropy.units as u
 def hillas_parameters(geom, image):
     unit = geom.pix_x.unit
     try:
-       moments = hillas.hillas_parameters(geom, image)
+       return hillas.hillas_parameters(geom, image)
     except hillas.HillasParameterizationError:
         return hillas.MomentParameters(
             size=None,
@@ -40,7 +40,6 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
             mask = dl1_camera.cleaning_mask
             image[~mask] = 0.
             moments_first = hillas_parameters(geom, image)
-
             if reclean:
                 mask_near_center = find_mask_near_center(
                     geom=geom,
