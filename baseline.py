@@ -42,7 +42,7 @@ if __name__ == "__main__":
     args = docopt(__doc__)
     args['--unwanted_pixels'] = [
         int(x) for x in args['--unwanted_pixels'].split(',')]
-
+    print(args)
     main(
         baseline_file_path=args['<baseline_file_path>'],
         files=args['<files>'],
