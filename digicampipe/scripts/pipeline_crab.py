@@ -151,7 +151,7 @@ def main(args):
             data_stream=data_stream, output_filename=args['--outfile_path'])
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     print(args)
     args['--min_photon'] = int(args['--min_photon'])

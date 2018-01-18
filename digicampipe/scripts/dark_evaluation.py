@@ -109,7 +109,7 @@ def main(
     plt.show()
 
 
-if __name__ == "__main__":
+def entry():
     args = docopt(__doc__)
     args['--unwanted_patches'] = [
         int(x) for x in args['--unwanted_patches'].split(',')]
