@@ -60,7 +60,10 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
 def find_mask_near_center(geom, cen_x, cen_y, distance):
 
-    d = np.sqrt((geom.pix_x - cen_x)**2 + (geom.pix_y - cen_y)**2)
+    d = np.sqrt(
+        (geom.pix_x - cen_x)**2 +
+        (geom.pix_y - cen_y)**2
+    )
 
     return d < distance
 
