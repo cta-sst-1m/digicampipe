@@ -44,39 +44,6 @@ if __name__ == '__main__':
     plt.ylabel('count')
     plt.legend()
 
-    '''
-
-    baseline_change = np.diff(data['baseline'], axis=0)/np.diff(data['time_stamp'] * 1E-9)[:, np.newaxis]
-
-    plt.figure()
-    plt.hist(baseline_change.ravel(), bins='auto', label='pixel + time')
-    plt.xlabel('dB/dt [LSB $\cdot$ s$^{-1}$ ]')
-    plt.ylabel('count')
-    plt.legend()
-
-    baseline_max_min = np.max(data['baseline'], axis=0) - np.min(data['baseline'], axis=0)
-
-    plt.figure()
-    plt.hist(baseline_max_min, bins='auto', label='pixel')
-    plt.xlabel('$B_{max} - B_{min}$ [LSB]')
-    plt.ylabel('count')
-    plt.legend()
-
-    baseline_max_dark = np.max(data['baseline'], axis=0) - np.mean(data['baseline_dark'], axis=0)
-
-    plt.figure()
-    plt.hist(baseline_max_dark.ravel(), bins='auto', label='pixel')
-    plt.xlabel('$B_{max} - B_{dark}$ [LSB]')
-    plt.ylabel('count')
-    plt.legend()
-
-    plt.figure()
-    plt.hist(data['baseline_std'].ravel(), bins='auto', label='pixel + time')
-    plt.xlabel('baseline std [LSB]')
-    plt.ylabel('count')
-    plt.legend()
-
-    '''
     sectors = [1, 3]
     pixel_not_in_intersil = [pixel.ID for pixel in digicam.Pixels if pixel.sector in sectors]
 
