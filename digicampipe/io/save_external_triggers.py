@@ -44,5 +44,3 @@ def save_external_triggers(
              nsb_rate=np.array(nsb_rate),
              gain_drop=np.array(gain_drop),
              time_stamp=np.array(time_stamp))
-
-
