@@ -28,23 +28,13 @@ if __name__ == '__main__':
         expert_mode=True,
         camera_geometry=digicam_geometry
     )
-    # Fill the flags (to be replaced by Digicam)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=1050)
-    # Fill the baseline (to be replaced by Digicam)
-
     data_stream = filter.filter_missing_baseline(data_stream)
-
     data_stream = filter.filter_event_types(data_stream, flags=[8])
-
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
-
     data_stream = filter.filter_period(data_stream, period=10*u.second)
 
-    # save_external_triggers(data_stream, output_filename=directory + nsb_filename, pixel_list=pixel_list)
-
     data = np.load(directory + nsb_filename)
-
-
 
     plt.figure()
     plt.hist(data['baseline_dark'].ravel(), bins='auto', label='dark')
