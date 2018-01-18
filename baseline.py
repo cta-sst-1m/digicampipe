@@ -14,33 +14,21 @@ Options:
 from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
-from cts_core.camera import Camera
-from digicampipe.utils import geometry
+from digicampipe.utils import Camera
 from tqdm import tqdm
-import pkg_resources
-from os import path
 from docopt import docopt
 
 
 def main(baseline_file_path, files):
-    camera_config_file = pkg_resources.resource_filename(
-        'digicampipe',
-        path.join(
-            'tests',
-            'resources',
-            'camera_config.cfg'
-        )
-    )
 
     unwanted_patch = [306, 318, 330, 342, 200]
 
-    digicam = Camera(_config_file=camera_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
+    digicam = Camera()
     data_stream = event_stream(
         file_list=files,
         expert_mode=True,
-        camera_geometry=digicam_geometry,
-        camera=digicam
+        camera=digicam,
+        camera_geometry=digicam.geometry
     )
     data_stream = filter.set_patches_to_zero(
         data_stream,
@@ -50,6 +38,7 @@ def main(baseline_file_path, files):
 
     for _ in tqdm(data_stream):
         pass
+
 
 if __name__ == "__main__":
     args = docopt(__doc__)
