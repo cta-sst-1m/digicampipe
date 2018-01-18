@@ -56,7 +56,12 @@ if __name__ == '__main__':
     indices_to_keep = np.where(x > 0)
     x = x[indices_to_keep[0]]
 
-    temp = np.where(((data['baseline_shift'].T <= 0) + (data['baseline_shift'].T >= 80)) > 0)
+    temp = np.where(
+        (
+            (data['baseline_shift'].T <= 0) +
+            (data['baseline_shift'].T >= 80)
+        ) > 0
+    )
     print(temp[0].shape, temp[1].shape)
 
     plt.figure()
