@@ -96,7 +96,13 @@ if __name__ == '__main__':
     plt.show()
 
     plt.figure()
-    plt.hist(data['nsb_rate'][(data['nsb_rate'] > 0.5) * (data['nsb_rate'] < 1.8)].ravel() * 1E3, bins='auto', label='all pixels')
+    plt.hist(
+        data['nsb_rate'][
+            (data['nsb_rate'] > 0.5) * (data['nsb_rate'] < 1.8)
+        ].ravel() * 1E3,
+        bins='auto',
+        label='all pixels'
+    )
     plt.xlabel('$f_{nsb}$ [MHz]')
     plt.ylabel('count')
     plt.legend()
