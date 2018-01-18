@@ -24,6 +24,9 @@ def hillas_parameters(geom, image):
 
 
 def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
+    '''
+    Skips events with size==0
+    '''
 
     for i, event in enumerate(event_stream):
 
