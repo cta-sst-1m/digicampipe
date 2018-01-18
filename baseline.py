@@ -10,6 +10,7 @@ Usage:
 
 Options:
   -h --help     Show this screen.
+  --unwanted_pixels=<integers>   list of integers with commas
 '''
 from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
@@ -19,10 +20,7 @@ from tqdm import tqdm
 from docopt import docopt
 
 
-def main(baseline_file_path, files):
-
-    unwanted_patch = [306, 318, 330, 342, 200]
-
+def main(baseline_file_path, files, unwanted_pixels=[]):
     digicam = Camera()
     data_stream = event_stream(
         file_list=files,
@@ -30,9 +28,9 @@ def main(baseline_file_path, files):
         camera=digicam,
         camera_geometry=digicam.geometry
     )
-    data_stream = filter.set_patches_to_zero(
+    data_stream = filter.set_pixels_to_zero(
         data_stream,
-        unwanted_patch=unwanted_patch)
+        unwanted_pixels=unwanted_pixels)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
     data_stream = save_dark(data_stream, baseline_file_path)
 
@@ -42,7 +40,11 @@ def main(baseline_file_path, files):
 
 if __name__ == "__main__":
     args = docopt(__doc__)
+    args['--unwanted_pixels'] = [
+        int(x) for x in args['--unwanted_pixels'].split(',')]
+
     main(
         baseline_file_path=args['<baseline_file_path>'],
-        files=args['<files>']
+        files=args['<files>'],
+        unwanted_pixels=args['--unwanted_pixels']
     )
