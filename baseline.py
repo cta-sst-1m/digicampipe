@@ -51,7 +51,6 @@ def main(baseline_file_path, files):
     data_stream = filter.set_patches_to_zero(
         data_stream,
         unwanted_patch=unwanted_patch)
-    data_stream = r0.fill_trigger_input_7(data_stream)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
     data_stream = save_dark(data_stream, baseline_file_path)
 
