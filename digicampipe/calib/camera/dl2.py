@@ -40,6 +40,8 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
             mask = dl1_camera.cleaning_mask
             image[~mask] = 0.
             moments_first = hillas_parameters(geom, image)
+            if moments_first.size == 0:
+                continue
             if reclean:
                 mask_near_center = find_mask_near_center(
                     geom=geom,
@@ -49,6 +51,8 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                 dl1_camera.cleaning_mask &= mask_near_center
                 image[~dl1_camera.cleaning_mask] = 0
                 moments = hillas_parameters(geom, image)
+                if moments.size == 0:
+                    continue
             else:
                 moments = moments_first
         event.dl2.shower = moments
