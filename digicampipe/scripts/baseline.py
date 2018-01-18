@@ -42,7 +42,7 @@ def main(baseline_file_path, files, unwanted_pixels=[]):
         pass
 
 
-if __name__ == "__main__":
+def entry():
     args = docopt(__doc__)
     args['--unwanted_pixels'] = [
         int(x) for x in args['--unwanted_pixels'].split(',') if x]
