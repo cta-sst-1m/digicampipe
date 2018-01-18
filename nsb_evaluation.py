@@ -7,11 +7,10 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 
 
-
 if __name__ == '__main__':
     # Data configuration
 
-    directory = '/home/alispach/data/CRAB_01/' #
+    directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(3, 23)]
     camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
@@ -24,11 +23,11 @@ if __name__ == '__main__':
 
     pixel_list = np.arange(1296)
 
-    # Trigger configuration
-    unwanted_patch = None
-
-    # Define the event stream
-    data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry)
+    data_stream = event_stream(
+        file_list=file_list,
+        expert_mode=True,
+        camera_geometry=digicam_geometry
+    )
     # Fill the flags (to be replaced by Digicam)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=1050)
     # Fill the baseline (to be replaced by Digicam)
