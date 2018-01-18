@@ -25,33 +25,48 @@ import astropy.units as u
 from docopt import docopt
 
 
-def main(args):
-    directory = '/home/alispach/data/CRAB_01/'
-    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    file_list = [filename % number for number in range(3, 23)]
-    dark_baseline = np.load(directory + 'dark.npz')
-    nsb_filename = 'nsb.npz'
+def main(
+    files,
+    outfile_path,
+    baseline_path,
+    do_plots=False
+):
+    baseline = np.load(baseline_path)
 
     digicam = Camera()
     data_stream = event_stream(
-        file_list=file_list,
+        file_list=files,
         expert_mode=True,
+        camera=digicam,
         camera_geometry=digicam.geometry
     )
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=1050)
     data_stream = filter.filter_missing_baseline(data_stream)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
-    data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
+    data_stream = r1.calibrate_to_r1(data_stream, baseline)
     data_stream = filter.filter_period(data_stream, period=10*u.second)
-    pixel_list = np.arange(1296)
+
     save_external_triggers(
         data_stream,
-        output_filename=directory + nsb_filename,
-        pixel_list=pixel_list
+        output_filename=outfile_path,
+        pixel_list=np.arange(1296)
     )
 
-    data = np.load(directory + nsb_filename)
+    if do_plots:
+        make_plots(outfile_path)
 
+
+def make_plots(path):
+    data = np.load(path)
+    plot_5(data)
+    plot_4(data)
+    plot_3(data)
+    plot_2(data)
+    plot_1(data)
+    plt.show()
+
+
+def plot_5(data):
     plt.figure()
     plt.hist(data['baseline_dark'].ravel(), bins='auto', label='dark')
     plt.hist(data['baseline'].ravel(), bins='auto', label='nsb')
@@ -60,13 +75,14 @@ def main(args):
     plt.ylabel('count')
     plt.legend()
 
+
+def plot_4(data):
+    digicam = Camera()
     sectors = [1, 3]
     pixel_not_in_intersil = [
         pixel.ID for pixel in digicam.Pixels if pixel.sector in sectors
     ]
-
     print(len(pixel_not_in_intersil))
-
     x = data['nsb_rate'].T[pixel_not_in_intersil]
 
     x = np.mean(x, axis=-1)
@@ -97,8 +113,9 @@ def main(args):
     )
     plt.legend()
     plt.xlabel('$f_{nsb} [GHz]$')
-    plt.show()
 
+
+def plot_3(data):
     baseline_max_min = (
         np.max(data['baseline'], axis=0) -
         np.min(data['baseline'], axis=0)
@@ -137,8 +154,9 @@ def main(args):
     plt.xlabel('$f_{nsb}$ [GHz]')
     plt.ylabel('count')
     plt.legend()
-    plt.show()
 
+
+def plot_2(data):
     plt.figure()
     plt.hist(
         data['nsb_rate'][
@@ -151,6 +169,8 @@ def main(args):
     plt.ylabel('count')
     plt.legend()
 
+
+def plot_1(data):
     x = np.mean(data['nsb_rate'], axis=0)
     x = x[(x > 0.5) * (x < 1.8)]
     plt.figure()
@@ -165,7 +185,6 @@ def main(args):
     plt.xlabel('$f_{nsb}$ [GHz]')
     plt.ylabel('count')
     plt.legend()
-    plt.show()
 
 
 if __name__ == '__main__':
