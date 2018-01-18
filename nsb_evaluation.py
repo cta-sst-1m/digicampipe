@@ -83,11 +83,6 @@ if __name__ == '__main__':
     x = np.mean(x, axis=0)
     x = x[np.all(mask, axis=0)]
 
-    #mask = np.all(mask, axis=0)
-    #print(mask.shape)
-    #x = x[:, mask]
-    #print(x.shape)
-
     plt.figure()
     plt.hist(
         x,
