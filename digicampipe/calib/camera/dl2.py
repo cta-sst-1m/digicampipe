@@ -66,12 +66,9 @@ def find_mask_near_center(geom, cen_x, cen_y, distance):
 
 
 def find_mask_near_max(geom, distance, index_max):
-
-    cen_x, cen_y = geom.pix_x[index_max], geom.pix_y[index_max]
-
     return find_mask_near_center(
         geom=geom,
-        cen_x=cen_x,
-        cen_y=cen_y,
+        cen_x=geom.pix_x[index_max],
+        cen_y=geom.pix_y[index_max],
         distance=distance
     )
