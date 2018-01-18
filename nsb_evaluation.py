@@ -1,30 +1,40 @@
+#!/usr/bin/env python
+'''
+
+Example:
+
+Usage:
+  nsb_evaluation.py [options] <files>...
+
+
+Options:
+  -h --help     Show this screen.
+  --display     Display rather than output data
+  -o <path>, --outfile_path=<path>   path to the output file
+  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
+  --min_photon <int>     Filtering on big showers [default: 20]
+'''
+
 from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
-from cts_core.camera import Camera
-from digicampipe.utils import geometry
+from digicampipe.utils import Camera
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 
 
-if __name__ == '__main__':
+def main(args):
     directory = '/home/alispach/data/CRAB_01/'
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(3, 23)]
-    camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     dark_baseline = np.load(directory + 'dark.npz')
-
     nsb_filename = 'nsb.npz'
 
-    digicam = Camera(_config_file=camera_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-
-    pixel_list = np.arange(1296)
-
+    digicam = Camera()
     data_stream = event_stream(
         file_list=file_list,
         expert_mode=True,
-        camera_geometry=digicam_geometry
+        camera_geometry=digicam.geometry
     )
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=1050)
     data_stream = filter.filter_missing_baseline(data_stream)
@@ -148,3 +158,8 @@ if __name__ == '__main__':
     plt.ylabel('count')
     plt.legend()
     plt.show()
+
+
+if __name__ == '__main__':
+    args = docopt(__doc__)
+    main(args)
