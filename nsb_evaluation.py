@@ -89,7 +89,14 @@ if __name__ == '__main__':
     #print(x.shape)
 
     plt.figure()
-    plt.hist(x, bins='auto', label='mean : {:.2f}, std : {:.2f}'.format(np.mean(x), np.std(x)))
+    plt.hist(
+        x,
+        bins='auto',
+        label='mean : {:.2f}, std : {:.2f}'.format(
+            np.mean(x),
+            np.std(x)
+        )
+    )
     plt.xlabel('$f_{nsb}$ [GHz]')
     plt.ylabel('count')
     plt.legend()
