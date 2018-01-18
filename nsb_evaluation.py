@@ -21,6 +21,7 @@ from digicampipe.utils import Camera
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
+from docopt import docopt
 
 
 def main(args):
