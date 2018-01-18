@@ -89,7 +89,10 @@ if __name__ == '__main__':
         np.max(data['baseline'], axis=0) -
         np.mean(data['baseline_dark'], axis=0)
     )
-
+    baseline_change = (
+        np.diff(data['baseline'], axis=0) /
+        np.diff(data['time_stamp'] * 1E-9)[:, np.newaxis]
+    )
 
     mask = (baseline_max_min < 25) * (baseline_max_min > 0)
     mask = mask * (baseline_max_dark > 55) * (baseline_max_dark < 60)
