@@ -188,7 +188,7 @@ def plot_1(data):
 if __name__ == '__main__':
     args = docopt(__doc__)
     main(
-        files=args['<args>'],
+        files=args['<files>'],
         outfile_path=args['--outfile_path'],
         baseline_path=args['--baseline_path'],
         do_plots=args['--display']
