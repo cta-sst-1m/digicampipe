@@ -4,6 +4,7 @@ Extract baseline from observations.
 
     Example call:
     baseline.py ./baseline.npz path/to/SST1M01_20171030.002.fits.fz
+    baseline.py --unwanted_pixels=1,2,3 delete_me.test ../sst1m_crab/SST1M01_20171030.002.fits.fz
 
 Usage:
   baseline.py [options] <baseline_file_path> <files>...
