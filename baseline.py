@@ -6,11 +6,11 @@ Extract baseline from observations.
     baseline.py ./baseline.npz path/to/SST1M01_20171030.002.fits.fz
 
 Usage:
-  baseline.py <baseline_file_path> <files>...
+  baseline.py [options] <baseline_file_path> <files>...
 
 Options:
   -h --help     Show this screen.
-  --unwanted_pixels=<integers>   list of integers with commas
+  --unwanted_pixels=<integers>   list of integers with commas [default: ]
 '''
 from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
@@ -41,8 +41,7 @@ def main(baseline_file_path, files, unwanted_pixels=[]):
 if __name__ == "__main__":
     args = docopt(__doc__)
     args['--unwanted_pixels'] = [
-        int(x) for x in args['--unwanted_pixels'].split(',')]
-    print(args)
+        int(x) for x in args['--unwanted_pixels'].split(',') if x]
     main(
         baseline_file_path=args['<baseline_file_path>'],
         files=args['<files>'],
