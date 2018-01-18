@@ -9,12 +9,10 @@ Usage:
 
 Options:
   -h --help     Show this screen.
-  --display     Display rather than output data
+  --display     show plots
   -o <path>, --outfile_path=<path>   path to the output file
   -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
-  --min_photon <int>     Filtering on big showers [default: 20]
 '''
-
 from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import Camera
@@ -189,4 +187,9 @@ def plot_1(data):
 
 if __name__ == '__main__':
     args = docopt(__doc__)
-    main(args)
+    main(
+        files=args['<args>'],
+        outfile_path=args['--outfile_path'],
+        baseline_path=args['--baseline_path'],
+        do_plots=args['--display']
+    )
