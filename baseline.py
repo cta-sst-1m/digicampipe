@@ -14,11 +14,8 @@ Options:
 from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
-from digicampipe.io.save_bias_curve import save_bias_curve
 from cts_core.camera import Camera
 from digicampipe.utils import geometry
-import matplotlib.pyplot as plt
-import numpy as np
 from tqdm import tqdm
 import pkg_resources
 from os import path
@@ -35,10 +32,7 @@ def main(baseline_file_path, files):
         )
     )
 
-    thresholds = np.arange(0, 400, 10)
     unwanted_patch = [306, 318, 330, 342, 200]
-    unwanted_cluster = [200]
-    blinding = True
 
     digicam = Camera(_config_file=camera_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
