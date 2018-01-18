@@ -26,6 +26,7 @@ setup(
         'scipy',
         'astropy',
         'h5py',
+        'tqdm',
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
