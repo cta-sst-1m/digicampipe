@@ -43,6 +43,7 @@ def main(args):
     data_stream = filter.filter_event_types(data_stream, flags=[8])
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
     data_stream = filter.filter_period(data_stream, period=10*u.second)
+    pixel_list = np.arange(1296)
     save_external_triggers(
         data_stream,
         output_filename=directory + nsb_filename,
