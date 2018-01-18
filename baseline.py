@@ -11,7 +11,7 @@ Usage:
 Options:
   -h --help     Show this screen.
 '''
-from digicampipe.calib.camera import filter, r0
+from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from cts_core.camera import Camera
