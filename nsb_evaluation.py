@@ -81,6 +81,16 @@ if __name__ == '__main__':
     plt.xlabel('$f_{nsb} [GHz]$')
     plt.show()
 
+    baseline_max_min = (
+        np.max(data['baseline'], axis=0) -
+        np.min(data['baseline'], axis=0)
+    )
+    baseline_max_dark = (
+        np.max(data['baseline'], axis=0) -
+        np.mean(data['baseline_dark'], axis=0)
+    )
+
+
     mask = (baseline_max_min < 25) * (baseline_max_min > 0)
     mask = mask * (baseline_max_dark > 55) * (baseline_max_dark < 60)
     mask = mask[:, np.newaxis].T * np.abs(baseline_change) < 0.4
