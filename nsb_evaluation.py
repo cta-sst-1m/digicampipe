@@ -68,7 +68,15 @@ if __name__ == '__main__':
     plt.hist(temp[0], bins=np.arange(0, 1296, 1))
 
     plt.figure()
-    plt.hist(x.ravel(), bins='auto', label='sector : {} \n mean : {:0.2f} \n std : {:0.2f}'.format(sectors, np.mean(x), np.std(x)))
+    plt.hist(
+        x.ravel(),
+        bins='auto',
+        label='sector : {} \n mean : {:0.2f} \n std : {:0.2f}'.format(
+            sectors,
+            np.mean(x),
+            np.std(x)
+        )
+    )
     plt.legend()
     plt.xlabel('$f_{nsb} [GHz]$')
     plt.show()
