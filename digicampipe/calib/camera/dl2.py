@@ -3,10 +3,10 @@ import numpy as np
 import astropy.units as u
 
 def hillas_parameters(geom, image):
-    unit = geom.pix_x.unit
     try:
        return hillas.hillas_parameters(geom, image)
     except hillas.HillasParameterizationError:
+        unit = geom.pix_x.unit
         return hillas.MomentParameters(
             size=None,
             cen_x=np.nan * unit,
