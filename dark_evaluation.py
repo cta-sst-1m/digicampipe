@@ -20,8 +20,7 @@ from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve
-from cts_core.camera import Camera
-from digicampipe.utils import geometry
+from digicampipe.utils import Camera
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
@@ -49,28 +48,16 @@ def main(
     unwanted_clusters,
     blinding
 ):
-    camera_config_file = pkg_resources.resource_filename(
-        'digicampipe',
-        path.join(
-            'tests',
-            'resources',
-            'camera_config.cfg'
-        )
-    )
-
     dark_file_path = path.join(output_directory, 'dark.npz')
     dark_trigger_file_path = path.join(output_directory, 'bias_curve_dark.npz')
 
     thresholds = np.arange(0, 400, 10)
 
-    digicam = Camera(_config_file=camera_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-
-    # Define the event stream
+    digicam = Camera()
     data_stream = event_stream(
         file_list=files,
         expert_mode=True,
-        camera_geometry=digicam_geometry,
+        camera_geometry=digicam.geometry,
         camera=digicam
     )
     data_stream = filter.set_patches_to_zero(
