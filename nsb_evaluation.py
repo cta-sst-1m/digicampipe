@@ -104,11 +104,15 @@ if __name__ == '__main__':
     x = np.mean(data['nsb_rate'], axis=0)
     x = x[(x > 0.5) * (x < 1.8)]
     plt.figure()
-    plt.hist(x, bins='auto', label='mean : {:.2f}, std : {:.2f}'.format(np.mean(x), np.std(x)))
+    plt.hist(
+        x,
+        bins='auto',
+        label='mean : {:.2f}, std : {:.2f}'.format(
+            np.mean(x),
+            np.std(x)
+        )
+    )
     plt.xlabel('$f_{nsb}$ [GHz]')
     plt.ylabel('count')
     plt.legend()
     plt.show()
-
-
-
