@@ -2,6 +2,26 @@ from ctapipe.image import hillas
 import numpy as np
 import astropy.units as u
 
+def hillas_parameters(geom, image):
+    unit = geom.pix_x.unit
+    try:
+       moments = hillas.hillas_parameters(geom, image)
+    except hillas.HillasParameterizationError:
+        return hillas.MomentParameters(
+            size=None,
+            cen_x=np.nan * unit,
+            cen_y=np.nan * unit,
+            length=np.nan * unit,
+            width=np.nan * unit,
+            r=np.nan * unit,
+            phi=Angle(np.nan * u.rad),
+            psi=Angle(np.nan * u.rad),
+            miss=np.nan * unit,
+            skewness=None,
+            kurtosis=None,
+        )
+
+
 
 def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
@@ -19,7 +39,7 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
             mask = dl1_camera.cleaning_mask
             image[~mask] = 0.
-            moments_first = hillas.hillas_parameters(geom, image)
+            moments_first = hillas_parameters(geom, image)
 
             if reclean:
 
@@ -29,7 +49,7 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                                                          distance=shower_distance)
                 dl1_camera.cleaning_mask = dl1_camera.cleaning_mask & mask_near_center
                 image[~dl1_camera.cleaning_mask] = 0
-                moments = hillas.hillas_parameters(geom, image)
+                moments = hillas_parameters(geom, image)
             else:
                 moments = moments_first
         event.dl2.shower = moments
