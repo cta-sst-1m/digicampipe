@@ -33,4 +33,14 @@ setup(
     package_data={
         '': ['tests/resources/*', 'tests/resources/stars_on_lid/*'],
     },
+    entry_points={
+        'console_scripts': [
+            ('digicam_baseline = '
+                'digicampipe.scripts.baseline:entry'),
+            ('digicam_dark_evaluation = '
+                'digicampipe.scripts.dark_evaluation:entry'),
+            ('digicam_pipeline = '
+                'digicampipe.scripts.pipeline_crab:entry'),
+        ]
+    },
 )
