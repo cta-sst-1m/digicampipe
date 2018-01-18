@@ -94,15 +94,15 @@ if __name__ == '__main__':
         np.diff(data['time_stamp'] * 1E-9)[:, np.newaxis]
     )
 
-    mask = (baseline_max_min < 25)
-    mask *= (baseline_max_min > 0)
-    mask *= (baseline_max_dark > 55)
-    mask *= (baseline_max_dark < 60)
+    mask = baseline_max_min < 25
+    mask *= baseline_max_min > 0
+    mask *= baseline_max_dark > 55
+    mask *= baseline_max_dark < 60
     mask = mask[:, np.newaxis].T * np.abs(baseline_change) < 0.4
-    mask *= (data['baseline_shift'][:-1] > 30)
-    mask *= (data['baseline_shift'][:-1] < 80)
-    x = data['nsb_rate'][:-1]
+    mask *= data['baseline_shift'][:-1] > 30
+    mask *= data['baseline_shift'][:-1] < 80
 
+    x = data['nsb_rate'][:-1]
     x = np.ma.array(x, mask=~mask)
     x = np.mean(x, axis=0)
     x = x[np.all(mask, axis=0)]
