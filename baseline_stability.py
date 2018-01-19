@@ -1,6 +1,5 @@
 import numpy as np
 from digicampipe.io.event_stream import event_stream
-import digicampipe.io.zfits as zfits
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
 from digicamviewer.viewer import EventViewer
