@@ -59,7 +59,6 @@ def extract_baseline(event_stream, calib_container):
     :return:
     """
     cc = calib_container  # use short form, for shorter lines
-    pixel_list = list(range(1296))
 
     for event in event_stream:
 
