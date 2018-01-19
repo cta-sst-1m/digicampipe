@@ -93,37 +93,10 @@ def extract_baseline(event_stream, calib_container):
 
             # Insert new event
             if compute_full_baseline:
-                # shift all adcs by one event
-                samples[:, :-n_samples] = (
-                    samples[:, n_samples:])
-                # Add the new event
-                samples[:, -n_samples:] = adcs
-                # Compute the baseline and standard deviations
-                cc.baseline_ready = True
-                cc.baseline = np.nanmean(
-                    samples[:, :-n_samples],
-                    axis=-1)
-                cc.std_dev = np.nanstd(
-                    samples[:, :-n_samples], axis=-1)
+                if_case()
                 yield event
-
             else:
-                # Fill it in the proper place
-                samples[
-                    :,
-                    cc.counter: cc.counter + adcs.shape[-1]
-                ] = adcs
-                # and increment the counter
-                cc.counter += adcs.shape[-1]
-                # Compute the baseline and standard deviations
-                if cc.counter > 0.1*cc.sample_to_consider:
-                    cc.baseline_ready = True
-                    cc.baseline = np.nanmean(
-                        samples[:, :cc.counter-adcs.shape[-1]],
-                        axis=-1)
-                    cc.std_dev = np.nanstd(
-                        samples[:, :cc.counter-adcs.shape[-1]],
-                        axis=-1)
+                else_case()
                 yield event
 
 
@@ -156,3 +129,41 @@ def mask_noisy_pixels(cc, adcs):
         some_unexplained_noise_limit
     )
     samples[noisy_pixels, slice_1] = np.nan
+
+
+def if_case(cc, adcs):
+    n_pixels, n_samples = adcs.shape
+    samples = cc.samples_for_baseline
+
+    # shift all adcs by one event
+    samples[:, :-n_samples] = (
+        samples[:, n_samples:])
+    # Add the new event
+    samples[:, -n_samples:] = adcs
+    # Compute the baseline and standard deviations
+    cc.baseline_ready = True
+    cc.baseline = np.nanmean(
+        samples[:, :-n_samples],
+        axis=-1)
+    cc.std_dev = np.nanstd(
+        samples[:, :-n_samples], axis=-1)
+
+
+def else_case(cc, adcs):
+    samples = cc.samples_for_baseline
+    # Fill it in the proper place
+    samples[
+        :,
+        cc.counter: cc.counter + adcs.shape[-1]
+    ] = adcs
+    # and increment the counter
+    cc.counter += adcs.shape[-1]
+    # Compute the baseline and standard deviations
+    if cc.counter > 0.1*cc.sample_to_consider:
+        cc.baseline_ready = True
+        cc.baseline = np.nanmean(
+            samples[:, :cc.counter-adcs.shape[-1]],
+            axis=-1)
+        cc.std_dev = np.nanstd(
+            samples[:, :cc.counter-adcs.shape[-1]],
+            axis=-1)
