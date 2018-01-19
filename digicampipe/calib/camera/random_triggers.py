@@ -75,7 +75,7 @@ def extract_baseline(event_stream, calib_container):
             if cc.sample_to_consider == cc.samples_for_baseline.shape[-1]:
                 cc.samples_for_baseline = np.append(
                     cc.samples_for_baseline,
-                    np.zeros((n_pixels, n_samples), dtype=int),
+                    np.zeros_like(adcs),
                     axis=-1
                 )
 
