@@ -93,9 +93,8 @@ def extract_baseline(event_stream, calib_container):
                 #     cc.counter,
                 #     cc.counter + adcs.shape[-1]
                 # )
-                counter = cc.counter
                 prev_mean = np.mean(
-                    cc.samples_for_baseline[:, counter-n_samples:counter],
+                    cc.samples_for_baseline[:, cc.counter-n_samples:cc.counter],
                     axis=-1)
                 prevprev_mean = np.mean(
                     cc.samples_for_baseline[
