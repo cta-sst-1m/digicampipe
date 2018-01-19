@@ -61,13 +61,10 @@ def extract_baseline(event_stream, calib_container):
     cc = calib_container  # use short form, for shorter lines
 
     for event in event_stream:
-
-        # Check that the event is random trigger
-        if event.trig.trigger_flag != 1:
+        if not is_random_trigger(event):
             yield event
 
         for telid in event.r0.tels_with_data:
-            # Get the adcs
             adcs = event.r0.tel[telid].adc_samples
             n_pixels, n_samples = adcs.shape
             samples = cc.samples_for_baseline
@@ -166,3 +163,7 @@ def else_case(cc, adcs):
         cc.std_dev = np.nanstd(
             samples[:, :cc.counter-adcs.shape[-1]],
             axis=-1)
+
+
+def is_random_trigger(event):
+    event.trig.trigger_flag == 1
