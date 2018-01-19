@@ -86,32 +86,8 @@ def extract_baseline(event_stream, calib_container):
             if cc.counter < samples.shape[-1] - 1:
                 compute_full_baseline = False
 
-            # Check the meaningfulness of previous event for baseline
-            # calculation and set to nan noisy pixels
             if cc.counter > 2 * n_samples:
-                # print(
-                #     samples.shape,
-                #     cc.counter,
-                #     cc.counter + adcs.shape[-1]
-                # )
-                slice_1 = slice(
-                    cc.counter - 1 * n_samples,
-                    cc.counter - 0 * n_samples)
-                slice_2 = slice(
-                    cc.counter - 2 * n_samples,
-                    cc.counter - 1 * n_samples)
-                prev_mean = samples[:, slice_1].mean(axis=-1)
-                prevprev_mean = samples[:, slice_2].mean(axis=-1)
-                present_mean = np.mean(adcs, axis=-1)
-
-                some_unexplained_noise_limit = 50
-                left_right_minimum = np.minimum(present_mean, prevprev_mean)
-
-                noisy_pixels = (
-                    prev_mean - left_right_minimum >
-                    some_unexplained_noise_limit
-                )
-                samples[noisy_pixels, slice_1] = np.nan
+                mask_noisy_pixels(cc, adcs)
             else:
                 yield event
 
@@ -149,3 +125,34 @@ def extract_baseline(event_stream, calib_container):
                         samples[:, :cc.counter-adcs.shape[-1]],
                         axis=-1)
                 yield event
+
+
+def mask_noisy_pixels(cc, adcs):
+    # Check the meaningfulness of previous event for baseline
+    # calculation and set to nan noisy pixels
+    # print(
+    #     samples.shape,
+    #     cc.counter,
+    #     cc.counter + adcs.shape[-1]
+    # )
+    n_pixels, n_samples = adcs.shape
+    samples = cc.samples_for_baseline
+
+    slice_1 = slice(
+        cc.counter - 1 * n_samples,
+        cc.counter - 0 * n_samples)
+    slice_2 = slice(
+        cc.counter - 2 * n_samples,
+        cc.counter - 1 * n_samples)
+    prev_mean = samples[:, slice_1].mean(axis=-1)
+    prevprev_mean = samples[:, slice_2].mean(axis=-1)
+    present_mean = np.mean(adcs, axis=-1)
+
+    some_unexplained_noise_limit = 50
+    left_right_minimum = np.minimum(present_mean, prevprev_mean)
+
+    noisy_pixels = (
+        prev_mean - left_right_minimum >
+        some_unexplained_noise_limit
+    )
+    samples[noisy_pixels, slice_1] = np.nan
