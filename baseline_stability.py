@@ -40,21 +40,19 @@ if __name__ == '__main__':
 
     # Noisy pixels not taken into account
     # pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
-    n_events = zfits.count_number_events(file_list=file_list)
     ####################
     ##### ANALYSIS #####
     ####################
-    digicam_baseline = np.zeros((len(digicam_geometry.pix_id), n_events))
+    digicam_baseline = []
 
     # Define the event stream
     data_stream = event_stream(file_list=file_list, expert_mode=True, camera_geometry=digicam_geometry, camera=digicam)
 
-    for i, data in zip(range(n_events), data_stream):
-
+    for data in data_stream:
         for tel_id in data.r0.tels_with_data:
+            digicam_baseline.append(data.r0.tel[tel_id].digicam_baseline)
 
-            digicam_baseline[..., i] = data.r0.tel[tel_id].digicam_baseline
-
+    digicam_baseline = np.array(digicam_baseline)
     plt.figure()
     plt.plot(digicam_baseline[0])
     plt.plot(digicam_baseline[1])
