@@ -111,7 +111,7 @@ def extract_baseline(event_stream, calib_container):
                     prev_mean - left_right_minimum >
                     some_unexplained_noise_limit
                 )
-                samples[noisy_pixels][slice_1] = np.nan
+                samples[noisy_pixels, slice_1] = np.nan
             else:
                 yield event
 
