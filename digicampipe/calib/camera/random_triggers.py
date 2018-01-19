@@ -69,12 +69,13 @@ def extract_baseline(event_stream, calib_container):
         for telid in event.r0.tels_with_data:
             # Get the adcs
             adcs = event.r0.tel[telid].adc_samples
+            n_pixels, n_samples = adcs.shape
             # When the first event comes, add adcs.shape[-1] length
             # to the number of samples
             if cc.sample_to_consider == cc.samples_for_baseline.shape[-1]:
                 cc.samples_for_baseline = np.append(
                     cc.samples_for_baseline,
-                    np.zeros((1296, adcs.shape[-1]), dtype=int),
+                    np.zeros((n_pixels, n_samples), dtype=int),
                     axis=-1
                 )
 
@@ -86,7 +87,7 @@ def extract_baseline(event_stream, calib_container):
 
             # Check the meaningfulness of previous event for baseline
             # calculation and set to nan noisy pixels
-            if cc.counter - 2 * adcs.shape[-1] > 0:
+            if cc.counter - 2 * n_samples > 0:
                 # print(
                 #     cc.samples_for_baseline.shape,
                 #     cc.counter,
@@ -94,20 +95,20 @@ def extract_baseline(event_stream, calib_container):
                 # )
                 c = cc.counter
                 prev_mean = np.mean(
-                    cc.samples_for_baseline[:, c-adcs.shape[-1]:c],
+                    cc.samples_for_baseline[:, c-n_samples:c],
                     axis=-1)
                 prevprev_mean = np.mean(
                     cc.samples_for_baseline[
                         :,
-                        cc.counter - 2 * adcs.shape[-1]:cc.counter
-                    ] - adcs.shape[-1],
+                        cc.counter - 2 * n_samples:cc.counter
+                    ] - n_samples,
                     axis=-1
                 )
                 present_mean = np.mean(adcs, axis=-1)
                 cc.samples_for_baseline[
                     prev_mean - np.minimum(present_mean, prevprev_mean) > 50
                 ][
-                    cc.counter - adcs.shape[-1]:cc.counter
+                    cc.counter - n_samples:cc.counter
                 ] = np.nan
             else:
                 yield event
@@ -115,17 +116,17 @@ def extract_baseline(event_stream, calib_container):
             # Insert new event
             if compute_full_baseline:
                 # shift all adcs by one event
-                cc.samples_for_baseline[:, :-adcs.shape[-1]] = (
-                    cc.samples_for_baseline[:, adcs.shape[-1]:])
+                cc.samples_for_baseline[:, :-n_samples] = (
+                    cc.samples_for_baseline[:, n_samples:])
                 # Add the new event
-                cc.samples_for_baseline[:, -adcs.shape[-1]:] = adcs
+                cc.samples_for_baseline[:, -n_samples:] = adcs
                 # Compute the baseline and standard deviations
                 cc.baseline_ready = True
                 cc.baseline = np.nanmean(
-                    cc.samples_for_baseline[:, :-adcs.shape[-1]],
+                    cc.samples_for_baseline[:, :-n_samples],
                     axis=-1)
                 cc.std_dev = np.nanstd(
-                    cc.samples_for_baseline[:, :-adcs.shape[-1]], axis=-1)
+                    cc.samples_for_baseline[:, :-n_samples], axis=-1)
                 yield event
 
             else:
