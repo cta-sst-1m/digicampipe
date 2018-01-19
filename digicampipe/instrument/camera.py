@@ -42,8 +42,15 @@ _CAMERA_GEOMETRY_TABLE = {
 
 
 class CameraCalibration:
-    def __init__(self, gain, sigma_e, xt, charge_reconstruction_options, cell_capacitance=85. * 1E-15,
-                 bias_resistance=10. * 1E3):
+    def __init__(
+        self,
+        gain,
+        sigma_e,
+        xt,
+        charge_reconstruction_options,
+        cell_capacitance=85. * 1E-15,
+        bias_resistance=10. * 1E3
+    ):
 
         self.gain = gain
         self.sigma_e = sigma_e
@@ -51,30 +58,39 @@ class CameraCalibration:
         self.cell_capacitance = cell_capacitance
         self.bias_resistance = bias_resistance
         self.charge_reconstruction_options = charge_reconstruction_options
-        self.lut_std = np.array([1.10364884, 1.12430139, 1.2435541, 1.36286533, 1.59703604,
-                                 1.80362736, 2.07318656, 2.50829027, 2.92629147, 3.44292195,
-                                 4.0800227, 4.79139778, 5.63669767, 6.53108791, 7.64749998,
-                                 8.65923108, 9.57379588, 10.37193237, 10.88006117, 11.19791948,
-                                 11.10610816, 10.95768853, 10.57739894, 10.37384412, 10.18064523,
-                                 10.75009621, 11.57963516, 13.24342791, 15.57271873, 18.24045984])
-        self.lut_nsb_rate = np.array([1.00000000e-03, 1.45222346e-03, 2.10895298e-03, 3.06267099e-03,
-                                      4.44768267e-03, 6.45902911e-03, 9.37995361e-03, 1.36217887e-02,
-                                      1.97818811e-02, 2.87277118e-02, 4.17190571e-02, 6.05853935e-02,
-                                      8.79835297e-02, 1.27771746e-01, 1.85553127e-01, 2.69464604e-01,
-                                      3.91322820e-01, 5.68288180e-01, 8.25281427e-01, 1.19849305e+00,
-                                      1.74047972e+00, 2.52756549e+00, 3.67058990e+00, 5.33051677e+00,
-                                      7.74110151e+00, 1.12418092e+01, 1.63256191e+01, 2.37084470e+01,
-                                      3.44299630e+01, 5.00000000e+01])
-        self.lut_baseline_shift = np.array([500.10844, 500.13456, 500.19772, 500.2697, 500.44418, 500.6094,
-                                            500.87226, 501.33124, 501.8768, 502.71168, 503.9574, 505.51968,
-                                            507.92038, 511.24914, 515.572, 521.41952, 528.5894, 537.03064,
-                                            547.04614, 557.76222, 568.03408, 577.88066, 586.55614, 593.50884,
-                                            598.97944, 603.33174, 606.54438, 608.84342, 610.4056, 611.94482])
+        self.lut_std = np.array([
+            1.10364884, 1.12430139, 1.2435541, 1.36286533, 1.59703604,
+            1.80362736, 2.07318656, 2.50829027, 2.92629147, 3.44292195,
+            4.0800227, 4.79139778, 5.63669767, 6.53108791, 7.64749998,
+            8.65923108, 9.57379588, 10.37193237, 10.88006117, 11.19791948,
+            11.10610816, 10.95768853, 10.57739894, 10.37384412, 10.18064523,
+            10.75009621, 11.57963516, 13.24342791, 15.57271873, 18.24045984])
+        self.lut_nsb_rate = np.array([
+            1.00000000e-03, 1.45222346e-03, 2.10895298e-03, 3.06267099e-03,
+            4.44768267e-03, 6.45902911e-03, 9.37995361e-03, 1.36217887e-02,
+            1.97818811e-02, 2.87277118e-02, 4.17190571e-02, 6.05853935e-02,
+            8.79835297e-02, 1.27771746e-01, 1.85553127e-01, 2.69464604e-01,
+            3.91322820e-01, 5.68288180e-01, 8.25281427e-01, 1.19849305e+00,
+            1.74047972e+00, 2.52756549e+00, 3.67058990e+00, 5.33051677e+00,
+            7.74110151e+00, 1.12418092e+01, 1.63256191e+01, 2.37084470e+01,
+            3.44299630e+01, 5.00000000e+01])
+        self.lut_baseline_shift = np.array([
+            500.10844, 500.13456, 500.19772, 500.2697, 500.44418, 500.6094,
+            500.87226, 501.33124, 501.8768, 502.71168, 503.9574, 505.51968,
+            507.92038, 511.24914, 515.572, 521.41952, 528.5894, 537.03064,
+            547.04614, 557.76222, 568.03408, 577.88066, 586.55614, 593.50884,
+            598.97944, 603.33174, 606.54438, 608.84342, 610.4056, 611.94482])
 
         self.lut_baseline_shift -= 500.0
 
-        self.spline_gain_drop = splrep(self.lut_baseline_shiftbaseline_shift, self.gain_drop(self.lut_nsb_rate))
-        self.spline_nsb_rate = splrep(self.lut_baseline_shiftbaseline_shift, self.lut_nsb_rate)
+        self.spline_gain_drop = splrep(
+            self.lut_baseline_shiftbaseline_shift,
+            self.gain_drop(self.lut_nsb_rate)
+        )
+        self.spline_nsb_rate = splrep(
+            self.lut_baseline_shiftbaseline_shift,
+            self.lut_nsb_rate
+        )
 
     def gain_drop(self, nsb_rate):
 
@@ -99,14 +115,29 @@ class CameraCalibration:
 
         if window_width == 1:
             return data
-        h = ndimage.convolve1d(data, np.ones(window_width, dtype=int), axis=-1, mode='constant', cval=-1.e8)
-        return h[..., int(np.floor((window_width - 1) / 2)):-int(np.floor(window_width / 2))]
+        h = ndimage.convolve1d(
+            data,
+            np.ones(window_width, dtype=int),
+            axis=-1,
+            mode='constant',
+            cval=-1.e8
+        )
+        return h[..., int(np.floor((window_width - 1) / 2)):- int(np.floor(window_width / 2))]
 
-    def extract_charge(self, data, timing_mask, timing_mask_edge, peak, window_start, threshold_saturation):
+    def extract_charge(
+        self,
+        data,
+        timing_mask,
+        timing_mask_edge,
+        peak,
+        window_start,
+        threshold_saturation
+    ):
         """
         Extract the charge.
            - check which pixels are saturated
-           - get the local maximum within the timing mask and check if it is not at the edge of the mask
+           - get the local maximum within the timing mask and check
+             if it is not at the edge of the mask
            - move window_start from the maximum
         :param data:
         :param timing_mask:
@@ -202,19 +233,19 @@ class CameraGeometry:
     """`CameraGeometry` is a class that stores information about a
     Cherenkov Camera that us useful for imaging algorithms and
     displays. It contains lists of pixel positions, areas, pixel
-    shapes, as well as a neighbor (adjacency) list and matrix for each pixel. 
-    In general the neighbor_matrix attribute should be used in any algorithm 
-    needing pixel neighbors, since it is much faster. See for example 
-    `ctapipe.image.tailcuts_clean` 
+    shapes, as well as a neighbor (adjacency) list and matrix for each pixel.
+    In general the neighbor_matrix attribute should be used in any algorithm
+    needing pixel neighbors, since it is much faster. See for example
+    `ctapipe.image.tailcuts_clean`
 
     The class is intended to be generic, and work with any Cherenkov
     Camera geometry, including those that have square vs hexagonal
     pixels, gaps between pixels, etc.
 
-    You can construct a CameraGeometry either by specifying all data, 
-    or using the `CameraGeometry.guess()` constructor, which takes metadata 
-    like the pixel positions and telescope focal length to look up the rest 
-    of the data. Note that this function is memoized, so calling it multiple 
+    You can construct a CameraGeometry either by specifying all data,
+    or using the `CameraGeometry.guess()` constructor, which takes metadata
+    like the pixel positions and telescope focal length to look up the rest
+    of the data. Note that this function is memoized, so calling it multiple
     times with the same inputs will give back the same object (for speed).
 
     Parameters
@@ -279,9 +310,9 @@ class CameraGeometry:
     @u.quantity_input
     def guess(cls, pix_x: u.m, pix_y: u.m, optical_foclen: u.m,
               apply_derotation=True):
-        """ 
+        """
         Construct a `CameraGeometry` by guessing the appropriate quantities
-        from a list of pixel positions and the focal length. 
+        from a list of pixel positions and the focal length.
         """
         # only construct a new one if it has never been constructed before,
         # to speed up access. Otherwise return the already constructed instance
@@ -352,7 +383,7 @@ class CameraGeometry:
     @classmethod
     def from_table(cls, url_or_table, **kwargs):
         """
-        Load a CameraGeometry from an `astropy.table.Table` instance or a 
+        Load a CameraGeometry from an `astropy.table.Table` instance or a
         file that is readable by `astropy.table.Table.read()`
 
         Parameters
@@ -361,11 +392,11 @@ class CameraGeometry:
             either input filename/url or a Table instance
 
         format: str
-            astropy.table format string (e.g. 'ascii.ecsv') in case the 
+            astropy.table format string (e.g. 'ascii.ecsv') in case the
             format cannot be determined from the file extension
 
         kwargs: extra keyword arguments
-            extra arguments passed to `astropy.table.read()`, depending on 
+            extra arguments passed to `astropy.table.read()`, depending on
             file type (e.g. format, hdu, path)
 
 
@@ -401,7 +432,7 @@ class CameraGeometry:
 
     @lazyproperty
     def neighbors(self):
-        """" only calculate neighbors when needed or if not already 
+        """" only calculate neighbors when needed or if not already
         calculated"""
 
         # return pre-calculated ones (e.g. those that were passed in during
@@ -577,8 +608,8 @@ def _guess_camera_type(npix, optical_foclen):
 
 
 def _neighbor_list_to_matrix(neighbors):
-    """ 
-    convert a neighbor adjacency list (list of list of neighbors) to a 2D 
+    """
+    convert a neighbor adjacency list (list of list of neighbors) to a 2D
     numpy array, which is much faster (and can simply be multiplied)
     """
 
