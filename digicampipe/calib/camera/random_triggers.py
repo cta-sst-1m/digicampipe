@@ -85,12 +85,20 @@ def extract_baseline(event_stream, calib_container):
             # print(calib_container.samples_for_baseline.shape)
             # Was the container filled up to n_samples_for_baseline?
             compute_full_baseline = True
-            if calib_container.counter < calib_container.samples_for_baseline.shape[-1] - 1:
+            if (
+                calib_container.counter <
+                calib_container.samples_for_baseline.shape[-1] - 1
+            ):
                 compute_full_baseline = False
 
-            # Check the meaningfulness of previous event for baseline calculation and set to nan noisy pixels
-            if calib_container.counter - 2 * adcs.shape[-1] > 0 :
-                #print(calib_container.samples_for_baseline.shape,calib_container.counter, calib_container.counter + adcs.shape[-1])
+            # Check the meaningfulness of previous event for baseline
+            # calculation and set to nan noisy pixels
+            if calib_container.counter - 2 * adcs.shape[-1] > 0:
+                # print(
+                #     calib_container.samples_for_baseline.shape,
+                #     calib_container.counter,
+                #     calib_container.counter + adcs.shape[-1]
+                # )
                 prev_mean = np.mean(
                     calib_container.samples_for_baseline[:,
                     calib_container.counter - adcs.shape[-1]:calib_container.counter],
