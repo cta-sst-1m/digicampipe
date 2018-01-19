@@ -94,10 +94,9 @@ def extract_baseline(event_stream, calib_container):
             # Insert new event
             if compute_full_baseline:
                 if_case()
-                yield event
             else:
                 else_case()
-                yield event
+            yield event
 
 
 def mask_noisy_pixels(cc, adcs):
