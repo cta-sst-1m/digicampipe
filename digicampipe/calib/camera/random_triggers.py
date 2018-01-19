@@ -52,7 +52,8 @@ def fill_baseline_r0(event_stream, n_bins=10000):
 
 def extract_baseline(event_stream, calib_container):
     """
-    Extract the baseline from event flagged as random trigger (trigger_flag = 1)
+    Extract the baseline from events flagged as random trigger
+        (trigger_flag = 1)
     :param event_stream: the event stream
     :param calib_container: the calibration container
     :return:
