@@ -8,6 +8,3 @@ from digicampipe.io.save_hillas import save_hillas_parameters
 from digicampipe.io.save_hillas import save_hillas_parameters
 from digicamviewer.viewer import EventViewer
 from digicampipe.utils import utils
-import protozfitsreader
-from protozfitsreader import rawzfitsreader
-from digicampipe.io.protozfitsreader import ZFile
