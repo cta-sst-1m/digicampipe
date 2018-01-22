@@ -1,7 +1,7 @@
-# digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
+# digicampipe [![Build Status](https://travis-ci.org/cta-sst-1m/digicampipe.svg?branch=master)](https://travis-ci.org/cta-sst-1m/digicampipe)
 DigiCam pipeline based on ctapipe
 
-The documentation can be found here: [Digicampipe documentation](https://calispac.github.io/digicampipe)
+The documentation can be found here: [Digicampipe documentation](https://cta-sst-1m.github.io/digicampipe)
 
 # Installation
 
@@ -20,7 +20,7 @@ We propose to have a tidy place and clone `digicampipe` into a folder `ctasoft/`
 
     mkdir ctasoft
     cd ctasoft
-    git clone https://github.com/calispac/digicampipe
+    git clone https://github.com/cta-sst-1m/digicampipe
 
 To not mix up your anaconda root environment with digicampipe, we propose
 to make a so called environment, with all the dependencies in it.
