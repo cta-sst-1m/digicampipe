@@ -2,8 +2,12 @@ import numpy as np
 import itertools
 
 
-def save_external_triggers(data_stream, output_filename, n_events=None, pixel_list=[...]):
-
+def save_external_triggers(
+    data_stream,
+    output_filename,
+    n_events=None,
+    pixel_list=[...]
+):
     baseline = []
     baseline_dark = []
     baseline_shift = []
@@ -40,5 +44,3 @@ def save_external_triggers(data_stream, output_filename, n_events=None, pixel_li
              nsb_rate=np.array(nsb_rate),
              gain_drop=np.array(gain_drop),
              time_stamp=np.array(time_stamp))
-
-
