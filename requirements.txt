@@ -2,6 +2,6 @@ https://github.com/cta-sst-1m/protozfitsreader/archive/v0.43.1.tar.gz
 -e git+https://github.com/cta-observatory/pyhessio.git#egg=pyhessio
 -e git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
 -e git+https://github.com/cta-observatory/ctapipe-extra.git#egg=ctapipe-extra
--e git+https://github.com/yrenier/CTS.git#egg=CTS
+-e git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
 -e git+https://github.com/cta-sst-1m/digicamviewer.git#egg=digicamviewer
 -e git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
