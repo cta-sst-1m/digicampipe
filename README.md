@@ -46,7 +46,8 @@ Run the tests on your machine:
 
     pytest
 
-Some tests depend on astrometry.net (see below) and take long, so by default you might want to skip them If you want to execute all tests, please do:
+Some tests depend on astrometry.net (see below) and take long, so by default you might want to skip them.
+If you want to execute all tests, please do:
 
     pytest -c all_tests.ini
 
