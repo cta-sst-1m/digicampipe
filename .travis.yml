@@ -16,12 +16,8 @@ install:
 - source activate digicampipe
 - pip install -r requirements.txt
 - pip install .
-- echo ".......... install done ......."
-- ls -larth
-- echo "what is in the src folder??"
-- ls -larth src
 script:
-- travis_wait 60 pytest -vv digicampipe
+- travis_wait 60 pytest -c all_tests.ini digicampipe
 - make -C docs/ html
 env:
   global:
