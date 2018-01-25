@@ -3,9 +3,6 @@ import pytest
 import pkg_resources
 import os
 import numpy as np
-import warnings
-
-warnings.simplefilter("ignore")
 
 example_file_path = pkg_resources.resource_filename(
     'digicampipe',
