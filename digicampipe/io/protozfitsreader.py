@@ -173,19 +173,9 @@ class ZFile:
         self.fname = fname
         self.eventnumber = 0
         self.is_events_table_open = False
-
-        try:
-            self.__open_runheader()
-            self.numrows = rawzfitsreader.getNumRows()
-            self.header = L0_pb2.CameraRunHeader()
-            self.header.ParseFromString(rawzfitsreader.readEvent())
-            self.run_id = toNumPyArray(self.header.runNumber)
-        except (ValueError, TypeError):
-            warnings.warn(
-                "{} has no RunHeader".format(self.fname))
-            self.__open_events()
-            self.numrows = rawzfitsreader.getNumRows()
-            self.run_id = 0
+        self.__open_events()
+        self.numrows = rawzfitsreader.getNumRows()
+        self.run_id = 0
 
     def __next__(self):
         if self.eventnumber < self.numrows:
@@ -200,16 +190,10 @@ class ZFile:
     def __iter__(self):
         return self
 
-    def __open_runheader(self):
-        rawzfitsreader.open(self.fname + ":RunHeader")
-
     def __open_events(self):
         if not self.is_events_table_open:
             rawzfitsreader.open(self.fname + ":Events")
             self.is_events_table_open = True
-
-    def __open_runtails(self):
-        rawzfitsreader.open(self.fname + ":RunTails")
 
     def list_tables(self):
         return rawzfitsreader.listAllTables(self.fname)
