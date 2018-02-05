@@ -235,8 +235,8 @@ def test_adc_samples():
 
     # these are 12 bit ADC values, so the range must
     # can at least be asserted
-    assert adc_samples.min() == 0
-    assert adc_samples.max() == (2**12) - 1
+    assert adc_samples.min() >= 0
+    assert adc_samples.max() <= (2**12) - 1
 
 
 def test_trigger_input_traces():
