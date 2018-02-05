@@ -228,7 +228,7 @@ def test_adc_samples():
     ]
 
     for actual in adc_samples:
-        assert actual.dtype == np.int16
+        assert actual.dtype == np.uint16
         assert actual.shape == (1296, 50)
 
     adc_samples = np.array(adc_samples)
@@ -283,7 +283,7 @@ def test_baseline():
     ]
 
     for actual in baseline:
-        assert actual.dtype == np.int16
+        assert actual.dtype == np.uint16
         assert actual.shape == (1296,)
 
     baseline = np.array(baseline)
