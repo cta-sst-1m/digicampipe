@@ -172,14 +172,12 @@ class ZFile:
             raise FileNotFoundError(fname)
         self.fname = fname
         self.eventnumber = 0
-        self.is_events_table_open = False
-        self.__open_events()
+        rawzfitsreader.open(self.fname + ":Events")
         self.numrows = rawzfitsreader.getNumRows()
         self.run_id = 0
 
     def __next__(self):
         if self.eventnumber < self.numrows:
-            self.__open_events()
             event = L0_pb2.CameraEvent()
             event.ParseFromString(rawzfitsreader.readEvent())
             self.eventnumber += 1
@@ -189,11 +187,6 @@ class ZFile:
 
     def __iter__(self):
         return self
-
-    def __open_events(self):
-        if not self.is_events_table_open:
-            rawzfitsreader.open(self.fname + ":Events")
-            self.is_events_table_open = True
 
     def list_tables(self):
         return rawzfitsreader.listAllTables(self.fname)
