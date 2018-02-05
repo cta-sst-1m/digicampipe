@@ -228,15 +228,15 @@ def test_adc_samples():
     ]
 
     for actual in adc_samples:
-        assert actual.dtype == np.int16
+        assert actual.dtype == np.uint16
         assert actual.shape == (1296, 50)
 
     adc_samples = np.array(adc_samples)
 
     # these are 12 bit ADC values, so the range must
     # can at least be asserted
-    assert adc_samples.min() == 0
-    assert adc_samples.max() == (2**12) - 1
+    assert adc_samples.min() >= 0
+    assert adc_samples.max() <= (2**12) - 1
 
 
 def test_trigger_input_traces():
@@ -283,7 +283,7 @@ def test_baseline():
     ]
 
     for actual in baseline:
-        assert actual.dtype == np.int16
+        assert actual.dtype == np.uint16
         assert actual.shape == (1296,)
 
     baseline = np.array(baseline)
@@ -302,5 +302,3 @@ def test_count_number_event():
     files = [example_file_path] * n_files  # create a list of files
 
     assert count_number_events(files) == n_files * EVENTS_IN_EXAMPLE_FILE
-
-
