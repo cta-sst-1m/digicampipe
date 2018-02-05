@@ -152,6 +152,12 @@ def test_num_gains():
     assert num_gains == expected_num_gains
 
 
+def test_num_channels():
+    from digicampipe.io.protozfitsreader import ZFile
+    for event in ZFile(example_file_path):
+        assert -1 == event.num_channels
+
+
 def test_n_pixel():
     from digicampipe.io.protozfitsreader import ZFile
     n_pixel = [
