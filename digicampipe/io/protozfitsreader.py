@@ -193,16 +193,6 @@ class ZFile:
         rawzfitsreader.rewindTable()
 
 
-def Zfile_function(path):
-    if not isfile(path):
-        raise FileNotFoundError(path)
-    rawzfitsreader.open(path + ":Events")
-    for _ in range(rawzfitsreader.getNumRows()):
-        event = L0_pb2.CameraEvent()
-        event.ParseFromString(rawzfitsreader.readEvent())
-        yield Event(event, run_id=0)
-
-
 class Event:
     def __init__(self, event, run_id):
         self.run_id = run_id
