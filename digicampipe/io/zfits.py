@@ -47,11 +47,11 @@ def zfits_event_source(
 
     loaded_telescopes = []
 
-    for event in protozfitsreader.ZFile(url):
-        if max_events is not None and event.event_id > max_events:
+    for event_counter, event in enumerate(protozfitsreader.ZFile(url)):
+        if max_events is not None and event_counter > max_events:
             break
 
-        data.r0.event_id = event.event_id
+        data.r0.event_id = event_counter
         data.r0.tels_with_data = [event.telescope_id, ]
 
         # remove forbidden telescopes

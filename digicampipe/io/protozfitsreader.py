@@ -234,7 +234,7 @@ class Event:
             except ValueError:
                 warnings.warn((
                     "Could not read `hiGain.waveforms.baselines` for event:{0}"
-                    "of run_id:{1}".format(self.event_id, self.run_id)
+                    "of run_id:{1}".format(self.event_number, self.run_id)
                     ))
                 self.__unsorted_baseline = np.ones(
                     len(self.pixel_ids)
