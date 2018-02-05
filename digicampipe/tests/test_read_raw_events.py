@@ -97,7 +97,6 @@ def test_iteration_yield_expected_fields():
     for event in ZFile(example_file_path):
         # we just want to see, that the zfits file has all these
         # fields and we can access them
-        event.event_id
         event.telescope_id
         event.num_gains
         event.n_pixels
