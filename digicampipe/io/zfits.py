@@ -92,8 +92,7 @@ def zfits_event_source(
 
 
 def count_number_events(file_list):
-    """
-    This function counts the number of events in each file of file list and returns the sum.
+    """return sum of events in all files
     It is useful for fixed size array creation.
 
     :param file_list: list of zfits files
@@ -105,4 +104,3 @@ def count_number_events(file_list):
         n_events += zfits.numrows
 
     return n_events
-
