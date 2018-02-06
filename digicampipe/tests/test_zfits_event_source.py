@@ -58,7 +58,7 @@ def test_and_benchmark_expert_event_source(benchmark):
 def test_count_number_event():
 
     from digicampipe.io.zfits import count_number_events
-    EVENTS_IN_EXAMPLE_FILE = 10
+    EVENTS_IN_EXAMPLE_FILE = 100
 
     n_files = 10
     files = [example_file_path] * n_files  # create a list of files
