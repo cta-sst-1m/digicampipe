@@ -97,7 +97,6 @@ def test_iteration_yield_expected_fields():
     for event in ZFile(example_file_path):
         # we just want to see, that the zfits file has all these
         # fields and we can access them
-        event.event_id
         event.telescope_id
         event.num_gains
         event.n_pixels
@@ -150,6 +149,12 @@ def test_num_gains():
     ]
     expected_num_gains = [0] * EVENTS_IN_EXAMPLE_FILE
     assert num_gains == expected_num_gains
+
+
+def test_num_channels():
+    from digicampipe.io.protozfitsreader import ZFile
+    for event in ZFile(example_file_path):
+        assert -1 == event.num_channels
 
 
 def test_n_pixel():
@@ -233,10 +238,10 @@ def test_adc_samples():
 
     adc_samples = np.array(adc_samples)
 
-    # these are 12 bit ADC values, so the range must
-    # can at least be asserted
-    assert adc_samples.min() == 0
-    assert adc_samples.max() == (2**12) - 1
+    # these are 12 bit ADC values
+    # all we can test is the range
+    assert adc_samples.min() >= 0
+    assert adc_samples.max() <= (2**12) - 1
 
 
 def test_trigger_input_traces():
@@ -302,5 +307,3 @@ def test_count_number_event():
     files = [example_file_path] * n_files  # create a list of files
 
     assert count_number_events(files) == n_files * EVENTS_IN_EXAMPLE_FILE
-
-

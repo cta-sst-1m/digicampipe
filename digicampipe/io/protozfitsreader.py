@@ -171,29 +171,19 @@ class ZFile:
         if not isfile(fname):
             raise FileNotFoundError(fname)
         self.fname = fname
-        self.eventnumber = 0
-        self.is_events_table_open = False
-        self.__open_events()
+        rawzfitsreader.open(self.fname + ":Events")
         self.numrows = rawzfitsreader.getNumRows()
         self.run_id = 0
+        self.generator = self.__generator()
 
-    def __next__(self):
-        if self.eventnumber < self.numrows:
-            self.__open_events()
+    def __generator(self):
+        for _ in range(self.numrows):
             event = L0_pb2.CameraEvent()
             event.ParseFromString(rawzfitsreader.readEvent())
-            self.eventnumber += 1
-            return Event(event, self.run_id, self.eventnumber)
-        else:
-            raise StopIteration
+            yield Event(event, self.run_id)
 
     def __iter__(self):
-        return self
-
-    def __open_events(self):
-        if not self.is_events_table_open:
-            rawzfitsreader.open(self.fname + ":Events")
-            self.is_events_table_open = True
+        return self.generator
 
     def list_tables(self):
         return rawzfitsreader.listAllTables(self.fname)
@@ -204,8 +194,7 @@ class ZFile:
 
 
 class Event:
-    def __init__(self, event, run_id, event_id):
-        self.event_id = event_id
+    def __init__(self, event, run_id):
         self.run_id = run_id
         self._event = event
 
@@ -245,7 +234,7 @@ class Event:
             except ValueError:
                 warnings.warn((
                     "Could not read `hiGain.waveforms.baselines` for event:{0}"
-                    "of run_id:{1}".format(self.event_id, self.run_id)
+                    "of run_id:{1}".format(self.event_number, self.run_id)
                     ))
                 self.__unsorted_baseline = np.ones(
                     len(self.pixel_ids)
