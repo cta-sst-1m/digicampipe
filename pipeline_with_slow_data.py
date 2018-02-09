@@ -49,7 +49,6 @@ if __name__ == '__main__':
                                 slow_control_file_list=slow_control_file_list,
                                 drive_system_file_list=drive_system_file_list)
 
-
     ts_slow = []
     ts_data = []
     diff = []
