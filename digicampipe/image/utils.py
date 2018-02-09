@@ -268,7 +268,26 @@ def get_peaks_separation(
         [sources['xcentroid'], sources['ycentroid']]).transpose()
     order = np.argsort(sources['mag'])
     center_peaks = center_peaks[order[0:100], :]
-    ks = center_peaks[1:, :] - center_peaks[0, :]
+    # iterate over the peaks and calculates vectors from that peak to all others.
+    # Then look for the vectors with smallest norm.
+    # Take the one with the most votes.
+    shortest_ks=[]
+    for i in range(center_peaks.shape[0]):
+        ks = np.delete(center_peaks, i, axis=0) - center_peaks[i, :]
+        ks_norm = np.linalg.norm(ks, axis=1)
+        shortest_ks.extend(ks[ks_norm<min(ks_norm)*1.05, :])
+    shortest_ks = np.array(shortest_ks)
+    ks_histo_2d, xbins, ybins, ax = plt.hist2d(shortest_ks[:, 0], shortest_ks[:, 1], 100)
+    bin_max=np.array(np.where(ks_histo_2d>.5*np.max(ks_histo_2d)))
+    ks =[]
+    for bin in bin_max.transpose():
+        selected_x = np.logical_and(xbins[bin[0]] <= shortest_ks[:, 0],
+                                    shortest_ks[:, 0] < xbins[bin[0]+1])
+        selected_y = np.logical_and(ybins[bin[1]] <= shortest_ks[:, 1],
+                                    shortest_ks[:, 1] < ybins[bin[1]+1])
+        mean_k = np.mean(shortest_ks[np.logical_and(selected_x, selected_y), :], axis=0)
+        ks.append(mean_k)
+    ks = np.array(ks)
     ks_complex = ks[:, 0] + 1j * ks[:, 1]
     angles = np.angle(ks_complex)
     lengths = np.abs(ks_complex)
@@ -312,7 +331,6 @@ def get_peaks_separation(
         break
     ks_base[ks_base[:, 0] < 0, :] *= -1
     return ks_base, auto_correlation_saved, center_peaks
-
 
 def get_image_hexagonalicity(image, rotations=(60, 300)):
     image[image != 0] -= np.mean(image)

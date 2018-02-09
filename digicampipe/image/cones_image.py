@@ -12,6 +12,7 @@ from digicampipe.image.utils import (
     fit_gauss_2d,
 )
 import os
+import math
 import decimal
 from decimal import Decimal, ROUND_HALF_EVEN
 import numpy as np
@@ -38,7 +39,8 @@ class ConesImage(object):
         self,
         image,
         image_cone=None,
-        digicam_config_file=camera_config_file
+        digicam_config_file=camera_config_file,
+        threshold_std=1.
     ):
         """
         find cones positions from a picture of the photo detection plane.
@@ -57,6 +59,9 @@ class ConesImage(object):
             the fit file is created calling get_cone()
         digicam_config_file :
             path to the digicam configuration file
+        threshold_std :
+            pixels with values> threshold_std * std(pixels values) are set to 0.
+            default to threshold_std=1
         """
         self.pixels_nvs = get_pixel_nvs(digicam_config_file)
         # high pass filter
@@ -70,7 +75,8 @@ class ConesImage(object):
             boundary='symm')
         # thresholds
         self.image_cones[self.image_cones < 0] = 0
-        self.image_cones[self.image_cones > np.std(self.image_cones)] = 0
+        threshold = threshold_std*np.std(self.image_cones)
+        self.image_cones[self.image_cones > threshold] = 0
         self.image_cones -= np.mean(self.image_cones)
         # fft
         self.fft_image_cones = np.fft.fft2(self.image_cones)
@@ -89,6 +95,7 @@ class ConesImage(object):
         # position of all pixel predicted from fit,
         # call plot_cones_presence() to compute it.
         self.pixels_pos_predict = None
+        self.pixels_fit_amp = None  # fitted amplitude of the correlation
         # cone position fitted, call fit_camera_geometry() to compute it
         self.pixels_fit_px = None
         self.cone_presence = None  # convolution of cone image in lid ccd image
@@ -266,7 +273,7 @@ class ConesImage(object):
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         plt.xlim([np.min(pixels_x)-0.5, np.max(pixels_x)+0.5])
-        plt.ylim([np.min(pixels_y)-0.5, np.max(pixels_y)+0.5])
+        plt.ylim([np.max(pixels_y)+0.5, np.min(pixels_y)-0.5])
         ax = plt.subplot(1, 2, 1)
         plt.imshow(image_cones * scan_area, cmap='gray')
         plt.plot(max_x, max_y, 'r+')
@@ -274,11 +281,14 @@ class ConesImage(object):
         plt.axis('off')
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
+        plt.xlim([np.min(pixels_x)-0.5, np.max(pixels_x)+0.5])
+        plt.ylim([np.max(pixels_y)+0.5, np.min(pixels_y)-0.5])
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
 
-    def get_cone(self, radius_mask, output_filename=None, cone_filename=None):
+    def get_cone(self, radius_mask, output_filename=None,
+                 cone_filename=None, average_rotation=False):
         """find the center of a camera's pixel.
         The pixel image along with important parameter can be save for future use
         using the cone_filename parameter.
@@ -394,6 +404,13 @@ class ConesImage(object):
         mask_hexa = set_hexagon(
             mask_hexa, center=center_crop, r1=self.r1, r2=self.r2)
         self.image_cone = image_crop * mask_hexa
+        if average_rotation:
+            from scipy.ndimage.interpolation import rotate
+            rotations=[0, 60, 120, 180, 240, 300]
+            image_cones = np.zeros_like(self.image_cone)
+            for rot in rotations:
+                image_cones += rotate(self.image_cone, rot, reshape=False)
+            self.image_cone = image_cones / len(rotations)
         if cone_filename is not None:
             hdu = fits.PrimaryHDU(self.image_cone)
             hdu.header['center'] = (
@@ -559,6 +576,7 @@ class ConesImage(object):
         if output_filename is not None:
             plt.ioff()
             fig = plt.figure(figsize=(8, 6), dpi=600)
+            ax = plt.gca()
             plt.imshow(auto_correlation_saved, cmap='gray')
             plt.autoscale(False)
             plt.plot(center_peaks[:, 0], center_peaks[:, 1], 'y+')
@@ -569,6 +587,8 @@ class ConesImage(object):
             plt.plot(k1_points[:, 0], k1_points[:, 1], 'b-', linewidth=1)
             plt.plot(k2_points[:, 0], k2_points[:, 1], 'r-', linewidth=1)
             plt.grid(None)
+            plt.axis('off')
+            ax.get_xaxis().set_visible(False)
             plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
             plt.close(fig)
             print(output_filename, 'saved.')
@@ -589,9 +609,19 @@ class ConesImage(object):
         self.r1 = (self.v1_lattice + self.v2_lattice) / 3
         self.r2 = self.v2_lattice - self.r1
         self.r3 = self.v3_lattice - self.r2
-        print("r1=", self.r1, "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]))
-        print("r2=", self.r2, "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]))
-        print("r3=", self.r3, "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]))
+        r1_norm = self.r1 / np.linalg.norm(self.r1)
+        r2_norm = self.r2 / np.linalg.norm(self.r2)
+        r3_norm = self.r3 / np.linalg.norm(self.r3)
+        x = np.array([1, 0])
+        print("r1=", self.r1,
+              "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]),
+              "angle(r1,x)=", math.acos(np.dot(r1_norm, x)) * 180 / np.pi, "deg")
+        print("r2=", self.r2,
+              "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]),
+              "angle(r2,x)=", math.acos(np.dot(r2_norm, x)) * 180 / np.pi, "deg")
+        print("r3=", self.r3,
+              "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]),
+              "angle(r3,x)=", math.acos(np.dot(r3_norm, x)) * 180 / np.pi, "deg")
 
     def plot_cones_presence(self, output_filename='cones-presence.png'):
         """
@@ -615,7 +645,10 @@ class ConesImage(object):
 
     def fit_pixels_position(self, radius_mask, sigma_peak=5, offset_max=5):
         self.pixels_fit_px = []
+        self.pixels_fit_amp = []
         nfail = 0
+        sigmas = []
+        offsets = []
         for i1 in range(-100, 100):
             for i2 in range(-100, 100):
                 peak_pos_aprox = (
@@ -668,17 +701,18 @@ class ConesImage(object):
                     rot,
                     bkg
                 ) = fit_result
-
+                offset = np.array([xcenter, ycenter]) - crop_center
+                sigma =  np.array([xsigma, ysigma])
                 if (
                     0 < success <= 4 and
-                    0 < xsigma < 2*sigma_peak and
-                    0 < ysigma < 2*sigma_peak and
-                    np.abs(xcenter - crop_center[0]) < offset_max and
-                    np.abs(ycenter - crop_center[1]) < offset_max
+                    np.all(np.logical_and(0 < sigma, sigma < 2*sigma_peak)) and
+                    np.all(np.abs(offset) < offset_max)
                 ):
                     self.pixels_fit_px.append(
                         np.array([xcenter, ycenter]) + crop_px1)
-
+                    self.pixels_fit_amp.append(amplitude)
+                    sigmas.append(sigma)
+                    offsets.append(offset)
                 else:
                     nfail += 1
                 if np.mod(len(self.pixels_fit_px) + nfail, 100) == 0:
@@ -687,7 +721,34 @@ class ConesImage(object):
                         'fits done, (',
                         len(self.pixels_fit_px), 'successful )'
                     )
+        print(
+            len(self.pixels_fit_px) + nfail,
+            'fits done, (',
+            len(self.pixels_fit_px), 'successful )'
+        )
         self.pixels_fit_px = np.array(self.pixels_fit_px)
+        self.pixels_fit_amp = np.array(self.pixels_fit_amp)
+        offsets = np.array(offsets)
+        sigmas = np.array(sigmas)
+        print('offsets: mean=', np.mean(offsets, axis=0),
+              'std=', np.std(offsets, axis=0))
+        print('sigmas: mean=', np.mean(sigmas, axis=0),
+              'std=', np.std(sigmas, axis=0))
+        fig = plt.figure()
+        plt.subplot(221)
+        plt.hist(offsets[:, 0], 30)
+        plt.xlabel('offset of correlation peak, X [px]')
+        plt.subplot(222)
+        plt.hist(offsets[:, 1], 30)
+        plt.xlabel('offset of correlation peak, Y [px]')
+        plt.subplot(223)
+        plt.hist(sigmas[:, 0], 30)
+        plt.xlabel('sigma of correlation peak, X [px]')
+        plt.subplot(224)
+        plt.hist(sigmas[:, 1], 30)
+        plt.xlabel('sigma of correlation peak, Y [px]')
+        plt.savefig('correlation_peak_fit.png', pad_inches=0)
+        plt.close(fig)
 
     def fit_camera_geometry(
         self,
@@ -766,8 +827,11 @@ class ConesImage(object):
                         ]
                         pixels_fit_nvs_set = set(
                             map(tuple, pixels_fit_nvs_dec))
-                        matching_nvs = len(
-                            pixels_fit_nvs_set.intersection(pixels_nvs_set))
+                        # matching_nvs = len(
+                        #     pixels_fit_nvs_set.intersection(pixels_nvs_set))
+                        common = tuple(pixels_fit_nvs_set.intersection(pixels_nvs_set))
+                        is_in_common = np.array([tuple(x) in common for x in pixels_fit_nvs_dec])
+                        matching_nvs = np.sum(self.pixels_fit_amp[is_in_common])
                         if matching_nvs > best_matching_nvs:
                             best_matching_nvs = matching_nvs
                             best_match_nv1, best_match_nv2 = nv1, nv2
@@ -827,13 +891,6 @@ class ConesImage(object):
             for n1, n2 in pixels_fit_nvs.transpose()]
         pixels_fit_nvs_set = set(map(tuple, pixels_fit_nvs_dec))
         nvs_fit_matching_set = pixels_fit_nvs_set.intersection(pixels_nvs_set)
-        if len(nvs_fit_matching_set) != best_matching_nvs:
-            print(
-                'ERROR reproducing best matching solution: got',
-                len(nvs_fit_matching_set),
-                'matches instead of',
-                best_matching_nvs)
-            return
         is_fit_matching = np.array(
             [tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
         fit_not_matching = is_fit_matching == 0
@@ -864,13 +921,16 @@ class ConesImage(object):
             for n1, n2 in self.pixels_nvs.transpose()
         ]
         pixels_nvs_set = set(map(tuple, pixels_nvs_dec))
-        nvs_fit_matching_set = pixels_fit_nvs_set.intersection(pixels_nvs_set)
+        nvs_fit_matching_set = pixels_nvs_set.intersection(pixels_fit_nvs_set)
+        nvs_fit_matching = np.array(list(nvs_fit_matching_set)).transpose()
         is_fit_matching = np.array(
             [tuple(nv) in nvs_fit_matching_set for nv in pixels_fit_nvs_dec])
         print('global fit of lattice base vectors...')
         n_matching = np.sum(is_fit_matching)
         nvs = np.vstack(
-            (pixels_fit_nvs[:, is_fit_matching], np.ones((1, n_matching))))
+            (np.array(pixels_fit_nvs_dec)[is_fit_matching].transpose(),
+             np.ones((1, n_matching)))
+        ).astype(float)
         pxs = self.pixels_fit_px[is_fit_matching, :].transpose()
         precise_vs = pxs.dot(np.linalg.pinv(nvs))
         self.v1_lattice = precise_vs[:, 0]
@@ -881,6 +941,8 @@ class ConesImage(object):
         self.r3 = self.v3_lattice - self.r2
         self.center_fitted = precise_vs[:, 2]
         self.pixels_pos_predict = precise_vs.dot(np.vstack((self.pixels_nvs, np.ones((1, self.pixels_nvs.shape[1])))))
+        pixels_fitted_pos_predict = precise_vs.dot(nvs)
+        x = np.array([1, 0])
         print(
             "v1=", self.v1_lattice,
             "|v1|=", np.abs(self.v1_lattice[0] + 1j * self.v1_lattice[1]))
@@ -890,19 +952,40 @@ class ConesImage(object):
         print(
             "v3=", self.v3_lattice,
             "|v3|=", np.abs(self.v3_lattice[0] + 1j * self.v3_lattice[1]))
+        r1_norm = self.r1 / np.linalg.norm(self.r1)
         print(
             "r1=", self.r1,
-            "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]))
+            "|r1|=", np.abs(self.r1[0] + 1j * self.r1[1]),
+            "angle(r1,x)=", math.acos(np.dot(r1_norm, x))*180/np.pi, "deg")
+        r2_norm = self.r1 / np.linalg.norm(self.r1)
         print(
             "r2=", self.r2,
-            "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]))
+            "|r2|=", np.abs(self.r2[0] + 1j * self.r2[1]),
+            "angle(r2,x)=", math.acos(np.dot(r2_norm, x))*180/np.pi, "deg")
+        r3_norm = self.r1 / np.linalg.norm(self.r1)
         print(
             "r3=", self.r3,
-            "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]))
+            "|r3|=", np.abs(self.r3[0] + 1j * self.r3[1]),
+            "angle(r3,x)=", math.acos(np.dot(r3_norm, x))*180/np.pi, "deg")
         center_image = (np.array(self.image_cones.shape[::-1]) - 1) / 2
         print(
             "center=", self.center_fitted,
             ',', self.center_fitted - center_image, 'from center')
+        errors_px = self.pixels_fit_px[is_fit_matching, :].transpose() \
+                 - pixels_fitted_pos_predict
+        fit_error_estimate = np.std(errors_px, axis=1)
+        print('fitted position average error:', fit_error_estimate, 'px')
+        """
+        fig = plt.figure()
+        plt.subplot(211)
+        plt.hist(errors_px[0, :], 30)
+        plt.xlabel('fit position - expected, X [px]')
+        plt.subplot(212)
+        plt.hist(errors_px[1, :], 30)
+        plt.xlabel('fit position - expected, Y [px]')
+        plt.savefig('pixels_fit_offsets.png', bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+        """
 
     def plot_camera_geometry(self, output_filename='cones-presence-filtered.png'):
         """
@@ -969,6 +1052,24 @@ class ConesImage(object):
         plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
         print(output_filename, 'saved.')
+
+    def save_camera_geometry(self, file_pos_predicted, file_pixel_fitted):
+        npixels = self.pixels_pos_predict.shape[1]
+        with open(file_pos_predicted,'w') as f:
+            for i in range(npixels):
+                f.write(str(self.pixels_pos_predict[0, i]))
+                f.write('\t')
+                f.write(str(self.pixels_pos_predict[1, i]))
+                f.write('\n')
+        print(file_pos_predicted, "was created")
+        npixels_fit = self.pixels_fit_px.shape[0]
+        with open(file_pixel_fitted,'w') as f:
+            for i in range(npixels_fit):
+                f.write(str(self.pixels_fit_px[i, 0]))
+                f.write('\t')
+                f.write(str(self.pixels_fit_px[i, 1]))
+                f.write('\n')
+        print(file_pixel_fitted, "was created")
 
 
 def simu_match(cones_image, true_positions, std_error_max_px=0.5):
