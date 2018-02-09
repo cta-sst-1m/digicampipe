@@ -258,7 +258,7 @@ class DataContainer(Container):
     dl1 = Field(DL1Container(), "DL1 Calibrated image")
     dl2 = Field(ReconstructedContainer(), "Reconstructed Shower Information")
     inst = Field(InstrumentContainer(), "Instrumental information")
-    slowdata = Field(SlowDataContainer(), "Slow Data Information")
+    slow_data = Field(SlowDataContainer(), "Slow Data Information")
 
 
 def load_from_pickle_gz(file):

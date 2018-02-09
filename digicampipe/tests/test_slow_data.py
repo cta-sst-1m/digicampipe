@@ -109,8 +109,8 @@ def test_add_slow_data():
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
-    # test_get_slow_data_info()
-    # test_get_slow_event()
+    test_get_slow_data_info()
+    test_get_slow_event()
     ts_data, ts_slow, diff = test_add_slow_data()
 
     plt.figure()
