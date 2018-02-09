@@ -6,7 +6,8 @@ import numpy as np
 
 from cts_core.camera import Camera
 from digicampipe.utils import geometry
-from digicampipe.io.event_stream import event_stream, add_slow_data, get_slow_data_info, get_slow_event
+from digicampipe.io.event_stream import event_stream, add_slow_data, \
+    get_slow_data_info, get_slow_event
 
 warnings.simplefilter("ignore")
 
@@ -37,7 +38,8 @@ digicam = Camera(_config_file=digicam_config_file)
 digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
 
-SLOW_CLASSES = ["DigicamSlowControl", "DriveSystem", "PDPSlowControl", "SafetyPLC", "MasterSST1M"]
+SLOW_CLASSES = ["DigicamSlowControl", "DriveSystem", "PDPSlowControl",
+                "SafetyPLC", "MasterSST1M"]
 
 
 def test_get_slow_data_info():
@@ -54,8 +56,12 @@ def test_get_slow_data_info():
 def test_get_slow_event():
     slow_info_structs = get_slow_data_info(slow_file_list)
     for class_name in SLOW_CLASSES:
-        ts_min_all=np.array([info_file['ts_min'] for info_file in slow_info_structs[class_name]])
-        ts_max_all=np.array([info_file['ts_max'] for info_file in slow_info_structs[class_name]])
+        ts_min_all = [info_file['ts_min']
+                      for info_file in slow_info_structs[class_name]]
+        ts_max_all = [info_file['ts_max']
+                      for info_file in slow_info_structs[class_name]]
+        ts_min_all = np.array(ts_min_all)
+        ts_max_all = np.array(ts_max_all)
         for file in range(len(slow_info_structs[class_name])):
             info_struct = slow_info_structs[class_name][file]
             ts_min = info_struct['ts_min']
@@ -90,7 +96,7 @@ def test_add_slow_data():
     diff = []
     i = 0
     for event in data_stream:
-        if len(event.r0.tels_with_data) ==0:
+        if len(event.r0.tels_with_data) == 0:
             print('WARNING in test_add_slow_data():',
                   'event does not have a telescope with r0 data.')
         tel = event.r0.tels_with_data[0]

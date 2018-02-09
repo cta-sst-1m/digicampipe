@@ -1,9 +1,12 @@
 """
-Container structures for data that should be read or written to disk. The main data container is DataContainer()
-and holds the containers of each data processing level. The data processing levels start from R0 up to DL2,
-where R0 holds the cameras raw data and DL2 the air shower high-level parameters.
-In general each major pipeline step is associated with a given data level. Please keep in mind that the data level definition and the associated fields might change rapidly
-as there is no final data level definition.
+Container structures for data that should be read or written to disk.
+The main data container is DataContainer() and holds the containers of
+each data processing level. The data processing levels start from R0 up to DL2,
+where R0 holds the cameras raw data and DL2 the air shower high-level
+parameters.
+In general each major pipeline step is associated with a given data level.
+Please keep in mind that the data level definition and the associated fields
+might change rapidly as there is no final data level definition.
 """
 from os import remove
 from numpy import array, ndarray
@@ -55,7 +58,8 @@ class InstrumentContainer(Container):
     cam = Field(Map(None), 'map of tel_id to Camera')
     optics = Field(Map(None), 'map of tel_id to CameraOptics')
     cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
-    cluster_matrix_19 = Field(Map(ndarray), 'map of tel_id of cluster 19 matrix')
+    cluster_matrix_19 = Field(Map(ndarray),
+                              'map of tel_id of cluster 19 matrix')
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
 
 
@@ -64,11 +68,19 @@ class DL1CameraContainer(Container):
     image in intensity units and other per-event calculated
     calibration information.
     """
-    pe_samples = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels)")
+    pe_samples = Field(ndarray,
+                       "numpy array containing data volume "
+                       "reduced p.e. samples (n_channels x n_pixels)")
     cleaning_mask = Field(ndarray, "mask for clean pixels")
-    time_bin = Field(ndarray, "numpy array containing the bin of maximum (n_pixels)")
-    pe_samples_trace = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels, n_samples)")
-    on_border = Field(bool, "Boolean telling if the shower touches the camera border or not")
+    time_bin = Field(ndarray,
+                     "numpy array containing the bin of maximum (n_pixels)")
+    pe_samples_trace = Field(
+        ndarray,
+        "numpy array containing data volume reduced p.e. samples "
+        "(n_channels x n_pixels, n_samples)"
+    )
+    on_border = Field(bool, "Boolean telling if "
+                            "the shower touches the camera border or not")
     time_spread = Field(float, 'Time elongation of the shower')
 
 
@@ -83,25 +95,33 @@ class R0CameraContainer(Container):
 
     :param pixel_flags: a ndarray to flag the pixels
     :type pixel_flags: ndarray (n_pixels, ) (bool)
-    :param adc_samples: a ndarray (n_pixels, n_samples) containing the waveforms in each pixel
+    :param adc_samples: a ndarray (n_pixels, n_samples) containing
+    the waveforms in each pixel
     :type adc_samples: ndarray (n_pixels, n_samples, ) (uint16)
-    :param baseline: baseline holder for baseline computation using clocked triggers
+    :param baseline: baseline holder for baseline computation
+    using clocked triggers
     :type baseline: ndarray (n_pixels, ) (float)
-    :param digicam_baseline: baseline computed by DigiCam of pre-samples (using 1024 samples)
+    :param digicam_baseline: baseline computed by DigiCam of pre-samples
+    (using 1024 samples)
     :type digicam_baseline: ndarray (n_pixels, ) (uint16)
-    :param standard_deviation: baseline standard deviation holder for baseline computed using clocked triggers
+    :param standard_deviation: baseline standard deviation holder for baseline
+    computed using clocked triggers
     :type standard deviation: ndarray (n_pixels, ) (float)
-    :param dark_baseline: baseline holder for baseline computed in dark condition (lid closed)
+    :param dark_baseline: baseline holder for baseline computed
+    in dark condition (lid closed)
     :type dark_baseline: ndarray (n_pixels, ) (float)
-    :param hv_off_baseline: baseline computed with sensors just bellow breakdown voltage (or without bias voltage applied)
+    :param hv_off_baseline: baseline computed with sensors
+    just bellow breakdown voltage (or without bias voltage applied)
     :type hv_off_baseline: ndarray (n_pixels, ) (float)
     :param camera_event_id: unique event identification provided by DigiCam
     :type camera_event_id: (int)
-    :param camera_event_number: event number within the first trigger of operation
+    :param camera_event_number: event number
+    within the first trigger of operation
     :type camera_event_number: (int)
     :param local_camera_clock: time stamp from internal DigiCam clock (ns)
     :type local_camera_clock: (float)
-    :param gps_time: time stamp provided by a precise external clock (synchronized between hardware components)
+    :param gps_time: time stamp provided by a precise external clock
+    (synchronized between hardware components)
     :type local_camera_clock: (float)
     :param camera_event_type: trigger type of the event
         1 = physics
@@ -113,7 +133,8 @@ class R0CameraContainer(Container):
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")
+    adc_samples = Field(ndarray, "numpy array containing ADC samples "
+                                 "(n_channels x n_pixels, n_samples)")
     baseline = Field(ndarray, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
@@ -124,18 +145,14 @@ class R0CameraContainer(Container):
     local_camera_clock = Field(float, "camera timestamp")
     gps_time = Field(float, "gps timestamp")
     white_rabbit_time = Field(float, "precise white rabbit based timestamp")
-    # camera_event_type:
-    # 1: PATCH7 trigger
-    # 2: PATCH19 trigger
-    # 4: MUON trigger
-    # 8: clocked trigger
-    # 16: external
     camera_event_type = Field(int, "camera event type")
     array_event_type = Field(int, "array event type")
     trigger_input_traces = Field(ndarray, "trigger patch trace (n_patches)")
     trigger_input_offline = Field(ndarray, "trigger patch trace (n_patches)")
-    trigger_output_patch7 = Field(ndarray, "trigger 7 patch cluster trace (n_clusters)")
-    trigger_output_patch19 = Field(ndarray, "trigger 19 patch cluster trace (n_clusters)")
+    trigger_output_patch7 = Field(ndarray, "trigger 7 patch cluster trace "
+                                           "(n_clusters)")
+    trigger_output_patch19 = Field(ndarray, "trigger 19 patch cluster trace "
+                                            "(n_clusters)")
     trigger_input_7 = Field(ndarray, 'trigger input CLUSTER7')
     trigger_input_19 = Field(ndarray, 'trigger input CLUSTER19')
 
@@ -154,7 +171,8 @@ class R1CameraContainer(Container):
     """
     Storage of r1 calibrated data from a single telescope
     """
-    adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)")
+    adc_samples = Field(ndarray, "baseline subtracted ADCs, "
+                                 "(n_pixels, n_samples)")
     nsb = Field(ndarray, "nsb rate in GHz")
     pde = Field(ndarray, "Photo Detection Efficiency at given NSB")
     gain_drop = Field(ndarray, "gain drop")
@@ -189,15 +207,18 @@ class ReconstructedShowerContainer(Container):
     """
 
     alt = Field(0.0, "reconstructed altitude", unit=u.deg)
-    alt_uncert = Field(0.0, "reconstructed altitude uncertainty", unit=u.deg)
+    alt_uncert = Field(0.0, "reconstructed altitude uncertainty",
+                       unit=u.deg)
     az = Field(0.0, "reconstructed azimuth", unit=u.deg)
-    az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty', unit=u.deg)
+    az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty',
+                           unit=u.deg)
     core_x = Field(0.0, 'reconstructed x coordinate of the core position',
                   unit=u.m)
     core_y = Field(0.0, 'reconstructed y coordinate of the core position',
                   unit=u.m)
-    core_uncertainty = Field(0.0, 'uncertainty of the reconstructed core position',
-                       unit=u.m)
+    core_uncertainty = Field(0.0,
+                             'uncertainty of the reconstructed core position',
+                             unit=u.m)
     h_max = Field(0.0, 'reconstructed height of the shower maximum')
     h_max_uncertainty = Field(0.0, 'uncertainty of h_max')
     is_valid = (False, ('direction validity flag. True if the shower direction'
@@ -213,7 +234,8 @@ class ReconstructedEnergyContainer(Container):
     Standard output of algorithms estimating energy
     """
     energy = Field(-1.0, 'reconstructed energy', unit=u.TeV)
-    energy_uncertainty = Field(-1.0, 'reconstructed energy uncertainty', unit=u.TeV)
+    energy_uncertainty = Field(-1.0, 'reconstructed energy uncertainty',
+                               unit=u.TeV)
     is_valid = Field(False, ('energy reconstruction validity flag. True if '
                             'the energy was properly reconstructed by the '
                             'algorithm'))
@@ -248,9 +270,12 @@ class ReconstructedContainer(Container):
 
 class DataContainer(Container):
     """ Top-level container for all event information.
-    Each field is representing a specific data processing level from (R0 to DL2)
-    Please keep in mind that the data level definition and the associated fields might change rapidly
-    as there is not a final data format. The data levels R0, R1, DL1, contains sub-containers for each telescope.
+    Each field is representing a specific data processing level
+    from (R0 to DL2)
+    Please keep in mind that the data level definition and the
+    associated fields might change rapidly
+    as there is not a final data format. The data levels R0, R1, DL1,
+    contains sub-containers for each telescope.
     After DL2 the data is not processed at the telescope level.
     """
     r0 = Field(R0Container(), "Raw Data")
