@@ -86,4 +86,4 @@ Then add the folowing line to /etc/astrmetry.cfg:
 
     add_path ~/astrometry-data
 
-That's it, you are ready to go. 
+That's it, you are ready to go.
