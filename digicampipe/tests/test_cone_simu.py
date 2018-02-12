@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.slow
+@pytest.mark.deselect
 def test_cone_simu():
     from digicampipe.image.cones_image import ConesImage, cones_simu
     from digicampipe.image.cones_image import simu_match
