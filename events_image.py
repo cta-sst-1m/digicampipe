@@ -1,7 +1,7 @@
 # Functions for extracting and saving cleaned events, called from pipeline_crab.py
 
 import numpy as np
-from astropy.units import Quantity
+#from astropy.units import Quantity
 from astropy.coordinates import Angle
 import astropy.units as u
 from ctapipe.instrument import CameraGeometry
@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 
 def make_image(geom: CameraGeometry, image, container=False):
 
-    pix_x = Quantity(np.asanyarray(geom.pix_x, dtype=np.float64)).value
-    pix_y = Quantity(np.asanyarray(geom.pix_y, dtype=np.float64)).value
+    pix_x = np.asanyarray(geom.pix_x, dtype=np.float64).value       # Quantity(np.asanyarray(geom.pix_x, dtype=np.float64)).value
+    pix_y = np.asanyarray(geom.pix_y, dtype=np.float64).value
     image = np.asanyarray(image, dtype=np.float64)
 
     assert pix_x.shape == image.shape
@@ -57,3 +57,24 @@ def save_events(event_stream, filename_pix, filename_eventsimage):
         yield event
 
     save_image(pix_x, pix_y, image_all, filename_pix, filename_eventsimage)  # save cleaned images for all events
+
+
+def save_timing(event_stream,filename_timing):
+
+    timing_all = []
+
+    for i, event in enumerate(event_stream):
+        
+        for telescope_id in event.r0.tels_with_data:
+
+            dl1_camera = event.dl1.tel[telescope_id]
+            mask = dl1_camera.cleaning_mask
+            timing_data = dl1_camera.time_bin[1]
+            timing_data[~mask] = 0.
+
+        timing_all.append(timing_data)
+
+        yield event
+
+    np.savetxt(filename_timing, timing_all, '%1.5f')
+

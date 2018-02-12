@@ -35,7 +35,7 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                     moments = hillas.hillas_parameters(geom, image)
                 else:
                     moments = moments_first
-            except HillasParameterizationError:
+            except hillas.HillasParameterizationError:      #
                 print('could not recompute Hillas')
                 moments = None
         event.dl2.shower = moments

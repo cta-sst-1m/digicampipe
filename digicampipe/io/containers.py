@@ -33,7 +33,11 @@ __all__ = ['InstrumentContainer',
            'ReconstructedShowerContainer',
            'ReconstructedEnergyContainer',
            'ParticleClassificationContainer',
-           'DataContainer']
+           'DataContainer',
+           'CentralTriggerContainer',
+           'MCEventContainer',
+           'MCHeaderContainer',
+           'MCCameraEventContainer']
 
 
 class InstrumentContainer(Container):
@@ -234,6 +238,72 @@ class ReconstructedContainer(Container):
     classification = Field(Map(ParticleClassificationContainer),
                           "Map of algorithm name to classification info")
 
+class MCCameraEventContainer(Container):        ####
+    """
+    Storage of mc data for a single telescope that change per event
+    """
+    photo_electron_image = Field(
+        Map(), "reference image in pure photoelectrons, with no noise"
+    )
+    # todo: move to instrument (doesn't change per event)
+    reference_pulse_shape = Field(
+        None, "reference pulse shape for each channel"
+    )
+    # todo: move to instrument or a static MC container (don't change per
+    # event)
+    time_slice = Field(0, "width of time slice", unit=u.ns)
+    dc_to_pe = Field(None, "DC/PE calibration arrays from MC file")
+    pedestal = Field(None, "pedestal calibration arrays from MC file")
+    azimuth_raw = Field(
+        0, "Raw azimuth angle [radians from N->E] for the telescope"
+    )
+    altitude_raw = Field(0, "Raw altitude angle [radians] for the telescope")
+    azimuth_cor = Field(
+        0, "the tracking Azimuth corrected for pointing errors for the telescope"
+    )
+    altitude_cor = Field(
+        0, "the tracking Altitude corrected for pointing errors for the telescope"
+    )
+
+
+class MCEventContainer(Container):      ####
+    """
+    Monte-Carlo
+    """
+    energy = Field(0.0, "Monte-Carlo Energy", unit=u.TeV)
+    alt = Field(0.0, "Monte-carlo altitude", unit=u.deg)
+    az = Field(0.0, "Monte-Carlo azimuth", unit=u.deg)
+    core_x = Field(0.0, "MC core position", unit=u.m)
+    core_y = Field(0.0, "MC core position", unit=u.m)
+    h_first_int = Field(0.0, "Height of first interaction")
+    tel = Field(
+        Map(MCCameraEventContainer), "map of tel_id to MCCameraEventContainer"
+    )
+    
+    mc_event_offset_fov = Field(Map(ndarray), "offset of pointing direction in camera f.o.v. \
+                                                divided by focal length, i.e. converted to  \
+                                                radians: [0] = Camera x (downwards in normal \
+                                                pointing, i.e. increasing Alt) [1] = Camera y -> Az.")     #####
+
+class MCHeaderContainer(Container):     ####
+    """
+    Monte-Carlo information that doesn't change per event
+    """
+    run_array_direction = Field([], (
+        "the tracking/pointing direction in "
+        "[radians]. Depending on 'tracking_mode' "
+        "this either contains: "
+        "[0]=Azimuth, [1]=Altitude in mode 0, "
+        "OR "
+        "[0]=R.A., [1]=Declination in mode 1."
+    ))
+
+
+class CentralTriggerContainer(Container):   ####
+
+    gps_time = Field(Time, "central average time stamp")
+    tels_with_trigger = Field([], "list of telescopes with data")
+
 
 class DataContainer(Container):
     """ Top-level container for all event information.
@@ -248,8 +318,11 @@ class DataContainer(Container):
     dl1 = Field(DL1Container(), "DL1 Calibrated image")
     dl2 = Field(ReconstructedContainer(), "Reconstructed Shower Information")
     inst = Field(InstrumentContainer(), "Instrumental information")
-
-
+    mc = Field(MCEventContainer(), "Monte-Carlo data")                                  #
+    mcheader = Field(MCHeaderContainer(), "Monte-Carlo run header data")                #
+    trig = Field(CentralTriggerContainer(), "central trigger information")              #
+    count = Field(0, "number of events processed")                                      #
+    
 def load_from_pickle_gz(file):
     file = gzip_open(file, "rb")
     while True:

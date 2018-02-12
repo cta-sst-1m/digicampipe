@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='/sst1m/raw/2017/09/28/CRAB_01/')
+                      default='../../sst-1m_data/20171030/')
     parser.add_option("-o", "--output", dest="output", help="output filename", default="output_crab", type=str)
     parser.add_option("-d", "--display", dest="display", action="store_true", help="Display rather than output data",
                       default=False)
@@ -108,6 +108,7 @@ if __name__ == '__main__':
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
+    
     # Run the dl0 calibration (data reduction, does nothing)
     data_stream = dl0.calibrate_to_dl0(data_stream)
     # Run the dl1 calibration (compute charge in photons + cleaning)
@@ -138,3 +139,24 @@ if __name__ == '__main__':
         # Save the hillas parameters
         save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
         #save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
+        """
+        for event in data_stream:
+            r0_camera = event.r0.tel[1]
+            r1_camera = event.r1.tel[1]
+            dl1_camera = event.dl1.tel[1]
+
+            adc_samples = r1_camera.adc_samples
+
+            mask_for_cleaning = adc_samples > 3 * r0_camera.standard_deviation[:, np.newaxis]
+            dl1_camera.cleaning_mask = np.any(mask_for_cleaning, axis=-1)
+            adc_samples[~dl1_camera.cleaning_mask] = 0.
+            adc_integrated = utils.integrate(adc_samples, time_integration_options['window_width'])
+            print(adc_samples.shape[0]) 
+            print(adc_samples.shape[1])
+
+            print(adc_integrated.shape[0]) 
+            print(adc_integrated.shape[1])
+        """
+        
+        
+        
