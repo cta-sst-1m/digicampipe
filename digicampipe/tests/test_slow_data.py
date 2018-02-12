@@ -16,8 +16,7 @@ example_file_path = resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'slow',
-        'SST1M01_0_000.006.fits.fz'
+        'example_100_evts.000.fits.fz'
     )
 )
 
@@ -38,8 +37,13 @@ digicam = Camera(_config_file=digicam_config_file)
 digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
 
-SLOW_CLASSES = ["DigicamSlowControl", "DriveSystem", "PDPSlowControl",
-                "SafetyPLC", "MasterSST1M"]
+SLOW_CLASSES = [
+    "DigicamSlowControl",
+    "DriveSystem",
+    "PDPSlowControl",
+    "SafetyPLC",
+    "MasterSST1M"
+]
 
 
 def test_get_slow_data_info():
@@ -85,7 +89,6 @@ def test_get_slow_event():
 def test_add_slow_data():
     data_stream = event_stream(
         file_list=[example_file_path],
-        # expert_mode=True,
         camera_geometry=digicam_geometry,
         camera=digicam,
         max_events=100
