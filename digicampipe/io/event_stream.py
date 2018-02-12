@@ -1,9 +1,6 @@
-import os
-import re
-
 from astropy.io import fits
 import numpy as np
-
+import pandas as pd
 from digicampipe.io import zfits, hdf5
 from digicampipe.io.slow_container import fill_slow
 
@@ -30,29 +27,27 @@ def event_stream(file_list, camera_geometry, camera,
             yield event
 
 
+def get_foo(path):
+    data_struct = {}
+    hdulist = fits.open(path)
+    data_struct['hdu'] = hdulist[1]
+    ts = data_struct['hdu'].data['timestamp']
+    good = ts != 0
+    events = np.arange(len(ts))
+    data_struct['timestamps'] = ts[good]
+    data_struct['events'] = events[good]
+    data_struct['ts_min'] = min(data_struct['timestamps'])
+    data_struct['ts_max'] = max(data_struct['timestamps'])
+    data_struct['class_name'] = hdulist[1].header['SUBSYS']
+    return data_struct
+
+
 def get_slow_data_info(file_list):
     data_structs = {}
-    if len(file_list) == 0:
-        print("ERROR: no slow data file given")
-        return data_structs
-    # get basic information from slow data
-    # (class, min and max timestamp, data location)
     for file in file_list:
-        data_struct = {}
-        hdulist = fits.open(file)
-        data_struct['hdu'] = hdulist[1]
-        ts = data_struct['hdu'].data['timestamp']
-        good = ts != 0
-        events = np.arange(len(ts))
-        data_struct['timestamps'] = ts[good]
-        data_struct['events'] = events[good]
-        data_struct['ts_min'] = min(data_struct['timestamps'])
-        data_struct['ts_max'] = max(data_struct['timestamps'])
-        filename = os.path.basename(file)
-        m = re.match('(?:slow_)?(?P<class>[\w]+?)_[\d_]+\.fits',
-                     filename)
-        class_name = m.group("class")
-        if class_name not in data_structs.keys():
+        data_struct = get_foo(file)
+        class_name = data_struct['class_name']
+        if class_name not in data_structs:
             data_structs[class_name] = [data_struct]
         else:
             data_structs[class_name].append(data_struct)
