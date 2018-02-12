@@ -23,8 +23,8 @@ if __name__ == '__main__':
     # slowcontrol_file_list=[
     # '%sDigicamSlowControl_20171030_%03d.fits'
     #  % (slowcontrol_folder, number) for number in range(11 + 1)]
-    #filename = options.directory + 'SST1M01_0_000.%03d.fits.fz'
-    #file_list = [filename
+    # filename = options.directory + 'SST1M01_0_000.%03d.fits.fz'
+    # file_list = [filename
     # % number for number in range(options.file_start, options.file_end + 1)]
     digicam_config_file = options.camera_config_file
     # Camera and Geometry objects (mapping,
@@ -44,7 +44,7 @@ if __name__ == '__main__':
                         966, 967, 968, 930, 931, 932, 896]
 
     ####################
-    ##### ANALYSIS #####
+    #     ANALYSIS     #
     ####################
     # Define the event stream
     data_stream = event_stream(file_list=file_list,
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     # Do not return events that have not the baseline computed
     # (only first events)
     data_stream = filter.filter_missing_baseline(data_stream)
-    #add slow data
+    # add slow data
     data_stream = add_slow_data(data_stream,
                                 slow_control_file_list=slow_control_file_list,
                                 drive_system_file_list=drive_system_file_list)
@@ -77,7 +77,7 @@ if __name__ == '__main__':
         diff.append(ts_data[-1] - ts_slow[-1])
         i += 1
         if i == 100:
-            i=0
+            i = 0
             print(ts_slow[-1], ts_data[-1], diff[-1])
 
     from matplotlib import pyplot as plt
@@ -87,14 +87,14 @@ if __name__ == '__main__':
     plt.subplot(2, 1, 2)
     plt.plot(diff)
     plt.show()
-"""
+    """
     with plt.style.context('ggplot'):
         display = EventViewer(
             data_stream,
-            n_samples=50, 
-            camera_config_file=digicam_config_file, 
+            n_samples=50,
+            camera_config_file=digicam_config_file,
             scale='lin'
         )
         display.draw()
         pass
-"""
+    """

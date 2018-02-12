@@ -31,10 +31,10 @@ def event_stream(file_list, camera_geometry, camera,
 
 
 def get_slow_data_info(file_list):
+    data_structs = {}
     if len(file_list) == 0:
         print("ERROR: no slow data file given")
-        return
-    data_structs={}
+        return data_structs
     # get basic information from slow data
     # (class, min and max timestamp, data location)
     for file in file_list:
@@ -49,11 +49,11 @@ def get_slow_data_info(file_list):
         data_struct['ts_min'] = min(data_struct['timestamps'])
         data_struct['ts_max'] = max(data_struct['timestamps'])
         filename = os.path.basename(file)
-        m = re.match('(?:slow_)?(?P<class>[\w]+?)_[\d\_]+\.fits',
+        m = re.match('(?:slow_)?(?P<class>[\w]+?)_[\d_]+\.fits',
                      filename)
         class_name = m.group("class")
         if class_name not in data_structs.keys():
-            data_structs[class_name]=[data_struct]
+            data_structs[class_name] = [data_struct]
         else:
             data_structs[class_name].append(data_struct)
     return data_structs
@@ -80,9 +80,9 @@ def get_slow_event(info_struct_list, data_ts):
     index_slow_file = np.argwhere(indexes_slow_file.flatten())[0, 0]
     info_struct = info_struct_list[index_slow_file]
     n_slow_event = len(info_struct['timestamps'])
-    #argmax stops at first True
+    # argmax stops at first True
     index_next_slow_event = np.argmax(
-        info_struct['timestamps']>data_ts
+        info_struct['timestamps'] > data_ts
     )
     if index_next_slow_event == 0:
         print('ERROR: wrong ts_min in get_slow_event()')
@@ -106,7 +106,7 @@ def add_slow_data(data_stream, slow_file_list):
             info_struct = slow_info_structs[class_name]
             slow_event, hdu = get_slow_event(info_struct, data_ts)
             if slow_event is None:
-                print("no %s data found" %class_name)
+                print("no %s data found" % class_name)
                 continue
             event = fill_slow(class_name, event, hdu, slow_event)
         yield event

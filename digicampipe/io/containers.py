@@ -213,9 +213,9 @@ class ReconstructedShowerContainer(Container):
     az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty',
                            unit=u.deg)
     core_x = Field(0.0, 'reconstructed x coordinate of the core position',
-                  unit=u.m)
+                   unit=u.m)
     core_y = Field(0.0, 'reconstructed y coordinate of the core position',
-                  unit=u.m)
+                   unit=u.m)
     core_uncertainty = Field(0.0,
                              'uncertainty of the reconstructed core position',
                              unit=u.m)
@@ -224,7 +224,7 @@ class ReconstructedShowerContainer(Container):
     is_valid = (False, ('direction validity flag. True if the shower direction'
                         'was properly reconstructed by the algorithm'))
     tel_ids = Field([], ('list of the telescope ids used in the'
-                        ' reconstruction of the shower'))
+                         ' reconstruction of the shower'))
     average_size = Field(0.0, 'average size of used')
     goodness_of_fit = Field(0.0, 'measure of algorithm success (if fit)')
 
@@ -237,8 +237,8 @@ class ReconstructedEnergyContainer(Container):
     energy_uncertainty = Field(-1.0, 'reconstructed energy uncertainty',
                                unit=u.TeV)
     is_valid = Field(False, ('energy reconstruction validity flag. True if '
-                            'the energy was properly reconstructed by the '
-                            'algorithm'))
+                             'the energy was properly reconstructed by the '
+                             'algorithm'))
     goodness_of_fit = Field(0.0, 'goodness of the algorithm fit')
 
 
@@ -247,12 +247,12 @@ class ParticleClassificationContainer(Container):
     Standard output of gamma/hadron classification algorithms
     """
     prediction = Field(0.0, ('prediction of the classifier, defined between '
-                            '[0,1], where values close to 0 are more '
-                            'gamma-like, and values close to 1 more '
-                            'hadron-like'))
+                             '[0,1], where values close to 0 are more '
+                             'gamma-like, and values close to 1 more '
+                             'hadron-like'))
     is_valid = Field(False, ('classificator validity flag. True if the '
-                            'predition was successful within the algorithm '
-                            'validity range'))
+                             'predition was successful within the algorithm '
+                             'validity range'))
 
     goodness_of_fit = Field(0.0, 'goodness of the algorithm fit')
 
@@ -261,11 +261,11 @@ class ReconstructedContainer(Container):
     """ collect reconstructed shower info from multiple algorithms """
 
     shower = Field(Map(ReconstructedShowerContainer),
-                  "Map of algorithm name to shower info")
+                   "Map of algorithm name to shower info")
     energy = Field(Map(ReconstructedEnergyContainer),
-                  "Map of algorithm name to energy info")
+                   "Map of algorithm name to energy info")
     classification = Field(Map(ParticleClassificationContainer),
-                          "Map of algorithm name to classification info")
+                           "Map of algorithm name to classification info")
 
 
 class DataContainer(Container):

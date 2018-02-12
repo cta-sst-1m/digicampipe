@@ -46,7 +46,7 @@ def test_get_slow_data_info():
     slow_info_structs = get_slow_data_info(slow_file_list)
     for class_name in SLOW_CLASSES:
         assert(class_name in slow_info_structs.keys())
-        assert(len(slow_info_structs[class_name])>0)
+        assert(len(slow_info_structs[class_name]) > 0)
         data_struct = slow_info_structs[class_name][0]
         assert('ts_min' in data_struct.keys())
         assert('ts_max' in data_struct.keys())
@@ -112,7 +112,7 @@ def test_add_slow_data():
     return ts_data, ts_slow, diff
 
 
-if __name__ == '__main__':
+def main():
     from matplotlib import pyplot as plt
 
     test_get_slow_data_info()
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     plt.figure()
     plt.subplot(2, 1, 1)
-    plt.plot(ts_slow-np.min(ts_data), ts_data-np.min(ts_data), '.')
+    plt.plot(ts_slow - np.min(ts_data), ts_data - np.min(ts_data), '.')
     plt.xlabel('ts(slow data) - ts_min, s')
     plt.ylabel('ts(digicam) - ts_min, s')
     plt.subplot(2, 1, 2)
@@ -129,3 +129,7 @@ if __name__ == '__main__':
     plt.xlabel('event')
     plt.ylabel('ts(digicam) - ts(slow data), s')
     plt.show()
+
+
+if __name__ == '__main__':
+    main()
