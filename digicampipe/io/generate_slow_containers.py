@@ -6,14 +6,14 @@ from glob import glob
 from astropy.io import fits
 
 """
-This script is looking in the digicampipe/tests/resources/slow/ folders and 
+This script is looking in the digicampipe/tests/resources/slow/ folders and
 looks for fits file.
-For each distinct type of file found (based on the file_names), a corresponding 
+For each distinct type of file found (based on the file_names), a corresponding
 container and a function to fill it is generated.
 Synchronisation of slow data with digicam data is made acording to the timestamp
 property of the slow data.
-In case you want to use slow data files with a different format than the one 
-currently used, empty the digicampipe/tests/resources/slow/ folder, place the 
+In case you want to use slow data files with a different format than the one
+currently used, empty the digicampipe/tests/resources/slow/ folder, place the
 slow data you want to use in it an run this script.
 """
 
