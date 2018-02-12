@@ -6,7 +6,7 @@ This requires the protozfitsreader python library to be installed
 import logging
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
-from . import protozfitsreader
+from protozfitsreader import ZFile
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +47,7 @@ def zfits_event_source(
 
     loaded_telescopes = []
 
-    for event_counter, event in enumerate(protozfitsreader.ZFile(url)):
+    for event_counter, event in enumerate(ZFile(url)):
         if max_events is not None and event_counter > max_events:
             break
 
@@ -100,7 +100,7 @@ def count_number_events(file_list):
     """
     n_events = 0
     for filename in file_list:
-        zfits = protozfitsreader.ZFile(filename)
+        zfits = ZFile(filename)
         n_events += zfits.numrows
 
     return n_events
