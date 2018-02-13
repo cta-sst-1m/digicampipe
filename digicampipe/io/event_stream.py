@@ -1,5 +1,3 @@
-from astropy.io import fits
-import numpy as np
 from digicampipe.io import zfits, hdf5
 from .auxservice import AuxService
 

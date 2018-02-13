@@ -27,7 +27,7 @@ digicam_config_file = resource_filename(
     )
 )
 
-aux_basepath = resource_filename('digicampipe', 'tests/resources/slow/')
+aux_basepath = resource_filename('digicampipe', 'tests/resources/')
 
 
 digicam = Camera(_config_file=digicam_config_file)
