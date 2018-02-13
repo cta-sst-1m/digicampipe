@@ -1,6 +1,6 @@
 from datetime import timedelta
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import pandas as pd
 
 from functools import lru_cache
@@ -19,6 +19,16 @@ class AuxService:
                 name=name,
             )
         )
+        self.namedtuple_klass = None
+
+    def get_paths(self, date):
+        return sorted(
+            glob(
+                self.glob_expr.format(
+                    date=date.strftime('%Y%m%d')
+                )
+            )
+        )
 
     # maxsize needs to be > number of Services
     # lru cache for instance methods is shit...
@@ -28,41 +38,71 @@ class AuxService:
         If several files: append them in order.
         takes some time, result will maybe be cached.
         '''
-        paths = sorted(
-            glob(
-                self.glob_expr.format(
-                    date=date.strftime('%Y%m%d')
-                )
-            )
-        )
-        tables = []
-        for p in paths:
-            t = table.Table.read(p)
-            if 'TIMESTAMP' in t.colnames:
-                t.rename_column('TIMESTAMP', 'timestamp')
-            tables.append(t)
+        paths = self.get_paths(date)
+        combined_table = combine_tables(paths)
 
-        merged_table = table.vstack(tables, metadata_conflicts='silent')
-        merged_table.meta = combine_table_metas(tables)
-        merged_table = merged_table.filled()
-        return merged_table
+        # side effect!
+        # we've just read a new day, so we update the format of our
+        # return value
+        self.namedtuple_klass = namedtuple(
+            self.name+"Row",
+            combined_table.colnames
+        )
+        return combined_table
 
     def at(self, event_timestamp_in_ns):
         datetime = pd.to_datetime(event_timestamp_in_ns, unit='ns')
         date = (datetime - timedelta(hours=12)).date()
         table = self.at_date(date)
+
+        event_timestamp_in_ms = event_timestamp_in_ns / 1e6
         table_index = np.searchsorted(
             table['timestamp'],
-            event_timestamp_in_ns/1e6
+            event_timestamp_in_ms
         )
         # this row is still a astropy.Table.Row thing
         row = table[table_index - 1]
-        # the return value is a numpy.recarray view into the row.
-        # it allows for direct "."-attribute access
-        return np.array(row).view(np.recarray)
+        return self.namedtuple_klass(**{
+            name: row[name]
+            for name in table.colnames
+        })
+
+
+def read_table(path):
+    ''' basically astropy.table.Table.read(path), but
+    we need a "timestamp" column to syncronize with event times.
+    In some files "timestamp" is called "TIMESTAMP" so we rename them.
+    '''
+    t = table.Table.read(path)
+    if 'TIMESTAMP' in t.colnames:
+        t.rename_column('TIMESTAMP', 'timestamp')
+    return t
+
+
+def combine_tables(paths):
+    ''' merge astropy.table.Tables read from paths
+
+    the meta information from the tables is merged in a complex way, c.f.
+    combine_table_metas
+    '''
+    tables = [read_table(path) for path in paths]
+    merged_table = table.vstack(tables, metadata_conflicts='silent')
+    merged_table.meta = combine_table_metas(tables)
+    return merged_table
 
 
 def combine_table_metas(tables):
+    ''' combine meta information (i.e. table headers) from fits tables.
+    CHECKSUM/DATASUM:
+        these must be wrong for the combined table, so they are dropped
+    TSTART/TSTOP: the minimum of TSTART and the maximum of TSTOP are used.
+    TELAPSE: the sum of all individual TELAPSE is used.
+    FILENAME: the (lexical) minimum is used and the word "combined" is
+            put into the name.
+    all others:
+        If they are all identical: the merged meta, will get this value.
+        If not ... we get a random value of all those, we found. :-(
+    '''
     metas = [t.meta for t in tables]
     result = OrderedDict()
     drop_keys = [
