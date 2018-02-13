@@ -43,7 +43,14 @@ def test_add_slow_data():
         max_events=100
     )
     data_stream = add_slow_data(data_stream, basepath=aux_basepath)
+    ts_slow = []
+    ts_data = []
+
     for event in data_stream:
-        pass
-    print(event.slow_data.__dict__.keys())
-    print(event.slow_data.DriveSystem.dtype)
+        tel_id = event.r0.tels_with_data[0]
+        ts_slow.append(event.slow_data.DriveSystem.timestamp * 1e-3)
+        ts_data.append(event.r0.tel[tel_id].local_camera_clock * 1e-9)
+    ts_slow = np.array(ts_slow)
+    ts_data = np.array(ts_data)
+    diff = ts_data - ts_slow
+    assert (diff <= 1.1).all()
