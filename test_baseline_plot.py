@@ -4,9 +4,10 @@ import matplotlib as mpl
 import os
 
 
-directory = '../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/'
+directory = '../../../sst-1m_simulace/results/baseline_tests/baseline_beginning/'
 
 all_file_list = os.listdir(directory)
+all_file_list = sorted(all_file_list)
 file_list = []
 string1 = 'baseline_gamma'
 
@@ -24,25 +25,25 @@ for fi in all_file_list:
         data = data[~np.isnan(data[:,0]),:]
 
 
-        mean_hist.append(np.mean(data[:,0]))
+        mean_hist.append(np.mean(data[:,0]))  # data[:,0] - mean baseline within all event pixels, mean(data[:,0]) - mean of mean baseline within all events
         std_mean_hist.append(np.std(data[:,0]))
         std_hist.append(np.mean(data[:,1]))
 
-        baseline.append(int(fi[28:30])) # beginning 26:28, end 28:30
+        baseline.append(int(fi[26:28]))  # beginning 26:28, end 28:30
 
 fig = plt.figure(figsize=(10,8))
-plt.plot(baseline,mean_hist,'.')
-plt.xlabel('baseline1')
+plt.plot(baseline,mean_hist,'-')
+plt.xlabel('n_bins0')
 plt.ylabel('mean baseline')
 
 fig = plt.figure(figsize=(10,8))
-plt.plot(baseline,std_mean_hist,'.')
-plt.xlabel('baseline1')
+plt.plot(baseline,std_mean_hist,'-')
+plt.xlabel('n_bins0')
 plt.ylabel('std mean baseline')
 
 fig = plt.figure(figsize=(10,8))
-plt.plot(baseline,std_hist,'.')
-plt.xlabel('baseline1')
+plt.plot(baseline,std_hist,'-')
+plt.xlabel('n_bins0')
 plt.ylabel('std baseline')
 
 plt.show()

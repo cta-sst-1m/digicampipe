@@ -13,7 +13,7 @@ from matplotlib.patches import Circle
 
 def disp_eval(A, width, length, cog_x, cog_y, x_offset, y_offset, psi, skewness, size, method): 
 
-    if method == 1:  # Simple method based on generaly known equation. DISP = f(width/length) for given THETA, AZ and offset
+    if method == 1:  # Simple method based on generally known equation. DISP = f(width/length) for given THETA, AZ and offset
         disp_comp = A*(1 - width/length)
     elif method == 2:  # Based on eq. 2 in (Luke Riley St Marie, 2014). DISP = f(width/length, size) for given THETA, AZ and offset
         disp_comp = A[0] + np.log(size) * (A[1] + A[2]* (1 - width/(length + A[3]*np.log(size))))

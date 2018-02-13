@@ -64,7 +64,7 @@ def save_timing(event_stream,filename_timing):
     timing_all = []
 
     for i, event in enumerate(event_stream):
-        
+
         for telescope_id in event.r0.tels_with_data:
 
             dl1_camera = event.dl1.tel[telescope_id]
@@ -77,4 +77,3 @@ def save_timing(event_stream,filename_timing):
         yield event
 
     np.savetxt(filename_timing, timing_all, '%1.5f')
-

@@ -9,8 +9,8 @@ import pandas as pd
 if __name__ == '__main__':
 
     parser = OptionParser()
-    parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze0_az0.npz')
-    parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze0_az0.txt')
+    parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_proton_ze00_az000_p13_b07.npz')
+    parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
     (options, args) = parser.parse_args()
     
     hillas = np.load(options.hillas) 
@@ -130,10 +130,16 @@ if __name__ == '__main__':
     
     # Histogram of zenit angles
     fig = plt.figure(figsize=(10, 8))
-    plt.hist(thetap, bins=bins)
+    plt.hist(thetap, bins=50)
     plt.xlabel('thetap')
     plt.ylabel('N')
     
+    # Histogram of core distances
+    fig = plt.figure(figsize=(10, 8))
+    plt.hist(core_distance, bins=100, histtype='step', stacked=True, fill=False, linewidth=4, color='black') #, range=[0, 500])
+    plt.yscale('log')
+    plt.xlabel('core distance [m]')
+    plt.ylabel('N')
     
     # Disp - core distance dependence
     fig = plt.figure(figsize=(10, 8))

@@ -14,6 +14,7 @@ def plot_rms2d(data):
     pcm = ax1.pcolormesh(x, y, np.log10(rms2), rasterized=True) #, vmin = 0, vmax=1) #, cmap='nipy_spectral')
     ax1.set_ylabel('high level')
     ax1.set_xlabel('low level')
+    ax1.invert_yaxis()
     cbar = fig.colorbar(pcm)
     cbar.set_label('log10 RMS')
 
@@ -27,6 +28,7 @@ def plot_len2d(data):
     pcm = ax1.pcolormesh(x, y, rms2, rasterized=True) #, vmin = 0, vmax=1) #, cmap='nipy_spectral')
     ax1.set_ylabel('high level')
     ax1.set_xlabel('low level')
+    ax1.invert_yaxis()
     cbar = fig.colorbar(pcm)
     cbar.set_label('N events')
 
@@ -69,12 +71,18 @@ if __name__ == '__main__':
 
     print(data[rms == min(rms),:])
 
+    """
     fig = plt.figure(figsize=(10,8))
     plt.scatter(low , high, c=rms) #, vmin = 0, vmax=1)
     plt.xlabel('low level')
     plt.ylabel('high level')
     cbar = plt.colorbar()
     cbar.set_label("RMS", labelpad=+1)
+    """
+    fig = plt.figure(figsize=(10,8))
+    plt.hist(miss, bins=50, histtype='step', stacked=True, fill=False, linewidth=4, color='black', range=[0, 1.5])
+    plt.xlabel('miss [deg]')
+    plt.ylabel('N')
 
     plot_rms2d(data)
     plot_len2d(data3)

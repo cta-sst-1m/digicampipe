@@ -44,9 +44,9 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("-p", "--pixels", dest="pixels", help="path to a file with map of pixels", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/pixels.txt')
-    parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data//hillas_gamma_ze00_az000_p13_b07.npz')
-    parser.add_option("-t", "--timing", dest="timing", help="path to a file with timing", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/timing_gamma_ze00_az000.txt')
-    parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
+    parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data//hillas_proton_ze00_az000_p13_b07.npz')
+    parser.add_option("-t", "--timing", dest="timing", help="path to a file with timing", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/timing_proton_ze00_az000.txt')
+    parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
     (options, args) = parser.parse_args()
    
     pixels = np.loadtxt(options.pixels)
@@ -109,17 +109,18 @@ if __name__ == '__main__':
             # - as crossection of main axis of the Hillas ellipse and y = 0 axis
             y_rot_cen = 0
             x_rot_cen = cen_x[i] - cen_y[i]/np.tan(psi[i])
-            
+
             # Rotation of event with PSI angle
             # - after this operation the main axis of all events lies in y=0 coordinates
             x_rot, y_rot = rotate_around_point((pix_x, pix_y), psi[i], origin=(x_rot_cen, y_rot_cen))
-        
+
         else: 
             x_rot = pix_x
             y_rot = pix_y
             
         timing_event = timing[i, :]  * 4.0   # conversion of time 'slices' to ns
         x_rot_sel = x_rot[timing[i, :] > 0] * mm_to_deg  # conversion of coordinates in mm to deg
+        y_rot_sel = y_rot[timing[i, :] > 0] * mm_to_deg
         timing_event = timing_event[timing_event > 0]
 
         if len(timing_event > 0):   # Because sometimes the timing_event matrix is empty. Timing matrix is full of zeros because of failure of Hillas parameter fit in simtel_pipeline
@@ -179,6 +180,18 @@ if __name__ == '__main__':
     plt.xlabel('core distance [m]')
     plt.ylabel('time gradient [ns/deg]')
 
+    # x,y rot coordinates distribution
+    plt.figure(figsize=(11,8))
+    plt.hist(y_rot_sel, bins=10, histtype='step', stacked=True, fill=False, linewidth=4, color='black')
+    #plt.xlim([-2, 2])
+    plt.xlabel('y_rot_sel [deg]')
+
+    plt.figure(figsize=(11,8))
+    plt.hist(x_rot_sel, bins=10, histtype='step', stacked=True, fill=False, linewidth=4, color='black')
+    #plt.xlim([-2, 2])
+    plt.xlabel('x_rot_sel [deg]')    
+    
+
     # Time gradient plot
     plt.figure(figsize=(11,8))
     plt.errorbar(bin_core, bin_means, yerr=bin_means_std, fmt='.', ms=15)
@@ -205,7 +218,7 @@ if __name__ == '__main__':
 
     # DISP vs Time gradient
     plt.figure(figsize=(11, 8))
-    plt.hist2d(disp, time_gradient, bins=150, range=np.array([(0, 4), (-40, 40)])) #, norm=mpl.colors.LogNorm())
+    plt.hist2d(disp, time_gradient, bins=50, range=np.array([(0, 4), (-40, 40)])) #, norm=mpl.colors.LogNorm())
     plt.colorbar()
     plt.xlabel('DISP [deg]')
     plt.ylabel('time gradient [ns/deg]')

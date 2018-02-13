@@ -93,17 +93,17 @@ def rswl(core_distance, size, width, length, binned_wls):
     length_lookup = binned_wls[:,[0,1,3]]
     sigmaw_lookup = binned_wls[:,[0,1,4]]
     sigmal_lookup = binned_wls[:,[0,1,5]]
-       
+
     w = interpolate.griddata((width_lookup[:,0], width_lookup[:,1]), width_lookup[:,2], (core_distance, size), method='linear')
     sw = interpolate.griddata((sigmaw_lookup[:,0], sigmaw_lookup[:,1]), sigmaw_lookup[:,2], (core_distance, size), method='linear')
     l = interpolate.griddata((length_lookup[:,0], length_lookup[:,1]), length_lookup[:,2], (core_distance, size), method='linear')
     sl = interpolate.griddata((sigmal_lookup[:,0], sigmal_lookup[:,1]), sigmal_lookup[:,2], (core_distance, size), method='linear')
-    
+
     rsw = (width - w) / sw
     rsw = rsw[~np.isnan(rsw)*~np.isinf(rsw)]
     rsl = (length - l) / sl
     rsl = rsl[~np.isnan(rsl)*~np.isinf(rsl)]
-    
+
     return rsw, rsl
 
 
@@ -130,14 +130,14 @@ if __name__ == '__main__':
     length_gamma = hillas_gamma['length']
     width_prot = hillas_prot['width']
     length_prot = hillas_prot['length']
-    
+
     """
     fig = plt.figure(figsize=(9, 8))
     plt.hist(np.log(size_gamma))
     fig = plt.figure(figsize=(9, 8))
     plt.hist(np.log(size_prot))
     """
-    
+
     min_size = 10
 
     # Masking border flagged events
@@ -145,15 +145,15 @@ if __name__ == '__main__':
     mask1_p = [x > min_size for x in size_prot]
     mask0_g = [x == 0 for x in border_gamma]
     mask1_g = [x > min_size for x in size_gamma]
-    
+
     mask_p = np.logical_and(mask0_p, mask1_p)
     mask_g = np.logical_and(mask0_g, mask1_g)
-    
+
     mc_gamma = mc_gamma[mask_g,:]
     mc_prot = mc_prot[mask_p,:]
     core_distance_prot = mc_prot[:, 2]
     core_distance_gamma = mc_gamma[:, 2]
-    
+
     width_gamma = width_gamma[mask_g]
     length_gamma = length_gamma[mask_g]
     size_gamma = np.log(size_gamma[mask_g])     # log size
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     # Reduced scaled width and length
     rswg, rslg = rswl(core_distance_gamma, size_gamma, width_gamma, length_gamma, binned_wls_gamma)
     rswp, rslp = rswl(core_distance_prot, size_prot, width_prot, length_prot, binned_wls_gamma)
-    
+
     # Save the lookup tables
     suffix = '-ze00-az000-offset00.txt'
     path = '../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/'
@@ -201,7 +201,7 @@ if __name__ == '__main__':
     # Quality factor
     qualityw = efficiency_gammaw / np.sqrt(efficiency_protonw)
     qualityl = efficiency_gammal / np.sqrt(efficiency_protonl)
-    
+
 
 
     # PLOTS
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     # Look-up tables
     plot_lookup2d(binned_wls_gamma, 'gamma')
     #plot_lookup2d(binned_wls_proton, 'proton')
-    
+
     # RSW, RSL
     fig, ax = plt.subplots(1, 2,figsize=(14,6))
     weights_g = np.ones_like(rswg)/float(len(rswg))
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     ax[0].set_xlabel('RSW [sigma]')
     ax[0].set_ylabel('Normalised')
     ax[0].legend()
-    
+
     weights_g = np.ones_like(rslg)/float(len(rslg))
     weights_p = np.ones_like(rslp)/float(len(rslp))
     ax[1].hist(rslg, bins=100, weights=weights_g, label='gamma', histtype='step', stacked=True, fill=False, linewidth=4, color='black', range=[-10, 20])
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     ax[1].set_xlabel('RSL [sigma]')
     ax[1].set_ylabel('Normalised')    
     ax[1].legend()
-    
+
     # Efficiency
     fig, ax = plt.subplots(1, 2,figsize=(14,6))
     ax[0].plot(gamma_cut,efficiency_gammaw, 'k.', label='gamma')
@@ -235,13 +235,13 @@ if __name__ == '__main__':
     ax[0].set_xlabel('RSW gamma cut [sigma]')
     ax[0].set_ylabel('efficiency')
     ax[0].legend()
-    
+
     ax[1].plot(gamma_cut,efficiency_gammal, 'k.', label='gamma')
     ax[1].plot(gamma_cut,efficiency_protonl, 'r.', label='proton')
     ax[1].set_xlabel('RSL gamma cut [sigma]')
     ax[1].set_ylabel('efficiency')
     ax[1].legend()
-    
+
     # Quality factor
     fig, ax = plt.subplots(1, 2,figsize=(14,6))
     ax[0].plot(gamma_cut,qualityw, 'k-')
@@ -252,10 +252,6 @@ if __name__ == '__main__':
     ax[1].set_xlabel('RSL gamma cut [sigma]')
     ax[1].set_ylabel('Quality factor')
 
-    
+
     plt.show()
 
-
-
-    
-    
