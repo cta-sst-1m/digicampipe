@@ -1,5 +1,4 @@
 from pkg_resources import resource_filename
-from glob import glob
 import os
 import warnings
 import numpy as np
