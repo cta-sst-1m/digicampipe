@@ -41,10 +41,9 @@ class AuxService:
             if 'TIMESTAMP' in t.colnames:
                 t.rename_column('TIMESTAMP', 'timestamp')
             tables.append(t)
-        metas = [t.meta for t in tables]
-        combined_meta = combine_table_metas(metas)
+
         merged_table = table.vstack(tables, metadata_conflicts='silent')
-        merged_table.meta = combined_meta
+        merged_table.meta = combine_table_metas(tables)
         merged_table = merged_table.filled()
         return merged_table
 
@@ -63,7 +62,8 @@ class AuxService:
         return np.array(row).view(np.recarray)
 
 
-def combine_table_metas(metas):
+def combine_table_metas(tables):
+    metas = [t.meta for t in tables]
     result = OrderedDict()
     drop_keys = [
         'DATASUM',
