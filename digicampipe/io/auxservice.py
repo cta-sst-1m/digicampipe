@@ -26,14 +26,6 @@ class AuxService:
     def at_date(self, date):
         ''' fetch fits Table for named aux service at date.
         If several files: append them in order.
-
-        name should be one of these:
-            'DigicamSlowControl'
-            'DriveSystem'
-            'PDPSlowControl'
-            'SafetyPLC'
-
-        rows with TIMESTAMP == 0 are deleted
         takes some time, result will maybe be cached.
         '''
         paths = sorted(
@@ -44,29 +36,22 @@ class AuxService:
             )
         )
         tables = []
-        first_colname = None
         for p in paths:
             try:
                 t = table.Table.read(p)
-                if 'TIME' in t.colnames:
-                    del t['TIME']
                 if 'TIMESTAMP' in t.colnames:
                     t.rename_column('TIMESTAMP', 'timestamp')
-                ts = t['timestamp']
-                t = t[ts != 0]
-                if first_colname is None:
-                    first_colname = set(t.colnames)
                 tables.append(t)
 
             except Exception as e:
+                # this should generate a warning, not a print
                 print(e)
         metas = [t.meta for t in tables]
         combined_meta = combine_table_metas(metas)
-        X = table.vstack(tables, metadata_conflicts='silent')
-        X.meta = combined_meta
-        X = X.filled()
-        assert not X.masked, self.name
-        return X
+        merged_table = table.vstack(tables, metadata_conflicts='silent')
+        merged_table.meta = combined_meta
+        merged_table = merged_table.filled()
+        return merged_table
 
     def at(self, event_timestamp_in_ns):
         datetime = pd.to_datetime(event_timestamp_in_ns, unit='ns')
