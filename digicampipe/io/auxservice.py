@@ -20,8 +20,8 @@ class AuxService:
             )
         )
 
-    # needs to be > number of Services
-    # lur cache for instance methods is shit...
+    # maxsize needs to be > number of Services
+    # lru cache for instance methods is shit...
     @lru_cache(maxsize=20)
     def at_date(self, date):
         ''' fetch fits Table for named aux service at date.
@@ -37,15 +37,10 @@ class AuxService:
         )
         tables = []
         for p in paths:
-            try:
-                t = table.Table.read(p)
-                if 'TIMESTAMP' in t.colnames:
-                    t.rename_column('TIMESTAMP', 'timestamp')
-                tables.append(t)
-
-            except Exception as e:
-                # this should generate a warning, not a print
-                print(e)
+            t = table.Table.read(p)
+            if 'TIMESTAMP' in t.colnames:
+                t.rename_column('TIMESTAMP', 'timestamp')
+            tables.append(t)
         metas = [t.meta for t in tables]
         combined_meta = combine_table_metas(metas)
         merged_table = table.vstack(tables, metadata_conflicts='silent')
