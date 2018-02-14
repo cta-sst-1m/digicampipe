@@ -33,3 +33,6 @@ class Camera(camera.Camera):
         super().__init__(*args, **kwargs)
 
         self.geometry = geometry.generate_geometry_from_camera(camera=self)
+
+
+DigiCam = Camera()
