@@ -6,7 +6,7 @@ This requires the protozfitsreader python library to be installed
 import logging
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
-from . import protozfitsreader
+from protozfitsreader import ZFile
 logger = logging.getLogger(__name__)
 
 
@@ -47,11 +47,11 @@ def zfits_event_source(
 
     loaded_telescopes = []
 
-    for event in protozfitsreader.ZFile(url):
-        if max_events is not None and event.event_id > max_events:
+    for event_counter, event in enumerate(ZFile(url)):
+        if max_events is not None and event_counter > max_events:
             break
 
-        data.r0.event_id = event.event_id
+        data.r0.event_id = event_counter
         data.r0.tels_with_data = [event.telescope_id, ]
 
         # remove forbidden telescopes
@@ -92,8 +92,7 @@ def zfits_event_source(
 
 
 def count_number_events(file_list):
-    """
-    This function counts the number of events in each file of file list and returns the sum.
+    """return sum of events in all files
     It is useful for fixed size array creation.
 
     :param file_list: list of zfits files
@@ -101,8 +100,7 @@ def count_number_events(file_list):
     """
     n_events = 0
     for filename in file_list:
-        zfits = protozfitsreader.ZFile(filename)
+        zfits = ZFile(filename)
         n_events += zfits.numrows
 
     return n_events
-

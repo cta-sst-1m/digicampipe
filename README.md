@@ -1,7 +1,7 @@
-# digicampipe [![Build Status](https://travis-ci.org/calispac/digicampipe.svg?branch=master)](https://travis-ci.org/calispac/digicampipe)
+# digicampipe [![Build Status](https://travis-ci.org/cta-sst-1m/digicampipe.svg?branch=master)](https://travis-ci.org/cta-sst-1m/digicampipe)
 DigiCam pipeline based on ctapipe
 
-The documentation can be found here: [Digicampipe documentation](https://calispac.github.io/digicampipe)
+The documentation can be found here: [Digicampipe documentation](https://cta-sst-1m.github.io/digicampipe)
 
 # Installation
 
@@ -20,7 +20,7 @@ We propose to have a tidy place and clone `digicampipe` into a folder `ctasoft/`
 
     mkdir ctasoft
     cd ctasoft
-    git clone https://github.com/calispac/digicampipe
+    git clone https://github.com/cta-sst-1m/digicampipe
 
 To not mix up your anaconda root environment with digicampipe, we propose
 to make a so called environment, with all the dependencies in it.
@@ -36,13 +36,20 @@ your prompt should look similar to this this:
     pip install -r digicampipe/requirements.txt
     pip install -e digicampipe
 
+Finally change into the digicampipe directory.
+
+    cd digicampipe
+
+### Tests
+
 Run the tests on your machine:
 
-    pytest -vv digicampipe
+    pytest
 
-If you want to execute only very fast tests do:
+Some tests depend on astrometry.net (see below) and take long, so by default you might want to skip them.
+If you want to execute all tests, please do:
 
-    pytest -c quick_test.ini digicampipe
+    pytest -c all_tests.ini
 
 ## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
 
