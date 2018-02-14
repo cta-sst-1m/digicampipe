@@ -44,13 +44,13 @@ def zfits_event_source(
     if expert_mode is not None:
         warnings.warn(
             "expert_mode is deprecated, it is now always True.",
-            DeprecationWarning
+            FutureWarning
         )
 
     if camera_geometry is not None:
         warnings.warn(
             "camera_geometry will soon be deprecated, use utils.Camera",
-            PendingDeprecationWarning
+            FutureWarning
         )
         geometry = camera_geometry
     else:
@@ -59,7 +59,7 @@ def zfits_event_source(
     if not isinstance(camera, utils.Camera):
         warnings.warn(
             "camera should be utils.Camera not cts_core.camera.Camera",
-            PendingDeprecationWarning
+            FutureWarning
         )
 
         patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
