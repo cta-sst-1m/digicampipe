@@ -5,7 +5,7 @@ def event_stream(
     file_list,
     camera,
     camera_geometry=None,
-    expert_mode=False,
+    expert_mode=None,
     max_events=None,
     mc=False
 ):
