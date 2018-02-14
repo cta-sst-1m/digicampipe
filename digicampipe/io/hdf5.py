@@ -1,3 +1,4 @@
+import warnings
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
@@ -17,10 +18,17 @@ def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
         camera containing info on pixels modules etc.
     camera : cts_core.Camera()
     """
+    if camera_geometry is not None:
+        warnings.warn(
+            "camera_geometry will soon be deprecated, use utils.Camera",
+            PendingDeprecationWarning
+        )
+        geometry = camera_geometry
+    else:
+        geometry = camera.geometry
 
     hdf5 = h5py.File(url, 'r')
 
-    geometry = camera_geometry
     patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
     cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
     cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)

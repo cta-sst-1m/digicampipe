@@ -16,8 +16,8 @@ __all__ = ['zfits_event_source']
 
 def zfits_event_source(
     url,
-    camera_geometry,
     camera,
+    camera_geometry=None,
     max_events=None,
     allowed_tels=None,
     expert_mode=None,
@@ -44,7 +44,15 @@ def zfits_event_source(
             DeprecationWarning
         )
 
-    geometry = camera_geometry
+    if camera_geometry is not None:
+        warnings.warn(
+            "camera_geometry will soon be deprecated, use utils.Camera",
+            PendingDeprecationWarning
+        )
+        geometry = camera_geometry
+    else:
+        geometry = camera.geometry
+
     patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
     cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
     cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
