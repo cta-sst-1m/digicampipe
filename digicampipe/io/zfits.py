@@ -53,9 +53,19 @@ def zfits_event_source(
     else:
         geometry = camera.geometry
 
-    patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
-    cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
-    cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+    if not isinstance(camera, utils.Camera):
+        warnings.warn(
+            "camera should be utils.Camera not cts_core.camera.Camera",
+            PendingDeprecationWarning
+        )
+
+        patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
+        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
+        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+    else:
+        patch_matrix = camera.patch_matrix
+        cluster_7_matrix = camera.cluster_7_matrix
+        cluster_19_matrix = camera.cluster_19_matrix
     data = DataContainer()
 
     loaded_telescopes = []

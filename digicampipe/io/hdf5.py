@@ -29,9 +29,19 @@ def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
 
     hdf5 = h5py.File(url, 'r')
 
-    patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
-    cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
-    cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+    if not isinstance(camera, utils.Camera):
+        warnings.warn(
+            "camera should be utils.Camera not cts_core.camera.Camera",
+            PendingDeprecationWarning
+        )
+
+        patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
+        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
+        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+    else:
+        patch_matrix = camera.patch_matrix
+        cluster_7_matrix = camera.cluster_7_matrix
+        cluster_19_matrix = camera.cluster_19_matrix
     data = DataContainer()
     n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
 
