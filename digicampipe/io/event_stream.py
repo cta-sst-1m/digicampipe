@@ -9,27 +9,17 @@ def event_stream(
     max_events=None,
     mc=False
 ):
+    if mc:
+        source = hdf5.digicamtoy_event_source
+    else:
+        source = zfits.zfits_event_source
 
     for file in file_list:
-
-        if not mc:
-
-            data_stream = zfits.zfits_event_source(
-                url=file,
-                expert_mode=expert_mode,
-                camera_geometry=camera_geometry,
-                max_events=max_events,
-                camera=camera
-            )
-        else:
-
-            data_stream = hdf5.digicamtoy_event_source(
-                url=file,
-                camera_geometry=camera_geometry,
-                camera=camera,
-                max_events=max_events
-            )
-
+        data_stream = source(
+            url=file,
+            camera=camera,
+            camera_geometry=camera_geometry,
+            max_events=max_events,
+        )
         for event in data_stream:
-
             yield event
