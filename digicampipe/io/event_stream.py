@@ -2,17 +2,18 @@ from digicampipe.io import zfits, hdf5
 
 
 def event_stream(
-    filelist_or_url,
+    filelist,
     camera=None,
     camera_geometry=None,
     expert_mode=None,
     max_events=None,
     mc=False
 ):
-    if isinstance(filelist_or_url, (str, bytes)):
-        filelist = [filelist_or_url]
-    else:
-        filelist = filelist_or_url
+    # If the caller gives us a path and not a list of paths,
+    # we convert it to a list.
+    # This is not clean but convenient.
+    if isinstance(filelist, (str, bytes)):
+        filelist = [filelist]
 
     if mc:
         source = hdf5.digicamtoy_event_source
