@@ -6,7 +6,12 @@ import h5py
 __all__ = ['digicamtoy_event_source']
 
 
-def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
+def digicamtoy_event_source(
+    url,
+    camera=None,
+    camera_geometry=None,
+    max_events=None
+):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
     ----------
@@ -14,10 +19,12 @@ def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
         path to file to open
     max_events : int, optional
         maximum number of events to read
-    camera_geometry: CameraGeometry()
-        camera containing info on pixels modules etc.
-    camera : cts_core.Camera()
+    camera : utils.Camera() or None for DigiCam
+    camera_geometry: soon to be deprecated
     """
+    if camera is None:
+        camera = utils.DigiCam
+
     if camera_geometry is not None:
         warnings.warn(
             "camera_geometry will soon be deprecated, use utils.Camera",

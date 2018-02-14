@@ -3,7 +3,7 @@ from digicampipe.io import zfits, hdf5
 
 def event_stream(
     file_list,
-    camera,
+    camera=None,
     camera_geometry=None,
     expert_mode=None,
     max_events=None,

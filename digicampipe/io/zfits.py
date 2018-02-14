@@ -16,7 +16,7 @@ __all__ = ['zfits_event_source']
 
 def zfits_event_source(
     url,
-    camera,
+    camera=None,
     camera_geometry=None,
     max_events=None,
     allowed_tels=None,
@@ -34,10 +34,13 @@ def zfits_event_source(
         be used for example emulate the final CTA data format, where there
         would be 1 telescope per file (whereas in current monte-carlo,
         they are all interleaved into one file)
+    camera : utils.Camera() or None, for DigiCam
     expert_mode : deprecated
-    camera_geometry: CameraGeometry()
-        camera containing info on pixels modules etc.
+    camera_geometry: soon to be deprecated
     """
+    if camera is None:
+        camera = utils.DigiCam
+
     if expert_mode is not None:
         warnings.warn(
             "expert_mode is deprecated, it is now always True.",
