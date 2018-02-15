@@ -28,7 +28,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from docopt import docopt
-from os import path
 
 
 def main(args):
