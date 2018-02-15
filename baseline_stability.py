@@ -10,12 +10,13 @@ Options:
 from digicampipe.io.event_stream import event_stream
 import matplotlib.pyplot as plt
 from docopt import docopt
+from tqdm import tqdm
 
 
 def main(infile):
 
     baselines = []
-    for data in event_stream(infile):
+    for data in tqdm(event_stream(infile)):
         for tel_id in data.r0.tels_with_data:
             baselines.append(data.r0.tel[tel_id].baseline)
 
