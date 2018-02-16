@@ -15,6 +15,7 @@ Usage:
 Options:
   -h --help     Show this screen.
   --unwanted_pixels=<integers>   list of integers with commas [default: ]
+  --display     justa quick plot of the results
 '''
 import numpy as np
 from digicampipe.calib.camera import filter
@@ -45,7 +46,7 @@ def estimate_baseline(files, unwanted_pixels=[]):
     # This way it is possible to test an analysis
 
 
-def main(baseline_file_path, files, unwanted_pixels=[]):
+def main(baseline_file_path, files, unwanted_pixels=[], display=False):
 
     baseline = estimate_baseline(
         files=files,
@@ -61,6 +62,20 @@ def main(baseline_file_path, files, unwanted_pixels=[]):
         standard_deviation=baseline.std
     )
 
+    if display:
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(1, 2)
+        ax[0].plot(baseline.mean, '.:', label='baseline.mean')
+        ax[0].grid()
+        ax[0].legend()
+
+        ax[1].plot(baseline.std, '.:', label='baseline.std')
+        ax[1].grid()
+        ax[1].legend()
+
+        plt.suptitle("Baseline Analysis (N events:{})".format(baseline.N))
+        plt.show()
+
 if __name__ == "__main__":
     args = docopt(__doc__)
     args['--unwanted_pixels'] = [
@@ -68,5 +83,6 @@ if __name__ == "__main__":
     main(
         baseline_file_path=args['<baseline_file_path>'],
         files=args['<files>'],
-        unwanted_pixels=args['--unwanted_pixels']
+        unwanted_pixels=args['--unwanted_pixels'],
+        display=args['--display']
     )
