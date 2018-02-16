@@ -138,3 +138,4 @@ class AdcSampleStatistics:
 
         self.mean = mean / i
         self.std = std / i
+        self.N = i
