@@ -97,14 +97,11 @@ def fill_hist_trigger_time(event_stream, output_filename, histogram):
 def save_dark(data_stream, output_filename):
     for i, event in enumerate(data_stream):
         for telescope_id in event.r0.tels_with_data:
-
+            data = event.r0.tel[telescope_id].adc_samples
             if i == 0:
-
-                data = event.r0.tel[telescope_id].adc_samples
                 baseline = np.zeros(data.shape[0])
                 std = np.zeros(data.shape[0])
 
-            data = event.r0.tel[telescope_id].adc_samples
             baseline += np.mean(data, axis=-1)
             std += np.std(data, axis=-1)
 
