@@ -18,7 +18,7 @@ def main(infile):
     baselines = []
     for data in tqdm(event_stream(infile)):
         for tel_id in data.r0.tels_with_data:
-            baselines.append(data.r0.tel[tel_id].baseline)
+            baselines.append(data.r0.tel[tel_id].digicam_baseline)
 
     plt.figure()
     plt.plot(baselines[0])
