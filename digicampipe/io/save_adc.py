@@ -94,18 +94,8 @@ def fill_hist_trigger_time(event_stream, output_filename, histogram):
     histogram.save(output_filename)
 
 
-def save_dark(data_stream, output_filename, n_events=None):
-
-    if n_events is None:
-
-        iter_events = itertools.count()
-
-    else:
-
-        iter_events = range(n_events)
-
-    for event, i in zip(data_stream, iter_events):
-
+def save_dark(data_stream, output_filename):
+    for i, event in enumerate(data_stream):
         for telescope_id in event.r0.tels_with_data:
 
             if i == 0:
@@ -123,5 +113,3 @@ def save_dark(data_stream, output_filename, n_events=None):
     baseline /= i
     std /= i
     np.savez(output_filename, baseline=baseline, standard_deviation=std)
-
-
