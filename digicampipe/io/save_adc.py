@@ -107,14 +107,11 @@ def save_dark(data_stream, output_filename, n_events=None):
     for event, i in zip(data_stream, iter_events):
 
         for telescope_id in event.r0.tels_with_data:
-
+            data = event.r0.tel[telescope_id].adc_samples
             if i == 0:
-
-                data = event.r0.tel[telescope_id].adc_samples
                 baseline = np.zeros(data.shape[0])
                 std = np.zeros(data.shape[0])
 
-            data = event.r0.tel[telescope_id].adc_samples
             baseline += np.mean(data, axis=-1)
             std += np.std(data, axis=-1)
 
