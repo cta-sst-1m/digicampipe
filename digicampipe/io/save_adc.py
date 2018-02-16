@@ -123,10 +123,7 @@ def save_dark(data_stream, output_filename, n_events=None):
 
 
 class AdcSampleStatistics:
-    def __init__(self, data_stream):
-        self.mean = None
-        self.std = None
-
+    def __call__(self, data_stream):
         for i, event in enumerate(data_stream):
             for telescope_id in event.r0.tels_with_data:
                 data = event.r0.tel[telescope_id].adc_samples
