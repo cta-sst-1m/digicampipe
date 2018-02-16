@@ -80,7 +80,7 @@ if __name__ == '__main__':
     print('N of showers: ', len(mc_data))
     print('Triggered: ', len(mc_data[mc_data[:,6] == 1,:]))
     
-    filename_showerparam = 'shower_allmc_param_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '.txt'
+    filename_showerparam = 'allmc_param_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '.txt'
     save_file(mc_data, options.directory + filename_showerparam)  # save mc parameters of all showers
 
 
