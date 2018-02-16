@@ -82,7 +82,7 @@ if __name__ == '__main__':
     
     filename_showerparam = 'allmc_param_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '.txt'
     save_file(mc_data, options.directory + filename_showerparam)  # save mc parameters of all showers
-
+    np.savez(filename_showerparam[:-4], mc_data=mc_data)
 
 
 
