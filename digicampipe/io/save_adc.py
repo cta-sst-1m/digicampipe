@@ -110,3 +110,24 @@ def save_dark(data_stream, output_filename):
     baseline /= i
     std /= i
     np.savez(output_filename, baseline=baseline, standard_deviation=std)
+
+
+class AdcSampleStatistics:
+    def __init__(self, data_stream):
+        self.mean = None
+        self.std = None
+
+        for i, event in enumerate(data_stream):
+            for telescope_id in event.r0.tels_with_data:
+                data = event.r0.tel[telescope_id].adc_samples
+                if i == 0:
+                    mean = np.zeros(data.shape[0])
+                    std = np.zeros(data.shape[0])
+
+                mean += np.mean(data, axis=-1)
+                std += np.std(data, axis=-1)
+
+            yield event
+
+        self.mean = mean / i
+        self.std = std / i
