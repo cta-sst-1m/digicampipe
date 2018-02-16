@@ -45,7 +45,7 @@ if __name__ == '__main__':
     mask1 = [x > 0.001 for x in width/length]  # because of some strange arteficial values..
     mask2 = [x > min_size for x in size]
     
-    mask = ~np.isnan(width)*~np.isnan(disp)*mask0*mask1*mask2
+    mask = ~np.isnan(width)*~np.isnan(disp) #*mask0*mask1*mask2
     size = size[mask]
     disp = disp[mask]
     width = width[mask]

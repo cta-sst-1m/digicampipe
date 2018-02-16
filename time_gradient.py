@@ -117,7 +117,7 @@ if __name__ == '__main__':
         else: 
             x_rot = pix_x
             y_rot = pix_y
-            
+
         timing_event = timing[i, :]  * 4.0   # conversion of time 'slices' to ns
         x_rot_sel = x_rot[timing[i, :] > 0] * mm_to_deg  # conversion of coordinates in mm to deg
         y_rot_sel = y_rot[timing[i, :] > 0] * mm_to_deg

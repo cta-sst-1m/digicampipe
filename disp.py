@@ -76,7 +76,7 @@ def resolution(x,y):    # A simple way how to calculate "1-sigma" resolution
 
     while N_in < 0.68*N_full:
 
-        N_in = len(x[(x**2 + y**2 < r**2)])
+        N_in = len(x[(x**2.0 + y**2.0 < r**2.0)])
         r = r+0.005
         
     return r
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
     parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
-    parser.add_option("-e", "--eq", dest="method", help="Method/equation for the DISP parameter fit", default=1)
+    parser.add_option("-e", "--eq", dest="method", help="Method/equation for the DISP parameter fit", default=1, type=int)
     
     (options, args) = parser.parse_args()
     
@@ -123,6 +123,7 @@ if __name__ == '__main__':
     mask0 = [x == 0 for x in border]
     mask1 = [x > 0.001 for x in width/length]  # because of some strange arteficial values..
     mask2 = [x > min_size for x in size]
+
     
     mask = ~np.isnan(width)*~np.isnan(cog_x)*mask0*mask1*mask2
     # hillas
@@ -175,6 +176,7 @@ if __name__ == '__main__':
         res = minimize(disp_minimize, x0, args=(width, length, cog_x, cog_y, x_offset, y_offset, psi, skewness, size, options.method))
         disp_comp, theta_squared, x_source_comp, y_source_comp, theta2_sum = disp_eval(res.x, width, length, cog_x, cog_y, x_offset, y_offset, psi, skewness, size, options.method)
 
+    print(res)
 
     # RESOLUTION
     
@@ -221,15 +223,15 @@ if __name__ == '__main__':
     plt.ylabel('1 - width/length')
 
     fig = plt.figure(figsize=(10,8))
-    plt.hist2d(np.log(size), width/length, bins=150) #, norm=mpl.colors.LogNorm()) #  range=np.array([(0, 4), (0, 0.3)]))
+    plt.hist2d(np.log10(size), width/length, bins=150) #, norm=mpl.colors.LogNorm()) #  range=np.array([(0, 4), (0, 0.3)]))
     plt.colorbar()
-    plt.xlabel('log size')
+    plt.xlabel('log10 size')
     plt.ylabel(' width/length')
 
     fig = plt.figure(figsize=(10,8))
-    plt.hist2d(np.log(size), disp, bins=150) #, norm=mpl.colors.LogNorm()) #  range=np.array([(0, 4), (0, 0.3)]))
+    plt.hist2d(np.log10(size), disp, bins=150) #, norm=mpl.colors.LogNorm()) #  range=np.array([(0, 4), (0, 0.3)]))
     plt.colorbar()
-    plt.xlabel('log size')
+    plt.xlabel('log10 size')
     plt.ylabel('True DISP')
 
 

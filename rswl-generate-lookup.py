@@ -176,7 +176,7 @@ if __name__ == '__main__':
     rswp, rslp = rswl(core_distance_prot, size_prot, width_prot, length_prot, binned_wls_gamma)
 
     # Save the lookup tables
-    suffix = '-ze00-az000-offset00.txt'
+    suffix = 'ze00-az000-offset00.txt'
     path = '../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/'
     np.savetxt(path+'rswl-lookup-gamma-'+suffix, binned_wls_gamma, fmt='%.5f')
     #np.savetxt(path+'rswl-lookup-proton-'+suffix, binned_wls_proton, fmt='%.5f')
