@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     # Save simulated shower paramters
     filename_showerparam = 'shower_param_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '.txt'
-    #data_stream = mc_shower.save_shower(data_stream, directory + filename_showerparam)
+    data_stream = mc_shower.save_shower(data_stream, directory + filename_showerparam)
 
 
     # Run the dl2 calibration (Hillas)
@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
     # Save arrival times of photons in pixels passed cleaning
     filename_timing = 'timing_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '.txt'
-    #data_stream = events_image.save_timing(data_stream, directory + filename_timing)
+    data_stream = events_image.save_timing(data_stream, directory + filename_timing)
 
 
     # Save mean baseline in event pixels

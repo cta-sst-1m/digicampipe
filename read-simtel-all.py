@@ -19,13 +19,14 @@ def hessio_all_source(url):
             y_core = pyhessio.get_mc_event_ycore()
             h_first_int = pyhessio.get_mc_shower_h_first_int()
             event_id = pyhessio.get_global_event_count()
+            tel_pos = pyhessio.get_telescope_position(1)    # works for one telescope only, need to be rewritten for miniarray
 
             if event_id != event_id0:   # trigger flag
                 trig = 1
             else: trig = 0
             event_id0 = event_id
 
-            mc_data = np.hstack((energy, theta, phi, h_first_int, x_core, y_core, trig))
+            mc_data = np.hstack((energy, theta, phi, h_first_int, x_core, y_core, tel_pos[0], tel_pos[1], tel_pos[2], trig))
 
             yield mc_data
 
@@ -43,7 +44,7 @@ def all_showers_stream(file_list):
 
 def save_file(mc_data_all, filename_showerparam):
 
-    np.savetxt(filename_showerparam, mc_data_all, '%1.5f %1.1f %1.1f %1.5f %1.5f %1.5f %d')
+    np.savetxt(filename_showerparam, mc_data_all, '%1.5f %1.1f %1.1f %1.5f %1.5f %1.5f %1.1f %1.1f %1.1f %d')
 
 
 if __name__ == '__main__':
@@ -71,15 +72,18 @@ if __name__ == '__main__':
     data_stream = all_showers_stream(file_list=file_list)
 
     mc_data = []
+    i = 1
     for shower in data_stream:
-
+        print('Shower ', i)
+        i+=1
         mc_data.append(shower)
 
     mc_data = np.array(mc_data)
 
     print('N of showers: ', len(mc_data))
-    print('Triggered: ', len(mc_data[mc_data[:,6] == 1,:]))
+    print('Triggered: ', len(mc_data[mc_data[:,9] == 1,:]))
 
     filename_showerparam = 'allmc_param_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '.txt'
+    print('Saving output to file ', options.directory + filename_showerparam, '\n....')
     save_file(mc_data, options.directory + filename_showerparam)  # save mc parameters of all showers
-
+    print('All done!')
