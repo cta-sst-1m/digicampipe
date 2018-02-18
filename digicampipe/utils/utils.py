@@ -109,7 +109,9 @@ def fake_timing_hist(n_samples, timing_width, central_sample):
     :return:
     """
     timing = np.zeros((1296, n_samples+1,), dtype=float)
-    timing[..., int(central_sample-timing_width):int(central_sample+timing_width)] = 1.
+    cs = int(central_sample)
+    tw = int(timing_width)
+    timing[..., cs-tw:cs+tw] = 1.
     return timing
 
 
