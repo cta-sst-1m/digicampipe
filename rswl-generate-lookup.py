@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.stats import binned_statistic
 from scipy import interpolate
+from shower_geometry import impact_parameter
 
 
 def plot_lookup2d(data, title):  
@@ -50,7 +51,7 @@ def plot_lookup2d(data, title):
     cbar.set_label('sigma width')
 
 
-def fill_lookup(impact_bins_edges, size_bins_edges, core_distance, size, width, length):
+def fill_lookup(impact_bins_edges, size_bins_edges, impact_parameter, size, width, length):
 
     binned_wls = []
     
@@ -59,10 +60,10 @@ def fill_lookup(impact_bins_edges, size_bins_edges, core_distance, size, width, 
         imp_edge_min = impact_bins_edges[i]
         imp_edge_max = impact_bins_edges[i+1]
         
-        width_impactbinned = width[(core_distance >= imp_edge_min) & (core_distance < imp_edge_max)]
-        length_impactbinned = length[(core_distance >= imp_edge_min) & (core_distance < imp_edge_max)]
+        width_impactbinned = width[(impact_parameter >= imp_edge_min) & (impact_parameter < imp_edge_max)]
+        length_impactbinned = length[(impact_parameter >= imp_edge_min) & (impact_parameter < imp_edge_max)]
 
-        size_impactbinned = size[(core_distance >= imp_edge_min) & (core_distance < imp_edge_max)]
+        size_impactbinned = size[(impact_parameter >= imp_edge_min) & (impact_parameter < imp_edge_max)]
         
         for j in range(len(size_bins_edges)-1):
             
@@ -87,17 +88,17 @@ def fill_lookup(impact_bins_edges, size_bins_edges, core_distance, size, width, 
     return binned_wls
 
 
-def rswl(core_distance, size, width, length, binned_wls):
+def rswl(impact_parameter, size, width, length, binned_wls):
 
     width_lookup = binned_wls[:,[0,1,2]]
     length_lookup = binned_wls[:,[0,1,3]]
     sigmaw_lookup = binned_wls[:,[0,1,4]]
     sigmal_lookup = binned_wls[:,[0,1,5]]
 
-    w = interpolate.griddata((width_lookup[:,0], width_lookup[:,1]), width_lookup[:,2], (core_distance, size), method='linear')
-    sw = interpolate.griddata((sigmaw_lookup[:,0], sigmaw_lookup[:,1]), sigmaw_lookup[:,2], (core_distance, size), method='linear')
-    l = interpolate.griddata((length_lookup[:,0], length_lookup[:,1]), length_lookup[:,2], (core_distance, size), method='linear')
-    sl = interpolate.griddata((sigmal_lookup[:,0], sigmal_lookup[:,1]), sigmal_lookup[:,2], (core_distance, size), method='linear')
+    w = interpolate.griddata((width_lookup[:,0], width_lookup[:,1]), width_lookup[:,2], (impact_parameter, size), method='linear')
+    sw = interpolate.griddata((sigmaw_lookup[:,0], sigmaw_lookup[:,1]), sigmaw_lookup[:,2], (impact_parameter, size), method='linear')
+    l = interpolate.griddata((length_lookup[:,0], length_lookup[:,1]), length_lookup[:,2], (impact_parameter, size), method='linear')
+    sl = interpolate.griddata((sigmal_lookup[:,0], sigmal_lookup[:,1]), sigmal_lookup[:,2], (impact_parameter, size), method='linear')
 
     rsw = (width - w) / sw
     rsw = rsw[~np.isnan(rsw)*~np.isinf(rsw)]
@@ -151,9 +152,16 @@ if __name__ == '__main__':
 
     mc_gamma = mc_gamma[mask_g,:]
     mc_prot = mc_prot[mask_p,:]
-    core_distance_prot = mc_prot[:, 2]
-    core_distance_gamma = mc_gamma[:, 2]
 
+    x_core_prot = mc_prot[:, 9]
+    y_core_prot = mc_prot[:, 10]
+    theta_prot = mc_prot[:, 4]
+    phi_prot = mc_prot[:, 5]
+    x_core_gamma = mc_gamma[:, 9]
+    y_core_gamma = mc_gamma[:, 10]
+    theta_gamma = mc_gamma[:, 4]
+    phi_gamma = mc_gamma[:, 5]
+    
     width_gamma = width_gamma[mask_g]
     length_gamma = length_gamma[mask_g]
     size_gamma = np.log(size_gamma[mask_g])     # log size
@@ -162,18 +170,22 @@ if __name__ == '__main__':
     size_prot = np.log(size_prot[mask_p])       # log size
 
 
+    # Impact parameter
+    impact_parameter_prot = impact_parameter(x_core_prot, y_core_prot, 0, 0, 4, theta_prot, phi_prot)    # not optimal, tel. coordinates should be loaded from somewhere..
+    impact_parameter_gamma = impact_parameter(x_core_gamma, y_core_gamma, 0, 0, 4, theta_gamma, phi_gamma)
+
     # Binning in Impact parameter
     impact_bins_edges = np.linspace(0, 700, 30)
     # Binning in sizes
     size_bins_edges = np.linspace(4, 10, 30)
 
     # Filling lookup tables [size, impact, value]
-    binned_wls_gamma = fill_lookup(impact_bins_edges, size_bins_edges, core_distance_gamma, size_gamma, width_gamma, length_gamma)
-    #binned_wls_proton = fill_lookup(impact_bins_edges, size_bins_edges, core_distance_prot, size_prot, width_prot, length_prot)
+    binned_wls_gamma = fill_lookup(impact_bins_edges, size_bins_edges, impact_parameter_gamma, size_gamma, width_gamma, length_gamma)
+    #binned_wls_proton = fill_lookup(impact_bins_edges, size_bins_edges, impact_parameter_prot, size_prot, width_prot, length_prot)
 
     # Reduced scaled width and length
-    rswg, rslg = rswl(core_distance_gamma, size_gamma, width_gamma, length_gamma, binned_wls_gamma)
-    rswp, rslp = rswl(core_distance_prot, size_prot, width_prot, length_prot, binned_wls_gamma)
+    rswg, rslg = rswl(impact_parameter_gamma, size_gamma, width_gamma, length_gamma, binned_wls_gamma)
+    rswp, rslp = rswl(impact_parameter_prot, size_prot, width_prot, length_prot, binned_wls_gamma)
 
     # Save the lookup tables
     suffix = 'ze00-az000-offset00.txt'

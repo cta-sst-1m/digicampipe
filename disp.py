@@ -138,13 +138,11 @@ if __name__ == '__main__':
     mc = mc[mask,:]
     
     # True MC params
-    core_distance = mc[:, 2]
     energy = mc[:, 3]
     x_offset = mc[:, 7]  # MC event source position, probably in deg
     y_offset = mc[:, 8]  #
     thetap = mc[:, 4]
     phi = mc[:, 5]
-    core_distance = mc[:, 2]
     
     mm_to_deg = 0.24 / 24.3  # conversion of coordinates in mm to deg. Digicam: 0.24 deg/px, one SiPM is 24.3 mm wide
     cog_x = cog_x * mm_to_deg   # conversion to degrees

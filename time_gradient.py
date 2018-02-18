@@ -3,8 +3,8 @@ import events_image
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-
 from scipy.stats import binned_statistic
+from shower_geometry import impact_parameter
 
 
 def rotate_around_point(point, radians, origin=(0, 0)):
@@ -44,9 +44,9 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("-p", "--pixels", dest="pixels", help="path to a file with map of pixels", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/pixels.txt')
-    parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data//hillas_proton_ze00_az000_p13_b07.npz')
-    parser.add_option("-t", "--timing", dest="timing", help="path to a file with timing", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/timing_proton_ze00_az000.txt')
-    parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
+    parser.add_option("-l", "--hillas", dest="hillas", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data//hillas_gamma_ze00_az000_p13_b07.npz')
+    parser.add_option("-t", "--timing", dest="timing", help="path to a file with timing", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/timing_gamma_ze00_az000.txt')
+    parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     (options, args) = parser.parse_args()
    
     pixels = np.loadtxt(options.pixels)
@@ -81,16 +81,20 @@ if __name__ == '__main__':
     timing = timing[mask,:]
 
     # MC parameters
-    core_distance = mc[:, 2]
     x_offset = mc[:, 7]  # MC event source position
     y_offset = mc[:, 8]  #
+    x_core = mc[:, 9]
+    y_core = mc[:, 10]
+    theta = mc[:, 4]
+    phi = mc[:, 5]
 
     alpha = alpha_etienne2(psi, cen_x, cen_y, x_offset, y_offset)
+    impact_parameter = impact_parameter(x_core, y_core, 0, 0, 4, theta, phi)    # not optimal, tel. coordinates should be loaded from somewhere..
 
     mm_to_deg = 0.24 / 24.3  # conversion of coordinates in mm to deg. Digicam: 0.24 deg/px, one SiPM is 24.3 mm wide
 
     time_gradient = []
-    core_distance_sel = []
+    impact_parameter_sel = []
     disp = []
 
     for i in range(len(timing[:,0])):
@@ -128,7 +132,7 @@ if __name__ == '__main__':
             if len(x_rot_sel[~mask]) > 10 and alpha[i] < 90:  # selection cuts
                 fit = np.polyfit(x_rot_sel[~mask], timing_event[~mask], 1)
                 time_gradient.append(fit[0])
-                core_distance_sel.append(core_distance[i])
+                impact_parameter_sel.append(impact_parameter[i])
 
                 # Disp
                 disp.append(np.sqrt((x_offset[i] - cen_x[i])**2.0 + (y_offset[i] - cen_y[i])**2.0) * mm_to_deg)  # conversion to degrees included
@@ -138,8 +142,8 @@ if __name__ == '__main__':
 
     
     # Binning in Impact parameter
-    bin_time = binned_statistic(core_distance_sel, time_gradient, bins=20, range=(0, 400))
-    bin_core = binned_statistic(core_distance_sel, core_distance_sel, bins=20, range=(0, 400))[0]
+    bin_time = binned_statistic(impact_parameter_sel, time_gradient, bins=20, range=(0, 400))
+    bin_impact = binned_statistic(impact_parameter_sel, impact_parameter_sel, bins=20, range=(0, 400))[0]
     bin_means = bin_time[0]
     bin_edges = bin_time[1]
 
@@ -148,26 +152,26 @@ if __name__ == '__main__':
     for i in range(len(bin_edges)-1):
         edge_min = bin_edges[i]
         edge_max = bin_edges[i+1]
-        bin_means_std.append(np.std(time_gradient[np.logical_and(core_distance_sel >= edge_min, core_distance_sel < edge_max)]))
+        bin_means_std.append(np.std(time_gradient[np.logical_and(impact_parameter_sel >= edge_min, impact_parameter_sel < edge_max)]))
     bin_means_std = np.array(bin_means_std)
 
     """
     # Faster way how to compute means and stds of binned data
-    n, _ = np.histogram(core_distance_sel, bins=20)
-    sy, _ = np.histogram(core_distance_sel, bins=20, weights=time_gradient)
-    sy2, _ = np.histogram(core_distance_sel, bins=20, weights=time_gradient*time_gradient)
+    n, _ = np.histogram(impact_parameter_sel, bins=20)
+    sy, _ = np.histogram(impact_parameter_sel, bins=20, weights=time_gradient)
+    sy2, _ = np.histogram(impact_parameter_sel, bins=20, weights=time_gradient*time_gradient)
     mean = sy / n
     std = np.sqrt(sy2/n - mean*mean)
     """
     
-    # Approximation of the Time gradient - core distance dependence
-    fit = np.polyfit(bin_core[~np.isnan(bin_core)], bin_means[~np.isnan(bin_core)], 5)
-    # Approximation of the sigma - core distance dependence
-    fit_sigma = np.polyfit(bin_core[~np.isnan(bin_core)], bin_means_std[~np.isnan(bin_core)], 2)
+    # Approximation of the Time gradient -impact parameter dependence
+    fit = np.polyfit(bin_impact[~np.isnan(bin_impact)], bin_means[~np.isnan(bin_impact)], 5)
+    # Approximation of the sigma - impact parameter dependence
+    fit_sigma = np.polyfit(bin_impact[~np.isnan(bin_impact)], bin_means_std[~np.isnan(bin_impact)], 2)
 
 
     # Scaled TimeGradient
-    scaled_timegrad = (time_gradient - np.polyval(fit, core_distance_sel)) / np.polyval(fit_sigma, core_distance_sel)
+    scaled_timegrad = (time_gradient - np.polyval(fit, impact_parameter_sel)) / np.polyval(fit_sigma, impact_parameter_sel)
 
 
 
@@ -175,9 +179,9 @@ if __name__ == '__main__':
 
     # Time gradient hist
     plt.figure(figsize=(11,8))
-    plt.hist2d(core_distance_sel, time_gradient, bins=150, range=np.array([(0, 400), (-40, 40)])) #, norm=mpl.colors.LogNorm())
+    plt.hist2d(impact_parameter_sel, time_gradient, bins=150, range=np.array([(0, 400), (-40, 40)])) #, norm=mpl.colors.LogNorm())
     plt.colorbar()
-    plt.xlabel('core distance [m]')
+    plt.xlabel('impact_parameter [m]')
     plt.ylabel('time gradient [ns/deg]')
 
     # x,y rot coordinates distribution
@@ -194,17 +198,17 @@ if __name__ == '__main__':
 
     # Time gradient plot
     plt.figure(figsize=(11,8))
-    plt.errorbar(bin_core, bin_means, yerr=bin_means_std, fmt='.', ms=15)
-    plt.plot(bin_core[~np.isnan(bin_core)], np.polyval(fit, bin_core[~np.isnan(bin_core)]),'r-')
+    plt.errorbar(bin_impact, bin_means, yerr=bin_means_std, fmt='.', ms=15)
+    plt.plot(bin_impact[~np.isnan(bin_impact)], np.polyval(fit, bin_impact[~np.isnan(bin_impact)]),'r-')
     #plt.errorbar((_[1:] + _[:-1])/2, mean, yerr=std, fmt='r-')
-    plt.xlabel('core distance [m]')
+    plt.xlabel('impact_parameter [m]')
     plt.ylabel('time gradient [ns/deg]')
 
-    # Sigma - core distance dependency
+    # Sigma - impact parameter dependency
     plt.figure(figsize=(11,8))
-    plt.plot(bin_core, bin_means_std, 'k.')
-    plt.plot(bin_core[~np.isnan(bin_core)], np.polyval(fit_sigma, bin_core[~np.isnan(bin_core)]),'k-')
-    plt.xlabel('core distance [m]')
+    plt.plot(bin_impact, bin_means_std, 'k.')
+    plt.plot(bin_impact[~np.isnan(bin_impact)], np.polyval(fit_sigma, bin_impact[~np.isnan(bin_impact)]),'k-')
+    plt.xlabel('impact_parameter [m]')
     plt.ylabel('sigma [ns/deg]')
 
     # Scaled TimeGradient hist
@@ -238,7 +242,7 @@ if __name__ == '__main__':
     # Time gradient DISP plot
     plt.figure(figsize=(11,8))
     plt.errorbar(bin_disp, bin_means, yerr=bin_means_std, fmt='.', ms=15)
-    #plt.plot(bin_core[~np.isnan(bin_core)], np.polyval(fit, bin_core[~np.isnan(bin_core)]),'r-')
+    #plt.plot(bin_impact[~np.isnan(bin_impact)], np.polyval(fit, bin_impact[~np.isnan(bin_impact)]),'r-')
     #plt.errorbar((_[1:] + _[:-1])/2, mean, yerr=std, fmt='r-')
     plt.xlabel('DISP [deg]')
     plt.ylabel('time gradient [ns/deg]')

@@ -5,7 +5,7 @@ import matplotlib as mpl
 from shower_geometry import impact_parameter
 
 
-def fill_lookup(size_bins_edges, impact_bins_edges, core_distance, size, energy):
+def fill_lookup(size_bins_edges, impact_bins_edges, impact_parameter, size, energy):
 
     binned_energy = []
     
@@ -14,8 +14,8 @@ def fill_lookup(size_bins_edges, impact_bins_edges, core_distance, size, energy)
         imp_edge_min = impact_bins_edges[i]
         imp_edge_max = impact_bins_edges[i+1]
         
-        energy_impactbinned = energy[(core_distance >= imp_edge_min) & (core_distance < imp_edge_max)]
-        size_impactbinned = size[(core_distance >= imp_edge_min) & (core_distance < imp_edge_max)]
+        energy_impactbinned = energy[(impact_parameter >= imp_edge_min) & (impact_parameter < imp_edge_max)]
+        size_impactbinned = size[(impact_parameter >= imp_edge_min) & (impact_parameter < imp_edge_max)]
 
         for j in range(len(size_bins_edges)-1):
             
@@ -52,7 +52,7 @@ def plot_lookup2d(data):
 
     fig, ax = plt.subplots(1,figsize=(10,8))
     pcm = ax.pcolormesh(ye, xe, np.log10(energy), rasterized=True) #, vmin = 0, vmax=1) #, cmap='nipy_spectral')
-    ax.set_xlabel('Core distance [m]')
+    ax.set_xlabel('Impact parameter [m]')
     ax.set_ylabel('log10(size) [phot]')
     cbar = fig.colorbar(pcm, ax=ax)
     ax.set_xlim([0, 500])
@@ -61,7 +61,7 @@ def plot_lookup2d(data):
     
     fig, ax = plt.subplots(1,figsize=(10,8))
     pcm = ax.pcolormesh(ye, xe, sigmae/energy, rasterized=True) #, vmin = 0, vmax=1) #, cmap='nipy_spectral')
-    ax.set_xlabel('Core distance [m]')
+    ax.set_xlabel('Impact parameter [m]')
     ax.set_ylabel('log10(size) [phot]')
     cbar = fig.colorbar(pcm, ax=ax)
     ax.set_xlim([0, 500])
@@ -70,7 +70,7 @@ def plot_lookup2d(data):
 
     fig, ax = plt.subplots(1,figsize=(10,8))
     pcm = ax.pcolormesh(yn, xn, n_energy, rasterized=True) #, vmin = 0, vmax=1) #, cmap='nipy_spectral')
-    ax.set_xlabel('Core distance [m]')
+    ax.set_xlabel('Impact parameter [m]')
     ax.set_ylabel('log10(size) [phot]')
     cbar = fig.colorbar(pcm, ax=ax)
     ax.set_xlim([0, 500])
@@ -85,27 +85,31 @@ if __name__ == '__main__':
     parser.add_option("-m", "--mc", dest="mc", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     (options, args) = parser.parse_args()
 
-
     hillas = np.load(options.hillas) 
     mc = np.loadtxt(options.mc)
     
     # Reconstructed params
     size = hillas['size']
     border = hillas['border']
-    
-    # True MC params
-    core_distance = mc[:, 2]
-    energy = mc[:, 3]
-    
+
     # Masking borderflagged data
     #mask = [x == 0 or x == 1 for x in border]
     mask = [x == 0 for x in border]
-    
-    core_distance = core_distance[mask]
-    size = size[mask]
-    energy = energy[mask]
-    #impact_parameter = impact_parameter(x_core_all, y_core_all, telpos_all[:, 0], telpos_all[:, 1], telpos_all[:, 2], theta_all, phi_all)
 
+    size = size[mask]
+    mc = mc[mask,:]
+
+    # True MC params
+    core_distance = mc[:, 2]
+    energy = mc[:, 3]
+    x_core = mc[:, 9]
+    y_core = mc[:, 10]
+    theta = mc[:, 4]
+    phi = mc[:, 5]
+
+
+    # Impact parameter
+    impact_parameter = impact_parameter(x_core, y_core, 0, 0, 4, theta, phi)    # not optimal, tel. coordinates should be loaded from somewhere..
 
     # Binning in log10 size
     size_bins_edges = np.linspace(0.5, 5, 100)
@@ -114,7 +118,7 @@ if __name__ == '__main__':
     impact_bins_edges = np.linspace(0, 500, 100)
 
     # Filling lookup tables [size, impact, value]
-    binned_size_impact_energy = fill_lookup(size_bins_edges, impact_bins_edges, core_distance, np.log10(size), energy)
+    binned_size_impact_energy = fill_lookup(size_bins_edges, impact_bins_edges, impact_parameter, np.log10(size), energy)
 
     # Save the lookup table
     suffix = 'ze00-az000-offset00.txt'
