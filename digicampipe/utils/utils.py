@@ -23,7 +23,7 @@ def integrate(data, window_width):
     )
     return h[
         ...,
-        int(np.floor((window_width-1)/2)):-int(np.floor(window_width/2))
+        (window_width-1)//2:-window_width//2
     ]
 
 
