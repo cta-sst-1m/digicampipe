@@ -27,11 +27,19 @@ def integrate(data, window_width):
     ]
 
 
-def extract_charge(data, timing_mask, timing_mask_edge, peak, window_start, threshold_saturation):
+def extract_charge(
+    data,
+    timing_mask,
+    timing_mask_edge,
+    peak,
+    window_start,
+    threshold_saturation
+):
     """
     Extract the charge.
        - check which pixels are saturated
-       - get the local maximum within the timing mask and check if it is not at the edge of the mask
+       - get the local maximum within the timing mask
+         and check if it is not at the edge of the mask
        - move window_start from the maximum
     :param data:
     :param timing_mask:
@@ -41,7 +49,7 @@ def extract_charge(data, timing_mask, timing_mask_edge, peak, window_start, thre
     :param integration_type:
     :return:
     """
-    is_saturated = np.max(data,axis=-1)>threshold_saturation
+    is_saturated = np.max(data, axis=-1) > threshold_saturation
     local_max = np.argmax(np.multiply(data, timing_mask), axis=1)
     local_max_edge = np.argmax(np.multiply(data, timing_mask_edge), axis=1)
     ind_max_at_edge = (local_max == local_max_edge)
@@ -52,10 +60,11 @@ def extract_charge(data, timing_mask, timing_mask_edge, peak, window_start, thre
     local_max[local_max < 0] = 0
     index_max = (np.arange(0, data.shape[0]), local_max,)
     charge = data[index_max]
-    if np.any(is_saturated): ## TODO, find a better evaluation that it is saturated
+    # TODO, find a better evaluation that it is saturated
+    if np.any(is_saturated):
         sat_indices = tuple(np.where(is_saturated)[0])
-        _data = data[sat_indices,...]
-        charge[sat_indices,...] = np.apply_along_axis(contiguous_regions, 1, _data)
+        _data = data[sat_indices, ...]
+        charge[sat_indices, ...] = np.apply_along_axis(contiguous_regions, 1, _data)
 
     return charge, index_max
 
