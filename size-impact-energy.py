@@ -2,6 +2,7 @@ import numpy as np
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from shower_geometry import impact_parameter
 
 
 def fill_lookup(size_bins_edges, impact_bins_edges, core_distance, size, energy):
@@ -103,6 +104,8 @@ if __name__ == '__main__':
     core_distance = core_distance[mask]
     size = size[mask]
     energy = energy[mask]
+    #impact_parameter = impact_parameter(x_core_all, y_core_all, telpos_all[:, 0], telpos_all[:, 1], telpos_all[:, 2], theta_all, phi_all)
+
 
     # Binning in log10 size
     size_bins_edges = np.linspace(0.5, 5, 100)
