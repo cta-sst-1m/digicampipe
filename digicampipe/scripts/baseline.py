@@ -18,14 +18,16 @@ Options:
   --display     justa quick plot of the results
 '''
 import numpy as np
-from digicampipe.calib.camera import filter
-from digicampipe.io.event_stream import event_stream
-from digicampipe.io.save_adc import AdcSampleStatistics
 from tqdm import tqdm
 from docopt import docopt
 
+from digicampipe.calib.camera import filter
+from digicampipe.io.event_stream import event_stream
+from digicampipe.io.save_adc import AdcSampleStatistics
+
 
 def estimate_baseline(files, unwanted_pixels=[]):
+
     adc_sample_stats = AdcSampleStatistics()
 
     data_stream = event_stream(files)
@@ -75,6 +77,7 @@ def main(baseline_file_path, files, unwanted_pixels=[], display=False):
 
         plt.suptitle("Baseline Analysis (N events:{})".format(baseline.N))
         plt.show()
+
 
 def entry():
     args = docopt(__doc__)
