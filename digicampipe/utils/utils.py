@@ -95,19 +95,21 @@ def contiguous_regions(data):
     val = 0.
     for start, stop in idx:
         sum_tmp = np.sum(data[start:stop])
-        if val < sum_tmp : val = sum_tmp
+        if val < sum_tmp:
+            val = sum_tmp
     return val
 
 
-def fake_timing_hist(n_samples,timing_width, central_sample):
+def fake_timing_hist(n_samples, timing_width, central_sample):
     """
-    Create a timing array based on options.central_sample and options.timing_width
+    Create a timing array based on options.central_sample
+                               and options.timing_width
     :param options:
     :param n_samples:
     :return:
     """
-    timing = np.zeros((1296,n_samples+1,),dtype=float)
-    timing[...,int(central_sample-timing_width):int(central_sample+timing_width)]=1.
+    timing = np.zeros((1296, n_samples+1,), dtype=float)
+    timing[..., int(central_sample-timing_width):int(central_sample+timing_width)] = 1.
     return timing
 
 
