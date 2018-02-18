@@ -12,9 +12,19 @@ def integrate(data, window_width):
     :param options:
     :return:
     """
-    if window_width == 1 : return data
-    h = ndimage.convolve1d(data,np.ones(window_width, dtype=int),axis=-1,mode='constant',cval=-1.e8)
-    return h[...,int(np.floor((window_width-1)/2)):-int(np.floor(window_width/2))]
+    if window_width == 1:
+        return data
+    h = ndimage.convolve1d(
+        data,
+        np.ones(window_width, dtype=int),
+        axis=-1,
+        mode='constant',
+        cval=-1.e8
+    )
+    return h[
+        ...,
+        int(np.floor((window_width-1)/2)):-int(np.floor(window_width/2))
+    ]
 
 
 def extract_charge(data, timing_mask, timing_mask_edge, peak, window_start, threshold_saturation):
