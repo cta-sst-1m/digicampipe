@@ -2,10 +2,14 @@ from cts_core import camera as cam
 import numpy as np
 import astropy.units as u
 from ctapipe.instrument.camera import CameraGeometry
-from ctapipe.instrument.camera import _find_neighbor_pixels as find_neighbor_pixels
+from ..instrument.camera import _find_neighbor_pixels
 
 
-def find_pixel_positions(camera_config_file, source_x=0.*u.mm, source_y=0.*u.mm):
+def find_pixel_positions(
+    camera_config_file,
+    source_x=0.*u.mm,
+    source_y=0.*u.mm
+):
     camera = cam.Camera(_config_file=camera_config_file)
 
     x, y = [], []
@@ -39,9 +43,15 @@ def generate_geometry_from_camera(camera, source_x=0.*u.mm, source_y=0.*u.mm):
         pix_y.append(pix.center[1])
         pix_id.append(pix.ID)
 
-    neighbors_pix = find_neighbor_pixels(pix_x, pix_y, 30.)
-    geom = CameraGeometry(0, pix_id, pix_x * u.mm - source_x, pix_y * u.mm - source_y, np.ones(1296) * 400., pix_type='hexagonal',
-                          neighbors=neighbors_pix)
+    neighbors_pix = _find_neighbor_pixels(pix_x, pix_y, 30.)
+    geom = CameraGeometry(
+        0,
+        pix_id,
+        pix_x * u.mm - source_x, pix_y * u.mm - source_y,
+        np.ones(1296) * 400.,
+        pix_type='hexagonal',
+        neighbors=neighbors_pix
+    )
 
     return geom
 
