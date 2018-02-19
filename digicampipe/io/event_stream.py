@@ -1,4 +1,6 @@
 from digicampipe.io import zfits, hdf5
+from .auxservice import AuxService
+from collections import namedtuple
 
 
 def event_stream(
@@ -29,3 +31,30 @@ def event_stream(
         )
         for event in data_stream:
             yield event
+
+
+def add_slow_data(
+    data_stream,
+    aux_services=[
+        'DigicamSlowControl',
+        'MasterSST1M',
+        'PDPSlowControl',
+        'SafetyPLC',
+        'DriveSystem',
+    ],
+    basepath=None
+):
+    services = {
+        name: AuxService(name, basepath)
+        for name in aux_services
+    }
+
+    SlowDataContainer = namedtuple('SlowDataContainer', aux_services)
+
+    for event_id, event in enumerate(data_stream):
+        event.slow_data = SlowDataContainer(**{
+            name: service.at(event.r0.tel[1].local_camera_clock)
+            for (name, service) in services.items()
+        })
+
+        yield event
