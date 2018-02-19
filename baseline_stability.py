@@ -9,6 +9,7 @@ Options:
 '''
 from digicampipe.io.event_stream import event_stream
 import matplotlib.pyplot as plt
+import numpy as np
 from docopt import docopt
 from tqdm import tqdm
 
@@ -17,8 +18,9 @@ def main(infile):
 
     baselines = []
     for data in tqdm(event_stream(infile)):
-        for tel_id in data.r0.tels_with_data:
-            baselines.append(data.r0.tel[tel_id].digicam_baseline)
+        for r0 in data.r0.tel.values():
+            baselines.append(r0.digicam_baseline)
+    baselines = np.array(baselines)
 
     plt.figure()
     plt.plot(baselines[0])
