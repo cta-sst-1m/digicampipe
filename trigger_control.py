@@ -1,17 +1,17 @@
+from tqdm import tqdm
 from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io import save_adc
 from digicampipe.calib.camera import r0
 from digicampipe.io.save_bias_curve import save_bias_curve
-from cts_core.camera import Camera
-from digicampipe.utils import geometry
 import matplotlib.pyplot as plt
 import numpy as np
 import utils.histogram as histogram
 
 from optparse import OptionParser
 
-if __name__ == '__main__':
+
+def main():
     #########################
     ##### CONFIGURATION #####
     #########################
@@ -19,18 +19,32 @@ if __name__ == '__main__':
     # Input configuration
 
     opts_parser = OptionParser()
-    opts_parser.add_option('-d', '--directory', dest='directory', help='path', default='/home/alispach/data/CRAB_01/')
-    opts_parser.add_option('-f', '--file', dest='filename', help='file basename', default='CRAB_01_0_000.%03d.fits.fz')
-    opts_parser.add_option("-s", "--file_start", dest="file_start", help="file starting index", default=3, type=int)
-    opts_parser.add_option("-e", "--file_end", dest="file_end", help="file starting index", default=23, type=int)
-    opts_parser.add_option("-c", "--config_path", dest="config_path", help="config file path", default="/home/alispach/ctasoft/CTS/config/", type=str)
+    opts_parser.add_option(
+        '-d', '--directory', dest='directory',
+        help='path', default='/home/alispach/data/CRAB_01/')
+    opts_parser.add_option(
+        '-f', '--file', dest='filename',
+        help='file basename', default='CRAB_01_0_000.%03d.fits.fz')
+    opts_parser.add_option(
+        "-s", "--file_start", dest="file_start",
+        help="file starting index", default=3, type=int)
+    opts_parser.add_option(
+        "-e", "--file_end", dest="file_end",
+        help="file starting index", default=23, type=int)
+    opts_parser.add_option(
+        "-c", "--config_path", dest="config_path",
+        help="config file path", default="/home/alispach/ctasoft/CTS/config/",
+        type=str)
 
     (options, args) = opts_parser.parse_args()
     # Data configuration
 
     directory = options.directory
     filename = directory + options.filename
-    file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
+    file_list = [
+        filename % number
+        for number in range(options.file_start, options.file_end + 1)
+    ]
     camera_config_file = options.config_path + 'camera_config.cfg'
     pixel_histogram_filename = 'pixel_histogram.npz'
     patch_histogram_filename = 'patch_histogram.npz'
@@ -44,24 +58,42 @@ if __name__ == '__main__':
     unwanted_cluster = None
     blinding = True
 
-    pixel_histogram = histogram.Histogram(bin_center_min=0, bin_center_max=4095, bin_width=1, data_shape=(1296, ))
-    patch_histogram = histogram.Histogram(bin_center_min=0, bin_center_max=255, bin_width=1, data_shape=(432, ))
-    cluster_7_histogram = histogram.Histogram(bin_center_min=0, bin_center_max=1785, bin_width=1, data_shape=(432, ))
-    cluster_19_histogram = histogram.Histogram(bin_center_min=0, bin_center_max=4845, bin_width=1, data_shape=(432, ))
-
-    digicam = Camera(_config_file=camera_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
+    pixel_histogram = histogram.Histogram(
+        bin_center_min=0,
+        bin_center_max=4095,
+        bin_width=1,
+        data_shape=(1296, ))
+    patch_histogram = histogram.Histogram(
+        bin_center_min=0,
+        bin_center_max=255,
+        bin_width=1,
+        data_shape=(432, ))
+    cluster_7_histogram = histogram.Histogram(
+        bin_center_min=0,
+        bin_center_max=1785,
+        bin_width=1,
+        data_shape=(432, ))
+    cluster_19_histogram = histogram.Histogram(
+        bin_center_min=0,
+        bin_center_max=4845,
+        bin_width=1,
+        data_shape=(432, ))
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, camera=digicam, expert_mode=True, camera_geometry=digicam_geometry)
+    data_stream = event_stream(file_list)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
-    data_stream = filter.set_patches_to_zero(data_stream, unwanted_patch=unwanted_patch)
+    data_stream = filter.set_patches_to_zero(
+        data_stream,
+        unwanted_patch=unwanted_patch)
     data_stream = r0.fill_trigger_input_7(data_stream)
     data_stream = r0.fill_trigger_input_19(data_stream)
-    # data_stream = r0.fill_trigger_input_offline(data_stream)
-    # Fill the flags (to be replaced by Digicam)
-
-    data_stream = save_bias_curve(data_stream, thresholds=thresholds, blinding=blinding, output_filename=directory + trigger_filename, unwanted_cluster=unwanted_cluster)
+    data_stream = save_bias_curve(
+        data_stream,
+        thresholds=thresholds,
+        blinding=blinding,
+        output_filename=directory + trigger_filename,
+        unwanted_cluster=unwanted_cluster
+    )
 
     data_stream = save_adc.fill_hist_adc_samples(data_stream, histogram=pixel_histogram, output_filename=directory + pixel_histogram_filename)
     data_stream = save_adc.fill_hist_trigger_input(data_stream, histogram=patch_histogram, output_filename=directory + patch_histogram_filename)
@@ -69,12 +101,13 @@ if __name__ == '__main__':
     data_stream = save_adc.fill_hist_cluster_19(data_stream, histogram=cluster_19_histogram, output_filename=directory + cluster_19_histogram_filename)
 
     if not display:
-
-        for i, data in enumerate(data_stream):
-
-            print(i)
-
+        for _ in tqdm(data_stream):
+            pass
     else:
+        do_plots()
+
+def do_plots():
+
         pixel_histogram = histogram.Histogram(filename=directory + pixel_histogram_filename)
         patch_histogram = histogram.Histogram(filename=directory + patch_histogram_filename)
         cluster_7_histogram = histogram.Histogram(filename=directory + cluster_7_histogram_filename)
@@ -200,3 +233,5 @@ if __name__ == '__main__':
             plt.close()
 
 
+if __name__ == '__main__':
+    main()
