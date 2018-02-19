@@ -7,46 +7,17 @@ from digicampipe.io.save_bias_curve import save_bias_curve
 import matplotlib.pyplot as plt
 import numpy as np
 
-from optparse import OptionParser
 
-
-def main():
-    #########################
-    ##### CONFIGURATION #####
-    #########################
-
-    # Input configuration
-
-    opts_parser = OptionParser()
-    opts_parser.add_option(
-        '-d', '--directory', dest='directory',
-        help='path', default='/home/alispach/data/CRAB_01/')
-    opts_parser.add_option(
-        '-f', '--file', dest='filename',
-        help='file basename', default='CRAB_01_0_000.%03d.fits.fz')
-    opts_parser.add_option(
-        "-s", "--file_start", dest="file_start",
-        help="file starting index", default=3, type=int)
-    opts_parser.add_option(
-        "-e", "--file_end", dest="file_end",
-        help="file starting index", default=23, type=int)
-
-    (options, args) = opts_parser.parse_args()
-    # Data configuration
-
-    directory = options.directory
-    filename = directory + options.filename
-    file_list = [
-        filename % number
-        for number in range(options.file_start, options.file_end + 1)
-    ]
-    trigger_filename = 'trigger.npz'
-    display = True
-
-    thresholds = np.arange(0, 400, 10)
-    unwanted_patch = None  # [306, 318, 330, 342, 200]
-    unwanted_cluster = None
-    blinding = True
+def main(
+    file_list,
+    display,
+    directory,
+    trigger_filename='trigger.npz',
+    thresholds=np.arange(0, 400, 10),
+    unwanted_patch=[306, 318, 330, 342, 200],
+    unwanted_cluster=None,
+    blinding=True,
+):
 
     histos = {
         'pixel_histogram': save_adc.R0HistogramFiller(
