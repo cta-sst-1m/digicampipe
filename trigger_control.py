@@ -58,22 +58,26 @@ def main():
     unwanted_cluster = None
     blinding = True
 
-    pixel_histogram = histogram.Histogram(
+    pixel_histogram = save_adc.R0HistogramFiller(
+        field_name='adc_samples',
         bin_center_min=0,
         bin_center_max=4095,
         bin_width=1,
         data_shape=(1296, ))
-    patch_histogram = histogram.Histogram(
+    patch_histogram = save_adc.R0HistogramFiller(
+        field_name='trigger_input_traces',
         bin_center_min=0,
         bin_center_max=255,
         bin_width=1,
         data_shape=(432, ))
-    cluster_7_histogram = histogram.Histogram(
+    cluster_7_histogram = save_adc.R0HistogramFiller(
+        field_name='trigger_input_7',
         bin_center_min=0,
         bin_center_max=1785,
         bin_width=1,
         data_shape=(432, ))
-    cluster_19_histogram = histogram.Histogram(
+    cluster_19_histogram = save_adc.R0HistogramFiller(
+        field_name='trigger_input_19',
         bin_center_min=0,
         bin_center_max=4845,
         bin_width=1,
@@ -95,10 +99,10 @@ def main():
         unwanted_cluster=unwanted_cluster
     )
 
-    data_stream = save_adc.fill_hist_adc_samples(data_stream, histogram=pixel_histogram, output_filename=directory + pixel_histogram_filename)
-    data_stream = save_adc.fill_hist_trigger_input(data_stream, histogram=patch_histogram, output_filename=directory + patch_histogram_filename)
-    data_stream = save_adc.fill_hist_cluster_7(data_stream, histogram=cluster_7_histogram, output_filename=directory + cluster_7_histogram_filename)
-    data_stream = save_adc.fill_hist_cluster_19(data_stream, histogram=cluster_19_histogram, output_filename=directory + cluster_19_histogram_filename)
+    data_stream = pixel_histogram(data_stream)
+    data_stream = patch_histogram(data_stream)
+    data_stream = cluster_7_histogram(data_stream)
+    data_stream = cluster_19_histogram(data_stream)
 
     if not display:
         for _ in tqdm(data_stream):
