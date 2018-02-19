@@ -1,3 +1,4 @@
+import warnings
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
@@ -5,7 +6,12 @@ import h5py
 __all__ = ['digicamtoy_event_source']
 
 
-def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
+def digicamtoy_event_source(
+    url,
+    camera=None,
+    camera_geometry=None,
+    max_events=None
+):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
     ----------
@@ -13,17 +19,36 @@ def digicamtoy_event_source(url, camera_geometry, camera, max_events=None):
         path to file to open
     max_events : int, optional
         maximum number of events to read
-    camera_geometry: CameraGeometry()
-        camera containing info on pixels modules etc.
-    camera : cts_core.Camera()
+    camera : utils.Camera() or None for DigiCam
+    camera_geometry: soon to be deprecated
     """
+    if camera is None:
+        camera = utils.DigiCam
+
+    if camera_geometry is not None:
+        warnings.warn(
+            "camera_geometry will soon be deprecated, use utils.Camera",
+            FutureWarning
+        )
+        geometry = camera_geometry
+    else:
+        geometry = camera.geometry
 
     hdf5 = h5py.File(url, 'r')
 
-    geometry = camera_geometry
-    patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
-    cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
-    cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+    if not isinstance(camera, utils.Camera):
+        warnings.warn(
+            "camera should be utils.Camera not cts_core.camera.Camera",
+            FutureWarning
+        )
+
+        patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
+        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
+        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+    else:
+        patch_matrix = camera.patch_matrix
+        cluster_7_matrix = camera.cluster_7_matrix
+        cluster_19_matrix = camera.cluster_19_matrix
     data = DataContainer()
     n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
 
