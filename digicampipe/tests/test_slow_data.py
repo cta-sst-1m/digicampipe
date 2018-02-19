@@ -35,12 +35,7 @@ digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
 
 def test_add_slow_data():
-    data_stream = event_stream(
-        file_list=[example_file_path],
-        camera_geometry=digicam_geometry,
-        camera=digicam,
-        max_events=100
-    )
+    data_stream = event_stream(example_file_path, max_events=100)
     data_stream = add_slow_data(data_stream, basepath=aux_basepath)
     ts_slow = []
     ts_data = []
