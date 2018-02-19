@@ -43,7 +43,16 @@ def off_aperture3(x0, y0):
 
 def lima_significance(N_on, N_off, alpha):  # Li and Ma, 1983
 
-    sign_lima = np.sqrt(2.0*(N_on*np.log(((1.0+alpha)/alpha) * (N_on/(N_on+N_off))) + N_off*np.log((1.0+alpha) * (N_off/(N_on+N_off)))))
+    sign_lima = np.sqrt(
+        2.0*(
+            N_on*np.log(
+                ((1.0+alpha)/alpha) * (N_on/(N_on+N_off))
+            ) +
+            N_off*np.log(
+                (1.0+alpha) * (N_off/(N_on+N_off))
+            )
+        )
+    )
     return sign_lima
 
 
@@ -63,7 +72,8 @@ if __name__ == '__main__':
 
     N_off3 = 0
     for i in range(3):
-        N_off3 = N_off3 + count_aperture(data, x_off3[i], y_off3[i], r)  # multiple N_off regions with respect to the image center
+        # multiple N_off regions with respect to the image center
+        N_off3 = N_off3 + count_aperture(data, x_off3[i], y_off3[i], r)
 
     alpha = 1.0/3.0  # alpha = 1/number of OFF regions
     sig = lima_significance(N_on, N_off3, alpha)

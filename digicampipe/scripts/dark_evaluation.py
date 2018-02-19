@@ -20,7 +20,7 @@ from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve
-from digicampipe.utils import Camera
+from digicampipe.utils import DigiCam
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
@@ -53,12 +53,9 @@ def main(
 
     thresholds = np.arange(0, 400, 10)
 
-    digicam = Camera()
     data_stream = event_stream(
         file_list=files,
-        expert_mode=True,
-        camera_geometry=digicam.geometry,
-        camera=digicam
+        camera=DigiCam
     )
     data_stream = filter.set_patches_to_zero(
         data_stream,
@@ -109,7 +106,7 @@ def main(
     plt.show()
 
 
-if __name__ == "__main__":
+def entry():
     args = docopt(__doc__)
     args['--unwanted_patches'] = [
         int(x) for x in args['--unwanted_patches'].split(',')]
