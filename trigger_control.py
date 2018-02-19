@@ -6,7 +6,6 @@ from digicampipe.calib.camera import r0
 from digicampipe.io.save_bias_curve import save_bias_curve
 import matplotlib.pyplot as plt
 import numpy as np
-import utils.histogram as histogram
 
 from optparse import OptionParser
 
@@ -49,30 +48,33 @@ def main():
     unwanted_cluster = None
     blinding = True
 
-    pixel_histogram = save_adc.R0HistogramFiller(
-        field_name='adc_samples',
-        bin_center_min=0,
-        bin_center_max=4095,
-        bin_width=1,
-        data_shape=(1296, ))
-    patch_histogram = save_adc.R0HistogramFiller(
-        field_name='trigger_input_traces',
-        bin_center_min=0,
-        bin_center_max=255,
-        bin_width=1,
-        data_shape=(432, ))
-    cluster_7_histogram = save_adc.R0HistogramFiller(
-        field_name='trigger_input_7',
-        bin_center_min=0,
-        bin_center_max=1785,
-        bin_width=1,
-        data_shape=(432, ))
-    cluster_19_histogram = save_adc.R0HistogramFiller(
-        field_name='trigger_input_19',
-        bin_center_min=0,
-        bin_center_max=4845,
-        bin_width=1,
-        data_shape=(432, ))
+    histos = {
+        'pixel_histogram': save_adc.R0HistogramFiller(
+            field_name='adc_samples',
+            bin_center_min=0,
+            bin_center_max=4095,
+            bin_width=1,
+            data_shape=(1296, )),
+        'patch_histogram': save_adc.R0HistogramFiller(
+            field_name='trigger_input_traces',
+            bin_center_min=0,
+            bin_center_max=255,
+            bin_width=1,
+            data_shape=(432, )),
+        'cluster_7_histogram': save_adc.R0HistogramFiller(
+            field_name='trigger_input_7',
+            bin_center_min=0,
+            bin_center_max=1785,
+            bin_width=1,
+            data_shape=(432, )),
+        'cluster_19_histogram': save_adc.R0HistogramFiller(
+            field_name='trigger_input_19',
+            bin_center_min=0,
+            bin_center_max=4845,
+            bin_width=1,
+            data_shape=(432, )),
+    }
+
 
     # Define the event stream
     data_stream = event_stream(file_list)
@@ -90,26 +92,28 @@ def main():
         unwanted_cluster=unwanted_cluster
     )
 
-    data_stream = pixel_histogram(data_stream)
-    data_stream = patch_histogram(data_stream)
-    data_stream = cluster_7_histogram(data_stream)
-    data_stream = cluster_19_histogram(data_stream)
+    for h in histos:
+        data_stream = h(data_stream)
 
     if not display:
         for _ in tqdm(data_stream):
             pass
     else:
-        do_plots()
+        do_plots(**histos)
 
-def do_plots():
 
-        pixel_histogram = histogram.Histogram(filename=directory + pixel_histogram_filename)
-        patch_histogram = histogram.Histogram(filename=directory + patch_histogram_filename)
-        cluster_7_histogram = histogram.Histogram(filename=directory + cluster_7_histogram_filename)
-        cluster_19_histogram = histogram.Histogram(filename=directory + cluster_19_histogram_filename)
-        trigger = np.load(directory + trigger_filename)
+def do_plots(
+    blinding,
+    directory,
+    trigger,
+    pixel_histogram,
+    patch_histogram,
+    cluster_7_histogram,
+    cluster_19_histogram,
+):
+        #trigger = np.load(directory + trigger_filename)
 
-        directory = directory + 'figures/'
+        directory += 'figures/'
 
         for i in range(trigger['threshold'].shape[0]):
 
@@ -122,16 +126,30 @@ def do_plots():
             x = x - width / 3
             y = trigger['cluster_rate'][:, i] * period
             yerr = trigger['cluster_rate_error'][:, i] * period
-            axis.bar(x, y, width, label=' threshold : {} [LSB]\n total : {}'.format(trigger['threshold'][i], np.sum(y)))
+            axis.bar(
+                x,
+                y,
+                width,
+                label=' threshold : {} [LSB]\n total : {}'.format(
+                    trigger['threshold'][i], np.sum(y))
+                )
             axis.set_xlabel('cluster 7 ID')
             axis.legend()
-            fig.savefig(directory + 'trigger_count_threshold_{}.svg'.format(trigger['threshold'][i]))
+            fig.savefig(
+                directory + 'trigger_count_threshold_{}.svg'.format(
+                    trigger['threshold'][i]
+                )
+            )
             plt.close()
 
         fig = plt.figure()
         axis = fig.add_subplot(111)
-        axis.errorbar(trigger['threshold'], trigger['rate'] * 1E9, yerr=trigger['rate_error'] * 1E9,
-                      label='Blinding : {}'.format(blinding))
+        axis.errorbar(
+            trigger['threshold'],
+            trigger['rate'] * 1E9,
+            yerr=trigger['rate_error'] * 1E9,
+            label='Blinding : {}'.format(blinding)
+        )
         axis.set_ylabel('rate [Hz]')
         axis.set_xlabel('threshold [LSB]')
         axis.set_yscale('log')
@@ -144,15 +162,35 @@ def do_plots():
             fig = plt.figure()
             axis = fig.add_subplot(111)
             mask = pixel_histogram.data[i] > 0
-            mean = np.average(pixel_histogram.bin_centers, weights=pixel_histogram.data[i])
-            std = np.average((pixel_histogram.bin_centers - mean)**2, weights=pixel_histogram.data[i])
+            mean = np.average(
+                pixel_histogram.bin_centers,
+                weights=pixel_histogram.data[i])
+            std = np.average(
+                (pixel_histogram.bin_centers - mean)**2,
+                weights=pixel_histogram.data[i])
             std = np.sqrt(std)
-            skewness = np.average(((pixel_histogram.bin_centers - mean)/std)**3, weights=pixel_histogram.data[i])
-            kurtosis = np.average(((pixel_histogram.bin_centers - mean)/std)**4, weights=pixel_histogram.data[i])
+            skewness = np.average(
+                ((pixel_histogram.bin_centers - mean)/std)**3,
+                weights=pixel_histogram.data[i])
+            kurtosis = np.average(
+                ((pixel_histogram.bin_centers - mean)/std)**4,
+                weights=pixel_histogram.data[i])
             n_entries = np.sum(pixel_histogram.data[i][mask])
-            label = ' pixel : {}\n mean : {:0.2f} [LSB]\n std : {:0.2f} [LSB]\n skewness : {:0.2f} []\n kurtosis : {:0.2f} []\n entries : {}'.format(
+            label = (
+                ' pixel : {}'
+                '\n mean : {:0.2f} [LSB]'
+                '\n std : {:0.2f} [LSB]'
+                '\n skewness : {:0.2f} []'
+                '\n kurtosis : {:0.2f} []'
+                '\n entries : {}'
+            ).format(
                 i, mean, std, skewness, kurtosis, n_entries)
-            axis.step(pixel_histogram.bin_centers[mask], pixel_histogram.data[i][mask], label=label, where='mid')
+            axis.step(
+                pixel_histogram.bin_centers[mask],
+                pixel_histogram.data[i][mask],
+                label=label,
+                where='mid'
+            )
             axis.set_xlabel('[LSB]')
             axis.legend()
             fig.savefig(directory + 'pixel_{}.svg'.format(i))
@@ -171,7 +209,15 @@ def do_plots():
             n_entries = np.sum(y)
             skewness = np.average(((x - mean)/std)**3, weights=y)
             kurtosis = np.average(((x - mean)/std)**4, weights=y)
-            label = ' patch : {}\n mean : {:0.2f} [LSB]\n std : {:0.2f} [LSB]\n skewness : {:0.2f} []\n kurtosis : {:0.2f} [] \n entries : {}'.format(i, mean, std, skewness, kurtosis, n_entries)
+            label = (
+                ' patch : {}'
+                '\n mean : {:0.2f} [LSB]'
+                '\n std : {:0.2f} [LSB]'
+                '\n skewness : {:0.2f} []'
+                '\n kurtosis : {:0.2f} [] '
+                '\n entries : {}'
+            ).format(
+                i, mean, std, skewness, kurtosis, n_entries)
             axis.step(x, y, label=label, where='mid')
             axis.set_xlabel('[LSB]')
             axis.legend()
@@ -202,7 +248,15 @@ def do_plots():
             std = np.average((x - mean)**2, weights=y)
             std = np.sqrt(std)
             n_entries = np.sum(y)
-            label = ' cluster 7 : {}\n mean : {:0.2f} [LSB]\n std : {:0.2f} [LSB]\n skewness : {:0.2f} []\n kurtosis : {:0.2f} []\n entries : {}'.format(i, mean, std, skewness, kurtosis, n_entries)
+            label = (
+                ' cluster 7 : {}'
+                '\n mean : {:0.2f} [LSB]'
+                '\n std : {:0.2f} [LSB]'
+                '\n skewness : {:0.2f} []'
+                '\n kurtosis : {:0.2f} []'
+                '\n entries : {}'
+            ).format(
+                i, mean, std, skewness, kurtosis, n_entries)
             axis.step(x, y, label=label, where='mid')
             axis.set_xlabel('[LSB]')
             axis.legend()
@@ -220,7 +274,15 @@ def do_plots():
             std = np.average((x - mean)**2, weights=y)
             std = np.sqrt(std)
             n_entries = np.sum(y)
-            label = ' cluster_19 : {}\n mean : {:0.2f} [LSB]\n std : {:0.2f} [LSB]\n skewness : {:0.2f} []\n kurtosis : {:0.2f} []\n entries : {}'.format(i, mean, std, skewness, kurtosis, n_entries)
+            label = (
+                ' cluster_19 : {}'
+                '\n mean : {:0.2f} [LSB]'
+                '\n std : {:0.2f} [LSB]'
+                '\n skewness : {:0.2f} []'
+                '\n kurtosis : {:0.2f} []'
+                '\n entries : {}'
+            ).format(
+                i, mean, std, skewness, kurtosis, n_entries)
             axis.step(x, y, label=label, where='mid')
             axis.set_xlabel('[LSB]')
             axis.legend()
