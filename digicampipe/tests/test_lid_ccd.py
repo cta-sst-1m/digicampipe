@@ -7,7 +7,7 @@ example_lid_CCD_image_file_paths = glob(
 )
 
 
-@pytest.mark.slow
+@pytest.mark.deselect
 def test_find_stars(method='local'):
     from digicampipe.image.sky_image import LidCCDObservation
     from digicampipe.image.utils import Rectangle
