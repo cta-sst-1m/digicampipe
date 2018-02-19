@@ -31,10 +31,6 @@ def main():
     opts_parser.add_option(
         "-e", "--file_end", dest="file_end",
         help="file starting index", default=23, type=int)
-    opts_parser.add_option(
-        "-c", "--config_path", dest="config_path",
-        help="config file path", default="/home/alispach/ctasoft/CTS/config/",
-        type=str)
 
     (options, args) = opts_parser.parse_args()
     # Data configuration
@@ -45,11 +41,6 @@ def main():
         filename % number
         for number in range(options.file_start, options.file_end + 1)
     ]
-    camera_config_file = options.config_path + 'camera_config.cfg'
-    pixel_histogram_filename = 'pixel_histogram.npz'
-    patch_histogram_filename = 'patch_histogram.npz'
-    cluster_7_histogram_filename = 'cluster_7_histogram.npz'
-    cluster_19_histogram_filename = 'cluster_19_histogram.npz'
     trigger_filename = 'trigger.npz'
     display = True
 
