@@ -80,7 +80,10 @@ def binning_aeff(energy_all, energy_trig, impact_all, impact_trig, im_bins, im_c
         # Effective area for each bin in impact, still energy dependent
 
         ind = np.argwhere(np.isnan(P))  # replacing nan values by linear interpolation of neighbours
-        P[ind] = (P[ind-1] + P[ind+1])/2.0
+        #print(len(P), len(im_bins)-1)
+        for j in ind:
+            if j > 0 and j < len(im_bins)-2:
+                P[j] = (P[j-1] + P[j+1])/2.0
         r = im_centres
         dr = im_bins[1] - im_bins[0]
         A_eff.append(2 * np.pi * dr * sum(P * r))
@@ -101,7 +104,7 @@ if __name__ == '__main__':
     # !!! DONT FORGET TO SET UP RANGE OF HISTOGRAMS WITH REPSECT TO PRIMARY PARTICLE !!!
 
     parser = OptionParser()
-    parser.add_option("-a", "--all", dest="all", help="path to a file with all MC events", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/allmc_param_gamma_ze00_az000.txt')
+    parser.add_option("-a", "--all", dest="all", help="path to a file with all MC events", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/allmc_param_proton_ze20_az000.txt')
     #parser.add_option("-d", "--digi", dest="trig_digi", help="path to a file with triggered events from digicampipe", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     (options, args) = parser.parse_args()
 

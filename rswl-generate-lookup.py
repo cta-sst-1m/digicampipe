@@ -213,7 +213,11 @@ if __name__ == '__main__':
     # Quality factor
     qualityw = efficiency_gammaw / np.sqrt(efficiency_protonw)
     qualityl = efficiency_gammal / np.sqrt(efficiency_protonl)
+    qualityw[np.isinf(qualityw)] = 0
+    qualityl[np.isinf(qualityl)] = 0
 
+    print('RSW:', max(qualityw), efficiency_gammaw[qualityw == max(qualityw)], efficiency_protonw[qualityw == max(qualityw)])
+    print('RSL:', max(qualityl), efficiency_gammal[qualityl == max(qualityl)], efficiency_protonl[qualityl == max(qualityl)])
 
 
     # PLOTS

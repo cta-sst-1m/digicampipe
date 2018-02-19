@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
         if len(timing_event > 0):   # Because sometimes the timing_event matrix is empty. Timing matrix is full of zeros because of failure of Hillas parameter fit in simtel_pipeline
 
-            if len(x_rot_sel[~mask]) > 10 and alpha[i] < 90:  # selection cuts
+            if len(x_rot_sel[~mask]) > 10 and alpha[i] < 10:  # selection cuts
                 fit = np.polyfit(x_rot_sel[~mask], timing_event[~mask], 1)
                 time_gradient.append(fit[0])
                 impact_parameter_sel.append(impact_parameter[i])
@@ -140,6 +140,7 @@ if __name__ == '__main__':
 
     print(len(time_gradient))
 
+    
     
     # Binning in Impact parameter
     bin_time = binned_statistic(impact_parameter_sel, time_gradient, bins=20, range=(0, 400))
@@ -179,7 +180,7 @@ if __name__ == '__main__':
 
     # Time gradient hist
     plt.figure(figsize=(11,8))
-    plt.hist2d(impact_parameter_sel, time_gradient, bins=150, range=np.array([(0, 400), (-40, 40)])) #, norm=mpl.colors.LogNorm())
+    plt.hist2d(impact_parameter_sel, time_gradient, bins=70, range=np.array([(0, 400), (-40, 40)])) #, norm=mpl.colors.LogNorm())
     plt.colorbar()
     plt.xlabel('impact_parameter [m]')
     plt.ylabel('time gradient [ns/deg]')

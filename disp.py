@@ -148,7 +148,7 @@ if __name__ == '__main__':
     cog_x = cog_x * mm_to_deg   # conversion to degrees
     cog_y = cog_y * mm_to_deg   # conversion to degrees
 
-    disp = np.sqrt((x_offset - cog_x)**2.0 + (y_offset - cog_y)**2.0)
+    disp = np.sqrt((x_offset - cog_x)**2.0 + (y_offset - cog_y)**2.0)   # apparently WRONG, it should be rewritten, according to propper handling with angular distances
 
     
     # Minimization of disp

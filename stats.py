@@ -24,8 +24,24 @@ if __name__ == '__main__':
     cog_x = hillas['cen_x']  # in mm
     cog_y = hillas['cen_y']  #
     skewness = hillas['skewness']  # represents assymetry of the image
-    
+
+    min_size = 50
+
+    # Masking border flagged events
+    mask0 = [x == 0 for x in border]
+    mask1 = [x > 0.001 for x in width/length]  # because of some strange arteficial values..
+    mask2 = [x > min_size for x in size]
+    mask = ~np.isnan(width)*~np.isnan(cog_x) #*mask0*mask1*mask2
+
+    size = size[mask]
+    width = width[mask]
+    length = length[mask]
+    skewness = skewness[mask]
+    cog_x = cog_x[mask]
+    cog_y = cog_y[mask]
+
     # True MC params
+    mc = mc[mask,:]
     core_distance = mc[:, 2]
     energy = mc[:, 3]
     x_offset = mc[:, 7]  # MC event source position, probably in deg
@@ -37,24 +53,7 @@ if __name__ == '__main__':
     mm_to_deg = 0.24 / 24.3  # conversion of coordinates in mm to deg. Digicam: 0.24 deg/px, one SiPM is 24.3 mm wide
     
     disp = np.sqrt((x_offset - cog_x)**2.0 + (y_offset - cog_y)**2.0) * mm_to_deg  # conversion to degrees included
-    
-    min_size = 50
-    
-    # Masking border flagged events
-    mask0 = [x == 0 for x in border]
-    mask1 = [x > 0.001 for x in width/length]  # because of some strange arteficial values..
-    mask2 = [x > min_size for x in size]
-    
-    mask = ~np.isnan(width)*~np.isnan(disp) #*mask0*mask1*mask2
-    size = size[mask]
-    disp = disp[mask]
-    width = width[mask]
-    length = length[mask]
-    thetap = thetap[mask]
-    phi = phi[mask]
-    core_distance = core_distance[mask]
-    skewness = skewness[mask]
-    energy = energy[mask]
+
     
     """
     # Events behind the border even after the bordercut

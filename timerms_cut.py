@@ -116,9 +116,11 @@ if __name__ == '__main__':
     plt.figure(figsize=(11,8))
     weights_g = np.ones_like(time_rms_gamma)/float(len(time_rms_gamma))
     weights_p = np.ones_like(time_rms_proton)/float(len(time_rms_proton))
-    plt.hist(time_rms_gamma, bins=50, alpha=0.5, weights=weights_g, label=str(len(timing_gamma))+' gamma', histtype='step', stacked=True, fill=False, linewidth=4, color='black')
-    plt.hist(time_rms_proton, bins=50, alpha=0.5, weights=weights_p, label=str(len(timing_prot))+' proton', histtype='step', stacked=True, fill=False, linewidth=4, color='red')
+    plt.hist(time_rms_gamma, bins=50, weights=weights_g, label=str(len(timing_gamma))+' gamma', histtype='step', stacked=True, fill=False, linewidth=4, color='black')
+    plt.hist(time_rms_proton, bins=50, weights=weights_p, label=str(len(timing_prot))+' proton', histtype='step', stacked=True, fill=False, linewidth=4, color='red')
     plt.xlim([0, 18])
+    plt.xlabel('TimeRMS [ns]')
+    plt.ylabel('Normalised')    
     plt.legend()
     
     
