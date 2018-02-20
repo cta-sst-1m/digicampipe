@@ -38,12 +38,12 @@ def save_bias_curve(
 
                         if by_cluster:
                             index = np.where(comp)[0]
-                            cluster_rate[index, n_thresholds - threshold_id - 1] += 1
-                            rate[n_thresholds - threshold_id - 1] += 1
+                            cluster_rate[index, - threshold_id - 1] += 1
+                            rate[- threshold_id - 1] += 1
 
                         else:
 
-                            rate[0:n_thresholds - threshold_id] += 1
+                            rate[0:-threshold_id] += 1
                             break
 
                 else:
@@ -53,10 +53,10 @@ def save_bias_curve(
 
                     if n_triggers > r0.trigger_input_7.shape[-1] - 1:
 
-                        rate[0:n_thresholds - threshold_id] += n_triggers
+                        rate[0:-threshold_id] += n_triggers
                         break
 
-                    rate[n_thresholds - threshold_id - 1] += n_triggers
+                    rate[- threshold_id - 1] += n_triggers
 
         yield event
 
