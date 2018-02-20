@@ -6,23 +6,12 @@ def save_bias_curve(
     data_stream,
     thresholds,
     output_filename,
-    n_events=None,
     blinding=True,
     by_cluster=True,
     unwanted_cluster=None
 ):
-
-    if n_events is None:
-
-        iter_events = itertools.count()
-
-    else:
-
-        iter_events = range(n_events)
-
     rate = np.zeros(thresholds.shape)
-
-    for event, event_id in zip(data_stream, iter_events):
+    for event_id, event in enumerate(data_stream):
 
         for telescope_id in event.r0.tels_with_data:
 
