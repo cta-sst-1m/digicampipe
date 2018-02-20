@@ -3,20 +3,21 @@ from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io import save_adc
 from digicampipe.calib.camera import r0
-from digicampipe.io.save_bias_curve import save_bias_curve
+from digicampipe.io.save_bias_curve import TriggerrateThresholdAnalysis
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 def main(
     file_list,
-    display,
     directory,
     trigger_filename='trigger.npz',
     thresholds=np.arange(0, 400, 10),
     unwanted_patch=[306, 318, 330, 342, 200],
     unwanted_cluster=None,
     blinding=True,
+    display=False,
 ):
 
     histogram_fillers = {
@@ -46,31 +47,25 @@ def main(
             data_shape=(432, )),
     }
 
-
-    # Define the event stream
-    data_stream = event_stream(file_list)
-    data_stream = filter.filter_event_types(data_stream, flags=[8])
-    data_stream = filter.set_patches_to_zero(
-        data_stream,
-        unwanted_patch=unwanted_patch)
-    data_stream = r0.fill_trigger_input_7(data_stream)
-    data_stream = r0.fill_trigger_input_19(data_stream)
-    data_stream = save_bias_curve(
-        data_stream,
+    rate_vs_threshold_analysis = TriggerrateThresholdAnalysis(
         thresholds=thresholds,
         blinding=blinding,
         output_filename=directory + trigger_filename,
         unwanted_cluster=unwanted_cluster
     )
 
+    data_stream = event_stream(file_list)
+    data_stream = filter.filter_event_types(data_stream, flags=[8])
+    data_stream = filter.set_patches_to_zero(data_stream, unwanted_patch)
+    data_stream = r0.fill_trigger_input_7(data_stream)
+    data_stream = r0.fill_trigger_input_19(data_stream)
+
+    data_stream = rate_vs_threshold_analysis(data_stream)
     for histo_filler in histogram_fillers:
         data_stream = histo_filler(data_stream)
 
-    if not display:
-        for _ in tqdm(data_stream):
-            pass
-    else:
-        do_plots(**histogram_fillers)
+    for _ in tqdm(data_stream):
+        pass
 
 
 def do_plots(
@@ -82,6 +77,8 @@ def do_plots(
     cluster_7_histogram,
     cluster_19_histogram,
 ):
+
+        raise NotImplementedError('this function does not work at the moment')
         #trigger = np.load(directory + trigger_filename)
 
         directory += 'figures/'

@@ -66,6 +66,77 @@ def save_bias_curve(
     rate = rate / time
     cluster_rate = cluster_rate / time
 
-    np.savez(output_filename, rate=rate, rate_error=rate_error, cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error, threshold=thresholds)
+    np.savez(rate=rate, rate_error=rate_error, cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error, threshold=thresholds)
 
 
+class TriggerrateThresholdAnalysis:
+
+    def __init__(
+        self,
+        thresholds,
+        blinding=True,
+        by_cluster=True,
+        unwanted_cluster=None
+    ):
+        '''
+        thresholds: 1d array
+        '''
+        self.thresholds = thresholds
+        self.blinding = blinding
+        self.by_cluster = by_cluster
+        self.unwanted_cluster = unwanted_cluster
+
+    def __call__(self, data_stream):
+
+        n_thresholds = len(self.thresholds)
+        rate = np.zeros(n_thresholds)
+
+        # cluster rate can only be initialized when the first event was read.
+        cluster_rate = None
+        for event_id, event in enumerate(data_stream):
+            for r0 in event.r0.tel.values:
+                if cluster_rate is None:
+                    cluster_rate = init_cluster_rate(r0, n_thresholds)
+
+                for threshold_id, threshold in enumerate(reversed(self.thresholds)):
+
+                    comp = r0.trigger_input_7 > threshold
+
+                    if self.blinding:
+
+                        if np.any(comp):
+
+                            if self.by_cluster:
+                                index = np.where(comp)[0]
+                                cluster_rate[index, - threshold_id - 1] += 1
+                                rate[- threshold_id - 1] += 1
+
+                            else:
+
+                                rate[0:-threshold_id] += 1
+                                break
+
+                    else:
+                        comp = np.sum(comp, axis=0)
+                        comp = comp > 0
+                        n_triggers = np.sum(comp)
+
+                        if n_triggers > r0.trigger_input_7.shape[-1] - 1:
+
+                            rate[0:-threshold_id] += n_triggers
+                            break
+
+                        rate[- threshold_id - 1] += n_triggers
+
+            yield event
+
+        time = ((event_id + 1) * 4. * r0.trigger_input_7.shape[-1])
+        rate_error = np.sqrt(rate) / time
+        cluster_rate_error = np.sqrt(cluster_rate) / time
+        rate = rate / time
+        cluster_rate = cluster_rate / time
+
+        self.rate = rate
+        self.rate_error = rate_error
+        self.cluster_rate = cluster_rate
+        self.cluster_rate_error = cluster_rate_error
