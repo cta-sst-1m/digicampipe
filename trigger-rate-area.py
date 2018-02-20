@@ -104,7 +104,7 @@ if __name__ == '__main__':
     # !!! DONT FORGET TO SET UP RANGE OF HISTOGRAMS WITH REPSECT TO PRIMARY PARTICLE !!!
 
     parser = OptionParser()
-    parser.add_option("-a", "--all", dest="all", help="path to a file with all MC events", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/allmc_param_proton_ze20_az000.txt')
+    parser.add_option("-a", "--all", dest="all", help="path to a file with all MC events", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/allmc_param_gamma_ze00_az000.txt')
     #parser.add_option("-d", "--digi", dest="trig_digi", help="path to a file with triggered events from digicampipe", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     (options, args) = parser.parse_args()
 
