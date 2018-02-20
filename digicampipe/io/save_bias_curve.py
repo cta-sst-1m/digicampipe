@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 
 
 def save_bias_curve(
