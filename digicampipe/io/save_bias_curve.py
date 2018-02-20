@@ -22,14 +22,14 @@ def save_bias_curve(
 
     rate = np.zeros(thresholds.shape)
 
-    for event, i in zip(data_stream, iter_events):
+    for event, event_id in zip(data_stream, iter_events):
 
         for telescope_id in event.r0.tels_with_data:
 
             trigger_input_7 = event.r0.tel[telescope_id].trigger_input_7
             # trigger_input_19 = event.r0.tel[telescope_id].trigger_input_19
 
-            if i == 0:
+            if event_id == 0:
 
                 n_clusters = trigger_input_7.shape[0]
                 cluster_rate = np.zeros((n_clusters, thresholds.shape[-1]))
@@ -66,7 +66,7 @@ def save_bias_curve(
 
         yield event
 
-    time = ((i + 1) * 4. * trigger_input_7.shape[-1])
+    time = ((event_id + 1) * 4. * trigger_input_7.shape[-1])
     rate_error = np.sqrt(rate) / time
     cluster_rate_error = np.sqrt(cluster_rate) / time
     rate = rate / time
