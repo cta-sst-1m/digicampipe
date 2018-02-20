@@ -19,7 +19,7 @@ def main(
     blinding=True,
 ):
 
-    histos = {
+    histogram_fillers = {
         'pixel_histogram': save_adc.R0HistogramFiller(
             field_name='adc_samples',
             bin_center_min=0,
@@ -63,14 +63,14 @@ def main(
         unwanted_cluster=unwanted_cluster
     )
 
-    for h in histos:
-        data_stream = h(data_stream)
+    for histo_filler in histogram_fillers:
+        data_stream = histo_filler(data_stream)
 
     if not display:
         for _ in tqdm(data_stream):
             pass
     else:
-        do_plots(**histos)
+        do_plots(**histogram_fillers)
 
 
 def do_plots(
