@@ -1,6 +1,12 @@
 import numpy as np
 
 
+def init_cluster_rate(r0, thresholds):
+    n_clusters = r0.trigger_input_7.shape[0]
+    cluster_rate = np.zeros((n_clusters, thresholds.shape[-1]))
+    return cluster_rate
+
+
 def save_bias_curve(
     data_stream,
     thresholds,
@@ -10,12 +16,13 @@ def save_bias_curve(
     unwanted_cluster=None
 ):
     rate = np.zeros(thresholds.shape)
+
+    # cluster rate can only be initialized when the first event was read.
+    cluster_rate = None
     for event_id, event in enumerate(data_stream):
         for r0 in event.r0.tel.values:
-            if event_id == 0:
-
-                n_clusters = r0.trigger_input_7.shape[0]
-                cluster_rate = np.zeros((n_clusters, thresholds.shape[-1]))
+            if cluster_rate is None:
+                cluster_rate = init_cluster_rate(r0, thresholds)
 
             for threshold_id, threshold in enumerate(reversed(thresholds)):
 
