@@ -2,7 +2,15 @@ import numpy as np
 import itertools
 
 
-def save_bias_curve(data_stream, thresholds, output_filename, n_events=None, blinding=True, by_cluster=True, unwanted_cluster=None):
+def save_bias_curve(
+    data_stream,
+    thresholds,
+    output_filename,
+    n_events=None,
+    blinding=True,
+    by_cluster=True,
+    unwanted_cluster=None
+):
 
     if n_events is None:
 
