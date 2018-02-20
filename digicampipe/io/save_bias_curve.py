@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def init_cluster_rate(r0, thresholds):
+def init_cluster_rate(r0, n_thresholds):
     n_clusters = r0.trigger_input_7.shape[0]
-    cluster_rate = np.zeros((n_clusters, thresholds.shape[-1]))
+    cluster_rate = np.zeros((n_clusters, n_thresholds))
     return cluster_rate
 
 
@@ -15,14 +15,18 @@ def save_bias_curve(
     by_cluster=True,
     unwanted_cluster=None
 ):
-    rate = np.zeros(thresholds.shape)
+    '''
+    thresholds: 1d array
+    '''
+    n_thresholds = len(thresholds)
+    rate = np.zeros(n_thresholds)
 
     # cluster rate can only be initialized when the first event was read.
     cluster_rate = None
     for event_id, event in enumerate(data_stream):
         for r0 in event.r0.tel.values:
             if cluster_rate is None:
-                cluster_rate = init_cluster_rate(r0, thresholds)
+                cluster_rate = init_cluster_rate(r0, n_thresholds)
 
             for threshold_id, threshold in enumerate(reversed(thresholds)):
 
@@ -34,12 +38,12 @@ def save_bias_curve(
 
                         if by_cluster:
                             index = np.where(comp)[0]
-                            cluster_rate[index, thresholds.shape[0] - threshold_id - 1] += 1
-                            rate[thresholds.shape[0] - threshold_id - 1] += 1
+                            cluster_rate[index, n_thresholds - threshold_id - 1] += 1
+                            rate[n_thresholds - threshold_id - 1] += 1
 
                         else:
 
-                            rate[0:thresholds.shape[0] - threshold_id] += 1
+                            rate[0:n_thresholds - threshold_id] += 1
                             break
 
                 else:
@@ -49,10 +53,10 @@ def save_bias_curve(
 
                     if n_triggers > r0.trigger_input_7.shape[-1] - 1:
 
-                        rate[0:thresholds.shape[0] - threshold_id] += n_triggers
+                        rate[0:n_thresholds - threshold_id] += n_triggers
                         break
 
-                    rate[thresholds.shape[0] - threshold_id - 1] += n_triggers
+                    rate[n_thresholds - threshold_id - 1] += n_triggers
 
         yield event
 
