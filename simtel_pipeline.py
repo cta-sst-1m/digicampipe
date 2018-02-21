@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+#import digicampipe.io.hessio_digicam as hsm     #
 import astropy.units as u
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
                       , default='digicampipe/tests/resources/camera_config.cfg')
     
-    parser.add_option('-i', "--picture_threshold", dest='picture_threshold', help='Picture threshold', default=13, type=int)     # For searching of the best configuration
-    parser.add_option('-b', "--boundary_threshold", dest='boundary_threshold', help='Boundary threshold', default=7, type=int)  #
+    parser.add_option('-i', "--picture_threshold", dest='picture_threshold', help='Picture threshold', default=15, type=int)     # For searching of the best configuration
+    parser.add_option('-b', "--boundary_threshold", dest='boundary_threshold', help='Boundary threshold', default=8, type=int)  #
     
     parser.add_option('-z', "--zenit", dest='zenit_angle', help='Zenit distance, THETAP', default=0, type=int)
     parser.add_option('-a', "--azimut", dest='azimut', help='Azimut, PHIP', default=0, type=int)
@@ -109,7 +110,7 @@ if __name__ == '__main__':
 
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, camera_geometry=digicam_geometry, camera=digicam, mc=True)
+    data_stream = event_stream(filelist=file_list, camera_geometry=digicam_geometry, camera=digicam, mc='simtel')
 
     # create data_stream
     #data_stream = hsm.hessio_event_source(data,camera_geometry=digicam_geometry, camera=digicam)

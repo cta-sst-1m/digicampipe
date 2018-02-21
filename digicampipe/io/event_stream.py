@@ -1,7 +1,7 @@
 from digicampipe.io import zfits, hdf5
 from .auxservice import AuxService
 from collections import namedtuple
-
+import digicampipe.io.hessio_digicam as hsm     #
 
 def event_stream(
     filelist,
@@ -9,7 +9,7 @@ def event_stream(
     camera_geometry=None,
     expert_mode=None,
     max_events=None,
-    mc=False
+    mc='real'
 ):
     # If the caller gives us a path and not a list of paths,
     # we convert it to a list.
@@ -17,11 +17,12 @@ def event_stream(
     if isinstance(filelist, (str, bytes)):
         filelist = [filelist]
 
-    if mc:
+    if mc == 'digicamtoy':
         source = hdf5.digicamtoy_event_source
-    else:
+    elif mc == 'real':
         source = zfits.zfits_event_source
-
+    elif mc == 'simtel':
+        source = hsm.hessio_event_source
     for file in filelist:
         data_stream = source(
             url=file,
