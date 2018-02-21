@@ -26,14 +26,21 @@ digicam_config_file = pkg_resources.resource_filename(
 
 def test_baseline_computation_from_waveform():
 
-    bins = np.randint(0, 50)
+    bins = np.random.randint(0, 50)
 
     process = BaselineCalculatorFromWaveform(bins=bins)
+    computed_baseline = []
+    expected_baseline = []
 
     for event in zfits_event_source(example_file_path):
 
         process(event)
 
-        assert event.r0.tel[0].baseline == np.mean(event.r0.tel[0].adc_samples[..., bins], axis=0)
+        computed_baseline.append(event.r0.tel[1].baseline)
+        temp = np.mean(event.r0.tel[1].adc_samples[..., bins], axis=0)
+        expected_baseline.append(temp)
 
+    computed_baseline = np.array(computed_baseline)
+    expected_baseline = np.array(expected_baseline)
 
+    assert (computed_baseline == expected_baseline).all()
