@@ -10,6 +10,9 @@ class SetPixelsToZero(Processor):
         for telescope_id in event.r0.tels_with_data:
             r0_camera = event.r0.tel[telescope_id]
             r0_camera.adc_samples[self.unwanted_pixels] = 0
+            additional_mask = np.ones(len(r0_camera.adc_samples), dtype=bool)
+            additional_mask[self.unwanted_pixels] = False
+            r0_camera.additional_mask = additional_mask
         return event
 
 

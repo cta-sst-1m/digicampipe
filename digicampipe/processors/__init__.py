@@ -1,4 +1,10 @@
+from digicampipe.io.event_stream import event_stream
 from abc import ABC, abstractmethod
+
+from . import filters
+from . import calib
+from . import baseline
+from . import io
 
 
 class Processor(ABC):
@@ -25,3 +31,12 @@ class SkipEvent(Exception):
     the for-loop to `continue` with the next event.
     '''
     pass
+
+
+def run_process(process, files):
+    for event in event_stream(files):
+        try:
+            for processor in process:
+                event = processor(event)
+        except SkipEvent:
+                continue

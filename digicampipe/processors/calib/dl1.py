@@ -10,7 +10,6 @@ class CalibrateToDL1(Processor):
         time_integration_options,
         picture_threshold=7,
         boundary_threshold=4,
-        additional_mask=None
     ):
 
         if (
@@ -34,7 +33,6 @@ class CalibrateToDL1(Processor):
         self.time_integration_options = time_integration_options
         self.picture_threshold = picture_threshold
         self.boundary_threshold = boundary_threshold
-        self.additional_mask = additional_mask
 
     def __call__(self, event):
         for telescope_id in event.r0.tels_with_data:
@@ -120,8 +118,8 @@ class CalibrateToDL1(Processor):
                 geom=geom,
                 mask=dl1_camera.cleaning_mask)
 
-            if self.additional_mask is not None:
-                dl1_camera.cleaning_mask *= self.additional_mask
+            if r0_camera.additional_mask is not None:
+                dl1_camera.cleaning_mask *= r0_camera.additional_mask
 
             weight = dl1_camera.pe_samples
             dl1_camera.time_spread = np.average(
