@@ -3,6 +3,38 @@ import numpy as np
 from . import Processor
 
 
+class BaselineCalculatorFromWaveform(Processor):
+
+    def __init__(self, bins):
+        '''
+
+        :param bins: indices of the waveform from which the baseline
+         is computed. For instance bins = [0, 1, 2, 3] would use the 4 first
+         samples of the waveform
+        '''
+
+        self.bins = bins
+
+    def __call__(self, event):
+
+        for telescope_id in event.r0.tels_with_data:
+
+            r0_camera = event.r0.tel[telescope_id]
+
+            sub_waveform = r0_camera.adc_samples[..., self.bins]
+            r0_camera.baseline = np.mean(sub_waveform, axis=0)
+            r0_camera.standard_deviation = np.std(sub_waveform, axis=0)
+
+        return event
+
+
+class BaselineCalculatorPreSample(Processor):
+
+    def __init__(self, n_bins):
+
+        self = BaselineCalculatorFromWaveform(bins=np.arange(0, n_bins, 1, dtype=np.int))
+
+
 class FillBaseline(Processor):
     ''' calculate baseline from previous events and store it in the event.
     '''
