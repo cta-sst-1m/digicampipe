@@ -1,5 +1,6 @@
 import numpy as np
-from . import Processor, SkipEvent
+from . import Processor
+from . import SkipEvent
 
 
 class SetPixelsToZero(Processor):
