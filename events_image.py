@@ -1,7 +1,7 @@
 # Functions for extracting and saving cleaned events, called from pipeline_crab.py
 
 import numpy as np
-#from astropy.units import Quantity
+# from astropy.units import Quantity
 from astropy.coordinates import Angle
 import astropy.units as u
 from ctapipe.instrument import CameraGeometry
@@ -52,14 +52,14 @@ def save_events(event_stream, filename_pix, filename_eventsimage):
         event_number = event.r0.event_id  #
         image = np.hstack((event_number, image))  # [event_ number, image_values]
         image_all.append(image)  #
-        print('saving event',i)
+        print('saving event', i)
 
         yield event
 
     save_image(pix_x, pix_y, image_all, filename_pix, filename_eventsimage)  # save cleaned images for all events
 
 
-def save_timing(event_stream,filename_timing):
+def save_timing(event_stream, filename_timing):
 
     timing_all = []
 

@@ -15,8 +15,8 @@ def fill_baseline_r0(event_stream, n_bins0=5, n_bins1=10, method='data'):
                 adc_samples = r0_camera.adc_samples
 
                 # Selection of only n_bins0 first samples and n_bins1 last samples from given 50 samples
-                adc_samples_first = adc_samples[:,0:n_bins0-1]
-                adc_samples_last = adc_samples[:,-n_bins1:]
+                adc_samples_first = adc_samples[:, 0:n_bins0-1]
+                adc_samples_last = adc_samples[:, -n_bins1:]
                 adc_samples = np.concatenate((adc_samples_first, adc_samples_last), axis=1)
 
                 baseline = np.mean(adc_samples, axis=-1)

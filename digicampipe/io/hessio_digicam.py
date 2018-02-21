@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """
-Components to read HESSIO data.  
+Components to read HESSIO data.
 
 This requires the hessio python library to be installed
 """
@@ -37,6 +37,7 @@ __all__ = [
 # import inspect
 # import pyhessio
 # print(inspect.getfile(pyhessio))
+
 
 def hessio_get_list_event_ids(url, max_events=None):
     """
@@ -76,7 +77,7 @@ def hessio_get_list_event_ids(url, max_events=None):
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry,camera, max_events=None):
+def hessio_event_source(url, camera_geometry, camera, max_events=None):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
 
@@ -97,16 +98,17 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None):
         If True ,'requested_event' now seeks for a particular event id instead
         of index
     """
-    
-    
+
+
     with open_hessio(url) as pyhessio:
+
         # the container is initialized once, and data is replaced within
         # it after each yield
         Provenance().add_input_file(url, role='dl0.sub.evt')
         counter = 0
         eventstream = pyhessio.move_to_next_event()
         allowed_tels = None                         # !!!
-        #if allowed_tels is not None:
+        # if allowed_tels is not None:
         #    allowed_tels = set(allowed_tels)
         data = DataContainer()
         data.meta['origin'] = "hessio"
@@ -118,8 +120,8 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None):
         for event_id in eventstream:
 
             # Seek to requested event
-            requested_event=None            # !!!
-            use_event_id=False              # !!!
+            requested_event = None            # !!!
+            use_event_id = False              # !!!
             if requested_event is not None:
                 current = counter
                 if use_event_id:
@@ -131,7 +133,7 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None):
             data.r0.run_id = pyhessio.get_run_number()
             data.r0.event_id = event_id
             data.r0.tels_with_data = list(pyhessio.get_teldata_list())          #
-            
+
             data.r1.run_id = pyhessio.get_run_number()
             data.r1.event_id = event_id
             data.r1.tels_with_data = list(pyhessio.get_teldata_list())          #
@@ -183,9 +185,9 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None):
             for tel_id in data.r0.tels_with_data:
 
                 # event.mc.tel[tel_id] = MCCameraContainer()
-                
+
                 data.mc.mc_event_offset_fov = pyhessio.get_mc_event_offset_fov()        #
-                
+
                 data.mc.tel[tel_id].dc_to_pe \
                     = pyhessio.get_calibration(tel_id)
                 data.mc.tel[tel_id].pedestal \
@@ -276,12 +278,12 @@ def _fill_instrument_info(data, pyhessio, camera_geometry, camera):     #
                 data.inst.num_pixels[tel_id] = npix
                 data.inst.mirror_dish_area[tel_id] = mirror_area
                 data.inst.mirror_numtiles[tel_id] = num_tiles
-                
+
                 geometry = camera_geometry                                                      #
                 patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)               #
                 cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)       #
                 cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)     #
-      
+
                 data.inst.geom[tel_id] = geometry                               #
                 data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix           #
                 data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix         #

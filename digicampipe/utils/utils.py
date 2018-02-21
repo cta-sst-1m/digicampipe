@@ -21,11 +21,11 @@ def integrate(data, window_width):
         mode='constant',
         cval=-1.e8
     )
-    #return h[
+    # return h[
     #    ...,
     #    (window_width-1)//2:-window_width//2
-    #]  # JJ: This is not equivalent with the original line (below), it leads to different lengths of data and timing_mask
-    return h[...,int(np.floor((window_width-1)/2)):-int(np.floor(window_width/2))]
+    # ]  # JJ: This is not equivalent with the original line (below), it leads to different lengths of data and timing_mask
+    return h[..., int(np.floor((window_width-1)/2)):-int(np.floor(window_width/2))]
 
 
 def extract_charge(

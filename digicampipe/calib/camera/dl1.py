@@ -52,10 +52,10 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
                                                                 picture_thresh=picture_threshold,
                                                                 boundary_thresh=boundary_threshold,
                                                                 keep_isolated_pixels=False)
-                        
+
             # recursive selection of neighboring pixels
             # threshold is 2*boundary_threshold, maybe we should introduce yet a 3rd threshold in the args of the function
-            image = dl1_camera.pe_samples 
+            image = dl1_camera.pe_samples
             """
             recursion = True
             border = False
@@ -83,7 +83,7 @@ def calibrate_to_dl1(event_stream, time_integration_options, picture_threshold=7
                         if image[j] > boundary_threshold:
                             dl1_camera.cleaning_mask[j] = True
                             recursion = True
-            
+
             # dl1_camera.cleaning_mask = cleaning.dilate(geom=geom, mask=dl1_camera.cleaning_mask)  # Etienne doesn't use dilatation
             num_neighbors = np.sum(geom.neighbor_matrix[dl1_camera.cleaning_mask], axis=-1)
             dl1_camera.on_border = np.any(num_neighbors < 6)

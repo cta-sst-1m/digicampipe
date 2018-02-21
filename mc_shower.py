@@ -14,7 +14,7 @@ def save_shower(event_stream, filename_showerparam):
 
         event_id = event.dl0.event_id
         run_id = event.dl0.run_id
-        core_distance = np.sqrt(event.mc.core_x**2+ event.mc.core_y**2).value
+        core_distance = np.sqrt(event.mc.core_x**2 + event.mc.core_y**2).value
         energy = event.mc.energy.value
         theta = 90 - np.rad2deg(event.mc.alt).value
         phi = np.rad2deg(event.mc.az).value

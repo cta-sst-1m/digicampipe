@@ -3,6 +3,7 @@ from .auxservice import AuxService
 from collections import namedtuple
 import digicampipe.io.hessio_digicam as hsm     #
 
+
 def event_stream(
     filelist,
     camera=None,

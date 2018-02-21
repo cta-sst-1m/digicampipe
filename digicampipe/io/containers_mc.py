@@ -66,7 +66,6 @@ class InstrumentContainer(Container):
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')             #
 
 
-
 class DL1CameraContainer(Container):
     """Storage of output of camera calibration e.g the final calibrated
     image in intensity units and other per-event calculated
@@ -92,7 +91,7 @@ class DL1CameraContainer(Container):
     pe_samples_trace = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels, n_samples)")     #
     on_border = Field(bool, "Boolean telling if the shower touches the camera border or not")                                           #
     time_spread = Field(float, 'Time elongation of the shower')                                                                         #
-    
+
 
 class CameraCalibrationContainer(Container):
     """
@@ -120,11 +119,12 @@ class R0CameraContainer(Container):
         "(n_channels x n_pixels, n_samples)"
     ))
     num_samples = Field(None, "number of time samples for telescope")
-    
+
     baseline = Field(ndarray, "number of time samples for telescope")               #
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')               #
     standard_deviation = Field(ndarray, "number of time samples for telescope")     #
     local_camera_clock = Field(float, "camera timestamp")                           #
+
 
 class R0Container(Container):
     """
@@ -145,12 +145,12 @@ class R1CameraContainer(Container):
         "numpy array containing p.e. samples"
         "(n_channels x n_pixels, n_samples)"
     ))
-    
+
     adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)") #
     nsb = Field(ndarray, "nsb rate in GHz")                                         #
     pde = Field(ndarray, "Photo Detection Efficiency at given NSB")                 #
     gain_drop = Field(ndarray, "gain drop")                                         #
-    
+
 
 class R1Container(Container):
     """
@@ -231,6 +231,7 @@ class MCEventContainer(Container):
                                                 divided by focal length, i.e. converted to  \
                                                 radians: [0] = Camera x (downwards in normal \
                                                 pointing, i.e. increasing Alt) [1] = Camera y -> Az.")     #####
+
 
 class MCHeaderContainer(Container):
     """
