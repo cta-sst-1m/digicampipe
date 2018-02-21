@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import Processor
+from .. import Processor
 
 
 class BaselineCalculatorFromWaveform(Processor):
@@ -22,8 +22,8 @@ class BaselineCalculatorFromWaveform(Processor):
             r0_camera = event.r0.tel[telescope_id]
 
             sub_waveform = r0_camera.adc_samples[..., self.bins]
-            r0_camera.baseline = np.mean(sub_waveform, axis=0)
-            r0_camera.standard_deviation = np.std(sub_waveform, axis=0)
+            r0_camera.baseline = np.mean(sub_waveform, axis=-1)
+            r0_camera.standard_deviation = np.std(sub_waveform, axis=-1)
 
         return event
 
