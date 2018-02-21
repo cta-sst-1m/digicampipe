@@ -108,7 +108,7 @@ if __name__ == '__main__':
     reclean = True
 
     # Define the event stream
-    data_stream = event_stream(filelist=file_list, camera_geometry=digicam_geometry, camera=digicam, mc='simtel')
+    data_stream = event_stream(filelist=file_list, camera_geometry=digicam_geometry, camera=digicam)
 
     # create data_stream
     #data_stream = hsm.hessio_event_source(data,camera_geometry=digicam_geometry, camera=digicam)
