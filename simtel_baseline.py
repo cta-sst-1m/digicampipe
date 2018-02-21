@@ -19,7 +19,7 @@ def fill_baseline_r0(event_stream, n_bins0=5, n_bins1=10, method='data'):
                 adc_samples_first = adc_samples[:, 0:n_bins0-1]
                 adc_samples_last = adc_samples[:, -n_bins1:]
                 adc_samples = np.concatenate((adc_samples_first,
-                    adc_samples_last), axis=1)
+                                             adc_samples_last), axis=1)
 
                 baseline = np.mean(adc_samples, axis=-1)
                 std = np.std(adc_samples, axis=-1)
@@ -32,8 +32,8 @@ def fill_baseline_r0(event_stream, n_bins0=5, n_bins1=10, method='data'):
                 n_pixels = event.inst.num_pixels[telescope_id]
                 r0_camera = event.r0.tel[telescope_id]
                 r0_camera.baseline = event.mc.tel[telescope_id].pedestal[0] / 50.0
-                # standard_deviation should be set up manualy and it should be 
-                # probably equal to value of 'fadc_noise' variable from simtel 
+                # standard_deviation should be set up manualy and it should be
+                # probably equal to value of 'fadc_noise' variable from simtel
                 # configuration file
                 r0_camera.standard_deviation = 1.5*np.ones(n_pixels)
 

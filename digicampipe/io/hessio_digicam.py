@@ -10,10 +10,10 @@ from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.time import Time
 
-import digicampipe.utils as utils       #
-import numpy as np                      #
+import digicampipe.utils as utils
+import numpy as np
 
-from digicampipe.io.containers_mc import DataContainer   #
+from digicampipe.io.containers_mc import DataContainer
 from ctapipe.core import Provenance
 from ctapipe.instrument import TelescopeDescription, SubarrayDescription
 
@@ -27,7 +27,7 @@ try:
 except ImportError as err:
     logger.fatal(
         "the `pyhessio` python module is required to access MC data: {}"
-            .format(err))
+        .format(err))
     raise err
 
 __all__ = [
@@ -98,7 +98,6 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
         If True ,'requested_event' now seeks for a particular event id instead
         of index
     """
-
 
     with open_hessio(url) as pyhessio:
 
@@ -186,7 +185,8 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
 
                 # event.mc.tel[tel_id] = MCCameraContainer()
 
-                data.mc.mc_event_offset_fov = pyhessio.get_mc_event_offset_fov()
+                data.mc.mc_event_offset_fov = \
+                    pyhessio.get_mc_event_offset_fov()
 
                 data.mc.tel[tel_id].dc_to_pe \
                     = pyhessio.get_calibration(tel_id)

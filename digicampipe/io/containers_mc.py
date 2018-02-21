@@ -49,21 +49,24 @@ class InstrumentContainer(Container):
     pixel_pos = Field(Map(ndarray), "map of tel_id to pixel positions")
     optical_foclen = Field(Map(ndarray), "map of tel_id to focal length")
     mirror_dish_area = Field(Map(float),
-                             "map of tel_id to the area of the mirror dish", unit=u.m**2)
+                             "map of tel_id to the area of the mirror dish",
+                             unit=u.m**2)
     mirror_numtiles = Field(Map(int),
-                            "map of tel_id to the number of tiles for the mirror")
+                            "map of tel_id to the number of \
+                            tiles for the mirror")
     tel_pos = Field(Map(ndarray), "map of tel_id to telescope position")
     num_pixels = Field(Map(int), "map of tel_id to number of pixels in camera")
     num_channels = Field(Map(int), "map of tel_id to number of channels")
-    
 
-    num_samples = Field(Map(int), "map of tel_id to number of samples")             #
-    geom = Field(Map(None), 'map of tel_if to CameraGeometry')                      #
-    cam = Field(Map(None), 'map of tel_id to Camera')                               #
-    optics = Field(Map(None), 'map of tel_id to CameraOptics')                      #
-    cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')     #
-    cluster_matrix_19 = Field(Map(ndarray), 'map of tel_id of cluster 19 matrix')   #
-    patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')             #
+    num_samples = Field(Map(int), "map of tel_id to number of samples")
+    geom = Field(Map(None), 'map of tel_if to CameraGeometry')
+    cam = Field(Map(None), 'map of tel_id to Camera')
+    optics = Field(Map(None), 'map of tel_id to CameraOptics')
+    cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
+    cluster_matrix_19 = Field(
+                              Map(ndarray),
+                              'map of tel_id of cluster 19 matrix')
+    patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
 
 
 class DL1CameraContainer(Container):
@@ -85,12 +88,22 @@ class DL1CameraContainer(Container):
         None, "numpy array containing the waveform after cleaning"
     )
 
-    pe_samples = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels)")                      #
-    cleaning_mask = Field(ndarray, "mask for clean pixels")                                                                             #
-    time_bin = Field(ndarray, "numpy array containing the bin of maximum (n_pixels)")                                                   #
-    pe_samples_trace = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels, n_samples)")     #
-    on_border = Field(bool, "Boolean telling if the shower touches the camera border or not")                                           #
-    time_spread = Field(float, 'Time elongation of the shower')                                                                         #
+    pe_samples = Field(
+                       ndarray,
+                       "numpy array containing data volume reduced p.e. \
+                       samples (n_channels x n_pixels)")
+    cleaning_mask = Field(ndarray, "mask for clean pixels")
+    time_bin = Field(
+                     ndarray,
+                     "numpy array containing the bin of maximum (n_pixels)")
+    pe_samples_trace = Field(
+                             ndarray,
+                             "numpy array containing data volume reduced p.e. \
+                             samples (n_channels x n_pixels, n_samples)")
+    on_border = Field(
+                      bool, "Boolean telling if the shower touches the camera \
+                      border or not")
+    time_spread = Field(float, 'Time elongation of the shower')
 
 
 class CameraCalibrationContainer(Container):
@@ -120,10 +133,10 @@ class R0CameraContainer(Container):
     ))
     num_samples = Field(None, "number of time samples for telescope")
 
-    baseline = Field(ndarray, "number of time samples for telescope")               #
-    digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')               #
-    standard_deviation = Field(ndarray, "number of time samples for telescope")     #
-    local_camera_clock = Field(float, "camera timestamp")                           #
+    baseline = Field(ndarray, "number of time samples for telescope")
+    digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
+    standard_deviation = Field(ndarray, "number of time samples for telescope")
+    local_camera_clock = Field(float, "camera timestamp")
 
 
 class R0Container(Container):
@@ -146,10 +159,12 @@ class R1CameraContainer(Container):
         "(n_channels x n_pixels, n_samples)"
     ))
 
-    adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)") #
-    nsb = Field(ndarray, "nsb rate in GHz")                                         #
-    pde = Field(ndarray, "Photo Detection Efficiency at given NSB")                 #
-    gain_drop = Field(ndarray, "gain drop")                                         #
+    adc_samples = Field(
+                        ndarray,
+                        "baseline subtracted ADCs, (n_pixels, n_samples)")
+    nsb = Field(ndarray, "nsb rate in GHz")
+    pde = Field(ndarray, "Photo Detection Efficiency at given NSB")
+    gain_drop = Field(ndarray, "gain drop")
 
 
 class R1Container(Container):
@@ -206,10 +221,12 @@ class MCCameraEventContainer(Container):
     )
     altitude_raw = Field(0, "Raw altitude angle [radians] for the telescope")
     azimuth_cor = Field(
-        0, "the tracking Azimuth corrected for pointing errors for the telescope"
+        0, "the tracking Azimuth corrected for pointing errors for \
+        the telescope"
     )
     altitude_cor = Field(
-        0, "the tracking Altitude corrected for pointing errors for the telescope"
+        0, "the tracking Altitude corrected for pointing \
+        errors for the telescope"
     )
 
 
@@ -226,11 +243,14 @@ class MCEventContainer(Container):
     tel = Field(
         Map(MCCameraEventContainer), "map of tel_id to MCCameraEventContainer"
     )
-    
-    mc_event_offset_fov = Field(Map(ndarray), "offset of pointing direction in camera f.o.v. \
-                                                divided by focal length, i.e. converted to  \
-                                                radians: [0] = Camera x (downwards in normal \
-                                                pointing, i.e. increasing Alt) [1] = Camera y -> Az.")     #####
+
+    mc_event_offset_fov = Field(
+                                Map(ndarray),
+                                "offset of pointing direction in camera \
+                                f.o.v. divided by focal length, i.e. \
+                                converted to radians: [0] = Camera x \
+                                (downwards in normal pointing, i.e. \
+                                increasing Alt) [1] = Camera y -> Az.")
 
 
 class MCHeaderContainer(Container):
@@ -372,7 +392,9 @@ class DataContainer(Container):
     trig = Field(CentralTriggerContainer(), "central trigger information")
     count = Field(0, "number of events processed")
     inst = Field(InstrumentContainer(), "instrumental information (deprecated")
-    pointing = Field(Map(TelescopePointingContainer), 'Telescope pointing positions')
+    pointing = Field(
+                     Map(TelescopePointingContainer),
+                     'Telescope pointing positions')
 
 
 class MuonRingParameter(Container):
@@ -464,7 +486,8 @@ class MuonIntensityParameter(Container):
     off_ring_size = Field(0., 'image size outside of ring in pe')
     ring_width = Field(0., 'width of the muon ring in degrees')
     ring_time_width = Field(0., 'duration of the ring image sequence')
-    impact_parameter = Field(0., 'distance of muon impact position from centre of mirror')
+    impact_parameter = \
+        Field(0., 'distance of muon impact position from centre of mirror')
     impact_parameter_chi2 = Field(0., 'impact parameter chi squared')
     intensity_cov_matrix = Field(0., 'covariance matrix of intensity')
     impact_parameter_pos_x = Field(0., 'impact parameter x position')

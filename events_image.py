@@ -51,7 +51,7 @@ def save_events(event_stream, filename_pix, filename_eventsimage):
         # saving cleaned event images
         pix_x, pix_y, image = make_image(geom, image)  #
         event_number = event.r0.event_id  #
-        image = np.hstack((event_number, image))  # [event_ number,image_values]
+        image = np.hstack((event_number, image))  # [event_number,image_values]
         image_all.append(image)  #
         print('saving event', i)
 
