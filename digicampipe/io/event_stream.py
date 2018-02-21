@@ -10,7 +10,7 @@ def event_stream(
     camera_geometry=None,
     expert_mode=None,
     max_events=None,
-    mc='real'
+    source=None
 ):
     # If the caller gives us a path and not a list of paths,
     # we convert it to a list.
@@ -18,13 +18,9 @@ def event_stream(
     if isinstance(filelist, (str, bytes)):
         filelist = [filelist]
 
-    if mc == 'digicamtoy':
-        source = hdf5.digicamtoy_event_source
-    elif mc == 'real':
-        source = zfits.zfits_event_source
-    elif mc == 'simtel':
-        source = hsm.hessio_event_source
     for file in filelist:
+        if source is None:
+            source = guess_source_from_path(file)
         data_stream = source(
             url=file,
             camera=camera,
@@ -33,6 +29,15 @@ def event_stream(
         )
         for event in data_stream:
             yield event
+
+
+def guess_source_from_path(path):
+    if path.endswith('.fits.fz'):
+        return zfits.zfits_event_source
+    elif path.endswith('.h5') or path.endswith('.hdf5'):
+        return hdf5.digicamtoy_event_source
+    else:
+        return hsm.hessio_event_source
 
 
 def add_slow_data(
