@@ -1,5 +1,5 @@
 import numpy as np
-from digicampipe.utils import Processor
+from . import Processor, SkipEvent
 
 
 class SetPixelsToZero(Processor):
@@ -21,10 +21,10 @@ class FilterEventTypes(Processor):
         for telescope_id in event.r0.tels_with_data:
             flag = event.r0.tel[telescope_id].camera_event_type
 
-            if flag in self.flags:
-                return event
-            else:
-                return None
+            if flag not in self.flags:
+                raise SkipEvent
+
+            return event
 
 
 class FilterMissingBaseline(Processor):
@@ -33,6 +33,20 @@ class FilterMissingBaseline(Processor):
             r0_camera = event.r0.tel[telescope_id]
             condition = np.all(np.isnan(r0_camera.baseline))
             if condition:
-                return None
-            else:
-                return event
+                raise SkipEvent
+
+            return event
+
+
+class FilterShower(Processor):
+    def __init__(self, min_photon):
+        self.min_photon = min_photon
+
+    def __call__(self, event):
+        for telescope_id in event.r0.tels_with_data:
+            dl1 = event.dl1.tel[telescope_id]
+            n_photons = np.sum(dl1.pe_samples[dl1.cleaning_mask])
+            if n_photons < self.min_photon:
+                raise SkipEvent
+
+            return event

@@ -1,6 +1,6 @@
 import numpy as np
 
-from digicampipe.utils import Processor
+from . import Processor
 
 
 class FillBaseline(Processor):

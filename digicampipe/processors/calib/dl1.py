@@ -1,9 +1,10 @@
-from digicampipe.utils import utils, calib, Processor
+from digicampipe.utils import utils, calib
 import numpy as np
 from ctapipe.image import cleaning
+from . import Processor
 
 
-class calibrate_to_dl1(Processor):
+class CalibrateToDL1(Processor):
     def __init__(
         self,
         time_integration_options,
@@ -11,6 +12,24 @@ class calibrate_to_dl1(Processor):
         boundary_threshold=4,
         additional_mask=None
     ):
+
+        if (
+            'peak' not in time_integration_options or
+            time_integration_options['peak'] is None
+        ):
+            (
+                time_integration_options['peak'],
+                time_integration_options['mask'],
+                time_integration_options['mask_edges']
+            ) = utils.generate_timing_mask(
+                time_integration_options['window_start'],
+                time_integration_options['window_width'],
+                utils.fake_timing_hist(
+                    time_integration_options['n_samples'],
+                    time_integration_options['timing_width'],
+                    time_integration_options['central_sample']
+                )
+            )
 
         self.time_integration_options = time_integration_options
         self.picture_threshold = picture_threshold
