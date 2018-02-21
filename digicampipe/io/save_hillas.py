@@ -17,6 +17,7 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
     event_number = []#np.zeros(n_showers)
     time_stamp = []#np.zeros(n_showers)
     time_spread = []#np.zeros(n_showers)
+    border = []
 
     for event, i in zip(data_stream, range(n_showers)):
 
@@ -34,12 +35,13 @@ def save_hillas_parameters(data_stream, n_showers, output_filename):
         event_number.append(event.r0.event_id)
         time_spread.append(event.dl1.tel[1].time_spread)
         time_stamp.append(event.r0.tel[1].local_camera_clock)
+        border.append(1 if event.dl1.tel[1].on_border else 0)
 
         print('hillas #', i)
 
     np.savez(output_filename, size=size, cen_x=cen_x, cen_y=cen_y, length=length, width=width, r=r, phi=phi, psi=psi,
              miss=miss, skewness=skewness, kurtosis=kurtosis, event_number=event_number, time_stamp=time_stamp,
-             time_spread=time_spread)
+             time_spread=time_spread, border=border)
     
     
 def save_hillas_parameters_in_text(data_stream, output_filename):
