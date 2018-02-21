@@ -60,8 +60,8 @@ if __name__ == '__main__':
     directory = options.directory
     all_file_list = os.listdir(directory)
     file_list = []
-    string1 = (options.primary + '_' + str(options.zenit_angle) + \
-        'deg_' + str(options.azimut) + 'deg_')
+    string1 = (options.primary + '_' + str(options.zenit_angle) +
+               'deg_' + str(options.azimut) + 'deg_')
     print(string1)
     for fi in all_file_list:
         if (string1 in fi and '___cta-prod3-sst-dc-2150m--sst-dc' in fi and
@@ -96,7 +96,7 @@ if __name__ == '__main__':
                                 'mask_edges': None,
                                 'peak': None,
                                 'window_start': 3,
-                                'window_width': 15, # length of integration window
+                                'window_width': 15,  # length of integration window
                                 'threshold_saturation': np.inf,
                                 'n_samples': 50,
                                 'timing_width': 10,
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         time_integration_options['n_samples'],
         time_integration_options['timing_width'],
         time_integration_options['central_sample'])
-    
+
     (
         time_integration_options['peak'],
         time_integration_options['mask'],
@@ -181,18 +181,20 @@ if __name__ == '__main__':
     # Save cleaned events - pixels and corresponding values
     filename_pix = 'pixels.txt'
     filename_eventsimage = (
-        'events_image_' + str(picture_threshold) + \
-        str(boundary_threshold) + '_' + options.primary + '_ze' + \
-        str(options.zenit_angle).zfill(2) + '_az' + \
+        'events_image_' + str(picture_threshold) +
+        str(boundary_threshold) + '_' + options.primary + '_ze' +
+        str(options.zenit_angle).zfill(2) + '_az' +
         str(options.azimut).zfill(3) + '.txt'
         )
-    data_stream = events_image.save_events(data_stream, directory + filename_pix, directory + filename_eventsimage)
+    data_stream = events_image.save_events(data_stream,
+        directory + filename_pix, directory + filename_eventsimage)
 
     # Save simulated shower paramters
     filename_showerparam = 'shower_param_' + options.primary + \
         '_ze' + str(options.zenit_angle).zfill(2) + '_az' + \
         str(options.azimut).zfill(3) + '.txt'
-    data_stream = mc_shower.save_shower(data_stream, directory + filename_showerparam)
+    data_stream = mc_shower.save_shower(
+        data_stream, directory + filename_showerparam)
 
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(

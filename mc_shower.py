@@ -24,9 +24,12 @@ def save_shower(event_stream, filename_showerparam):
         core_x = event.mc.core_x.value
         core_y = event.mc.core_y.value
 
-        mc_data = np.hstack((event_id, run_id, core_distance, energy, theta, phi, h_first_int, offset_fov_x, offset_fov_y, core_x, core_y))
+        mc_data = np.hstack((event_id, run_id, core_distance, energy,
+            theta, phi, h_first_int, offset_fov_x, offset_fov_y,
+            core_x, core_y))
         mc_data_all.append(mc_data)
 
         yield event
 
-    save_file(mc_data_all, filename_showerparam)  # save mc parameters of showers for all events
+    # save mc parameters of showers for all events
+    save_file(mc_data_all, filename_showerparam)

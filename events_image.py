@@ -1,4 +1,5 @@
-# Functions for extracting and saving cleaned events, called from pipeline_crab.py
+# Functions for extracting and saving cleaned events,
+# called from pipeline_crab.py
 
 import numpy as np
 # from astropy.units import Quantity
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 
 def make_image(geom: CameraGeometry, image, container=False):
 
-    pix_x = np.asanyarray(geom.pix_x, dtype=np.float64).value       # Quantity(np.asanyarray(geom.pix_x, dtype=np.float64)).value
+    pix_x = np.asanyarray(geom.pix_x, dtype=np.float64).value
     pix_y = np.asanyarray(geom.pix_y, dtype=np.float64).value
     image = np.asanyarray(image, dtype=np.float64)
 
@@ -50,13 +51,14 @@ def save_events(event_stream, filename_pix, filename_eventsimage):
         # saving cleaned event images
         pix_x, pix_y, image = make_image(geom, image)  #
         event_number = event.r0.event_id  #
-        image = np.hstack((event_number, image))  # [event_ number, image_values]
+        image = np.hstack((event_number, image))  # [event_ number,image_values]
         image_all.append(image)  #
         print('saving event', i)
 
         yield event
 
-    save_image(pix_x, pix_y, image_all, filename_pix, filename_eventsimage)  # save cleaned images for all events
+    # save cleaned images for all events
+    save_image(pix_x, pix_y, image_all, filename_pix, filename_eventsimage)
 
 
 def save_timing(event_stream, filename_timing):

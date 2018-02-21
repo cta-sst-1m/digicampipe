@@ -132,14 +132,14 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
 
             data.r0.run_id = pyhessio.get_run_number()
             data.r0.event_id = event_id
-            data.r0.tels_with_data = list(pyhessio.get_teldata_list())          #
+            data.r0.tels_with_data = list(pyhessio.get_teldata_list())
 
             data.r1.run_id = pyhessio.get_run_number()
             data.r1.event_id = event_id
-            data.r1.tels_with_data = list(pyhessio.get_teldata_list())          #
+            data.r1.tels_with_data = list(pyhessio.get_teldata_list())
             data.dl0.run_id = pyhessio.get_run_number()
             data.dl0.event_id = event_id
-            data.dl0.tels_with_data = list(pyhessio.get_teldata_list())         #
+            data.dl0.tels_with_data = list(pyhessio.get_teldata_list())
 
             # handle telescope filtering by taking the intersection of
             # tels_with_data and allowed_tels
@@ -180,13 +180,13 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
             data.dl1.tel.clear()
             data.mc.tel.clear()  # clear the previous telescopes
 
-            _fill_instrument_info(data, pyhessio, camera_geometry, camera)              #
+            _fill_instrument_info(data, pyhessio, camera_geometry, camera)
 
             for tel_id in data.r0.tels_with_data:
 
                 # event.mc.tel[tel_id] = MCCameraContainer()
 
-                data.mc.mc_event_offset_fov = pyhessio.get_mc_event_offset_fov()        #
+                data.mc.mc_event_offset_fov = pyhessio.get_mc_event_offset_fov()
 
                 data.mc.tel[tel_id].dc_to_pe \
                     = pyhessio.get_calibration(tel_id)
@@ -196,8 +196,9 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
                 data.r0.tel[tel_id].adc_samples = \
                     pyhessio.get_adc_sample(tel_id)
 
-                data.r0.tel[tel_id].adc_samples = data.r0.tel[tel_id].adc_samples[0]    #
-                data.r0.tel[tel_id].local_camera_clock = 0                              #
+                data.r0.tel[tel_id].adc_samples = \
+                    data.r0.tel[tel_id].adc_samples[0]
+                data.r0.tel[tel_id].local_camera_clock = 0
 
                 if data.r0.tel[tel_id].adc_samples.size == 0:
                     # To handle ASTRI and dst files
@@ -237,7 +238,7 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
                 return
 
 
-def _fill_instrument_info(data, pyhessio, camera_geometry, camera):     #
+def _fill_instrument_info(data, pyhessio, camera_geometry, camera):
     """
     fill the data.inst structure with instrumental information.
 
@@ -279,15 +280,18 @@ def _fill_instrument_info(data, pyhessio, camera_geometry, camera):     #
                 data.inst.mirror_dish_area[tel_id] = mirror_area
                 data.inst.mirror_numtiles[tel_id] = num_tiles
 
-                geometry = camera_geometry                                                      #
-                patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)               #
-                cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)       #
-                cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)     #
+                geometry = camera_geometry
+                patch_matrix = \
+                    utils.geometry.compute_patch_matrix(camera=camera)
+                cluster_7_matrix = \
+                    utils.geometry.compute_cluster_matrix_7(camera=camera)
+                cluster_19_matrix = \
+                    utils.geometry.compute_cluster_matrix_19(camera=camera)
 
-                data.inst.geom[tel_id] = geometry                               #
-                data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix           #
-                data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix         #
-                data.inst.patch_matrix[tel_id] = patch_matrix                   #
+                data.inst.geom[tel_id] = geometry
+                data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = patch_matrix
 
             except HessioGeneralError:
                 pass
