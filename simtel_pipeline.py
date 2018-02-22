@@ -20,7 +20,7 @@ import os
 
 
 # import inspect
-# print(inspect.getfile(u))
+# print(inspect.getfile(dl2))
 
 if __name__ == '__main__':
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_option('-i', "--picture_threshold", dest='picture_threshold',
                       help='Picture threshold', default=15, type=int)
     parser.add_option('-b', "--boundary_threshold", dest='boundary_threshold',
-                      help='Boundary threshold', default=8, type=int)
+                      help='Boundary threshold', default=7, type=int)
     parser.add_option('-z', "--zenit", dest='zenit_angle',
                       help='Zenit distance, THETAP',
                       default=0, type=int)
@@ -178,21 +178,24 @@ if __name__ == '__main__':
     # Return only showers with total number of p.e. above min_photon
     data_stream = filter.filter_shower(data_stream, min_photon=min_photon)
 
+    # Suffix for output filenames
+    suffix = (
+              options.primary +
+              '_ze' + str(options.zenit_angle).zfill(2) +
+              '_az' + str(options.azimut).zfill(3) +
+              '_p' + str(options.picture_threshold).zfill(2) +
+              '_b' + str(options.boundary_threshold).zfill(2)
+             )
+
     # Save cleaned events - pixels and corresponding values
     filename_pix = 'pixels.txt'
-    filename_eventsimage = (
-        'events_image_' + str(picture_threshold) +
-        str(boundary_threshold) + '_' + options.primary + '_ze' +
-        str(options.zenit_angle).zfill(2) + '_az' +
-        str(options.azimut).zfill(3) + '.txt'
-        )
-    data_stream = events_image.save_events(data_stream,
-        directory + filename_pix, directory + filename_eventsimage)
+    filename_eventsimage = 'events_image_' + suffix + '.txt'
+    data_stream = events_image.save_events(
+        data_stream, directory + filename_pix,
+        directory + filename_eventsimage)
 
     # Save simulated shower paramters
-    filename_showerparam = 'shower_param_' + options.primary + \
-        '_ze' + str(options.zenit_angle).zfill(2) + '_az' + \
-        str(options.azimut).zfill(3) + '.txt'
+    filename_showerparam = 'pipedmc_param_' + suffix + '.txt'
     data_stream = mc_shower.save_shower(
         data_stream, directory + filename_showerparam)
 
@@ -202,18 +205,16 @@ if __name__ == '__main__':
         shower_distance=shower_distance)
 
     # Save arrival times of photons in pixels passed cleaning
-    filename_timing = 'timing_' + options.primary + '_ze' + \
-        str(options.zenit_angle).zfill(2) + '_az' + \
-        str(options.azimut).zfill(3) + '.txt'
+    filename_timing = 'timing_' + suffix + '.txt'
     data_stream = events_image.save_timing(
         data_stream, directory + filename_timing)
 
     # Save mean baseline in event pixels
-    filename_baseline = 'baseline_' + options.primary + '_ze' \
-        + str(options.zenit_angle).zfill(2) + '_az' + \
-        str(options.azimut).zfill(3) + '_bas' + \
-        str(options.baseline_beginning).zfill(2) + \
-        str(options.baseline_end).zfill(2) + '.txt'
+    filename_baseline = (
+                         'baseline_' + suffix +
+                         '_bas' + str(options.baseline_beginning).zfill(2) +
+                         str(options.baseline_end).zfill(2) + '.txt'
+                         )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
 
@@ -221,11 +222,7 @@ if __name__ == '__main__':
     #    print(event.dl0.event_id)
 
     # Save Hillas
-    hillas_filename = options.output + '_' + options.primary + '_ze' + \
-        str(options.zenit_angle).zfill(2) + '_az' + \
-        str(options.azimut).zfill(3) + '_p' + \
-        str(options.picture_threshold).zfill(2) + '_b' + \
-        str(options.boundary_threshold).zfill(2)
+    hillas_filename = options.output + '_' + suffix
     save_hillas_parameters(
         data_stream=data_stream,
         n_showers=n_showers,
