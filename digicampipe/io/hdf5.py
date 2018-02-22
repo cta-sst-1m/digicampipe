@@ -34,8 +34,6 @@ def digicamtoy_event_source(
     else:
         geometry = camera.geometry
 
-    hdf5 = h5py.File(url, 'r')
-
     if not isinstance(camera, utils.Camera):
         warnings.warn(
             "camera should be utils.Camera not cts_core.camera.Camera",
@@ -49,7 +47,9 @@ def digicamtoy_event_source(
         patch_matrix = camera.patch_matrix
         cluster_7_matrix = camera.cluster_7_matrix
         cluster_19_matrix = camera.cluster_19_matrix
+
     data = DataContainer()
+    hdf5 = h5py.File(url, 'r')
     n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
 
     if max_events is None:
