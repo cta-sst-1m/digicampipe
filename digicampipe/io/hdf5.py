@@ -9,7 +9,6 @@ __all__ = ['digicamtoy_event_source']
 def digicamtoy_event_source(
     url,
     camera=None,
-    camera_geometry=None,
     max_events=None
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
@@ -24,15 +23,6 @@ def digicamtoy_event_source(
     """
     if camera is None:
         camera = utils.DigiCam
-
-    if camera_geometry is not None:
-        warnings.warn(
-            "camera_geometry will soon be deprecated, use utils.Camera",
-            FutureWarning
-        )
-        geometry = camera_geometry
-    else:
-        geometry = camera.geometry
 
     if not isinstance(camera, utils.Camera):
         warnings.warn(
@@ -67,7 +57,7 @@ def digicamtoy_event_source(
 
                 data.inst.num_channels[tel_id] = 1
                 data.inst.num_pixels[tel_id] = n_pixels
-                data.inst.geom[tel_id] = geometry
+                data.inst.geom[tel_id] = camera.geometry
                 data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
                 data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
                 data.inst.patch_matrix[tel_id] = patch_matrix
