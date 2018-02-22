@@ -9,7 +9,8 @@ __all__ = ['digicamtoy_event_source']
 def digicamtoy_event_source(
     url,
     camera=None,
-    max_events=None
+    max_events=None,
+    camera_geometry=None
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters

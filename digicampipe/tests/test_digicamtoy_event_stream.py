@@ -1,4 +1,5 @@
 from digicampipe.io.hdf5 import digicamtoy_event_source
+from digicampipe.io.event_stream import event_stream
 import pkg_resources
 import os
 
@@ -18,7 +19,28 @@ for i in range(12):
 
     example_file_paths.append(path)
 
-def test_event_source_new_style():
+TEL_WITH_DATA = 1
+N_PIXELS = 1296
+
+
+def test_event_source():
 
     for _ in digicamtoy_event_source(example_file_paths[0]):
         pass
+
+def test_event_stream():
+
+    for _ in event_stream(example_file_paths, mc=True):
+
+        pass
+
+def test_n_pixels():
+
+    for event in digicamtoy_event_source(example_file_paths[0]):
+
+        assert event.inst.num_pixels[TEL_WITH_DATA] == N_PIXELS
+
+def test_tel_with_data():
+
+    for event in digicamtoy_event_source(example_file_paths[0]):
+        assert TEL_WITH_DATA in event.r0.tels_with_data
