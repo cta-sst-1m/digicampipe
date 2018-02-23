@@ -1,14 +1,17 @@
 """
-Container structures for data that should be read or written to disk. The main data container is DataContainer()
-and holds the containers of each data processing level. The data processing levels start from R0 up to DL2,
-where R0 holds the cameras raw data and DL2 the air shower high-level parameters.
-In general each major pipeline step is associated with a given data level. Please keep in mind that the data level definition and the associated fields might change rapidly
-as there is no final data level definition.
+Container structures for data that should be read or written to disk. The main
+data container is DataContainer() and holds the containers of each data
+processing level. The data processing levels start from R0 up to DL2, where R0
+holds the cameras raw data and DL2 the air shower high-level parameters.
+In general each major pipeline step is associated with a given data level.
+Please keep in mind that the data level definition and the associated fields
+might change rapidly as there is no final data level definition.
 """
 
 from astropy import units as u
 from astropy.time import Time
 from ctapipe.core import Container, Map
+from ctapipe.instrument import SubarrayDescription
 try:
     from ctapipe.core import Field
 except ImportError:
@@ -29,6 +32,10 @@ __all__ = ['InstrumentContainer',
            'DL0CameraContainer',
            'DL1Container',
            'DL1CameraContainer',
+           'MCEventContainer',
+           'MCHeaderContainer',
+           'MCCameraEventContainer',
+           'CentralTriggerContainer',
            'ReconstructedContainer',
            'ReconstructedShowerContainer',
            'ReconstructedEnergyContainer',
@@ -44,6 +51,11 @@ class InstrumentContainer(Container):
     functions.
     """
 
+    subarray = Field(SubarrayDescription("MonteCarloArray"),
+                 "SubarrayDescription from the instrument module")
+    optical_foclen = Field(Map(ndarray), "map of tel_id to focal length")
+    tel_pos = Field(Map(ndarray), "map of tel_id to telescope position")
+    pixel_pos = Field(Map(ndarray), "map of tel_id to pixel positions")
     telescope_ids = Field([], "list of IDs of telescopes used in the run")
     num_pixels = Field(Map(int), "map of tel_id to number of pixels in camera")
     num_channels = Field(Map(int), "map of tel_id to number of channels")
@@ -52,8 +64,17 @@ class InstrumentContainer(Container):
     cam = Field(Map(None), 'map of tel_id to Camera')
     optics = Field(Map(None), 'map of tel_id to CameraOptics')
     cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
-    cluster_matrix_19 = Field(Map(ndarray), 'map of tel_id of cluster 19 matrix')
+    cluster_matrix_19 = Field(
+                              Map(ndarray),
+                              'map of tel_id of cluster 19 matrix'
+                             )
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
+    mirror_dish_area = Field(Map(float),
+                         "map of tel_id to the area of the mirror dish",
+                         unit=u.m**2)
+    mirror_numtiles = Field(Map(int),
+                            "map of tel_id to the number of \
+                            tiles for the mirror")
 
 
 class DL1CameraContainer(Container):
@@ -62,13 +83,16 @@ class DL1CameraContainer(Container):
     calibration information.
     """
 
-    pe_samples = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels)")
+    pe_samples = Field(ndarray, "numpy array containing data volume reduced \
+                       p.e. samples (n_channels x n_pixels)")
     cleaning_mask = Field(ndarray, "mask for clean pixels")
-    time_bin = Field(ndarray, "numpy array containing the bin of maximum (n_pixels)")
-
-    pe_samples_trace = Field(ndarray, "numpy array containing data volume reduced p.e. samples (n_channels x n_pixels, n_samples)")
-
-    on_border = Field(bool, "Boolean telling if the shower touches the camera border or not")
+    time_bin = Field(ndarray, "numpy array containing the bin of maximum \
+                    (n_pixels)")
+    pe_samples_trace = Field(ndarray, "numpy array containing data volume \
+                             reduced p.e. samples (n_channels x n_pixels, \
+                             n_samples)")
+    on_border = Field(bool, "Boolean telling if the shower touches the camera \
+                      border or not")
     time_spread = Field(float, 'Time elongation of the shower')
 
 
@@ -85,6 +109,8 @@ class R0CameraContainer(Container):
     :type pixel_flags: ndarray (n_pixels, ) (bool)
     :param adc_samples: a ndarray (n_pixels, n_samples) containing the waveforms in each pixel
     :type adc_samples: ndarray (n_pixels, n_samples, ) (uint16)
+    :param adc_sums: numpy array containing integrated ADC data (n_channels, x n_pixels)
+    :type adc_sums: ndarray (n_channels, x n_pixels)
     :param baseline: baseline holder for baseline computation using clocked triggers
     :type baseline: ndarray (n_pixels, ) (float)
     :param digicam_baseline: baseline computed by DigiCam of pre-samples (using 1024 samples)
@@ -105,7 +131,12 @@ class R0CameraContainer(Container):
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")
+    adc_samples = Field(ndarray, "numpy array containing ADC samples \
+                        (n_channels x n_pixels, n_samples)"
+                       )
+    adc_sums = Field(ndarray, "numpy array containing integrated ADC data \
+                     (n_channels, x n_pixels)"
+                     )
     baseline = Field(ndarray, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
@@ -120,10 +151,13 @@ class R0CameraContainer(Container):
     array_event_type = Field(int, "array event type")
     trigger_input_traces = Field(ndarray, "trigger patch trace (n_patches)")
     trigger_input_offline = Field(ndarray, "trigger patch trace (n_patches)")
-    trigger_output_patch7 = Field(ndarray, "trigger 7 patch cluster trace (n_clusters)")
-    trigger_output_patch19 = Field(ndarray, "trigger 19 patch cluster trace (n_clusters)")
+    trigger_output_patch7 = Field(ndarray, "trigger 7 patch cluster trace \
+                                  (n_clusters)")
+    trigger_output_patch19 = Field(ndarray, "trigger 19 patch cluster trace \
+                                   (n_clusters)")
     trigger_input_7 = Field(ndarray, 'trigger input CLUSTER7')
     trigger_input_19 = Field(ndarray, 'trigger input CLUSTER19')
+    num_samples = Field(int, "number of time samples for telescope")
 
 
 class R0Container(Container):
@@ -142,7 +176,8 @@ class R1CameraContainer(Container):
     Storage of r1 calibrated data from a single telescope
     """
 
-    adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)")
+    adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, \
+                        n_samples)")
     nsb = Field(ndarray, "nsb rate in GHz")
     pde = Field(ndarray, "Photo Detection Efficiency at given NSB")
     gain_drop = Field(ndarray, "gain drop")
@@ -153,6 +188,8 @@ class R1Container(Container):
     Storage of a r1 calibrated Data Event
     """
 
+    run_id = Field(-1, "run id number")
+    event_id = Field(-1, "event id number")
     tels_with_data = Field([], "list of telescopes with data")
     tel = Field(Map(R1CameraContainer), "map of tel_id to R1CameraContainer")
 
@@ -168,8 +205,80 @@ class DL0Container(Container):
     Storage of a data volume reduced Event
     """
 
+    run_id = Field(-1, "run id number")
+    event_id = Field(-1, "event id number")
     tels_with_data = Field([], "list of telescopes with data")
     tel = Field(Map(DL0CameraContainer), "map of tel_id to DL0CameraContainer")
+
+
+class MCCameraEventContainer(Container):
+    """
+    Storage of mc data for a single telescope that change per event
+    """
+    photo_electron_image = Field(
+        Map(), "reference image in pure photoelectrons, with no noise"
+    )
+    reference_pulse_shape = Field(
+        None, "reference pulse shape for each channel"
+    )
+    time_slice = Field(0, "width of time slice", unit=u.ns)
+    dc_to_pe = Field(None, "DC/PE calibration arrays from MC file")
+    pedestal = Field(None, "pedestal calibration arrays from MC file")
+    azimuth_raw = Field(
+        0, "Raw azimuth angle [radians from N->E] for the telescope"
+    )
+    altitude_raw = Field(0, "Raw altitude angle [radians] for the telescope")
+    azimuth_cor = Field(
+        0, "the tracking Azimuth corrected for pointing errors for \
+        the telescope"
+    )
+    altitude_cor = Field(
+        0, "the tracking Altitude corrected for pointing \
+        errors for the telescope"
+    )
+
+
+class MCEventContainer(Container):
+    """
+    Monte-Carlo
+    """
+    energy = Field(0.0, "Monte-Carlo Energy", unit=u.TeV)
+    alt = Field(0.0, "Monte-carlo altitude", unit=u.deg)
+    az = Field(0.0, "Monte-Carlo azimuth", unit=u.deg)
+    core_x = Field(0.0, "MC core position", unit=u.m)
+    core_y = Field(0.0, "MC core position", unit=u.m)
+    h_first_int = Field(0.0, "Height of first interaction")
+    tel = Field(
+        Map(MCCameraEventContainer), "map of tel_id to MCCameraEventContainer"
+    )
+
+    mc_event_offset_fov = Field(
+                                Map(ndarray),
+                                "offset of pointing direction in camera \
+                                f.o.v. divided by focal length, i.e. \
+                                converted to radians: [0] = Camera x \
+                                (downwards in normal pointing, i.e. \
+                                increasing Alt) [1] = Camera y -> Az.")
+
+
+class MCHeaderContainer(Container):
+    """
+    Monte-Carlo information that doesn't change per event
+    """
+    run_array_direction = Field([], (
+        "the tracking/pointing direction in "
+        "[radians]. Depending on 'tracking_mode' "
+        "this either contains: "
+        "[0]=Azimuth, [1]=Altitude in mode 0, "
+        "OR "
+        "[0]=R.A., [1]=Declination in mode 1."
+    ))
+
+
+class CentralTriggerContainer(Container):
+
+    gps_time = Field(Time, "central average time stamp")
+    tels_with_trigger = Field([], "list of telescopes with data")
 
 
 class ReconstructedShowerContainer(Container):
@@ -180,13 +289,14 @@ class ReconstructedShowerContainer(Container):
     alt = Field(0.0, "reconstructed altitude", unit=u.deg)
     alt_uncert = Field(0.0, "reconstructed altitude uncertainty", unit=u.deg)
     az = Field(0.0, "reconstructed azimuth", unit=u.deg)
-    az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty', unit=u.deg)
+    az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty',
+                           unit=u.deg)
     core_x = Field(0.0, 'reconstructed x coordinate of the core position',
                   unit=u.m)
     core_y = Field(0.0, 'reconstructed y coordinate of the core position',
                   unit=u.m)
-    core_uncertainty = Field(0.0, 'uncertainty of the reconstructed core position',
-                       unit=u.m)
+    core_uncertainty = Field(0.0, 'uncertainty of the reconstructed core \
+                             position', unit=u.m)
     h_max = Field(0.0, 'reconstructed height of the shower maximum')
     h_max_uncertainty = Field(0.0, 'uncertainty of h_max')
     is_valid = (False, ('direction validity flag. True if the shower direction'
@@ -202,7 +312,10 @@ class ReconstructedEnergyContainer(Container):
     Standard output of algorithms estimating energy
     """
     energy = Field(-1.0, 'reconstructed energy', unit=u.TeV)
-    energy_uncertainty = Field(-1.0, 'reconstructed energy uncertainty', unit=u.TeV)
+    energy_uncertainty = Field(
+                               -1.0, 'reconstructed energy uncertainty',
+                               unit=u.TeV
+                               )
     is_valid = Field(False, ('energy reconstruction validity flag. True if '
                             'the energy was properly reconstructed by the '
                             'algorithm'))
@@ -237,9 +350,10 @@ class ReconstructedContainer(Container):
 
 class DataContainer(Container):
     """ Top-level container for all event information.
-    Each field is representing a specific data processing level from (R0 to DL2)
-    Please keep in mind that the data level definition and the associated fields might change rapidly
-    as there is not a final data format. The data levels R0, R1, DL1, contains sub-containers for each telescope.
+    Each field is representing a specific data processing level from (R0 to
+    DL2) Please keep in mind that the data level definition and the associated
+    fields might change rapidly as there is not a final data format. The data
+    levels R0, R1, DL1, contains sub-containers for each telescope.
     After DL2 the data is not processed at the telescope level.
     """
     r0 = Field(R0Container(), "Raw Data")
@@ -247,8 +361,12 @@ class DataContainer(Container):
     dl0 = Field(DL0Container(), "DL0 Data Volume Reduced Data")
     dl1 = Field(DL1Container(), "DL1 Calibrated image")
     dl2 = Field(ReconstructedContainer(), "Reconstructed Shower Information")
+    mc = Field(MCEventContainer(), "Monte-Carlo data")
+    mcheader = Field(MCHeaderContainer(), "Monte-Carlo run header data")
     inst = Field(InstrumentContainer(), "Instrumental information")
     slow_data = Field(None, "Slow Data Information")
+    trig = Field(CentralTriggerContainer(), "central trigger information")
+    count = Field(0, "number of events processed")
 
 def load_from_pickle_gz(file):
     file = gzip_open(file, "rb")

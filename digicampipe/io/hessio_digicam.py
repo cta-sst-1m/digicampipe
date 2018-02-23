@@ -13,7 +13,7 @@ from astropy.time import Time
 import digicampipe.utils as utils
 import numpy as np
 
-from digicampipe.io.containers_mc import DataContainer
+from digicampipe.io.containers import DataContainer
 from ctapipe.core import Provenance
 from ctapipe.instrument import TelescopeDescription, SubarrayDescription
 
@@ -33,6 +33,7 @@ except ImportError as err:
 __all__ = [
     'hessio_event_source',
 ]
+
 
 def hessio_get_list_event_ids(url, max_events=None):
     """
@@ -72,8 +73,8 @@ def hessio_get_list_event_ids(url, max_events=None):
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry,camera, max_events=None, 
-                        allowed_tels=None, requested_event=None, 
+def hessio_event_source(url, camera_geometry, camera, max_events=None,
+                        allowed_tels=None, requested_event=None,
                         use_event_id=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
