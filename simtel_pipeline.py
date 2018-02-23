@@ -50,8 +50,6 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    digicam_config_file = 'camera_config_digicampipe.cfg'
-
     # Input/Output files
     directory = options.directory
     all_file_list = os.listdir(directory)
@@ -138,21 +136,21 @@ if __name__ == '__main__':
     #
     # Methods:
     #
-    # 'data'
+    # simtel_baseline.baseline_data()
     # Baseline is computed as a mean of 'n_bins0' first time samples,
     # 'n_bins1' last time samples.
     # A key assumption in this method is that the shower in simulated
     # data is somewhere in the middle of 50 samples.
     # Each pixel in each event has its own baseline
     #
-    # 'simtel'
+    # simtel_baseline.baseline_simtel()
     # Baseline is taken as simulated value event.mc.pedestal/50 that can
     # be set up with the use of variable 'fadc_pedestal'
     # in CTA-ULTRA6-SST-DC.cfg.
 
-    data_stream = simtel_baseline.fill_baseline_r0(
+    data_stream = simtel_baseline.baseline_data(
         data_stream, n_bins0=options.baseline_beginning,
-        n_bins1=options.baseline_end, method='data')
+        n_bins1=options.baseline_end)
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
