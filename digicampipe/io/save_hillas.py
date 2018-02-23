@@ -64,7 +64,8 @@ def save_hillas_parameters_in_text(data_stream, output_filename):
     print("Opening output file" + output_filename)
     ofile = open(output_filename, 'w')
     ofile.write(
-        "# size cen_x cen_y length width r phi psi miss skewness kurtosis event_number timestamp border time spread\n"
+        "# size cen_x cen_y length width r phi psi miss skewness kurtosis "
+        "event_number timestamp border time spread\n"
     )
     for event in data_stream:
 
