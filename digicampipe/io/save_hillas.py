@@ -3,20 +3,20 @@ import numpy as np
 
 def save_hillas_parameters(data_stream, n_showers, output_filename):
 
-    size = []  #np.zeros(n_showers)
-    cen_x = []  #np.zeros(n_showers)
-    cen_y = []  #np.zeros(n_showers)
+    size = []  # np.zeros(n_showers)
+    cen_x = []  # np.zeros(n_showers)
+    cen_y = []  # np.zeros(n_showers)
     length = []  # np.zeros(n_showers)
-    width = []  #np.zeros(n_showers)
-    r = []  #np.zeros(n_showers)
-    phi = []  #np.zeros(n_showers)
-    psi = []  #np.zeros(n_showers)
-    miss = []  #np.zeros(n_showers)
-    skewness = []  #np.zeros(n_showers)
-    kurtosis = []  #np.zeros(n_showers)
-    event_number = []  #np.zeros(n_showers)
-    time_stamp = []  #np.zeros(n_showers)
-    time_spread = []  #np.zeros(n_showers)
+    width = []  # np.zeros(n_showers)
+    r = []  # np.zeros(n_showers)
+    phi = []  # np.zeros(n_showers)
+    psi = []  # np.zeros(n_showers)
+    miss = []  # np.zeros(n_showers)
+    skewness = []  # np.zeros(n_showers)
+    kurtosis = []  # np.zeros(n_showers)
+    event_number = []  # np.zeros(n_showers)
+    time_stamp = []  # np.zeros(n_showers)
+    time_spread = []  # np.zeros(n_showers)
     border = []
 
     for event, i in zip(data_stream, range(n_showers)):
