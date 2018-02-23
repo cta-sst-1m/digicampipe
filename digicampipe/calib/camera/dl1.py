@@ -108,7 +108,7 @@ def calibrate_to_dl1(
             dl1_camera.on_border = np.any(num_neighbors < 6)
 
             if additional_mask is not None:
-                dl1_camera.cleaning_mask = dl1_camera.cleaning_mask * additional_mask
+                dl1_camera.cleaning_mask *= additional_mask
 
             weight = dl1_camera.pe_samples
             dl1_camera.time_spread = np.average(
