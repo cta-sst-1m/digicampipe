@@ -10,20 +10,12 @@ from digicampipe.io.event_stream import event_stream
 from digicamviewer.viewer import EventViewer
 
 
-def main(paths):
-    data_stream = event_stream(paths)
+def entry():
+    args = docopt(__doc__)
 
     display = EventViewer(
-        data_stream,
+        event_stream(args['<files>']),
         n_samples=50,
         scale='lin'
     )
     display.draw()
-
-    for data in data_stream:
-        pass
-
-
-def entry():
-    args = docopt(__doc__)
-    main(paths=args['<files>'])
