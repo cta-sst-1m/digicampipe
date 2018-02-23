@@ -1,7 +1,11 @@
+from glob import glob
+from os.path import basename, splitext
 from setuptools import setup
 
 with open('digicampipe/VERSION') as f:
     __version__ = f.read().strip()
+
+console_scripts_filenames = glob('digicampipe/scripts/*.py')
 
 
 setup(
@@ -42,12 +46,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            ('digicam_baseline = '
-                'digicampipe.scripts.baseline:entry'),
-            ('digicam_dark_evaluation = '
-                'digicampipe.scripts.dark_evaluation:entry'),
-            ('digicam_pipeline = '
-                'digicampipe.scripts.pipeline_crab:entry'),
+            'dg_{filename} = digicampipe.scripts.{filename}:entry'.format(
+                filename=splitext(basename(filename)))
+            for filename in console_scripts_filenames
         ]
     },
 )
