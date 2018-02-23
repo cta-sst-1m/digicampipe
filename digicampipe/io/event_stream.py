@@ -4,14 +4,23 @@ from collections import namedtuple
 import digicampipe.io.hessio_digicam as hsm     #
 
 
-def event_stream(
-    filelist,
-    camera=None,
-    camera_geometry=None,
-    expert_mode=None,
-    max_events=None,
-    source=None
-):
+def event_stream(filelist, source=None, **kwargs):
+    '''Iterable of events in the form of `DataContainer`.
+
+    Parameters
+    ----------
+    filelist : list-like of paths, or a single path(string).
+    source: function-like or None
+        the function to be used for reading the events.
+        If not specified it is guessed.
+        possible choices are:
+            * digicampipe.io.zfits.zfits_event_source
+            * digicampipe.io.hdf5.digicamtoy_event_source
+            * digicampipe.io.hsm.hessio_event_source
+    kwargs: parameters for event_source
+        Some event_sources need special parameters to work, c.f. their doc.
+    '''
+
     # If the caller gives us a path and not a list of paths,
     # we convert it to a list.
     # This is not clean but convenient.
@@ -21,12 +30,7 @@ def event_stream(
     for file in filelist:
         if source is None:
             source = guess_source_from_path(file)
-        data_stream = source(
-            url=file,
-            camera=camera,
-            camera_geometry=camera_geometry,
-            max_events=max_events,
-        )
+        data_stream = source(url=file, **kwargs)
         for event in data_stream:
             yield event
 
