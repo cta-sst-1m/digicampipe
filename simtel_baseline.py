@@ -3,7 +3,7 @@ import numpy as np
 
 def baseline_data(event_stream, n_bins0=5, n_bins1=10):
 
-    for event in enumerate(event_stream):
+    for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
 
@@ -30,7 +30,7 @@ def baseline_data(event_stream, n_bins0=5, n_bins1=10):
 
 def baseline_simtel(event_stream):
 
-    for event in enumerate(event_stream):
+    for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
 

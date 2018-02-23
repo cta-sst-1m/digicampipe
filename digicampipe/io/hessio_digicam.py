@@ -34,8 +34,7 @@ __all__ = [
     'hessio_event_source',
 ]
 
-def hessio_get_list_event_ids(url, camera_geometry,camera, max_events=None, allowed_tels=None,
-                        requested_event=None, use_event_id=False):
+def hessio_get_list_event_ids(url, max_events=None):
     """
     Faster method to get a list of all the event ids in the hessio file.
     This list can also be used to find out the number of events that exist
@@ -73,7 +72,9 @@ def hessio_get_list_event_ids(url, camera_geometry,camera, max_events=None, allo
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry, camera, max_events=None):
+def hessio_event_source(url, camera_geometry,camera, max_events=None, 
+                        allowed_tels=None, requested_event=None, 
+                        use_event_id=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
 
@@ -153,7 +154,7 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
             data.mc.az = Angle(pyhessio_file.get_mc_shower_azimuth(), u.rad)
             data.mc.core_x = pyhessio_file.get_mc_event_xcore() * u.m
             data.mc.core_y = pyhessio_file.get_mc_event_ycore() * u.m
-            first_int = pyhessio_file_file.get_mc_shower_h_first_int() * u.m
+            first_int = pyhessio_file.get_mc_shower_h_first_int() * u.m
             data.mc.h_first_int = first_int
 
             # mc run header data
@@ -180,7 +181,7 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
                     pyhessio_file.get_mc_event_offset_fov()
 
                 data.mc.tel[tel_id].dc_to_pe \
-                    = pyhessio_file_file.get_calibration(tel_id)
+                    = pyhessio_file.get_calibration(tel_id)
                 data.mc.tel[tel_id].pedestal \
                     = pyhessio_file.get_pedestal(tel_id)
 
@@ -264,7 +265,7 @@ def _fill_instrument_info(data, pyhessio_file, camera_geometry, camera):
                 data.inst.pixel_pos[tel_id] = pix_pos
                 data.inst.tel_pos[tel_id] = tel_pos
 
-                nchans = pyhessio.get_num_channel(tel_id)
+                nchans = pyhessio_file.get_num_channel(tel_id)
                 npix = pyhessio_file.get_num_pixels(tel_id)
                 data.inst.num_channels[tel_id] = nchans
                 data.inst.num_pixels[tel_id] = npix
