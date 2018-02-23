@@ -30,8 +30,6 @@ __all__ = ['InstrumentContainer',
            'DataContainer',
            'HillasParametersContainer']
 
-# todo: change some of these Maps to be just 3D NDarrays?
-
 
 class InstrumentContainer(Container):
     """Storage of header info that does not change with event. This is a
@@ -207,12 +205,9 @@ class MCCameraEventContainer(Container):
     photo_electron_image = Field(
         Map(), "reference image in pure photoelectrons, with no noise"
     )
-    # todo: move to instrument (doesn't change per event)
     reference_pulse_shape = Field(
         None, "reference pulse shape for each channel"
     )
-    # todo: move to instrument or a static MC container (don't change per
-    # event)
     time_slice = Field(0, "width of time slice", unit=u.ns)
     dc_to_pe = Field(None, "DC/PE calibration arrays from MC file")
     pedestal = Field(None, "pedestal calibration arrays from MC file")
@@ -327,9 +322,6 @@ class ParticleClassificationContainer(Container):
     """
     Standard output of gamma/hadron classification algorithms
     """
-    # TODO: Do people agree on this? This is very MAGIC-like.
-    # TODO: Perhaps an integer classification to support different classes?
-    # TODO: include an error on the prediction?
     prediction = Field(0.0, (
         'prediction of the classifier, defined between '
         '[0,1], where values close to 0 are more '
@@ -341,9 +333,6 @@ class ParticleClassificationContainer(Container):
         'predition was successful within the algorithm '
         'validity range')
     )
-
-    # TODO: KPK: is this different than the list in the reco
-    # container? Why repeat?
     tel_ids = Field([], (
         'array containing the telescope ids used '
         'in the reconstruction of the shower'

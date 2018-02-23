@@ -34,11 +34,6 @@ __all__ = [
     'hessio_event_source',
 ]
 
-# import inspect
-# import pyhessio
-# print(inspect.getfile(pyhessio))
-
-
 def hessio_get_list_event_ids(url, max_events=None):
     """
     Faster method to get a list of all the event ids in the hessio file.
@@ -182,8 +177,6 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None):
             _fill_instrument_info(data, pyhessio, camera_geometry, camera)
 
             for tel_id in data.r0.tels_with_data:
-
-                # event.mc.tel[tel_id] = MCCameraContainer()
 
                 data.mc.mc_event_offset_fov = \
                     pyhessio.get_mc_event_offset_fov()
