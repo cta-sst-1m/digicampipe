@@ -96,8 +96,8 @@ def calibrate_to_dl1(
             while recursion:
                 recursion = False
                 for i in pixel_id[dl1_camera.cleaning_mask]:
-                    for j in pixel_id[geom.neighbor_matrix[i]
-                                      & ~dl1_camera.cleaning_mask]:
+                    for j in pixel_id[geom.neighbor_matrix[i] &
+                                      (~dl1_camera.cleaning_mask)]:
                         if image[j] > boundary_threshold:
                             dl1_camera.cleaning_mask[j] = True
                             recursion = True
