@@ -124,6 +124,7 @@ class R0CameraContainer(Container):
     trigger_output_patch19 = Field(ndarray, "trigger 19 patch cluster trace (n_clusters)")
     trigger_input_7 = Field(ndarray, 'trigger input CLUSTER7')
     trigger_input_19 = Field(ndarray, 'trigger input CLUSTER19')
+    additional_mask = Field(None, 'additional_mask')
 
 
 class R0Container(Container):
