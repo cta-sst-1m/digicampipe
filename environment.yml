@@ -90,4 +90,5 @@ dependencies:
   - pytest-runner==3.0
   - recommonmark==0.4.0
   - travis-sphinx
+  - sphinx-automodapi
 
