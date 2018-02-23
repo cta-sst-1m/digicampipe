@@ -27,6 +27,7 @@ def main(infile):
     plt.plot(baselines[-1])
     plt.show()
 
-if __name__ == '__main__':
+
+def entry():
     args = docopt(__doc__)
-    main(args)
+    main(infile=args['<fitsfile>'])
