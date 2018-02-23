@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import digicampipe.io.hessio_digicam as hsm     #
 import astropy.units as u
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
@@ -11,16 +10,13 @@ from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
 
 from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
 from digicampipe.utils import utils, calib
-import simtel_baseline      #
-import events_image         #
-import mc_shower            #
+import simtel_baseline
+import events_image
+import mc_shower
 
 from optparse import OptionParser
 import os
 
-
-# import inspect
-# print(inspect.getfile(dl2))
 
 if __name__ == '__main__':
 
@@ -134,12 +130,6 @@ if __name__ == '__main__':
         camera_geometry=digicam_geometry,
         camera=digicam)
 
-    # create data_stream
-    # data_stream = hsm.hessio_event_source(
-    #    data,
-    #    camera_geometry=digicam_geometry,
-    #    camera=digicam)
-
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)
@@ -217,9 +207,6 @@ if __name__ == '__main__':
                          )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
-
-    # for event in data_stream:
-    #    print(event.dl0.event_id)
 
     # Save Hillas
     hillas_filename = options.output + '_' + suffix
