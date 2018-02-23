@@ -19,7 +19,8 @@ setup(
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
-        'digicampipe.instrument'
+        'digicampipe.instrument',
+        'digicampipe.scripts',
     ],
     url='https://github.com/calispac/digicampipe',
     license='GNU GPL 3.0',
@@ -47,8 +48,9 @@ setup(
     entry_points={
         'console_scripts': [
             'dg_{filename} = digicampipe.scripts.{filename}:entry'.format(
-                filename=splitext(basename(filename)))
+                filename=splitext(basename(filename))[0])
             for filename in console_scripts_filenames
+            if filename != '__init__'
         ]
     },
 )
