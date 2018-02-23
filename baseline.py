@@ -25,7 +25,7 @@ from docopt import docopt
 
 def main(baseline_file_path, files, unwanted_pixels=[]):
 
-    data_stream = event_stream(file_list=files)
+    data_stream = event_stream(files)
     data_stream = filter.set_pixels_to_zero(
         data_stream,
         unwanted_pixels=unwanted_pixels)

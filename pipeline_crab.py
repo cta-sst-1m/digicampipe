@@ -85,7 +85,7 @@ def main(args):
     shower_distance = 200 * u.mm
 
     # Define the event stream
-    data_stream = event_stream(file_list=args['<files>'], camera=digicam)
+    data_stream = event_stream(args['<files>'], camera=digicam)
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)

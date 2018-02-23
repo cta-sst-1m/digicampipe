@@ -44,7 +44,7 @@ if __name__ == '__main__':
     nsb_care = [1.5, 1.0, 0.9]
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list)
+    data_stream = event_stream(file_list)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 
     # unwanted_patch = None  # [306, 318, 330, 342, 200]

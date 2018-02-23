@@ -37,7 +37,7 @@ if __name__ == '__main__':
                              peak_position)
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, camera_geometry=digicam_geometry, expert_mode=True)
+    data_stream = event_stream(file_list, camera_geometry=digicam_geometry, expert_mode=True)
     # Fill the flags (to be replaced by Digicam)
     data_stream = filter.fill_flag(data_stream , unwanted_patch=unwanted_patch)
     # Fill the baseline (to be replaced by Digicam)

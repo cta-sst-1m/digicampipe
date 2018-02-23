@@ -40,7 +40,7 @@ if __name__ == '__main__':
     filename = directory + options.filename
     file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
 
-    data_stream = event_stream.event_stream(file_list=file_list)
+    data_stream = event_stream.event_stream(file_list)
     with plt.style.context('ggplot'):
         display = EventViewer(
             data_stream,

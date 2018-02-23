@@ -33,7 +33,7 @@ def main(
 
     digicam = Camera()
     data_stream = event_stream(
-        file_list=files,
+        files,
         expert_mode=True,
         camera=digicam,
         camera_geometry=digicam.geometry

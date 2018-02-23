@@ -54,7 +54,7 @@ def main(
     thresholds = np.arange(0, 400, 10)
 
     data_stream = event_stream(
-        file_list=files,
+        files,
         camera=DigiCam
     )
     data_stream = filter.set_patches_to_zero(

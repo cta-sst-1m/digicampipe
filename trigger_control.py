@@ -53,7 +53,7 @@ if __name__ == '__main__':
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 
     # Define the event stream
-    data_stream = event_stream(file_list=file_list, camera=digicam, expert_mode=True, camera_geometry=digicam_geometry)
+    data_stream = event_stream(file_list, camera=digicam, expert_mode=True, camera_geometry=digicam_geometry)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
     data_stream = filter.set_patches_to_zero(data_stream, unwanted_patch=unwanted_patch)
     data_stream = r0.fill_trigger_input_7(data_stream)
