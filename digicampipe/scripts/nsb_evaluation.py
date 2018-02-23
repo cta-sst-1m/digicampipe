@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 
 Example:
@@ -185,7 +184,7 @@ def plot_1(data):
     plt.legend()
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     main(
         files=args['<files>'],
