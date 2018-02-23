@@ -25,7 +25,8 @@ if __name__ == '__main__':
         "-d", "--directory", dest="directory", help="directory to data files",
         default='/home/alispach/data/BASELINE_TEST/')
     parser.add_option(
-        "-f", "--file",  dest="filename", help="filebasename e.g. CRAB_%03d.fits.fz",
+        "-f", "--file",  dest="filename",
+        help="filebasename e.g. CRAB_%03d.fits.fz",
         default='BASELINE_TEST_0_000.%03d.fits.fz')
     parser.add_option(
         '-s', "--file_start", dest='file_start',
@@ -38,7 +39,8 @@ if __name__ == '__main__':
 
     directory = options.directory
     filename = directory + options.filename
-    file_list = [filename % number for number in range(options.file_start, options.file_end + 1)]
+    file_list = [filename % number for number in range(options.file_start,
+                                                       options.file_end + 1)]
 
     data_stream = event_stream.event_stream(file_list)
     with plt.style.context('ggplot'):

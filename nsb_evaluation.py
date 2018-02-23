@@ -11,7 +11,8 @@ Options:
   -h --help     Show this screen.
   --display     show plots
   -o <path>, --outfile_path=<path>   path to the output file
-  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
+  -b <path>, --baseline_path=<path>  \
+path to baseline file usually called "dark.npz"
 '''
 from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream

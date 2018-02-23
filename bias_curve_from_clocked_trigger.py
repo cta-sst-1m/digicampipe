@@ -53,7 +53,7 @@ if __name__ == '__main__':
     #     unwanted_patch=unwanted_patch
     # )
     # data_stream = save_bias_curve(data_stream, thresholds=thresholds,
-    #                              output_filename=directory + trigger_filename,
+    #                              output_filename=directory+trigger_filename,
     #                              camera=digicam,
     #                              blinding=blinding,
     #                              by_cluster=by_cluster)

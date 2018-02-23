@@ -12,7 +12,8 @@ Options:
   -h --help     Show this screen.
   -i <file>, --input=<file>  input file [default: {example_file}]
   -o <dir>, --outdir=<dir>  output directory [default: .]
-  --unwanted_patches=<integers>   list of integers with commas [default: 306, 318, 330, 342, 200]
+  --unwanted_patches=<integers>  list of integers with commas \
+[default: 306, 318, 330, 342, 200]
   --unwanted_clusters=<integers>   list of integers with commas [default: 200]
   --unblind   do not use blind
 '''
