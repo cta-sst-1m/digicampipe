@@ -1,7 +1,6 @@
-from digicampipe.io import zfits, hdf5
+from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
-import digicampipe.io.hessio_digicam as hsm     #
 
 
 def event_stream(filelist, source=None, **kwargs):
@@ -16,7 +15,7 @@ def event_stream(filelist, source=None, **kwargs):
         possible choices are:
             * digicampipe.io.zfits.zfits_event_source
             * digicampipe.io.hdf5.digicamtoy_event_source
-            * digicampipe.io.hsm.hessio_event_source
+            * digicampipe.io.hessio_digicam.hessio_event_source
     kwargs: parameters for event_source
         Some event_sources need special parameters to work, c.f. their doc.
     '''
@@ -41,7 +40,7 @@ def guess_source_from_path(path):
     elif path.endswith('.h5') or path.endswith('.hdf5'):
         return hdf5.digicamtoy_event_source
     else:
-        return hsm.hessio_event_source
+        return hessio_digicam.hessio_event_source
 
 
 def add_slow_data(
