@@ -91,4 +91,3 @@ dependencies:
   - recommonmark==0.4.0
   - travis-sphinx
   - sphinx-automodapi
-
