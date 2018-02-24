@@ -33,19 +33,21 @@ def entry():
             alpha_histo = np.histogram(hillas_cor['alpha'], bins=30)
 
             alpha_0_count = alpha_histo[0][0]
-            print(alpha_0_count)
+            print('alpha_0_count:', alpha_0_count)
 
             if alpha_0_count >= alpha_max:
-                print(alpha_max)
+                print('alpha_max:', alpha_max)
                 alpha_max = alpha_0_count
                 true_source = [source_x, source_y]
 
-    print(true_source, alpha_max)
+    print('true_source:', true_source)
+    print('alpha_max:', alpha_max)
     plot.plot_hillas(hillas_dict=hillas, bins='auto')
 
-    hillas['time_spread'] = hillas['time_spread'][np.isfinite(hillas['time_spread'])]
-
     plt.figure()
-    plt.hist(hillas['time_spread'], bins='auto')
+    plt.hist(
+        hillas['time_spread'][np.isfinite(hillas['time_spread'])],
+        bins='auto'
+    )
     plt.xlabel('time spread [ns]')
     plt.show()
