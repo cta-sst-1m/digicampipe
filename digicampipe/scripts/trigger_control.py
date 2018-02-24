@@ -5,6 +5,8 @@ Usage:
 Options:
   -h, --help  Show this help
   -o DIR, --out DIR   output directory
+  --unblind     Do not use blinding
+  --by_patch    Dunno
 '''
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,86 +15,55 @@ from tqdm import tqdm
 
 from digicampipe.io import event_stream
 from digicampipe.io import save_adc
-from digicampipe.io.save_bias_curve import save_bias_curve
+from digicampipe.io import save_bias_curve
 from digicampipe.calib.camera import r0, filter
 import utils.histogram as histogram
+from functools import partial
 
 
 def entry():
     args = docopt(__doc__)
-    directory = args['--out']
-
-    pixel_histogram_filename = 'pixel_histogram.npz'
-    patch_histogram_filename = 'patch_histogram.npz'
-    cluster_7_histogram_filename = 'cluster_7_histogram.npz'
-    cluster_19_histogram_filename = 'cluster_19_histogram.npz'
-    trigger_filename = 'trigger.npz'
 
     thresholds = np.arange(0, 400, 10)
     unwanted_patch = None
     unwanted_cluster = None
-    blinding = True
+    blinding = not args['--unblind']
+    by_cluster = not args['--by_patch']
 
-    pixel_histogram = histogram.Histogram(
-        bin_center_min=0,
-        bin_center_max=4095,
-        bin_width=1,
-        data_shape=(1296, )
-    )
-    patch_histogram = histogram.Histogram(
-        bin_center_min=0,
-        bin_center_max=255,
-        bin_width=1,
-        data_shape=(432, )
-    )
-    cluster_7_histogram = histogram.Histogram(
-        bin_center_min=0,
-        bin_center_max=1785,
-        bin_width=1,
-        data_shape=(432, )
-    )
-    cluster_19_histogram = histogram.Histogram(
-        bin_center_min=0,
-        bin_center_max=4845,
-        bin_width=1,
-        data_shape=(432, )
-    )
+    r0_histograms = {
+        'adc_samples': {'nbins': 1296},
+        'trigger_input_traces': {'nbins': 432},
+        'trigger_input_7': {'nbins': 432},
+        'trigger_input_19': {'nbins': 432},
+    }
+    r0_histogram_fillers = {
+        fieldname: save_adc.R0HistogramFiller(fieldname, **args)
+        for fieldname, args in r0_histograms.items()
+    }
+
+    process = [
+        partial(filter.filter_event_types, flags=[8]),
+        partial(filter.set_patches_to_zero, unwanted_patch=unwanted_patch),
+        r0.fill_trigger_input_7,
+        r0.fill_trigger_input_19,
+        save_bias_curve.RateThresholdAnalysis(
+            thresholds,
+            blinding=blinding,
+            by_cluster=by_cluster,
+            unwanted_cluster=unwanted_cluster
+        ),
+        *r0_histogram_fillers.values()
+    ]
 
     data_stream = event_stream(args['<files>'])
-    data_stream = filter.filter_event_types(data_stream, flags=[8])
-    data_stream = filter.set_patches_to_zero(
-        data_stream, unwanted_patch=unwanted_patch)
-    data_stream = r0.fill_trigger_input_7(data_stream)
-    data_stream = r0.fill_trigger_input_19(data_stream)
-    data_stream = save_bias_curve(
-        data_stream,
-        thresholds=thresholds,
-        blinding=blinding,
-        output_filename=directory + trigger_filename,
-        unwanted_cluster=unwanted_cluster)
-
-    data_stream = save_adc.fill_hist_adc_samples(
-        data_stream,
-        histogram=pixel_histogram,
-        output_filename=directory + pixel_histogram_filename)
-    data_stream = save_adc.fill_hist_trigger_input(
-        data_stream,
-        histogram=patch_histogram,
-        output_filename=directory + patch_histogram_filename)
-    data_stream = save_adc.fill_hist_cluster_7(
-        data_stream,
-        histogram=cluster_7_histogram,
-        output_filename=directory + cluster_7_histogram_filename)
-    data_stream = save_adc.fill_hist_cluster_19(
-        data_stream,
-        histogram=cluster_19_histogram,
-        output_filename=directory + cluster_19_histogram_filename)
-
+    for processor in process:
+        data_stream = processor(data_stream)
     for _ in tqdm(data_stream):
         pass
 
 
 def plot():
+    # THis dows not work yet
     pixel_histogram = histogram.Histogram(filename=directory + pixel_histogram_filename)
     patch_histogram = histogram.Histogram(filename=directory + patch_histogram_filename)
     cluster_7_histogram = histogram.Histogram(filename=directory + cluster_7_histogram_filename)
