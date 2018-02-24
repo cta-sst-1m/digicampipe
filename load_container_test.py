@@ -1,6 +1,5 @@
 from digicampipe.calib.camera import r1, dl0, dl2, dl1
 from digicampipe.io import containers
-from digicamviewer.viewer import EventViewer
 from digicampipe.utils import utils
 import matplotlib.pyplot as plt
 
