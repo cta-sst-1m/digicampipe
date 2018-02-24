@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 
 
 def fill_hist_adc_samples(data_stream, output_filename, histogram):
