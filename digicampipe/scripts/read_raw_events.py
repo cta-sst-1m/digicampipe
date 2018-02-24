@@ -15,7 +15,6 @@ def entry():
 
     display = EventViewer(
         event_stream(args['<files>']),
-        n_samples=50,
         scale='lin'
     )
     display.draw()
