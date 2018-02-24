@@ -12,9 +12,5 @@ from digicampipe.visualization import EventViewer
 
 def entry():
     args = docopt(__doc__)
-
-    display = EventViewer(
-        event_stream(args['<files>']),
-        scale='lin'
-    )
+    display = EventViewer(event_stream(args['<files>']))
     display.draw()
