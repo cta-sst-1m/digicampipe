@@ -42,4 +42,3 @@ if __name__ == '__main__':
     plt.xlabel('$\Delta t$ [ns]')
     plt.legend(loc='best')
     plt.show()
-
