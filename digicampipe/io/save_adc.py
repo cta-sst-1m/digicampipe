@@ -1,4 +1,5 @@
 import numpy as np
+from ctapipe.utils import fitshistogram
 
 
 def fill_hist_adc_samples(data_stream, output_filename, histogram):
@@ -128,3 +129,23 @@ class AdcSampleStatistics:
         self.mean = mean / i
         self.std = std / i
         self.N = i
+
+
+class R0HistogramFiller:
+    def __init__(self, fieldname, **histo_args):
+        '''
+        fieldname is any field from R0CameraContainer
+        histo_args can be:
+            nbins=None,
+            ranges=None,
+            name="Histogram",
+            axis_names=None
+        '''
+        self.fieldname = fieldname
+        self.histo = fitshistogram.Histogram(**histo_args)
+
+    def __call__(self, data_stream):
+        for event in data_stream:
+            for r0 in event.r0.tel.values():
+                self.histo.fill(getattr(r0, self.fieldname))
+            yield event
