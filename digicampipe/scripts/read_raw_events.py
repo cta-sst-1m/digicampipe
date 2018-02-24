@@ -7,7 +7,7 @@ Options:
 '''
 from docopt import docopt
 from digicampipe.io.event_stream import event_stream
-from digicamviewer.viewer import EventViewer
+from digicampipe.visualization import EventViewer
 
 
 def entry():
