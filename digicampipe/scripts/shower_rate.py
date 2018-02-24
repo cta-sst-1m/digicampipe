@@ -1,15 +1,21 @@
+'''
+Usage:
+  dg_shower_rate [options] <hillas_file>
+
+Options:
+  -h, --help   Show this help
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import expon
+from docopt import docopt
 
 
-if __name__ == '__main__':
-
-    directory = '/home/alispach/data/CRAB_01/'
-    hillas_filename = directory + 'Merge_hillas_wo_corr.txt'
+def entry():
+    args = docopt(__doc__)
 
     hillas = np.genfromtxt(
-        hillas_filename,
+        args['<hillas_file>'],
         names=[
             'size', 'cen_x', 'cen_y', 'length', 'width', 'r', 'phi',
             'psi', 'miss', 'alpha', 'skewness', 'kurtosis', 'event_number',
