@@ -52,7 +52,7 @@ class InstrumentContainer(Container):
     """
 
     subarray = Field(SubarrayDescription("MonteCarloArray"),
-                 "SubarrayDescription from the instrument module")
+                     "SubarrayDescription from the instrument module")
     optical_foclen = Field(Map(ndarray), "map of tel_id to focal length")
     tel_pos = Field(Map(ndarray), "map of tel_id to telescope position")
     pixel_pos = Field(Map(ndarray), "map of tel_id to pixel positions")
@@ -70,8 +70,8 @@ class InstrumentContainer(Container):
                              )
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
     mirror_dish_area = Field(Map(float),
-                         "map of tel_id to the area of the mirror dish",
-                         unit=u.m**2)
+                             "map of tel_id to the area of the mirror dish",
+                             unit=u.m**2)
     mirror_numtiles = Field(Map(int),
                             "map of tel_id to the number of \
                             tiles for the mirror")
@@ -107,36 +107,44 @@ class R0CameraContainer(Container):
 
     :param pixel_flags: a ndarray to flag the pixels
     :type pixel_flags: ndarray (n_pixels, ) (bool)
-    :param adc_samples: a ndarray (n_pixels, n_samples) containing the waveforms in each pixel
+    :param adc_samples: a ndarray (n_pixels, n_samples) containing
+                        the waveforms in each pixel
     :type adc_samples: ndarray (n_pixels, n_samples, ) (uint16)
-    :param adc_sums: numpy array containing integrated ADC data (n_channels, x n_pixels)
+    :param adc_sums: numpy array containing integrated ADC data
+                     (n_channels, x n_pixels)
     :type adc_sums: ndarray (n_channels, x n_pixels)
-    :param baseline: baseline holder for baseline computation using clocked triggers
+    :param baseline: baseline holder for baseline computation using
+                     clocked triggers
     :type baseline: ndarray (n_pixels, ) (float)
-    :param digicam_baseline: baseline computed by DigiCam of pre-samples (using 1024 samples)
+    :param digicam_baseline: baseline computed by DigiCam of pre-samples
+                             (using 1024 samples)
     :type digicam_baseline: ndarray (n_pixels, ) (uint16)
-    :param standard_deviation: baseline standard deviation holder for baseline computed using clocked triggers
+    :param standard_deviation: baseline standard deviation holder for baseline
+                               computed using clocked triggers
     :type standard deviation: ndarray (n_pixels, ) (float)
-    :param dark_baseline: baseline holder for baseline computed in dark condition (lid closed)
+    :param dark_baseline: baseline holder for baseline computed in dark
+                          condition (lid closed)
     :type dark_baseline: ndarray (n_pixels, ) (float)
-    :param hv_off_baseline: baseline computed with sensors just bellow breakdown voltage (or without bias voltage applied)
+    :param hv_off_baseline: baseline computed with sensors just bellow
+                            breakdown voltage (or without bias voltage applied)
     :type hv_off_baseline: ndarray (n_pixels, ) (float)
     :param camera_event_id: unique event identification provided by DigiCam
     :type camera_event_id: (int)
-    :param camera_event_number: event number within the first trigger of operation
+    :param camera_event_number: event number within the first trigger of
+                                operation
     :type camera_event_number: (int)
     :param local_camera_clock: time stamp from internal DigiCam clock (ns)
     :type local_camera_clock: (float)
-    :param gps_time: time stamp provided by a precise external clock (synchronized between hardware components)
+    :param gps_time: time stamp provided by a precise external clock
+                     (synchronized between hardware components)
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray, "numpy array containing ADC samples \
-                        (n_channels x n_pixels, n_samples)"
-                       )
-    adc_sums = Field(ndarray, "numpy array containing integrated ADC data \
-                     (n_channels, x n_pixels)"
-                     )
+    adc_samples = Field(ndarray, 
+                        "numpy array containing ADC samples"
+                        "(n_channels x n_pixels, n_samples)")
+    adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
+                     "(n_channels, x n_pixels)")
     baseline = Field(ndarray, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
@@ -299,10 +307,12 @@ class ReconstructedShowerContainer(Container):
                              position', unit=u.m)
     h_max = Field(0.0, 'reconstructed height of the shower maximum')
     h_max_uncertainty = Field(0.0, 'uncertainty of h_max')
-    is_valid = (False, ('direction validity flag. True if the shower direction'
-                        'was properly reconstructed by the algorithm'))
-    tel_ids = Field([], ('list of the telescope ids used in the'
-                        ' reconstruction of the shower'))
+    is_valid = (False,
+                ('direction validity flag. True if the shower direction'
+                 'was properly reconstructed by the algorithm'))
+    tel_ids = Field([], 
+                    ('list of the telescope ids used in the'
+                     ' reconstruction of the shower'))
     average_size = Field(0.0, 'average size of used')
     goodness_of_fit = Field(0.0, 'measure of algorithm success (if fit)')
 
@@ -316,9 +326,10 @@ class ReconstructedEnergyContainer(Container):
                                -1.0, 'reconstructed energy uncertainty',
                                unit=u.TeV
                                )
-    is_valid = Field(False, ('energy reconstruction validity flag. True if '
-                            'the energy was properly reconstructed by the '
-                            'algorithm'))
+    is_valid = Field(False,
+                     ('energy reconstruction validity flag. True if '
+                      'the energy was properly reconstructed by the '
+                      'algorithm'))
     goodness_of_fit = Field(0.0, 'goodness of the algorithm fit')
 
 
@@ -326,13 +337,15 @@ class ParticleClassificationContainer(Container):
     """
     Standard output of gamma/hadron classification algorithms
     """
-    prediction = Field(0.0, ('prediction of the classifier, defined between '
-                            '[0,1], where values close to 0 are more '
-                            'gamma-like, and values close to 1 more '
-                            'hadron-like'))
-    is_valid = Field(False, ('classificator validity flag. True if the '
-                            'predition was successful within the algorithm '
-                            'validity range'))
+    prediction = Field(0.0,
+                       ('prediction of the classifier, defined between '
+                        '[0,1], where values close to 0 are more '
+                        'gamma-like, and values close to 1 more '
+                        'hadron-like'))
+    is_valid = Field(False,
+                     ('classificator validity flag. True if the '
+                      'predition was successful within the algorithm '
+                      'validity range'))
 
     goodness_of_fit = Field(0.0, 'goodness of the algorithm fit')
 
@@ -341,11 +354,11 @@ class ReconstructedContainer(Container):
     """ collect reconstructed shower info from multiple algorithms """
 
     shower = Field(Map(ReconstructedShowerContainer),
-                  "Map of algorithm name to shower info")
+                   "Map of algorithm name to shower info")
     energy = Field(Map(ReconstructedEnergyContainer),
-                  "Map of algorithm name to energy info")
+                   "Map of algorithm name to energy info")
     classification = Field(Map(ParticleClassificationContainer),
-                          "Map of algorithm name to classification info")
+                           "Map of algorithm name to classification info")
 
 
 class DataContainer(Container):
@@ -367,6 +380,7 @@ class DataContainer(Container):
     slow_data = Field(None, "Slow Data Information")
     trig = Field(CentralTriggerContainer(), "central trigger information")
     count = Field(0, "number of events processed")
+
 
 def load_from_pickle_gz(file):
     file = gzip_open(file, "rb")
@@ -395,4 +409,3 @@ def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
             break
 
     writer.close()
-
