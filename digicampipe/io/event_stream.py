@@ -1,36 +1,46 @@
-from digicampipe.io import zfits, hdf5
+from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
 
 
-def event_stream(
-    filelist,
-    camera=None,
-    camera_geometry=None,
-    expert_mode=None,
-    max_events=None,
-    mc=False
-):
+def event_stream(filelist, source=None, **kwargs):
+    '''Iterable of events in the form of `DataContainer`.
+
+    Parameters
+    ----------
+    filelist : list-like of paths, or a single path(string).
+    source: function-like or None
+        the function to be used for reading the events.
+        If not specified it is guessed.
+        possible choices are:
+            * digicampipe.io.zfits.zfits_event_source
+            * digicampipe.io.hdf5.digicamtoy_event_source
+            * digicampipe.io.hessio_digicam.hessio_event_source
+    kwargs: parameters for event_source
+        Some event_sources need special parameters to work, c.f. their doc.
+    '''
+
     # If the caller gives us a path and not a list of paths,
     # we convert it to a list.
     # This is not clean but convenient.
     if isinstance(filelist, (str, bytes)):
         filelist = [filelist]
 
-    if mc:
-        source = hdf5.digicamtoy_event_source
-    else:
-        source = zfits.zfits_event_source
-
     for file in filelist:
-        data_stream = source(
-            url=file,
-            camera=camera,
-            camera_geometry=camera_geometry,
-            max_events=max_events,
-        )
+        if source is None:
+            source = guess_source_from_path(file)
+        data_stream = source(url=file, **kwargs)
         for event in data_stream:
             yield event
+
+
+def guess_source_from_path(path):
+    if path.endswith('.fits.fz'):
+        return zfits.zfits_event_source
+    elif path.endswith('.h5') or path.endswith('.hdf5'):
+        return hdf5.digicamtoy_event_source
+    else:
+        return hessio_digicam.hessio_event_source
 
 
 def add_slow_data(
