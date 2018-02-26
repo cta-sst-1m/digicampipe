@@ -88,14 +88,14 @@ if __name__ == '__main__':
     # Masking border flagged events
     mask0_p = [x == 0 for x in hillas_prot['border']]
     mask1_p = [x > min_size for x in hillas_prot['size']]
-    mask0_g = [x == 0 for x in  hillas_gamma['border']]
+    mask0_g = [x == 0 for x in hillas_gamma['border']]
     mask1_g = [x > min_size for x in hillas_gamma['size']]
 
     mask_p = np.logical_and(mask0_p, mask1_p)
     mask_g = np.logical_and(mask0_g, mask1_g)
 
-    mc_gamma = mc_gamma[mask_g,:]
-    mc_prot = mc_prot[mask_p,:]
+    mc_gamma = mc_gamma[mask_g, :]
+    mc_prot = mc_prot[mask_p, :]
 
     x_core_prot = mc_prot[:, 9]
     y_core_prot = mc_prot[:, 10]
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     theta_gamma = mc_gamma[:, 4]
     phi_gamma = mc_gamma[:, 5]
 
-    width_gamma =  hillas_gamma['width'][mask_g]
+    width_gamma = hillas_gamma['width'][mask_g]
     length_gamma = hillas_gamma['length'][mask_g]
     size_gamma = np.log10(hillas_gamma['size'][mask_g])     # log size
     width_prot = hillas_prot['width'][mask_p]
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     print('')
     print('                 Width               Length')
     print('Optimal cuts:',
-          gamma_cut[qualityw== max(qualityw)][0],
-          gamma_cut[qualityl== max(qualityl)][0])
+          gamma_cut[qualityw == max(qualityw)][0],
+          gamma_cut[qualityl == max(qualityl)][0])
 
     # PLOTS
 

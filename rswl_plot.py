@@ -75,7 +75,7 @@ def lookup2d(data):
 
 def rswl_norm(rswg, rslg, rswp, rslp):
 
-    fig, ax = plt.subplots(1, 2,figsize=(14, 6))
+    fig, ax = plt.subplots(1, 2, figsize=(14, 6))
     weights_g = np.ones_like(rswg)/float(len(rswg))
     weights_p = np.ones_like(rswp)/float(len(rswp))
     ax[0].hist(rswg, bins=100, weights=weights_g, label='gamma',
@@ -95,9 +95,9 @@ def rswl_norm(rswg, rslg, rswp, rslp):
                color='black', range=[-10, 20])
     ax[1].hist(rslp, bins=100, weights=weights_p, label='proton',
                histtype='step', stacked=True, fill=False, linewidth=4,
-               color='red', range=[-10, 20])    
+               color='red', range=[-10, 20])
     ax[1].set_xlabel('RSL [sigma]')
-    ax[1].set_ylabel('Normalised')    
+    ax[1].set_ylabel('Normalised')
     ax[1].legend()
 
 
@@ -130,4 +130,3 @@ def quality(gamma_cut, qualityw, qualityl):
     ax[1].plot(gamma_cut, qualityl, 'k-')
     ax[1].set_xlabel('RSL gamma cut [sigma]')
     ax[1].set_ylabel('Quality factor')
-
