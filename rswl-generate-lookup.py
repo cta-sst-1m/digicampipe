@@ -68,50 +68,14 @@ def fill_lookup(impact_bins_edges, size_bins_edges,
     return binned_wls
 
 
-def rswl(impact_parameter, size, width, length, binned_wls):
-
-    width_lookup = binned_wls[:, [0, 1, 2]]
-    length_lookup = binned_wls[:, [0, 1, 3]]
-    sigmaw_lookup = binned_wls[:, [0, 1, 4]]
-    sigmal_lookup = binned_wls[:, [0, 1, 5]]
-
-    wi = interpolate.griddata(
-         (width_lookup[:, 0], width_lookup[:, 1]),
-         width_lookup[:, 2], (impact_parameter, size), method='linear'
-         )
-
-    sw = interpolate.griddata(
-        (sigmaw_lookup[:, 0], sigmaw_lookup[:, 1]),
-        sigmaw_lookup[:, 2], (impact_parameter, size), method='linear'
-        )
-
-    le = interpolate.griddata(
-         (length_lookup[:, 0], length_lookup[:, 1]),
-         length_lookup[:, 2], (impact_parameter, size),
-         method='linear'
-         )
-
-    sl = interpolate.griddata(
-        (sigmal_lookup[:, 0], sigmal_lookup[:, 1]),
-        sigmal_lookup[:, 2], (impact_parameter, size),
-        method='linear')
-
-    rsw = (width - wi) / sw
-    rsw = rsw[~np.isnan(rsw)*~np.isinf(rsw)]
-    rsl = (length - le) / sl
-    rsl = rsl[~np.isnan(rsl)*~np.isinf(rsl)]
-
-    return rsw, rsl
-
-
 if __name__ == '__main__':
 
     parser = OptionParser()
-    parser.add_option("-p", "--hillas", dest="hillas_gamma",
-                      help="path to a file with hillas parameters of gamma",
+    parser.add_option('-g', '--hillas', dest='hillas_gamma',
+                      help='path to a file with hillas parameters of gamma',
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
-    parser.add_option("-m", "--mc", dest="mc_gamma",
-                      help="path to a file with shower MC parameters of gamma",
+    parser.add_option('-m', '--mc', dest='mc_gamma',
+                      help='path to a file with shower MC parameters of gamma',
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     (options, args) = parser.parse_args()
 
