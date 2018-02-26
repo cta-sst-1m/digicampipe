@@ -29,7 +29,6 @@ if __name__ == '__main__':
     parser.add_option("-m", "--mcg", dest="mc_gamma", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     parser.add_option("-a", "--hillasp", dest="hillas_proton", help="path to a file with hillas parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_proton_ze00_az000_p13_b07.npz')
     parser.add_option("-c", "--mcp", dest="mc_proton", help="path to a file with shower MC parameters", default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
-     
     (options, args) = parser.parse_args()
     
     hillas_gamma = np.load(options.hillas_gamma) 
@@ -60,11 +59,13 @@ if __name__ == '__main__':
     # Masking border flagged events
     mask0_p = [x == 0 for x in border_prot]
     mask1_p = [x > min_size for x in size_prot]
+    mask2_p = [~np.isnan(x)*~np.isinf(x) for x in length_prot/width_prot]
     mask0_g = [x == 0 for x in border_gamma]
     mask1_g = [x > min_size for x in size_gamma]
-    
-    mask_p = ~np.isnan(cen_x_prot)*mask0_p*mask1_p
-    mask_g = ~np.isnan(cen_x_gamma)*mask0_g*mask1_g
+    mask2_g = [~np.isnan(x)*~np.isinf(x) for x in length_gamma/width_gamma]
+
+    mask_p = ~np.isnan(cen_x_prot)*mask0_p*mask1_p*mask2_p
+    mask_g = ~np.isnan(cen_x_gamma)*mask0_g*mask1_g*mask2_g
 
     cen_x_gamma = cen_x_gamma[mask_g]
     cen_y_gamma = cen_y_gamma[mask_g]
@@ -93,6 +94,10 @@ if __name__ == '__main__':
     y_offset_gamma = mc_gamma[:, 8]  #
     x_offset_prot= mc_prot[:, 7]  #
     y_offset_prot = mc_prot[:, 8]  #
+    energy_gamma = mc_gamma[:, 3]
+    energy_prot = mc_prot[:, 3]
+    core_dist_gamma = mc_gamma[:, 2]
+    core_dist_prot = mc_prot[:, 2]
     
     mm_to_deg = 0.24 / 24.3  # conversion of coordinates in mm to deg. Digicam: 0.24 deg/px, one SiPM is 24.3 mm wide
     cog_x_gamma = cog_x_gamma * mm_to_deg   # conversion to degrees
@@ -103,7 +108,7 @@ if __name__ == '__main__':
     disp_gamma = np.sqrt((x_offset_gamma - cog_x_gamma)**2.0 + (y_offset_gamma - cog_y_gamma)**2.0)     # apparently WRONG, it should be rewritten, according to propper handling with angular distances
     disp_prot = np.sqrt((x_offset_prot - cog_x_prot)**2.0 + (y_offset_prot - cog_y_prot)**2.0)          #
 
-
+    """
     # OPTIMIZATION OF SEPARATION
     # separation by line: lw = A * disp + B
     B = np.linspace(-10, 3, 200)
@@ -126,11 +131,37 @@ if __name__ == '__main__':
     eff_g_optim = parameter_space[parameter_space[:,4] == max(parameter_space[:,4]), 2]
     eff_p_optim = parameter_space[parameter_space[:,4] == max(parameter_space[:,4]), 3]
     print(A_optim, B_optim, quality_optim, eff_g_optim, eff_p_optim)
-    
+    """
+    A_optim = 3.69849246
+    B_optim = -1.24623116
+
+
+    # Saving positive/false detection flags according to Etienne's wish
+    gamma_flag = []
+    for i in range(len(disp_gamma)):
+        if length_gamma[i]/width_gamma[i] > A_optim * disp_gamma[i] + B_optim:
+            gamma_flag.append(1)
+        else: gamma_flag.append(0)
+    gamma_flag = np.array(gamma_flag)
+
+    proton_flag = []
+    for i in range(len(disp_prot)):
+        if length_prot[i]/width_prot[i] < A_optim * disp_prot[i] + B_optim:
+            proton_flag.append(1)
+        else: proton_flag.append(0)
+    proton_flag = np.array(proton_flag)
+
+    print(len(gamma_flag[gamma_flag == 1]) / len(gamma_flag), len(proton_flag[proton_flag == 1]) / len(proton_flag))
+
+    output_gamma = np.column_stack((energy_gamma, core_dist_gamma, gamma_flag))
+    output_prot = np.column_stack((energy_prot, core_dist_prot, proton_flag))
+    np.savetxt('../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/lw-disp-gamma.txt', output_gamma, fmt='%.5f %.5f %d')
+    np.savetxt('../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/lw-disp-proton.txt', output_prot, fmt='%.5f %.5f %d')
+
     # PLOTS
     disp_smooth = np.linspace(0,4,10)
 
-    plot_separation2d(parameter_space)
+    #plot_separation2d(parameter_space)
 
     fig = plt.figure(figsize=(10,8))
     plt.hist2d(disp_gamma, length_gamma/width_gamma, bins=150, range=np.array([(0, 4), (0, 13)])) #, norm=mpl.colors.LogNorm()) #  range=np.array([(0, 4), (0, 0.3)]))

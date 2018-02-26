@@ -101,9 +101,9 @@ def rswl(impact_parameter, size, width, length, binned_wls):
     sl = interpolate.griddata((sigmal_lookup[:,0], sigmal_lookup[:,1]), sigmal_lookup[:,2], (impact_parameter, size), method='linear')
 
     rsw = (width - w) / sw
-    rsw = rsw[~np.isnan(rsw)*~np.isinf(rsw)]
+    #rsw = rsw[~np.isnan(rsw)*~np.isinf(rsw)]
     rsl = (length - l) / sl
-    rsl = rsl[~np.isnan(rsl)*~np.isinf(rsl)]
+    #rsl = rsl[~np.isnan(rsl)*~np.isinf(rsl)]
 
     return rsw, rsl
 
@@ -139,16 +139,17 @@ if __name__ == '__main__':
     plt.hist(np.log(size_prot))
     """
 
-    min_size = 10
+    min_size = 50
 
     # Masking border flagged events
     mask0_p = [x == 0 for x in border_prot]
     mask1_p = [x > min_size for x in size_prot]
+    mask2_p = [~np.isnan(x)*~np.isinf(x) for x in length_prot/width_prot]
     mask0_g = [x == 0 for x in border_gamma]
     mask1_g = [x > min_size for x in size_gamma]
-
-    mask_p = np.logical_and(mask0_p, mask1_p)
-    mask_g = np.logical_and(mask0_g, mask1_g)
+    mask2_g = [~np.isnan(x)*~np.isinf(x) for x in length_gamma/width_gamma]
+    mask_p = np.logical_and(mask0_p, mask1_p)*mask2_p
+    mask_g = np.logical_and(mask0_g, mask1_g)*mask2_g
 
     mc_gamma = mc_gamma[mask_g,:]
     mc_prot = mc_prot[mask_p,:]
@@ -161,7 +162,12 @@ if __name__ == '__main__':
     y_core_gamma = mc_gamma[:, 10]
     theta_gamma = mc_gamma[:, 4]
     phi_gamma = mc_gamma[:, 5]
-    
+    energy_gamma = mc_gamma[:, 3]
+    energy_prot = mc_prot[:, 3]
+    core_dist_gamma = mc_gamma[:, 2]
+    core_dist_prot = mc_prot[:, 2]
+
+
     width_gamma = width_gamma[mask_g]
     length_gamma = length_gamma[mask_g]
     size_gamma = np.log(size_gamma[mask_g])     # log size
@@ -187,6 +193,21 @@ if __name__ == '__main__':
     rswg, rslg = rswl(impact_parameter_gamma, size_gamma, width_gamma, length_gamma, binned_wls_gamma)
     rswp, rslp = rswl(impact_parameter_prot, size_prot, width_prot, length_prot, binned_wls_gamma)
 
+    # removing infs, nans..
+    # for saving flags for etienne
+    energy_gamma = energy_gamma[~np.isnan(rswg)*~np.isinf(rswg)*~np.isnan(rslg)*~np.isinf(rslg)]
+    energy_prot = energy_prot[~np.isnan(rswp)*~np.isinf(rswp)*~np.isnan(rslp)*~np.isinf(rslp)]
+    core_dist_gamma = core_dist_gamma[~np.isnan(rswg)*~np.isinf(rswg)*~np.isnan(rslg)*~np.isinf(rslg)]
+    core_dist_prot = core_dist_prot[~np.isnan(rswp)*~np.isinf(rswp)*~np.isnan(rslp)*~np.isinf(rslp)]  
+    rswg_sel = rswg[~np.isnan(rswg)*~np.isinf(rswg)*~np.isnan(rslg)*~np.isinf(rslg)]
+    rslg_sel = rslg[~np.isnan(rswg)*~np.isinf(rswg)*~np.isnan(rslg)*~np.isinf(rslg)]
+    rswp_sel = rswp[~np.isnan(rswp)*~np.isinf(rswp)*~np.isnan(rslp)*~np.isinf(rslp)]
+    rslp_sel = rslp[~np.isnan(rswp)*~np.isinf(rswp)*~np.isnan(rslp)*~np.isinf(rslp)] 
+    rswg = rswg_sel
+    rslg = rslg_sel
+    rswp = rswp_sel
+    rslp = rslp_sel
+
     # Save the lookup tables
     suffix = 'ze00-az000-offset00.txt'
     path = '../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/'
@@ -195,7 +216,7 @@ if __name__ == '__main__':
 
     # Efficiency vs gamma/hadron cut
     # - ratio between N of events passing the cut and all events
-    gamma_cut = np.linspace(-10, 20, 100)
+    gamma_cut = np.linspace(-10, 20, 200)
     efficiency_gammaw = []
     efficiency_protonw = []
     efficiency_gammal = []
@@ -218,6 +239,34 @@ if __name__ == '__main__':
 
     print('RSW:', max(qualityw), efficiency_gammaw[qualityw == max(qualityw)], efficiency_protonw[qualityw == max(qualityw)])
     print('RSL:', max(qualityl), efficiency_gammal[qualityl == max(qualityl)], efficiency_protonl[qualityl == max(qualityl)])
+
+    optimal_rsw_cut = gamma_cut[qualityw == max(qualityw)]
+    optimal_rsl_cut = gamma_cut[qualityl == max(qualityl)]
+    print('Optimal RSW and RSL cuts: ', optimal_rsw_cut, optimal_rsl_cut)
+
+    # Saving positive/false detection flags according to Etienne's wish
+    gamma_flag = []
+    for i in range(len(rswg)):
+        if rswg[i] < optimal_rsw_cut:
+            gamma_flag.append(1)
+        else: gamma_flag.append(0)
+    gamma_flag = np.array(gamma_flag)
+
+    proton_flag = []
+    for i in range(len(rswp)):
+        if rswp[i] > optimal_rsw_cut:
+            proton_flag.append(1)
+        else: proton_flag.append(0)
+    proton_flag = np.array(proton_flag)
+
+    print(len(gamma_flag[gamma_flag == 1]) / len(gamma_flag), len(proton_flag[proton_flag == 1]) / len(proton_flag))
+
+    print(len(energy_gamma), len(core_dist_gamma), len(gamma_flag), len(rswg))
+
+    output_gamma = np.column_stack((energy_gamma, core_dist_gamma, gamma_flag))
+    output_prot = np.column_stack((energy_prot, core_dist_prot, proton_flag))
+    np.savetxt('../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-gamma.txt', output_gamma, fmt='%.5f %.5f %d')
+    np.savetxt('../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-proton.txt', output_prot, fmt='%.5f %.5f %d')
 
 
     # PLOTS
