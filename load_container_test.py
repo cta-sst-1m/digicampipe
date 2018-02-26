@@ -36,11 +36,5 @@ if __name__ == '__main__':
     data_stream = dl2.calibrate_to_dl2(data_stream)
 
     with plt.style.context('ggplot'):
-        display = EventViewer(
-            data_stream,
-            n_samples=50,
-            scale='lin'
-        )
-        #display.next()
+        display = EventViewer(data_stream)
         display.draw()
-        #plt.show()

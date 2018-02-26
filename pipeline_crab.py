@@ -116,13 +116,8 @@ def main(args):
     if args['--display']:
 
         with plt.style.context('ggplot'):
-            display = EventViewer(
-                data_stream,
-                n_samples=50,
-                scale='lin'
-                )
+            display = EventViewer(data_stream)
             display.draw()
-            pass
     else:
         save_hillas_parameters_in_text(
             data_stream=data_stream, output_filename=args['--outfile_path'])

@@ -42,14 +42,5 @@ if __name__ == '__main__':
 
     data_stream = event_stream.event_stream(file_list=file_list)
     with plt.style.context('ggplot'):
-        display = EventViewer(
-            data_stream,
-            n_samples=50,
-            scale='lin'
-        )
+        display = EventViewer(data_stream)
         display.draw()
-        plt.show()
-
-    for data in data_stream:
-
-        pass

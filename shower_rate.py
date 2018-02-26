@@ -55,7 +55,6 @@ if __name__ == '__main__':
     plt.show()
 
     """"
-    display = EventViewer(data_stream, scale='lin')
+    display = EventViewer(data_stream)
     display.draw()
-    plt.show()
     """

@@ -13,7 +13,6 @@ class EventViewer():
     def __init__(
         self,
         event_stream,
-        n_samples,
         camera=DigiCam,
         scale='lin',
         limits_colormap=None,
@@ -39,7 +38,6 @@ class EventViewer():
         self.event_clicked_on = EventClicked(pixel_start=self.pixel_id)
         self.camera = camera
         self.n_pixels = len(self.camera.Pixels)
-        self.n_samples = n_samples
         self.cluster_matrix = np.zeros(
             (len(self.camera.Clusters_7), len(self.camera.Clusters_7))
         )
@@ -86,11 +84,7 @@ class EventViewer():
             MaxNLocator(integer=True, nbins=10)
         )
 
-        self.trace_readout, = self.axis_readout.step(
-            np.arange(self.n_samples) * 4,
-            np.ones(self.n_samples),
-            where='mid'
-        )
+        self.trace_readout = None
         self.trace_time_plot, = self.axis_readout.plot(
             np.array([self.time_bin, self.time_bin]) * 4,
             np.ones(2),
@@ -173,6 +167,15 @@ class EventViewer():
         self.adc_samples = self.r0_container.adc_samples
         self.trigger_output = self.r0_container.trigger_output_patch7
         self.trigger_input = self.r0_container.trigger_input_traces
+
+        self.n_samples = self.adc_samples.shape[1]
+
+        if self.trace_readout is None:
+            self.trace_readout, = self.axis_readout.step(
+                np.arange(self.n_samples) * 4,
+                np.ones(self.n_samples),
+                where='mid'
+            )
 
         try:
 
