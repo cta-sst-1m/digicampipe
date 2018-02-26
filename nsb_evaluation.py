@@ -25,7 +25,7 @@ from docopt import docopt
 
 
 def main(
-    files,
+    urls,
     outfile_path,
     baseline_path,
     do_plots=False
@@ -34,7 +34,7 @@ def main(
 
     digicam = Camera()
     data_stream = event_stream(
-        files,
+        urls,
         expert_mode=True,
         camera=digicam,
         camera_geometry=digicam.geometry
@@ -189,7 +189,7 @@ def plot_1(data):
 if __name__ == '__main__':
     args = docopt(__doc__)
     main(
-        files=args['<files>'],
+        urls=args['<files>'],
         outfile_path=args['--outfile_path'],
         baseline_path=args['--baseline_path'],
         do_plots=args['--display']

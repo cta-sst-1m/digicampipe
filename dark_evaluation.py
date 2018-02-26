@@ -44,7 +44,7 @@ __doc__ = __doc__.format(
 
 def main(
     output_directory,
-    files,
+    urls,
     unwanted_patches,
     unwanted_clusters,
     blinding
@@ -55,7 +55,7 @@ def main(
     thresholds = np.arange(0, 400, 10)
 
     data_stream = event_stream(
-        files,
+        urls,
         camera=DigiCam
     )
     data_stream = filter.set_patches_to_zero(
@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     main(
         output_directory=args['--outdir'],
-        files=args['--input'],
+        urls=args['--input'],
         unwanted_patches=args['--unwanted_patches'],
         unwanted_clusters=args['--unwanted_clusters'],
         blinding=not args['--unblind'],

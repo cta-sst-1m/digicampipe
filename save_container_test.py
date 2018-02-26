@@ -10,7 +10,7 @@ if __name__ == '__main__':
     directory = '/mnt/calib_data/first_light/20170831/'
     filename = directory + 'CameraDigicam@sst1mserver_0_000.%d.fits.fz'
 #    file_list = [filename % number for number in range(110,120)]
-    file_list = [filename % 110]
+    urls = [filename % 110]
     camera_config_file = '/usr/src/cts/config/camera_config.cfg'
     digicam = Camera(_config_file=camera_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam,
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         peak_position)
 
     # Define the event stream
-    data_stream = event_stream(file_list,
+    data_stream = event_stream(urls,
                                camera_geometry=digicam_geometry,
                                expert_mode=True)
 

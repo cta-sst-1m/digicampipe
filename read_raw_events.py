@@ -39,10 +39,10 @@ if __name__ == '__main__':
 
     directory = options.directory
     filename = directory + options.filename
-    file_list = [filename % number for number in range(options.file_start,
+    urls = [filename % number for number in range(options.file_start,
                                                        options.file_end + 1)]
 
-    data_stream = event_stream.event_stream(file_list)
+    data_stream = event_stream.event_stream(urls)
     with plt.style.context('ggplot'):
         display = EventViewer(
             data_stream,
