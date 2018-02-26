@@ -41,4 +41,9 @@ setup(
             'tests/resources/stars_on_lid/*'
         ],
     },
+    entry_points={
+        'console_scripts': [
+            'digicamview=digicampipe.scripts.digicamview:entry',
+        ],
+    }
 )
