@@ -12,7 +12,7 @@ def line_point_distance(xp1, yp1, zp1, cx, cy, cz, x, y, z):
     a1 = (y-yp1)*cz - (z-zp1)*cy
     a2 = (z-zp1)*cx - (x-xp1)*cz
     a3 = (x-xp1)*cy - (y-yp1)*cx
-    a  = a1*a1 + a2*a2 + a3*a3
+    a = a1*a1 + a2*a2 + a3*a3
     b = cx*cx + cy*cy + cz*cz
 
     return np.sqrt(a/b)
