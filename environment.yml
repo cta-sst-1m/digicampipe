@@ -71,7 +71,6 @@ dependencies:
 - setuptools=36.5.0
 - Sphinx=1.6.2
 - sphinx_rtd_theme=0.2.4
-- sphinx-automodapi=0.5
 - sphinxcontrib-websupport=1.0.1
 - simplegeneric=0.8.1
 - sip=4.18.1
@@ -91,4 +90,4 @@ dependencies:
   - pytest-runner==3.0
   - recommonmark==0.4.0
   - travis-sphinx
-
+  - sphinx-automodapi
