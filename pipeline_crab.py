@@ -119,7 +119,6 @@ def main(args):
             display = EventViewer(
                 data_stream,
                 n_samples=50,
-                camera_config_file=digicam.config_file,
                 scale='lin'
                 )
             display.draw()

@@ -55,8 +55,7 @@ if __name__ == '__main__':
     plt.show()
 
     """"
-    camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
-    display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
+    display = EventViewer(data_stream, scale='lin')
     display.draw()
     plt.show()
     """

@@ -6,15 +6,15 @@ from matplotlib.widgets import Button, RadioButtons, CheckButtons
 import matplotlib as mpl
 
 from . import mpl as visualization
-from ..utils import geometry, Camera
+from ..utils import DigiCam
 
 
 class EventViewer():
     def __init__(
         self,
         event_stream,
-        camera_config_file,
         n_samples,
+        camera=DigiCam,
         scale='lin',
         limits_colormap=None,
         limits_readout=None,
@@ -37,8 +37,7 @@ class EventViewer():
         self.hillas = False
 
         self.event_clicked_on = EventClicked(pixel_start=self.pixel_id)
-        self.camera = Camera(_config_file=camera_config_file)
-        self.geometry = geometry.generate_geometry(camera=self.camera)[0]
+        self.camera = camera
         self.n_pixels = len(self.camera.Pixels)
         self.n_samples = n_samples
         self.cluster_matrix = np.zeros(
@@ -100,7 +99,7 @@ class EventViewer():
         )
 
         self.camera_visu = visualization.CameraDisplay(
-            self.geometry,
+            self.camera.geometry,
             ax=self.axis_camera,
             title='',
             norm=self.scale,

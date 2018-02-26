@@ -45,7 +45,6 @@ if __name__ == '__main__':
         display = EventViewer(
             data_stream,
             n_samples=50,
-            camera_config_file=digicam_config_file,
             scale='lin'
         )
         display.draw()

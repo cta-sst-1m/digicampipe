@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
-    camera_config_file = '/usr/src/cts/config/camera_config.cfg'
     # Integration configuration
     time_integration_options = {'mask': None,
                                 'mask_edges': None,
@@ -37,7 +36,11 @@ if __name__ == '__main__':
     data_stream = dl2.calibrate_to_dl2(data_stream)
 
     with plt.style.context('ggplot'):
-        display = EventViewer2(data_stream, n_samples=50, camera_config_file=camera_config_file, scale='lin')
+        display = EventViewer(
+            data_stream,
+            n_samples=50,
+            scale='lin'
+        )
         #display.next()
         display.draw()
         #plt.show()
