@@ -1,6 +1,6 @@
 '''
 Usage:
-  plot_some_stuff <trigger_npz_file>...
+  plt_rate_vs_threshold <trigger_npz_file>...
 '''
 from docopt import docopt
 import numpy as np
