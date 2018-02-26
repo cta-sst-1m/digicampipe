@@ -9,7 +9,6 @@ if __name__ == '__main__':
     directory = '/home/alispach/data/CRAB_01/'  #
     filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
     file_list = [filename % number for number in range(3, 23)]
-    camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
     trigger_filename = 'trigger_rate_no_blinding.npz'
 
     # Trigger configuration
