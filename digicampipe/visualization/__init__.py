@@ -26,9 +26,10 @@ class EventViewer():
         self.first_call = True
         self.event_stream = event_stream
         self.scale = scale
-        self.limits_colormap = limits_colormap if limits_colormap is not None else [
-            -np.inf, np.inf
-        ]
+        self.limits_colormap = (
+            limits_colormap
+            if limits_colormap is not None else [-np.inf, np.inf]
+        )
         self.limits_readout = limits_readout
         self.time_bin = time_bin_start
         self.pixel_id = pixel_id_start
@@ -107,24 +108,17 @@ class EventViewer():
             allow_pick=True
         )
 
-        #if limits_colormap is not None:
-        #    self.camera_visu.set_limits_minmax(limits_colormap[0], limits_colormap[1])
-
         self.camera_visu.image = np.zeros(self.n_pixels)
         self.camera_visu.cmap.set_bad(color='k')
         self.camera_visu.add_colorbar(
             orientation='horizontal', pad=0.03, fraction=0.05, shrink=.85
         )
 
-        #if self.scale == 'log':
-        #    self.camera_visu.colorbar.set_norm(LogNorm(vmin=1, vmax=None, clip=False))
         self.camera_visu.colorbar.set_label('[LSB]')
         self.camera_visu.axes.get_xaxis().set_visible(False)
         self.camera_visu.axes.get_yaxis().set_visible(False)
         self.camera_visu.on_pixel_clicked = self.draw_readout
         self.camera_visu.pixels.set_snap(False)  # snap cursor to pixel center
-
-        #        self.camera_visu.pixels.set_picker(False)
 
         # Buttons
 
@@ -188,10 +182,24 @@ class EventViewer():
             ).all() else self.r0_container.digicam_baseline
             zero_image = np.zeros((self.n_pixels, self.n_samples))
 
-            self.std = self.r0_container.standard_deviation if self.r0_container.standard_deviation is not None else np.nan * zero_image
-            self.flag = self.r0_container.camera_event_type if self.r0_container.camera_event_type is not None else np.nan
-            self.nsb = self.r1_container.nsb if self.r1_container.nsb is not None else np.nan * zero_image
-            self.gain_drop = self.r1_container.gain_drop if self.r1_container.gain_drop is not None else np.nan * zero_image
+            self.std = (
+                self.r0_container.standard_deviation
+                if self.r0_container.standard_deviation is not None
+                else np.nan * zero_image
+            )
+            self.flag = (
+                self.r0_container.camera_event_type
+                if self.r0_container.camera_event_type is not None else np.nan
+            )
+            self.nsb = (
+                self.r1_container.nsb
+                if self.r1_container.nsb is not None else np.nan * zero_image
+            )
+            self.gain_drop = (
+                self.r1_container.gain_drop
+                if self.r1_container.gain_drop is not None
+                else np.nan * zero_image
+            )
 
         except:
 
@@ -232,9 +240,11 @@ class EventViewer():
     def draw_readout(self, pixel):
 
         y = self.compute_trace()[pixel]
-        limits_y = self.limits_readout if self.limits_readout is not None else [
-            np.min(y), np.max(y) + 10
-        ]
+        limits_y = (
+            self.limits_readout
+            if self.limits_readout is not None
+            else [np.min(y), np.max(y) + 10]
+        )
         self.pixel_id = pixel
         self.event_clicked_on.ind[-1] = self.pixel_id
         self.trace_readout.set_ydata(y)
@@ -307,8 +317,10 @@ class EventViewer():
 
                 image = self.adc_samples
 
-            elif self.readout_view_type == 'trigger output' and self.trigger_output is not None:
-
+            elif(
+                self.readout_view_type == 'trigger output' and
+                self.trigger_output is not None
+            ):
                 image = np.array(
                     [
                         self.trigger_output[pixel.patch]
@@ -316,17 +328,21 @@ class EventViewer():
                     ]
                 )
 
-            elif self.readout_view_type == 'trigger input' and self.trigger_input is not None:
-
+            elif(
+                self.readout_view_type == 'trigger input' and
+                self.trigger_input is not None
+            ):
                 image = np.array(
                     [
                         self.trigger_input[pixel.patch]
                         for pixel in self.camera.Pixels
                     ]
-                )  #np.zeros((self.n_pixels, self.n_samples))
+                )
 
-            elif self.readout_view_type == 'cluster 7' and self.trigger_input is not None:
-
+            elif(
+                self.readout_view_type == 'cluster 7' and
+                self.trigger_input is not None
+            ):
                 trigger_input_patch = np.dot(
                     self.cluster_matrix, self.trigger_input
                 )
@@ -337,25 +353,28 @@ class EventViewer():
                     ]
                 )
 
-            elif self.readout_view_type == 'photon' and self.dl1_container.pe_samples_trace is not None:
-
+            elif(
+                self.readout_view_type == 'photon' and
+                self.dl1_container.pe_samples_trace is not None
+            ):
                 image = self.dl1_container.pe_samples_trace
 
-            elif self.readout_view_type == 'baseline substracted' and self.r1_container.adc_samples is not None:
-
+            elif(
+                self.readout_view_type == 'baseline substracted' and
+                self.r1_container.adc_samples is not None
+            ):
                 image = self.adc_samples - self.baseline[:, np.newaxis]
 
-            elif self.readout_view_type == 'reconstructed charge' and (
-                self.dl1_container.time_bin is not None
-                or self.dl1_container.pe_samples is not None
+            elif (
+                self.readout_view_type == 'reconstructed charge' and
+                self.dl1_container.time_bin is not None or
+                self.dl1_container.pe_samples is not None
             ):
-
                 image = np.zeros((self.n_pixels, self.n_samples))
                 time_bins = self.dl1_container.time_bin
                 image[time_bins] = self.dl1_container.pe_samples
 
             else:
-
                 image = np.zeros((self.n_pixels, self.n_samples))
 
         return image
