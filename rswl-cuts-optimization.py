@@ -117,7 +117,7 @@ if __name__ == '__main__':
     impact_parameter_prot = impact_parameter(x_core_prot, y_core_prot,
                                              0, 0, 4, theta_prot, phi_prot)    # not optimal, tel. coordinates should be loaded from somewhere..
     impact_parameter_gamma = impact_parameter(x_core_gamma, y_core_gamma,
-                                             0, 0, 4, theta_gamma, phi_gamma)
+                                              0, 0, 4, theta_gamma, phi_gamma)
 
     # Reduced scaled width and length
     rswg, rslg = rswl(impact_parameter_gamma,
