@@ -2,6 +2,8 @@ import numpy as np
 from optparse import OptionParser
 from scipy import interpolate
 from shower_geometry import impact_parameter
+from rswl_plot import plot_lookup2d
+import matplotlib.pyplot as plt
 
 
 def fill_lookup(impact_bins_edges, size_bins_edges,
@@ -54,10 +56,12 @@ def fill_lookup(impact_bins_edges, size_bins_edges,
                 sigma_length = np.nan
 
             binned_wls.append(
-                ((imp_edge_max-imp_edge_min)/2.0 + imp_edge_min,
-                 (siz_edge_max-siz_edge_min)/2.0 + siz_edge_min,
-                 mean_width, mean_length, sigma_width, sigma_length
-                ))
+                              ((imp_edge_max-imp_edge_min)/2.0 + imp_edge_min,
+                               (siz_edge_max-siz_edge_min)/2.0 + siz_edge_min,
+                               mean_width, mean_length,
+                               sigma_width, sigma_length
+                               )
+                              )
 
     binned_wls = np.array(binned_wls)
 
@@ -77,7 +81,7 @@ def rswl(impact_parameter, size, width, length, binned_wls):
          )
 
     sw = interpolate.griddata(
-        (sigmaw_lookup[:, 0], sigmaw_lookup[:,1]),
+        (sigmaw_lookup[:, 0], sigmaw_lookup[:, 1]),
         sigmaw_lookup[:, 2], (impact_parameter, size), method='linear'
         )
 
@@ -103,7 +107,7 @@ def rswl(impact_parameter, size, width, length, binned_wls):
 if __name__ == '__main__':
 
     parser = OptionParser()
-    parser.add_option("-h", "--hillas", dest="hillas_gamma",
+    parser.add_option("-p", "--hillas", dest="hillas_gamma",
                       help="path to a file with hillas parameters of gamma",
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
     parser.add_option("-m", "--mc", dest="mc_gamma",
@@ -131,7 +135,7 @@ if __name__ == '__main__':
 
     width_gamma = hillas_gamma['width'][mask_g]
     length_gamma = hillas_gamma['length'][mask_g]
-    size_gamma = np.log(hillas_gamma['size'][mask_g])     # log size
+    size_gamma = np.log10(hillas_gamma['size'][mask_g])     # log size
 
     # Impact parameter
     impact_parameter_gamma = impact_parameter(x_core_gamma, y_core_gamma,
@@ -141,7 +145,7 @@ if __name__ == '__main__':
     impact_bins_edges = np.linspace(0, 600, 30)
 
     # Binning in size
-    size_bins_edges = np.linspace(4, 10, 30)
+    size_bins_edges = np.linspace(1.5, 4.5, 30)
 
     # Filling lookup tables [size, impact, value]
     binned_wls = fill_lookup(impact_bins_edges, size_bins_edges,
@@ -153,3 +157,7 @@ if __name__ == '__main__':
     path = '../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/'
     np.savetxt(path+'rswl-lookup-'+suffix, binned_wls, fmt='%.5f')
     print('Lookup table generated and saved..')
+
+    # Plotting lookup tables
+    plot_lookup2d(binned_wls)
+    plt.show()
