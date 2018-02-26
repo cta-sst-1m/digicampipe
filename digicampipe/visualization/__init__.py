@@ -3,7 +3,7 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 from matplotlib.widgets import Button, RadioButtons, CheckButtons
-import matplotlib as mpl
+import matplotlib
 
 from . import mpl as visualization
 from ..utils import DigiCam
@@ -21,7 +21,7 @@ class EventViewer():
         pixel_id_start=0
     ):
 
-        mpl.figure.autolayout = False
+        matplotlib.figure.autolayout = False
         self.first_call = True
         self.event_stream = event_stream
         self.scale = scale
