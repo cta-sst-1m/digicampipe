@@ -73,7 +73,7 @@ dneise@lair:~/sst/data$ digicamview SST1M01_20171030.066.fits.fz
 
 And you might see something like this:
 
-![digicamview_example][docs/digicamview_example.png]
+![digicamview_example](docs/digicamview_example.png)
 
 ## Pointing using lid CCD images
 
