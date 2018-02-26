@@ -1,14 +1,12 @@
 import numpy as np
 import sys
-from digicampipe.visualization import mpl as visualization
-from . import geometry
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 from matplotlib.widgets import Button, RadioButtons, CheckButtons
-from itertools import cycle
-from matplotlib.colors import LogNorm
 import matplotlib as mpl
-from cts_core import camera
+
+from . import mpl as visualization
+from ..utils import geometry, Camera
 
 
 class EventViewer():
@@ -27,7 +25,7 @@ class EventViewer():
         self.hillas = False
 
         self.event_clicked_on = EventClicked(pixel_start=self.pixel_id)
-        self.camera = camera.Camera(_config_file=camera_config_file)
+        self.camera = Camera(_config_file=camera_config_file)
         self.geometry = geometry.generate_geometry(camera=self.camera)[0]
         self.n_pixels = len(self.camera.Pixels)
         self.n_samples = n_samples
