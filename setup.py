@@ -15,7 +15,8 @@ setup(
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
-        'digicampipe.instrument'
+        'digicampipe.instrument',
+        'digicampipe.scripts',
     ],
     url='https://github.com/calispac/digicampipe',
     license='GNU GPL 3.0',
