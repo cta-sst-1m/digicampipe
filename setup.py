@@ -15,7 +15,8 @@ setup(
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
-        'digicampipe.instrument'
+        'digicampipe.instrument',
+        'digicampipe.scripts',
     ],
     url='https://github.com/calispac/digicampipe',
     license='GNU GPL 3.0',
@@ -40,4 +41,9 @@ setup(
             'tests/resources/stars_on_lid/*'
         ],
     },
+    entry_points={
+        'console_scripts': [
+            'digicamview=digicampipe.scripts.digicamview:entry',
+        ],
+    }
 )

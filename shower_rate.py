@@ -1,6 +1,6 @@
 from digicampipe.calib.camera import filter, r1
 from digicampipe.io.event_stream import event_stream
-from digicamviewer.viewer import EventViewer
+from digicampipe.visualization import EventViewer
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import expon
@@ -55,8 +55,6 @@ if __name__ == '__main__':
     plt.show()
 
     """"
-    camera_config_file = '/home/alispach/Documents/PhD/ctasoft/CTS/config/camera_config.cfg'
-    display = EventViewer(data_stream, camera_config_file=camera_config_file, scale='lin')
+    display = EventViewer(data_stream)
     display.draw()
-    plt.show()
     """

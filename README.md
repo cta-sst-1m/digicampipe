@@ -64,6 +64,17 @@ To delete the documentation us:
 
     make clean
 
+## Example: Viewer
+
+With `digicampipe` comes the example program `digicamview`. To use it, just go call it like this:
+```
+dneise@lair:~/sst/data$ digicamview SST1M01_20171030.066.fits.fz
+```
+
+And you might see something like this:
+
+![digicamview_example](docs/digicamview_example.png)
+
 ## Pointing using lid CCD images
 
 To be able to determine the pointing using stars reflections on the lid, astrometry.net is needed.
