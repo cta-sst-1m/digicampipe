@@ -1,7 +1,3 @@
-'''
-Usage:
-  shower_rate <hillas_text_file>
-'''
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import expon
@@ -46,3 +42,4 @@ if __name__ == '__main__':
     plt.xlabel('$\Delta t$ [ns]')
     plt.legend(loc='best')
     plt.show()
+

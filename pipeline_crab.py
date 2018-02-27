@@ -22,7 +22,7 @@ from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from cts_core.utils import Camera
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text
-from digicamviewer.viewer import EventViewer
+from digicampipe.visualization import EventViewer
 from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -116,14 +116,8 @@ def main(args):
     if args['--display']:
 
         with plt.style.context('ggplot'):
-            display = EventViewer(
-                data_stream,
-                n_samples=50,
-                camera_config_file=digicam.config_file,
-                scale='lin'
-                )
+            display = EventViewer(data_stream)
             display.draw()
-            pass
     else:
         save_hillas_parameters_in_text(
             data_stream=data_stream, output_filename=args['--outfile_path'])
