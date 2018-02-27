@@ -63,7 +63,13 @@ def fill_lookup(impact_bins_edges, size_bins_edges,
                                )
                               )
 
-    binned_wls = np.array(binned_wls)
+    binned_wls = np.array(binned_wls,
+                          dtype=[('impact', 'f8'),
+                                 ('size', 'f8'),
+                                 ('mean_width', 'f8'),
+                                 ('mean_length', 'f8'),
+                                 ('sigma_width', 'f8'),
+                                 ('sigma_length', 'f8')])
 
     return binned_wls
 
@@ -77,6 +83,9 @@ if __name__ == '__main__':
     parser.add_option('-m', '--mc', dest='mc_gamma',
                       help='path to a file with shower MC parameters of gamma',
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
+    parser.add_option('-o', '--output', dest='output',
+                       help='path to an output lookup table',
+                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00')
     (options, args) = parser.parse_args()
 
     hillas_gamma = np.load(options.hillas_gamma)
@@ -118,9 +127,14 @@ if __name__ == '__main__':
                              width_gamma, length_gamma)
 
     # Save the lookup tables
-    suffix = 'ze00-az000-offset00.txt'
-    path = '../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/'
-    np.savetxt(path+'rswl-lookup-'+suffix, binned_wls, fmt='%.5f')
+    np.savez(options.output,
+             impact=binned_wls['impact'],
+             size=binned_wls['size'],
+             mean_width=binned_wls['mean_width'],
+             mean_length=binned_wls['mean_length'],
+             sigma_width=binned_wls['sigma_width'],
+             sigma_length=binned_wls['sigma_length'])
+
     print('Lookup table generated and saved..')
 
     # Plotting lookup tables

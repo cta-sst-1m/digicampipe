@@ -10,30 +10,25 @@ import rswl_plot
 
 def rswl(impact_parameter, size, width, length, binned_wls):
 
-    width_lookup = binned_wls[:, [0, 1, 2]]
-    length_lookup = binned_wls[:, [0, 1, 3]]
-    sigmaw_lookup = binned_wls[:, [0, 1, 4]]
-    sigmal_lookup = binned_wls[:, [0, 1, 5]]
-
     wi = interpolate.griddata(
-         (width_lookup[:, 0], width_lookup[:, 1]),
-         width_lookup[:, 2], (impact_parameter, size), method='linear'
+         (binned_wls['impact'], binned_wls['size']),
+         binned_wls['mean_width'], (impact_parameter, size), method='linear'
          )
 
     sw = interpolate.griddata(
-        (sigmaw_lookup[:, 0], sigmaw_lookup[:, 1]),
-        sigmaw_lookup[:, 2], (impact_parameter, size), method='linear'
+        (binned_wls['impact'], binned_wls['size']),
+        binned_wls['sigma_width'], (impact_parameter, size), method='linear'
         )
 
     le = interpolate.griddata(
-         (length_lookup[:, 0], length_lookup[:, 1]),
-         length_lookup[:, 2], (impact_parameter, size),
+         (binned_wls['impact'], binned_wls['size']),
+         binned_wls['mean_length'], (impact_parameter, size),
          method='linear'
          )
 
     sl = interpolate.griddata(
-        (sigmal_lookup[:, 0], sigmal_lookup[:, 1]),
-        sigmal_lookup[:, 2], (impact_parameter, size),
+        (binned_wls['impact'], binned_wls['size']),
+        binned_wls['sigma_length'], (impact_parameter, size),
         method='linear')
 
     rsw = (width - wi) / sw
@@ -74,14 +69,14 @@ if __name__ == '__main__':
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
     parser.add_option('-l', '--lookup', dest='lookup',
                       help='path to a file with lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00.txt')
+                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00.npz')
     (options, args) = parser.parse_args()
 
     hillas_prot = np.load(options.hillas_prot)
     mc_prot = np.loadtxt(options.mc_prot)
     hillas_gamma = np.load(options.hillas_gamma)
     mc_gamma = np.loadtxt(options.mc_gamma)
-    binned_wls = np.loadtxt(options.lookup)
+    binned_wls = np.load(options.lookup)
 
     min_size = 50
 
@@ -130,7 +125,7 @@ if __name__ == '__main__':
 
     # Efficiency vs gamma/hadron cut
     # - ratio between N of events passing the cut and all events
-    gamma_cut = np.linspace(-10, 20, 100)
+    gamma_cut = np.linspace(-10, 20, 200)
     efficiency_gammaw = efficiency_comp(gamma_cut, rswg)
     efficiency_gammal = efficiency_comp(gamma_cut, rslg)
     efficiency_protonw = efficiency_comp(gamma_cut, rswp)
