@@ -37,12 +37,12 @@ def make_dark_base_line():
             pass
         assert event_counter >= 5
 
-        a = np.load(outfile_path)
-        assert not np.any(np.isnan(a['baseline']))
-        assert not np.any(np.isnan(a['standard_deviation']))
-        assert len(a['baseline']) == 1296
+        npz_file = np.load(outfile_path)
+        assert not np.any(np.isnan(npz_file['baseline']))
+        assert not np.any(np.isnan(npz_file['standard_deviation']))
+        assert len(npz_file['baseline']) == 1296
 
-    return a
+    return npz_file
 
 
 def test_calibrate_to_dl1():
