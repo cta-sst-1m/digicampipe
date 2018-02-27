@@ -2,7 +2,7 @@ import numpy as np
 from optparse import OptionParser
 from scipy import interpolate
 from shower_geometry import impact_parameter
-from rswl_plot import plot_lookup2d
+from rswl_plot import lookup2d
 import matplotlib.pyplot as plt
 
 
@@ -102,8 +102,9 @@ if __name__ == '__main__':
     size_gamma = np.log10(hillas_gamma['size'][mask_g])     # log size
 
     # Impact parameter
+    telpos = np.array([0., 0., 4.])  # not optimal, tel. coordinates should be loaded from somewhere..
     impact_parameter_gamma = impact_parameter(x_core_gamma, y_core_gamma,
-                                              0, 0, 4, theta_gamma, phi_gamma)  # not optimal, tel. coordinates should be loaded from somewhere..
+                                              telpos, theta_gamma, phi_gamma)
 
     # Binning in Impact parameter
     impact_bins_edges = np.linspace(0, 600, 30)
@@ -123,5 +124,5 @@ if __name__ == '__main__':
     print('Lookup table generated and saved..')
 
     # Plotting lookup tables
-    plot_lookup2d(binned_wls)
+    lookup2d(binned_wls)
     plt.show()

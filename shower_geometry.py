@@ -1,30 +1,33 @@
 import numpy as np
 
 
-def line_point_distance(xp1, yp1, zp1, cx, cy, cz, x, y, z):
+def line_point_distance(p1, c, p):
 
     # Distance between a straight line and a point in space.
-    # xp1, yp1, zp1:  reference point on the line
-    # cx, cy, cz:  direction cosines of the line
-    # x, y, z:	point in space
+    # p1:   numpy 1d array, reference point on the line
+    # c:    numpy 1d array, direction cosines of the line
+    # p:    numpy 1d array, point in space
     # From Konrad's hessio rec_tools.h, line_point_distance function
 
-    a1 = (y-yp1)*cz - (z-zp1)*cy
-    a2 = (z-zp1)*cx - (x-xp1)*cz
-    a3 = (x-xp1)*cy - (y-yp1)*cx
-    a = a1*a1 + a2*a2 + a3*a3
-    b = cx*cx + cy*cy + cz*cz
+    a = np.cross((p1 - p), c)
 
-    return np.sqrt(a/b)
+    return np.sqrt(np.sum(a**2)/np.sum(c**2))
 
 
-def impact_parameter(x_core, y_core, telpos_x, telpos_y, telpos_z, theta, phi):
+def impact_parameter(x_core, y_core, telpos, theta, phi):
 
     cx = np.sin(np.deg2rad(theta))*np.cos(np.deg2rad(phi))  # direction cosines
     cy = np.sin(np.deg2rad(theta))*np.sin(np.deg2rad(phi))  #
     cz = np.cos(np.deg2rad(theta))                          #
 
-    impact = line_point_distance(x_core, y_core, 0., cx, cy, cz,
-                                 telpos_x, telpos_y, telpos_z)
+    direction = np.array([cx, cy, cz]).T
+    impact_point = np.array([x_core, y_core, np.zeros(x_core.shape[0])]).T
+
+    impact = []
+    for i in range(direction.shape[0]):
+
+        impact.append(line_point_distance(impact_point[i],
+                                          direction[i],
+                                          telpos))
 
     return impact
