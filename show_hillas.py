@@ -1,12 +1,16 @@
+'''
+Plot some hillas parameters from a npz-file
+Usage:
+  show_hillas <npz-file>
+'''
+from docopt import docopt
 import numpy as np
 from digicampipe.visualization import plot
 import plot_alpha_corrected
 import matplotlib.pyplot as plt
 
-directory = '/home/alispach/data/CRAB_01/'
-hillas_filename = directory + 'hillas.npz'
-
-hillas = dict(np.load(hillas_filename))
+args = docopt(__doc__)
+hillas = dict(np.load(args['<npz-file>']))
 
 cut_size = 10000
 cut_width_length = 0.5
