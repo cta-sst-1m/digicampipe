@@ -27,7 +27,10 @@ def make_dark_base_line():
         outfile_path = os.path.join(temp_dir, "dark_baseline.npz")
 
         data_stream = event_stream(example_file_path)
-        data_stream = filter.set_pixels_to_zero(data_stream, unwanted_pixels=[])
+        data_stream = filter.set_pixels_to_zero(
+            data_stream,
+            unwanted_pixels=[],
+        )
         data_stream = filter.filter_event_types(data_stream, flags=[8])
         data_stream = save_dark(data_stream, outfile_path)
         for event_counter, _ in enumerate(data_stream):
