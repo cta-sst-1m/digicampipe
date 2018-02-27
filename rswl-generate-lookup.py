@@ -84,8 +84,8 @@ if __name__ == '__main__':
                       help='path to a file with shower MC parameters of gamma',
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
     parser.add_option('-o', '--output', dest='output',
-                       help='path to an output lookup table',
-                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00')
+                      help='path to an output lookup table',
+                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00')
     (options, args) = parser.parse_args()
 
     hillas_gamma = np.load(options.hillas_gamma)

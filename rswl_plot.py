@@ -8,24 +8,24 @@ def lookup2d(data):
     x, y = np.meshgrid(np.unique(data['size']), np.unique(data['impact']))
 
     width = data['mean_width'].reshape(
-                                     (len(np.unique(data['impact'])),
-                                      len(np.unique(data['size']))
-                                      ))
-
-    length =  data['mean_length'].reshape(
                                        (len(np.unique(data['impact'])),
-                                        len(np.unique(data['size']))
-                                        ))
+                                       len(np.unique(data['size']))
+                                       ))
+
+    length = data['mean_length'].reshape(
+                                         (len(np.unique(data['impact'])),
+                                         len(np.unique(data['size']))
+                                         ))
 
     sigmaw = data['sigma_width'].reshape(
-                                       (len(np.unique(data['impact'])),
-                                        len(np.unique(data['size']))
-                                        ))
+                                         (len(np.unique(data['impact'])),
+                                         len(np.unique(data['size']))
+                                         ))
 
     sigmal = data['sigma_length'].reshape(
-                                       (len(np.unique(data['impact'])),
-                                        len(np.unique(data['size']))
-                                        ))
+                                          (len(np.unique(data['impact'])),
+                                          len(np.unique(data['size']))
+                                          ))
 
     fig, ax = plt.subplots(2, 2, figsize=(14, 12))
 
