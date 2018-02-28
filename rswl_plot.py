@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 
-def lookup2d(data):
+def rswl_lookup2d(data):
 
     x, y = np.meshgrid(np.unique(data['size']), np.unique(data['impact']))
 
@@ -54,7 +54,54 @@ def lookup2d(data):
     cbar.set_label('sigma width')
 
 
-def rswl_norm(rswg, rslg, rswp, rslp):
+def energy_lookup2d(data):
+
+    x, y = np.meshgrid(np.unique(data['size']), np.unique(data['impact']))
+
+    energy = data['mean_energy'].reshape(
+                                         (len(np.unique(data['impact'])),
+                                         len(np.unique(data['size']))
+                                         ))
+
+    sigmae = data['std_energy'].reshape(
+                                        (len(np.unique(data['impact'])),
+                                        len(np.unique(data['size']))
+                                        ))
+
+    n_energy = data['n_of_events'].reshape(
+                                           (len(np.unique(data['impact'])),
+                                           len(np.unique(data['size']))
+                                           ))
+
+    fig, ax = plt.subplots(1, figsize=(10, 8))
+    pcm = ax.pcolormesh(y, x, np.log10(energy), rasterized=True)
+    ax.set_xlabel('Impact parameter [m]')
+    ax.set_ylabel('log10(size) [phot]')
+    cbar = fig.colorbar(pcm, ax=ax)
+    ax.set_xlim([0, 500])
+    ax.set_ylim([1.5, 4.5])
+    cbar.set_label('log10(E) [TeV]')
+    
+    fig, ax = plt.subplots(1, figsize=(10, 8))
+    pcm = ax.pcolormesh(y, x, sigmae/energy, rasterized=True)
+    ax.set_xlabel('Impact parameter [m]')
+    ax.set_ylabel('log10(size) [phot]')
+    cbar = fig.colorbar(pcm, ax=ax)
+    ax.set_xlim([0, 500])
+    ax.set_ylim([1.5, 4.5])
+    cbar.set_label('std(E) / E')
+
+    fig, ax = plt.subplots(1, figsize=(10, 8))
+    pcm = ax.pcolormesh(y, x, n_energy, rasterized=True)
+    ax.set_xlabel('Impact parameter [m]')
+    ax.set_ylabel('log10(size) [phot]')
+    cbar = fig.colorbar(pcm, ax=ax)
+    ax.set_xlim([0, 500])
+    ax.set_ylim([1.5, 4.5])
+    cbar.set_label('N')
+
+
+def rswl_norm_hist(rswg, rslg, rswp, rslp):
 
     fig, ax = plt.subplots(1, 2, figsize=(14, 6))
     weights_g = np.ones_like(rswg)/float(len(rswg))

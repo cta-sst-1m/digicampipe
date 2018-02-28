@@ -2,7 +2,7 @@ import numpy as np
 from optparse import OptionParser
 from scipy import interpolate
 from shower_geometry import impact_parameter
-from rswl_plot import lookup2d
+from rswl_plot import rswl_lookup2d
 import matplotlib.pyplot as plt
 
 
@@ -138,5 +138,5 @@ if __name__ == '__main__':
     print('Lookup table generated and saved..')
 
     # Plotting lookup tables
-    lookup2d(binned_wls)
+    rswl_lookup2d(binned_wls)
     plt.show()

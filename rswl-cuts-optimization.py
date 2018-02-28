@@ -153,10 +153,10 @@ if __name__ == '__main__':
     # PLOTS
 
     # Look-up tables
-    rswl_plot.lookup2d(binned_wls)
+    rswl_plot.rswl_lookup2d(binned_wls)
 
     # RSW, RSL
-    rswl_plot.rswl_norm(rswg, rslg, rswp, rslp)
+    rswl_plot.rswl_norm_hist(rswg, rslg, rswp, rslp)
 
     # Efficiency
     rswl_plot.efficiency(gamma_cut, efficiency_gammaw, efficiency_gammal,
