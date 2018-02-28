@@ -2,76 +2,9 @@ import numpy as np
 from optparse import OptionParser
 from scipy import interpolate
 from shower_geometry import impact_parameter
-from rswl_plot import rswl_lookup2d
+import rswl_plot
 import matplotlib.pyplot as plt
-
-
-def fill_lookup(impact_bins_edges, size_bins_edges,
-                impact_parameter, size, width, length):
-
-    binned_wls = []
-
-    for i in range(len(impact_bins_edges)-1):
-
-        imp_edge_min = impact_bins_edges[i]
-        imp_edge_max = impact_bins_edges[i+1]
-
-        width_impactbinned = width[(impact_parameter >= imp_edge_min) &
-                                   (impact_parameter < imp_edge_max)]
-
-        length_impactbinned = length[(impact_parameter >= imp_edge_min) &
-                                     (impact_parameter < imp_edge_max)]
-
-        size_impactbinned = size[(impact_parameter >= imp_edge_min) &
-                                 (impact_parameter < imp_edge_max)]
-
-        for j in range(len(size_bins_edges)-1):
-
-            siz_edge_min = size_bins_edges[j]
-            siz_edge_max = size_bins_edges[j+1]
-
-            if len(width_impactbinned[(size_impactbinned >= siz_edge_min) &
-                   (size_impactbinned < siz_edge_max)]) > 0:
-
-                mean_width = np.mean(width_impactbinned[
-                    (size_impactbinned >= siz_edge_min) &
-                    (size_impactbinned < siz_edge_max)
-                    ])
-                mean_length = np.mean(length_impactbinned[
-                    (size_impactbinned >= siz_edge_min) &
-                    (size_impactbinned < siz_edge_max)
-                    ])
-                sigma_width = np.std(width_impactbinned[
-                    (size_impactbinned >= siz_edge_min) &
-                    (size_impactbinned < siz_edge_max)
-                    ])
-                sigma_length = np.std(length_impactbinned[
-                    (size_impactbinned >= siz_edge_min) &
-                    (size_impactbinned < siz_edge_max)
-                    ])
-            else:
-                mean_width = np.nan
-                mean_length = np.nan
-                sigma_width = np.nan
-                sigma_length = np.nan
-
-            binned_wls.append(
-                              ((imp_edge_max-imp_edge_min)/2.0 + imp_edge_min,
-                               (siz_edge_max-siz_edge_min)/2.0 + siz_edge_min,
-                               mean_width, mean_length,
-                               sigma_width, sigma_length
-                               )
-                              )
-
-    binned_wls = np.array(binned_wls,
-                          dtype=[('impact', 'f8'),
-                                 ('size', 'f8'),
-                                 ('mean_width', 'f8'),
-                                 ('mean_length', 'f8'),
-                                 ('sigma_width', 'f8'),
-                                 ('sigma_length', 'f8')])
-
-    return binned_wls
+from fill_lookup import fill_lookup
 
 
 if __name__ == '__main__':
@@ -83,9 +16,12 @@ if __name__ == '__main__':
     parser.add_option('-m', '--mc', dest='mc_gamma',
                       help='path to a file with shower MC parameters of gamma',
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
-    parser.add_option('-o', '--output', dest='output',
-                      help='path to an output lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00')
+    parser.add_option('-w', '--output_width', dest='output_width',
+                      help='path to an output RSW lookup table',
+                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-lookup-ze00-az000-offset00')
+    parser.add_option('-l', '--output_length', dest='output_length',
+                      help='path to an output RSL lookup table',
+                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsl-lookup-ze00-az000-offset00')
     (options, args) = parser.parse_args()
 
     hillas_gamma = np.load(options.hillas_gamma)
@@ -108,7 +44,7 @@ if __name__ == '__main__':
 
     width_gamma = hillas_gamma['width'][mask_g]
     length_gamma = hillas_gamma['length'][mask_g]
-    size_gamma = np.log10(hillas_gamma['size'][mask_g])     # log size
+    size_gamma = np.log10(hillas_gamma['size'][mask_g])   # log size
 
     # Impact parameter
     telpos = np.array([0., 0., 4.])  # not optimal, tel. coordinates should be loaded from somewhere..
@@ -121,22 +57,33 @@ if __name__ == '__main__':
     # Binning in size
     size_bins_edges = np.linspace(1.5, 4.5, 30)
 
-    # Filling lookup tables [size, impact, value]
-    binned_wls = fill_lookup(impact_bins_edges, size_bins_edges,
+    # Filling lookup tables
+    binned_rsw = fill_lookup(size_bins_edges, impact_bins_edges,
                              impact_parameter_gamma, size_gamma,
-                             width_gamma, length_gamma)
+                             width_gamma)
+
+    binned_rsl = fill_lookup(size_bins_edges, impact_bins_edges,
+                             impact_parameter_gamma, size_gamma,
+                             length_gamma)
 
     # Save the lookup tables
-    np.savez(options.output,
-             impact=binned_wls['impact'],
-             size=binned_wls['size'],
-             mean_width=binned_wls['mean_width'],
-             mean_length=binned_wls['mean_length'],
-             sigma_width=binned_wls['sigma_width'],
-             sigma_length=binned_wls['sigma_length'])
+    np.savez(options.output_width,
+             impact=binned_rsw['impact'],
+             size=binned_rsw['size'],
+             mean=binned_rsw['mean'],
+             std=binned_rsw['std'],
+             n_data=binned_rsw['n_data'])
 
-    print('Lookup table generated and saved..')
+    np.savez(options.output_length,
+             impact=binned_rsl['impact'],
+             size=binned_rsl['size'],
+             mean=binned_rsl['mean'],
+             std=binned_rsl['std'],
+             n_data=binned_rsl['n_data'])
+
+    print('Lookup tables generated and saved..')
 
     # Plotting lookup tables
-    rswl_lookup2d(binned_wls)
+    rswl_plot.rswl_lookup2d(binned_rsw, z_axis_title='width')
+    rswl_plot.rswl_lookup2d(binned_rsl, z_axis_title='length')
     plt.show()

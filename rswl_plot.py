@@ -3,75 +3,64 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 
-def rswl_lookup2d(data):
+def rswl_lookup2d(data, z_axis_title=''):
 
     x, y = np.meshgrid(np.unique(data['size']), np.unique(data['impact']))
 
-    width = data['mean_width'].reshape(
-                                       (len(np.unique(data['impact'])),
-                                       len(np.unique(data['size']))
-                                       ))
+    width = data['mean'].reshape(
+                                 (len(np.unique(data['impact'])),
+                                 len(np.unique(data['size']))
+                                 ))
 
-    length = data['mean_length'].reshape(
-                                         (len(np.unique(data['impact'])),
-                                         len(np.unique(data['size']))
-                                         ))
+    sigma = data['std'].reshape(
+                                (len(np.unique(data['impact'])),
+                                len(np.unique(data['size']))
+                                ))
 
-    sigmaw = data['sigma_width'].reshape(
-                                         (len(np.unique(data['impact'])),
-                                         len(np.unique(data['size']))
-                                         ))
+    n_data = data['n_data'].reshape(
+                                    (len(np.unique(data['impact'])),
+                                    len(np.unique(data['size']))
+                                    ))
 
-    sigmal = data['sigma_length'].reshape(
-                                          (len(np.unique(data['impact'])),
-                                          len(np.unique(data['size']))
-                                          ))
+    fig, ax = plt.subplots(1, 3, figsize=(20, 6))
 
-    fig, ax = plt.subplots(2, 2, figsize=(14, 12))
+    pcm = ax[0].pcolormesh(x, y, width, rasterized=True)
+    ax[0].set_ylabel('Impact parameter [m]')
+    ax[0].set_xlabel('log10 (size)')
+    cbar = fig.colorbar(pcm, ax=ax[0])
+    cbar.set_label('mean '+z_axis_title)
 
-    pcm = ax[0, 0].pcolormesh(x, y, length, rasterized=True)
-    ax[0, 0].set_ylabel('Impact parameter [m]')
-    ax[0, 0].set_xlabel('log10 size')
-    cbar = fig.colorbar(pcm, ax=ax[0, 0])
-    cbar.set_label('mean length')
-
-    pcm = ax[0, 1].pcolormesh(x, y, sigmal, rasterized=True)
-    ax[0, 1].set_ylabel('Impact parameter [m]')
-    ax[0, 1].set_xlabel('log10 size')
-    cbar = fig.colorbar(pcm, ax=ax[0, 1])
-    cbar.set_label('sigma length')
-
-    pcm = ax[1, 0].pcolormesh(x, y, width, rasterized=True)
-    ax[1, 0].set_ylabel('Impact parameter [m]')
-    ax[1, 0].set_xlabel('log10 size')
-    cbar = fig.colorbar(pcm, ax=ax[1, 0])
-    cbar.set_label('mean width')
-
-    pcm = ax[1, 1].pcolormesh(x, y, sigmaw, rasterized=True)
-    ax[1, 1].set_ylabel('Impact parameter [m]')
-    ax[1, 1].set_xlabel('log10  size')
-    cbar = fig.colorbar(pcm, ax=ax[1, 1])
-    cbar.set_label('sigma width')
+    pcm = ax[1].pcolormesh(x, y, sigma, rasterized=True)
+    ax[1].set_ylabel('Impact parameter [m]')
+    ax[1].set_xlabel('log10 (size)')
+    cbar = fig.colorbar(pcm, ax=ax[1])
+    cbar.set_label('sigma '+z_axis_title)
+    
+    pcm = ax[2].pcolormesh(x, y, n_data, rasterized=True)
+    ax[2].set_ylabel('Impact parameter [m]')
+    ax[2].set_xlabel('log10 (size)')
+    cbar = fig.colorbar(pcm, ax=ax[2])
+    cbar.set_label('N')    
 
 
-def energy_lookup2d(data):
+def energy_lookup2d(data):      # to be merged with rswl_lookup2d()
 
     x, y = np.meshgrid(np.unique(data['size']), np.unique(data['impact']))
 
-    energy = data['mean_energy'].reshape(
-                                         (len(np.unique(data['impact'])),
-                                         len(np.unique(data['size']))
-                                         ))
+    energy = data['mean'].reshape(
+                                  (len(np.unique(data['impact'])),
+                                  len(np.unique(data['size']))
+                                  ))
 
-    sigmae = data['std_energy'].reshape(
-                                        (len(np.unique(data['impact'])),
-                                        len(np.unique(data['size']))
-                                        ))
+    sigmae = data['std'].reshape(
+                                 (len(np.unique(data['impact'])),
+                                 len(np.unique(data['size']))
+                                 ))
 
-    n_energy = data['n_of_events'].reshape(
-                                           (len(np.unique(data['impact'])),
-                                           len(np.unique(data['size']))
-                                           ))
+    n_energy = data['n_data'].reshape(
+                                      (len(np.unique(data['impact'])),
+                                      len(np.unique(data['size']))
+                                      ))
 
     fig, ax = plt.subplots(1, figsize=(10, 8))
     pcm = ax.pcolormesh(y, x, np.log10(energy), rasterized=True)

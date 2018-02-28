@@ -8,27 +8,27 @@ from shower_geometry import impact_parameter
 import rswl_plot
 
 
-def rswl(impact_parameter, size, width, length, binned_wls):
+def rswl(impact_parameter, size, width, length, rsw_lookup, rsl_lookup):
 
     wi = interpolate.griddata(
-         (binned_wls['impact'], binned_wls['size']),
-         binned_wls['mean_width'], (impact_parameter, size), method='linear'
+         (rsw_lookup['impact'], rsw_lookup['size']),
+         rsw_lookup['mean'], (impact_parameter, size), method='linear'
          )
 
     sw = interpolate.griddata(
-        (binned_wls['impact'], binned_wls['size']),
-        binned_wls['sigma_width'], (impact_parameter, size), method='linear'
+        (rsw_lookup['impact'], rsw_lookup['size']),
+        rsw_lookup['std'], (impact_parameter, size), method='linear'
         )
 
     le = interpolate.griddata(
-         (binned_wls['impact'], binned_wls['size']),
-         binned_wls['mean_length'], (impact_parameter, size),
+         (rsl_lookup['impact'], rsl_lookup['size']),
+         rsl_lookup['mean'], (impact_parameter, size),
          method='linear'
          )
 
     sl = interpolate.griddata(
-        (binned_wls['impact'], binned_wls['size']),
-        binned_wls['sigma_length'], (impact_parameter, size),
+        (rsl_lookup['impact'], rsl_lookup['size']),
+        rsl_lookup['std'], (impact_parameter, size),
         method='linear')
 
     rsw = (width - wi) / sw
@@ -67,16 +67,20 @@ if __name__ == '__main__':
     parser.add_option('-c', '--mcp', dest='mc_prot',
                       help='path to a file with shower MC param. of protons',
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
-    parser.add_option('-l', '--lookup', dest='lookup',
-                      help='path to a file with lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rswl-lookup-ze00-az000-offset00.npz')
+    parser.add_option('-l', '--rsl', dest='rsl_lookup',
+                      help='path to a file with RSL lookup table',
+                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsl-lookup-ze00-az000-offset00.npz')
+    parser.add_option('-w', '--rsw', dest='rsw_lookup',
+                      help='path to a file with RSW lookup table',
+                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-lookup-ze00-az000-offset00.npz')
     (options, args) = parser.parse_args()
 
     hillas_prot = np.load(options.hillas_prot)
     mc_prot = np.loadtxt(options.mc_prot)
     hillas_gamma = np.load(options.hillas_gamma)
     mc_gamma = np.loadtxt(options.mc_gamma)
-    binned_wls = np.load(options.lookup)
+    rsl_lookup = np.load(options.rsl_lookup)
+    rsw_lookup = np.load(options.rsw_lookup)
 
     min_size = 50
 
@@ -118,10 +122,12 @@ if __name__ == '__main__':
     # Reduced scaled width and length
     rswg, rslg = rswl(impact_parameter_gamma,
                       size_gamma, width_gamma,
-                      length_gamma, binned_wls)
+                      length_gamma, rsw_lookup,
+                      rsl_lookup)
     rswp, rslp = rswl(impact_parameter_prot,
                       size_prot, width_prot,
-                      length_prot, binned_wls)
+                      length_prot, rsw_lookup,
+                      rsl_lookup)
 
     # Efficiency vs gamma/hadron cut
     # - ratio between N of events passing the cut and all events
@@ -153,7 +159,8 @@ if __name__ == '__main__':
     # PLOTS
 
     # Look-up tables
-    rswl_plot.rswl_lookup2d(binned_wls)
+    rswl_plot.rswl_lookup2d(rsw_lookup, z_axis_title='width')
+    rswl_plot.rswl_lookup2d(rsl_lookup, z_axis_title='length')
 
     # RSW, RSL
     rswl_plot.rswl_norm_hist(rswg, rslg, rswp, rslp)
