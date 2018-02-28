@@ -21,14 +21,14 @@ if __name__ == '__main__':
                       default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/energy-lookup-ze00-az000-offset00')
     (options, args) = parser.parse_args()
 
-    hillas = np.load(options.hillas) 
+    hillas = np.load(options.hillas)
     mc = np.loadtxt(options.mc)
 
     # Masking borderflagged data
     mask = [x == 0 for x in hillas['border']]
 
     size = hillas['size'][mask]
-    mc = mc[mask,:]
+    mc = mc[mask, :]
 
     # True MC params
     core_distance = mc[:, 2]
@@ -37,7 +37,6 @@ if __name__ == '__main__':
     y_core = mc[:, 10]
     theta = mc[:, 4]
     phi = mc[:, 5]
-
 
     # Impact parameter
     telpos = np.array([0., 0., 4.])  # not optimal, tel. coordinates should be loaded from somewhere..

@@ -9,18 +9,18 @@ def rswl_lookup2d(data, z_axis_title=''):
 
     width = data['mean'].reshape(
                                  (len(np.unique(data['impact'])),
-                                 len(np.unique(data['size']))
-                                 ))
+                                  len(np.unique(data['size']))
+                                  ))
 
     sigma = data['std'].reshape(
                                 (len(np.unique(data['impact'])),
-                                len(np.unique(data['size']))
-                                ))
+                                 len(np.unique(data['size']))
+                                 ))
 
     n_data = data['n_data'].reshape(
                                     (len(np.unique(data['impact'])),
-                                    len(np.unique(data['size']))
-                                    ))
+                                     len(np.unique(data['size']))
+                                     ))
 
     fig, ax = plt.subplots(1, 3, figsize=(20, 6))
 
@@ -35,12 +35,12 @@ def rswl_lookup2d(data, z_axis_title=''):
     ax[1].set_xlabel('log10 (size)')
     cbar = fig.colorbar(pcm, ax=ax[1])
     cbar.set_label('sigma '+z_axis_title)
-    
+
     pcm = ax[2].pcolormesh(x, y, n_data, rasterized=True)
     ax[2].set_ylabel('Impact parameter [m]')
     ax[2].set_xlabel('log10 (size)')
     cbar = fig.colorbar(pcm, ax=ax[2])
-    cbar.set_label('N')    
+    cbar.set_label('N')
 
 
 def energy_lookup2d(data):      # to be merged with rswl_lookup2d()
@@ -49,18 +49,18 @@ def energy_lookup2d(data):      # to be merged with rswl_lookup2d()
 
     energy = data['mean'].reshape(
                                   (len(np.unique(data['impact'])),
-                                  len(np.unique(data['size']))
-                                  ))
+                                   len(np.unique(data['size']))
+                                   ))
 
     sigmae = data['std'].reshape(
                                  (len(np.unique(data['impact'])),
-                                 len(np.unique(data['size']))
-                                 ))
+                                  len(np.unique(data['size']))
+                                  ))
 
     n_energy = data['n_data'].reshape(
                                       (len(np.unique(data['impact'])),
-                                      len(np.unique(data['size']))
-                                      ))
+                                       len(np.unique(data['size']))
+                                       ))
 
     fig, ax = plt.subplots(1, figsize=(10, 8))
     pcm = ax.pcolormesh(y, x, np.log10(energy), rasterized=True)
@@ -70,7 +70,7 @@ def energy_lookup2d(data):      # to be merged with rswl_lookup2d()
     ax.set_xlim([0, 500])
     ax.set_ylim([1.5, 4.5])
     cbar.set_label('log10(E) [TeV]')
-    
+
     fig, ax = plt.subplots(1, figsize=(10, 8))
     pcm = ax.pcolormesh(y, x, sigmae/energy, rasterized=True)
     ax.set_xlabel('Impact parameter [m]')
