@@ -125,7 +125,8 @@ def main(
             display.draw()
     else:
         save_hillas_parameters_in_text(
-            data_stream=data_stream, output_filename)
+            data_stream=data_stream,
+            output_filename=output_filename)
 
 
 if __name__ == '__main__':
