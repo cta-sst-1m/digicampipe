@@ -2,7 +2,7 @@ from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_hillas import save_hillas_parameters_in_list
 from digicampipe.visualization import EventViewer
-from digicampipe.utils import Camera, utils
+from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
@@ -18,12 +18,6 @@ def main(
 
     # Input/Output files
     dark_baseline = np.load(baseline_path)
-
-    digicam = Camera(
-        # Source coordinates (in camera frame)
-        source_x=0. * u.mm,
-        source_y=0. * u.mm,
-    )
 
     # Config for NSB + baseline evaluation
     n_bins = 1000
@@ -70,7 +64,7 @@ def main(
     shower_distance = 200 * u.mm
 
     # Define the event stream
-    data_stream = event_stream(files, camera=digicam)
+    data_stream = event_stream(files)
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)
