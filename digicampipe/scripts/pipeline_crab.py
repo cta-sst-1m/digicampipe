@@ -20,19 +20,24 @@ Options:
 '''
 from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
-from cts_core.utils import Camera
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text
 from digicampipe.visualization import EventViewer
-from digicampipe.utils import utils
+from digicampipe.utils import Camera, utils
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from docopt import docopt
 
 
-def main(args):
+def main(
+    files,
+    baseline_path,
+    min_photon,
+    output_filename,
+    display=False,
+):
     # Input/Output files
-    dark_baseline = np.load(args['--baseline_path'])
+    dark_baseline = np.load(baseline_path)
 
     digicam = Camera(
         # Source coordinates (in camera frame)
@@ -85,7 +90,7 @@ def main(args):
     shower_distance = 200 * u.mm
 
     # Define the event stream
-    data_stream = event_stream(file_list=args['<files>'], camera=digicam)
+    data_stream = event_stream(files, camera=digicam)
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)
@@ -108,23 +113,29 @@ def main(args):
                                        boundary_threshold=boundary_threshold)
     # Return only showers with total number of p.e. above min_photon
     data_stream = filter.filter_shower(
-        data_stream, min_photon=args['--min_photon'])
+        data_stream, min_photon)
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(
         data_stream, reclean=reclean, shower_distance=shower_distance)
 
-    if args['--display']:
+    if display:
 
         with plt.style.context('ggplot'):
             display = EventViewer(data_stream)
             display.draw()
     else:
         save_hillas_parameters_in_text(
-            data_stream=data_stream, output_filename=args['--outfile_path'])
+            data_stream=data_stream, output_filename)
 
 
 if __name__ == '__main__':
     args = docopt(__doc__)
     print(args)
     args['--min_photon'] = int(args['--min_photon'])
-    main(args)
+    main(
+        files=args['<files>'],
+        baseline_path=args['--baseline_path'],
+        min_photon=args['--min_photon'],
+        output_filename=args['--outfile_path'],
+        display=args['--display'],
+    )
