@@ -32,8 +32,8 @@ from docopt import docopt
 def main(
     files,
     baseline_path,
-    min_photon,
     output_filename,
+    min_photon=20,
     display=False,
 ):
     # Input/Output files
