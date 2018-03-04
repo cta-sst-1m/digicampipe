@@ -1,41 +1,21 @@
-#!/usr/bin/env python
-'''
-
-Example:
-  ./pipeline_crab.py \
-  --baseline_path=../sst1m_crab/dark.npz \
-  --outfile_path=./hillas_output.txt \
-  ../sst1m_crab/SST1M01_20171030.01*
-
-Usage:
-  pipeline_crab.py [options] <files>...
-
-
-Options:
-  -h --help     Show this screen.
-  --display     Display rather than output data
-  -o <path>, --outfile_path=<path>   path to the output file
-  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
-  --min_photon <int>     Filtering on big showers [default: 20]
-'''
 from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text
+from digicampipe.io.save_hillas import save_hillas_parameters_in_list
 from digicampipe.visualization import EventViewer
 from digicampipe.utils import Camera, utils
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
-from docopt import docopt
 
 
 def main(
     files,
     baseline_path,
-    output_filename,
     min_photon=20,
     display=False,
 ):
+    hillas_parameters = []
+
     # Input/Output files
     dark_baseline = np.load(baseline_path)
 
@@ -124,19 +104,8 @@ def main(
             display = EventViewer(data_stream)
             display.draw()
     else:
-        save_hillas_parameters_in_text(
+        save_hillas_parameters_in_list(
             data_stream=data_stream,
-            output_filename=output_filename)
+            list=hillas_parameters)
 
-
-if __name__ == '__main__':
-    args = docopt(__doc__)
-    print(args)
-    args['--min_photon'] = int(args['--min_photon'])
-    main(
-        files=args['<files>'],
-        baseline_path=args['--baseline_path'],
-        min_photon=args['--min_photon'],
-        output_filename=args['--outfile_path'],
-        display=args['--display'],
-    )
+    return hillas_parameters
