@@ -102,4 +102,7 @@ def main(
             data_stream=data_stream,
             list=hillas_parameters)
 
+    for _ in data_stream:
+        pass
+
     return hillas_parameters
