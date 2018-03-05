@@ -54,6 +54,7 @@ class InstrumentContainer(Container):
     cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
     cluster_matrix_19 = Field(Map(ndarray), 'map of tel_id of cluster 19 matrix')
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
+    # cts_ac_dac = Field(Map(ndarray), map of tel_id to CTS ac)
 
 
 class DL1CameraContainer(Container):
@@ -106,7 +107,7 @@ class R0CameraContainer(Container):
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
     adc_samples = Field(ndarray, "numpy array containing ADC samples (n_channels x n_pixels, n_samples)")
-    baseline = Field(ndarray, "number of time samples for telescope")
+    baseline = Field(ndarray, "numpy array containing reconstructed baseline (n_channels x n_pixels)")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
     dark_baseline = Field(ndarray, 'dark baseline')
@@ -143,6 +144,8 @@ class R1CameraContainer(Container):
     """
 
     adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)")
+    pulse_indices = Field(list, 'Reconstructed time of each waveform (n_pixels, ?)')
+    reconstructed_charge = Field(list, 'Reconstructed charge of each signal in each waveform (n_pixels, ?)')
     nsb = Field(ndarray, "nsb rate in GHz")
     pde = Field(ndarray, "Photo Detection Efficiency at given NSB")
     gain_drop = Field(ndarray, "gain drop")
@@ -249,6 +252,33 @@ class DataContainer(Container):
     dl2 = Field(ReconstructedContainer(), "Reconstructed Shower Information")
     inst = Field(InstrumentContainer(), "Instrumental information")
     slow_data = Field(None, "Slow Data Information")
+
+
+class CalibrationContainer(Container):
+    """
+    This Container() is used for the camera calibration pipeline.
+    It is meant to save each step of the calibration pipeline
+    """
+
+    adc_samples = Field(ndarray, 'the raw data')
+    n_pixels = Field(int, 'number of pixels')
+    camera_baseline = Field(ndarray, 'the baseline computed by the camera')
+    reconstructed_baseline = Field(ndarray, 'the reconstructed baseline')
+    pulse_mask = Field(ndarray, 'mask of adc_samples if True the adc sample'
+                                   ' contains a pulse was detected else False')
+    reconstructed_amplitude = Field(ndarray, 'array of the same shape as '
+                                             'adc_samples giving the'
+                                             ' reconstructed pulse amplitude'
+                                             ' for each adc sample')
+
+    reconstructed_charge = Field(ndarray, 'array of the same shape as '
+                                          'adc_samples giving the '
+                                          'reconstructed charge for each adc '
+                                          'sample')
+
+    reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
+                                                'electrons for each adc sample'
+                                                )
 
 def load_from_pickle_gz(file):
     file = gzip_open(file, "rb")
