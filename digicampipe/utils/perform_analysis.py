@@ -2,6 +2,7 @@ import os
 from tqdm import tqdm
 import pandas as pd
 
+
 def perform_analysis(
     analysis,
     paths,
