@@ -80,7 +80,7 @@ def calibrate_to_r1_using_digicam_baseline_only_every_2_sec(event_stream, dark_b
             r1_camera = event.r1.tel[telescope_id]
 
             # Fake updating of digicam baseline only every 2sec.
-            if r0_camera.local_camera_clock > time_of_last_resampled_baseline + 2:
+            if r0_camera.local_camera_clock > time_of_last_resampled_baseline + 2e9:
                 resampled_digicam_baseline = r0_camera.digicam_baseline
                 time_of_last_resampled_baseline = r0_camera.local_camera_clock
 
