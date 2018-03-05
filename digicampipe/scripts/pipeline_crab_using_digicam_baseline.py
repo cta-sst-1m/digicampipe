@@ -68,6 +68,9 @@ def main(
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)
+    # Compute baseline with clocked triggered events (sliding average over n_bins)
+    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
+
     # Stop events that are not triggered by DigiCam algorithm (end of clocked triggered events)
     data_stream = filter.filter_event_types(data_stream, flags=[1, 2])
 
