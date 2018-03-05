@@ -140,7 +140,7 @@ class R0CameraContainer(Container):
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray, 
+    adc_samples = Field(ndarray,
                         "numpy array containing ADC samples"
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
@@ -310,7 +310,7 @@ class ReconstructedShowerContainer(Container):
     is_valid = (False,
                 ('direction validity flag. True if the shower direction'
                  'was properly reconstructed by the algorithm'))
-    tel_ids = Field([], 
+    tel_ids = Field([],
                     ('list of the telescope ids used in the'
                      ' reconstruction of the shower'))
     average_size = Field(0.0, 'average size of used')
@@ -381,6 +381,33 @@ class DataContainer(Container):
     trig = Field(CentralTriggerContainer(), "central trigger information")
     count = Field(0, "number of events processed")
 
+
+
+class CalibrationContainer(Container):
+    """
+    This Container() is used for the camera calibration pipeline.
+    It is meant to save each step of the calibration pipeline
+    """
+
+    adc_samples = Field(ndarray, 'the raw data')
+    n_pixels = Field(int, 'number of pixels')
+    camera_baseline = Field(ndarray, 'the baseline computed by the camera')
+    reconstructed_baseline = Field(ndarray, 'the reconstructed baseline')
+    pulse_mask = Field(ndarray, 'mask of adc_samples if True the adc sample'
+                                   ' contains a pulse was detected else False')
+    reconstructed_amplitude = Field(ndarray, 'array of the same shape as '
+                                             'adc_samples giving the'
+                                             ' reconstructed pulse amplitude'
+                                             ' for each adc sample')
+
+    reconstructed_charge = Field(ndarray, 'array of the same shape as '
+                                          'adc_samples giving the '
+                                          'reconstructed charge for each adc '
+                                          'sample')
+
+    reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
+                                                'electrons for each adc sample'
+                                                )
 
 def load_from_pickle_gz(file):
     file = gzip_open(file, "rb")
