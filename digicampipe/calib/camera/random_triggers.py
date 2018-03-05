@@ -50,6 +50,58 @@ def fill_baseline_r0(event_stream, n_bins=10000):
         yield event
 
 
+def fill_baseline_r0_but_not_baseline(event_stream, n_bins=10000):
+
+    count_calib_events = 0
+
+    for count, event in enumerate(event_stream):
+
+        for telescope_id in event.r0.tels_with_data:
+
+            if count == 0:
+                n_pixels = event.inst.num_pixels[telescope_id]
+                n_samples = event.inst.num_samples[telescope_id]
+                n_events = n_bins // n_samples
+                baselines = np.zeros((n_pixels, n_events))
+                baselines_std = np.zeros((n_pixels, n_events))
+                baseline = np.zeros(n_pixels)
+                std = np.zeros(n_pixels)
+
+            r0_camera = event.r0.tel[telescope_id]
+
+            if r0_camera.camera_event_type == 8:
+
+                adc_samples = r0_camera.adc_samples
+                new_mean = np.mean(adc_samples, axis=-1)
+                new_std = np.std(adc_samples, axis=-1)
+
+                baselines = np.roll(baselines, 1, axis=-1)
+                baselines_std = np.roll(baselines_std, 1, axis=-1)
+
+                baseline += new_mean - baselines[..., 0]
+                std += new_std - baselines_std[..., 0]
+
+                baselines[..., 0] = new_mean
+                baselines_std[..., 0] = new_std
+
+                count_calib_events += 1
+
+            if count_calib_events >= n_events:
+
+                r0_camera.baseline = baseline / n_events
+                r0_camera.standard_deviation = std / n_events
+
+            else:
+
+                r0_camera.baseline = np.zeros(n_pixels) * np.nan
+                r0_camera.standard_deviation = np.zeros(n_pixels) * np.nan
+
+            # do not even fill baseline with useful values
+            r0_camera.baseline = np.zeros(n_pixels) * np.nan
+        yield event
+
+
+
 def extract_baseline(event_stream, calib_container):
     """
     Extract the baseline from event flagged as random trigger (trigger_flag = 1)
