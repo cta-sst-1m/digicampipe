@@ -101,7 +101,8 @@ def main(
             data_stream=data_stream,
             list=hillas_parameters)
 
-    for _ in data_stream:
+    for event in data_stream:
+        assert np.isnan(event.r0.tel[1].baseline).all()
         pass
 
     return hillas_parameters
