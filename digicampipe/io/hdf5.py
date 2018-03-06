@@ -47,6 +47,8 @@ def digicamtoy_event_source(
 
         max_events = n_events
 
+    max_events = min(max_events, n_events)
+
     for event_id in range(max_events):
 
         data.r0.event_id = event_id
