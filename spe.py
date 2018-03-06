@@ -56,11 +56,11 @@ def compute_event_stats(events):
     return mean, std, mode, max
 
 
-def subtract_baseline(events, value):
+def subtract_baseline(events, baseline):
 
-    for count, event in enumerate(events):
+    for event in events:
 
-        event.adc_samples = event.adc_samples - value[:, np.newaxis]
+        event.adc_samples = event.adc_samples - baseline[..., np.newaxis]
 
         yield event
 
