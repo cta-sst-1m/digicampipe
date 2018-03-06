@@ -40,7 +40,7 @@ def digicamtoy_event_source(
         cluster_19_matrix = camera.cluster_19_matrix
 
     data = DataContainer()
-    hdf5 = h5py.File(url, '+r')
+    hdf5 = h5py.File(url, 'r')
     n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
 
     if max_events is None:
