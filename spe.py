@@ -16,8 +16,7 @@ import matplotlib.pyplot as plt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
 import peakutils
-from  scipy.signal import find_peaks_cwt
-from digicampipe.utils.utils import integrate
+from scipy.signal import find_peaks_cwt
 from scipy import ndimage
 import scipy
 from iminuit import Minuit
