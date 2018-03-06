@@ -97,17 +97,6 @@ class CameraCalibration:
             self.lut_nsb_rate
         )
 
-    def fake_timing_hist(n_samples, timing_width, central_sample):
-        """
-        Create a timing array based on options.central_sample and options.timing_width
-        :param options:
-        :param n_samples:
-        :return:
-        """
-        timing = np.zeros((1296, n_samples + 1,), dtype=float)
-        timing[..., int(central_sample - timing_width):int(central_sample + timing_width)] = 1.
-        return timing
-
     def generate_timing_mask(window_start, window_width, peak_positions):
         """
         Generate mask arround the possible peak position
