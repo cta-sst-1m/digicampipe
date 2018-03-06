@@ -6,7 +6,6 @@ def calibrate_to_r1(event_stream, dark_baseline):
     if dark_baseline is not None:
         dark_baseline = dark_baseline['baseline']
 
-    dark_baseline = dark_baseline['baseline']
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
