@@ -75,7 +75,6 @@ class InstrumentContainer(Container):
     mirror_numtiles = Field(Map(int),
                             "map of tel_id to the number of \
                             tiles for the mirror")
-    # cts_ac_dac = Field(Map(ndarray), map of tel_id to CTS ac)
 
 
 class DL1CameraContainer(Container):
@@ -141,7 +140,7 @@ class R0CameraContainer(Container):
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray,
+    adc_samples = Field(ndarray, 
                         "numpy array containing ADC samples"
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
@@ -187,9 +186,6 @@ class R1CameraContainer(Container):
 
     adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, \
                         n_samples)")
-    adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, n_samples)")
-    pulse_indices = Field(list, 'Reconstructed time of each waveform (n_pixels, ?)')
-    reconstructed_charge = Field(list, 'Reconstructed charge of each signal in each waveform (n_pixels, ?)')
     nsb = Field(ndarray, "nsb rate in GHz")
     pde = Field(ndarray, "Photo Detection Efficiency at given NSB")
     gain_drop = Field(ndarray, "gain drop")
@@ -314,7 +310,7 @@ class ReconstructedShowerContainer(Container):
     is_valid = (False,
                 ('direction validity flag. True if the shower direction'
                  'was properly reconstructed by the algorithm'))
-    tel_ids = Field([],
+    tel_ids = Field([], 
                     ('list of the telescope ids used in the'
                      ' reconstruction of the shower'))
     average_size = Field(0.0, 'average size of used')
@@ -386,33 +382,6 @@ class DataContainer(Container):
     count = Field(0, "number of events processed")
 
 
-class CalibrationContainer(Container):
-    """
-    This Container() is used for the camera calibration pipeline.
-    It is meant to save each step of the calibration pipeline
-    """
-
-    adc_samples = Field(ndarray, 'the raw data')
-    n_pixels = Field(int, 'number of pixels')
-    camera_baseline = Field(ndarray, 'the baseline computed by the camera')
-    reconstructed_baseline = Field(ndarray, 'the reconstructed baseline')
-    pulse_mask = Field(ndarray, 'mask of adc_samples. True if the adc sample'
-                                'a pulse was detected else False')
-    reconstructed_amplitude = Field(ndarray, 'array of the same shape as '
-                                             'adc_samples giving the'
-                                             ' reconstructed pulse amplitude'
-                                             ' for each adc sample')
-
-    reconstructed_charge = Field(ndarray, 'array of the same shape as '
-                                          'adc_samples giving the '
-                                          'reconstructed charge for each adc '
-                                          'sample')
-
-    reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
-                                                'electrons for each adc sample'
-                                       )
-
-
 def load_from_pickle_gz(file):
     file = gzip_open(file, "rb")
     while True:
@@ -440,4 +409,3 @@ def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
             break
 
     writer.close()
-
