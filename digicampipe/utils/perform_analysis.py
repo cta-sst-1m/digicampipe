@@ -9,7 +9,7 @@ def perform_analysis(
     paths,
     output_directory,
     baseline_path='./dark_baseline.npz',
-    n_jobs=8,
+    n_jobs=4,
 ):
     os.makedirs(output_directory, exist_ok=True)
     kwargs = make_kwargs(analysis, baseline_path, paths, output_directory)
@@ -31,6 +31,7 @@ def part(analysis, path, baseline_path, outfile_name):
         lines=True,
         orient='records'
     )
+    return True
 
 
 def make_outfile_name(path, output_directory):
