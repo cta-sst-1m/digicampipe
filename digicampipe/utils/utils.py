@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 # Define the integration function
 
 
-def filter_template(filename_pulse_shape, dt):
+def filter_template(filename_pulse_shape, n_samples, dt):
 
     time_steps, amplitudes = np.loadtxt(filename_pulse_shape, unpack=True)
     pulse_template = interp1d(time_steps, amplitudes, kind='cubic',
@@ -20,8 +20,9 @@ def filter_template(filename_pulse_shape, dt):
                                    bounds_error=False,
                                    fill_value=0., assume_sorted=True)
 
-    t = np.arange(0, 92*4, 4)
+    t = np.arange(0, n_samples * dt, dt)
     return pulse_template(t)
+
 
 def integrate(data, window_width):
     """
