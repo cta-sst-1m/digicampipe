@@ -40,10 +40,7 @@ def integrate(data, window_width):
         mode='constant',
         cval=-1.e8
     )
-    return h[
-        ...,
-        (window_width-1)//2:-window_width//2
-    ]
+    return h[..., (window_width-1)//2:-(window_width//2)]
 
 
 def extract_charge(
