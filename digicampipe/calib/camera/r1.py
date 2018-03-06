@@ -34,4 +34,3 @@ def calibrate_to_r1(event_stream, dark_baseline):
                 r1_camera.nsb = calib.compute_nsb_rate(baseline_shift, 'mean')
 
         yield event
-
