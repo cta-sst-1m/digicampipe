@@ -25,11 +25,11 @@ from digicampipe.io.containers import CalibrationContainer
 from digicampipe.utils.utils import filter_template
 
 
-def calibration_event_stream(path, telescope_id, mc, max_events):
+def calibration_event_stream(path, telescope_id, max_events):
 
     container = CalibrationContainer()
 
-    for event in event_stream(path, mc=mc, max_events=max_events):
+    for event in event_stream(path, max_events=max_events):
 
         container.adc_samples = event.r0.tel[telescope_id].adc_samples
         container.n_pixels = container.adc_samples.shape[0]
@@ -131,10 +131,10 @@ def compute_amplitude(events):
 def main(args):
 
     files = args['<files>']
-    events = calibration_event_stream(files, mc=True, telescope_id=1, max_events=100)
+    events = calibration_event_stream(files, telescope_id=1, max_events=100)
     mean, std, mode, max = compute_event_stats(events)
 
-    events = calibration_event_stream(files, mc=True, telescope_id=1, max_events=10)
+    events = calibration_event_stream(files, telescope_id=1, max_events=10)
     events = subtract_baseline(events, mode)
     # events = normalize_adc_samples(events, std)
     # events = find_pulse_1(events, 0.5, 20)
