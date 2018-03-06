@@ -97,10 +97,6 @@ class CameraCalibration:
             self.lut_nsb_rate
         )
 
-    def gain_drop(self, nsb_rate):
-
-        return 1. / (1. + nsb_rate * self.cell_capacitance * self.bias_resistance * 1E9)
-
     def gain(self, baseline_shift):
 
         return self.gain * splev(baseline_shift, self.spline_gain_drop)
