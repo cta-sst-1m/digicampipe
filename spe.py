@@ -127,60 +127,6 @@ def compute_amplitude(events):
         yield event
 
 
-def main(args):
-
-    files = args['<files>']
-    events = calibration_event_stream(files, telescope_id=1, max_events=100)
-    mean, std, mode, max = compute_event_stats(events)
-
-    events = calibration_event_stream(files, telescope_id=1, max_events=10)
-    events = subtract_baseline(events, mode)
-    # events = normalize_adc_samples(events, std)
-    # events = find_pulse_1(events, 0.5, 20)
-    events = find_pulse_2(events, widths=[5, 6], threshold=2*std)
-    # events = normalize_adc_samples(events, 1./std)
-    events = compute_charge(events, width=7)
-    events = compute_amplitude(events)
-
-    spe = Histogram1D(data_shape=(1296, ), bin_edges=np.arange(-20, 200, 1))
-
-    plt.figure()
-
-    pixel = 10
-
-    template_file = 'digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat'
-
-    window_template = filter_template(template_file, 0.1)
-    window_template = window_template[window_template > 0]
-
-    for event in tqdm(events):
-
-        charge_reco = event.reconstructed_charge[pixel]
-        amp_reco = event.reconstructed_amplitude[pixel]
-
-        window = np.array([0.1, 0.4, 0.6, 0.4, 0.1])
-        window /= np.sum(window)
-        # conv = scipy.ndimage.convolve1d(event.adc_samples, window_template)
-        plt.plot(event.adc_samples[pixel])
-        plt.plot(window_template)
-        plt.plot(charge_reco, linestyle='None', marker='x')
-        plt.plot(amp_reco, linestyle='None', marker='o')
-        plt.show()
-        spe.fill(event.reconstructed_charge)
-
-    spe.save('temp.pk')
-    spe = Histogram1D.load('temp.pk')
-
-    spe.draw(index=(0, ))
-
-    snr = 8
-    temp = spe.data.sum(axis=0)
-
-    fit_spe(spe._bin_centers(),temp, np.sqrt(temp))
-
-    return
-
-
 def spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
 
     amplitudes = np.array([a_1, a_2, a_3, a_4])
@@ -295,6 +241,60 @@ def fit_spe(x, y, y_err):
 def minimiser(x, y, y_err, f, *args):
 
     return np.sum(((y - f(x, *args)) / y_err)**2)
+
+
+def main(args):
+
+    files = args['<files>']
+    events = calibration_event_stream(files, telescope_id=1, max_events=100)
+    mean, std, mode, max = compute_event_stats(events)
+
+    events = calibration_event_stream(files, telescope_id=1, max_events=10)
+    events = subtract_baseline(events, mode)
+    # events = normalize_adc_samples(events, std)
+    # events = find_pulse_1(events, 0.5, 20)
+    events = find_pulse_2(events, widths=[5, 6], threshold=2*std)
+    # events = normalize_adc_samples(events, 1./std)
+    events = compute_charge(events, width=7)
+    events = compute_amplitude(events)
+
+    spe = Histogram1D(data_shape=(1296, ), bin_edges=np.arange(-20, 200, 1))
+
+    plt.figure()
+
+    pixel = 10
+
+    template_file = 'digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat'
+
+    window_template = filter_template(template_file, 0.1)
+    window_template = window_template[window_template > 0]
+
+    for event in tqdm(events):
+
+        charge_reco = event.reconstructed_charge[pixel]
+        amp_reco = event.reconstructed_amplitude[pixel]
+
+        window = np.array([0.1, 0.4, 0.6, 0.4, 0.1])
+        window /= np.sum(window)
+        # conv = scipy.ndimage.convolve1d(event.adc_samples, window_template)
+        plt.plot(event.adc_samples[pixel])
+        plt.plot(window_template)
+        plt.plot(charge_reco, linestyle='None', marker='x')
+        plt.plot(amp_reco, linestyle='None', marker='o')
+        plt.show()
+        spe.fill(event.reconstructed_charge)
+
+    spe.save('temp.pk')
+    spe = Histogram1D.load('temp.pk')
+
+    spe.draw(index=(0, ))
+
+    snr = 8
+    temp = spe.data.sum(axis=0)
+
+    fit_spe(spe._bin_centers(),temp, np.sqrt(temp))
+
+    return
 
 
 if __name__ == '__main__':
