@@ -10,8 +10,6 @@ from astropy.coordinates import Angle
 from astropy.table import Table
 from astropy.utils import lazyproperty
 from scipy.spatial import cKDTree as KDTree
-from scipy.interpolate import splrep, splev
-import scipy.ndimage as ndimage
 from ctapipe.utils.linalg import rotation_matrix_2d
 
 __all__ = ['CameraGeometry']
