@@ -382,7 +382,6 @@ class DataContainer(Container):
     count = Field(0, "number of events processed")
 
 
-
 class CalibrationContainer(Container):
     """
     This Container() is used for the camera calibration pipeline.
