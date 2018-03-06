@@ -9,7 +9,7 @@ def perform_analysis(
     paths,
     output_directory,
     baseline_path='./dark_baseline.npz',
-    n_jobs=4,
+    n_jobs=3,
 ):
     os.makedirs(output_directory, exist_ok=True)
     kwargs = make_kwargs(analysis, baseline_path, paths, output_directory)
