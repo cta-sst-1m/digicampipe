@@ -2,7 +2,6 @@ from digicampipe.io.hdf5 import digicamtoy_event_source
 from digicampipe.io.event_stream import event_stream
 import pkg_resources
 import os
-import pytest
 
 example_file_paths = []
 
@@ -39,13 +38,13 @@ def test_event_stream():
 
 def test_n_pixels():
 
-    for event in event_stream(example_file_paths, mc=True):
+    for event in event_stream(example_file_paths):
 
         assert event.inst.num_pixels[TEL_WITH_DATA] == N_PIXELS
 
 
 def test_tel_with_data():
 
-    for event in event_stream(example_file_paths, mc=True):
+    for event in event_stream(example_file_paths):
 
         assert TEL_WITH_DATA in event.r0.tels_with_data
