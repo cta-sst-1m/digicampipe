@@ -97,10 +97,6 @@ class CameraCalibration:
             self.lut_nsb_rate
         )
 
-    def nsb_rate(self, baseline_shift):
-
-        return splev(baseline_shift, self.spline_nsb_rate)
-
     def _integrate(self, data):
         """
         Simple integration function over N samples
