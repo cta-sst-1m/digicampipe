@@ -42,11 +42,11 @@ if __name__ == '__main__':
     parser.add_option('-r', "--primary", dest='primary',
                       help='Primary particle', default='gamma', type=str)
     parser.add_option('-d', "--baseline0", dest='baseline_beginning',
-                      help='N bins from the beginning of the waveform for \
-                      baseline calculation', type=int, default=9)
+                      help='N bins from the beginning of the waveform for '
+                      'baseline calculation', type=int, default=9)
     parser.add_option('-e', "--baseline1", dest='baseline_end',
-                      help='N bins from the end of the waveform for baseline \
-                      calculation', type=int, default=15)
+                      help='N bins from the end of the waveform for baseline '
+                      'calculation', type=int, default=15)
 
     (options, args) = parser.parse_args()
 
