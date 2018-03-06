@@ -24,6 +24,10 @@ from digicampipe.io.containers import CalibrationContainer
 from digicampipe.utils.utils import filter_template
 
 
+class FirstPhotoElectronPeakNotFound(Exception):
+    pass
+
+
 def calibration_event_stream(path, telescope_id, max_events):
 
     container = CalibrationContainer()
@@ -150,6 +154,11 @@ def compute_fit_init_param(x, y, snr=8, sigma_e=None):
     mask = ((temp / np.sqrt(temp)) > snr) * (temp > 0)
     temp[~mask] = 0
     peak_indices = scipy.signal.argrelmax(temp, order=4)[0]
+
+    if not len(peak_indices) > 0:
+
+        raise FirstPhotoElectronPeakNotFound('Could not detect any peak in the'
+                                             'histogram')
 
     amplitudes = np.zeros(4)
     for i, peak_index in enumerate(peak_indices[1:]):
