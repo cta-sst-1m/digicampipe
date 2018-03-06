@@ -11,3 +11,4 @@ from digicampipe.utils import utils
 import protozfitsreader
 from protozfitsreader import rawzfitsreader
 from protozfitsreader import ZFile
+from histogram.histogram import Histogram1D
