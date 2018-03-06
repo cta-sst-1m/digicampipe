@@ -32,7 +32,7 @@ def test_event_source():
 
 def test_event_stream():
 
-    for _ in event_stream(example_file_paths, mc=True):
+    for _ in event_stream(example_file_paths):
 
         pass
 
