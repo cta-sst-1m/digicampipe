@@ -51,6 +51,12 @@ If you want to execute all tests, please do:
 
     pytest -c all_tests.ini
 
+### Writing tests
+
+To write tests please follow the instructions in the [Pytest-doc](https://docs.pytest.org/en/latest/getting-started.html).
+It is important that you add the test resources to the repo. To do this add the resource path to "package_data=" in the setup.py
+file.
+
 ## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
 
 In the `digicampipe` directory run:
