@@ -23,7 +23,7 @@ TEL_WITH_DATA = 1
 N_PIXELS = 1296
 
 
-def test_event_source():
+def test_digicamtoy_event_source():
 
     for _ in digicamtoy_event_source(example_file_paths[0]):
         pass
