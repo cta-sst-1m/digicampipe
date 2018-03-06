@@ -37,14 +37,6 @@ def test_event_stream():
         pass
 
 
-@pytest.mark.xfail
-def test_event_stream_without_mc_option_fails():
-
-    for _ in event_stream(example_file_paths):
-
-        pass
-
-
 def test_n_pixels():
 
     for event in event_stream(example_file_paths, mc=True):
