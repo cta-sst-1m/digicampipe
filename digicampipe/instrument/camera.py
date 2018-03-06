@@ -235,12 +235,12 @@ class CameraGeometry:
     def __repr__(self):
         return "CameraGeometry(cam_id='{cam_id}', pix_type='{pix_type}', " \
                "npix={npix}, cam_rot={camrot}, pix_rot={pixrot})".format(
-            cam_id=self.cam_id,
-            pix_type=self.pix_type,
-            npix=len(self.pix_id),
-            pixrot=self.pix_rotation,
-            camrot=self.cam_rotation
-        )
+                cam_id=self.cam_id,
+                pix_type=self.pix_type,
+                npix=len(self.pix_id),
+                pixrot=self.pix_rotation,
+                camrot=self.cam_rotation
+                )
 
     def __str__(self):
         return self.cam_id
@@ -417,9 +417,10 @@ def _guess_camera_type(npix, optical_foclen):
     try:
         return _CAMERA_GEOMETRY_TABLE[(npix, None)]
     except KeyError:
-        return _CAMERA_GEOMETRY_TABLE.get((npix, round(optical_foclen.value, 1)),
-                                          ('unknown', 'unknown', 'hexagonal',
-                                           0 * u.degree, 0 * u.degree))
+        return _CAMERA_GEOMETRY_TABLE.get(
+            (npix, round(optical_foclen.value, 1)),
+            ('unknown', 'unknown', 'hexagonal', 0 * u.degree, 0 * u.degree)
+            )
 
 
 def _neighbor_list_to_matrix(neighbors):
