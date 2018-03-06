@@ -14,7 +14,7 @@ from scipy.interpolate import splrep, splev
 import scipy.ndimage as ndimage
 from ctapipe.utils.linalg import rotation_matrix_2d
 
-__all__ = ['CameraGeometry', 'CameraCalibration']
+__all__ = ['CameraGeometry']
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ _CAMERA_GEOMETRY_TABLE = {
     (11328, None):
         ('SCT', 'SCTCam', 'rectangular', 0 * u.degree, 0 * u.degree),
 }
+
 
 class CameraGeometry:
     """`CameraGeometry` is a class that stores information about a
