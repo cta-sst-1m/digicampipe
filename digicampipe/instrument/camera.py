@@ -97,10 +97,6 @@ class CameraCalibration:
             self.lut_nsb_rate
         )
 
-    def gain(self, baseline_shift):
-
-        return self.gain * splev(baseline_shift, self.spline_gain_drop)
-
     def nsb_rate(self, baseline_shift):
 
         return splev(baseline_shift, self.spline_nsb_rate)
