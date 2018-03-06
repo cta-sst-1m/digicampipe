@@ -60,7 +60,7 @@ def subtract_baseline(events, baseline):
 
     for event in events:
 
-        event.adc_samples = event.adc_samples - baseline[..., np.newaxis]
+        event.adc_samples -= baseline[..., np.newaxis]
 
         yield event
 
