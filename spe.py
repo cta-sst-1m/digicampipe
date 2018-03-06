@@ -59,6 +59,7 @@ def subtract_baseline(events, baseline):
 
     for event in events:
 
+        event.adc_samples = event.adc_samples.astype(baseline.dtype)
         event.adc_samples -= baseline[..., np.newaxis]
 
         yield event
@@ -266,8 +267,8 @@ def main(args):
 
     template_file = 'digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat'
 
-    window_template = filter_template(template_file, 0.1)
-    window_template = window_template[window_template > 0]
+    # window_template = filter_template(template_file, 0.1)
+    # window_template = window_template[window_template > 0]
 
     for event in tqdm(events):
 
@@ -278,7 +279,7 @@ def main(args):
         window /= np.sum(window)
         # conv = scipy.ndimage.convolve1d(event.adc_samples, window_template)
         plt.plot(event.adc_samples[pixel])
-        plt.plot(window_template)
+        # plt.plot(window_template)
         plt.plot(charge_reco, linestyle='None', marker='x')
         plt.plot(amp_reco, linestyle='None', marker='o')
         plt.show()
