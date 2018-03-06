@@ -41,13 +41,9 @@ def rswl(impact_parameter, size, width, length, rsw_lookup, rsl_lookup):
 
 def efficiency_comp(gamma_cut, rswl):
 
-    efficiency = []
-
-    for ghc in gamma_cut:
-
-        efficiency.append(len(rswl[rswl < ghc])/len(rswl))
-
-    efficiency = np.array(efficiency)
+    bellow_gamma_cut = rswl < gamma_cut[..., np.newaxis]
+    efficiency = np.sum(bellow_gamma_cut, axis=1)
+    efficiency = efficiency/rswl.shape[0]
 
     return efficiency
 

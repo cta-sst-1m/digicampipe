@@ -11,7 +11,7 @@ def line_point_distance(p1, c, p):
 
     a = np.cross((p1 - p), c)
 
-    return np.sqrt(np.sum(a**2)/np.sum(c**2))
+    return np.sqrt(np.sum(a**2, axis=-1)/np.sum(c**2, axis=-1))
 
 
 def impact_parameter(x_core, y_core, telpos, theta, phi):
@@ -23,11 +23,6 @@ def impact_parameter(x_core, y_core, telpos, theta, phi):
     direction = np.array([cx, cy, cz]).T
     impact_point = np.array([x_core, y_core, np.zeros(x_core.shape[0])]).T
 
-    impact = []
-    for i in range(direction.shape[0]):
-
-        impact.append(line_point_distance(impact_point[i],
-                                          direction[i],
-                                          telpos))
+    impact = line_point_distance(impact_point, direction, telpos)
 
     return impact
