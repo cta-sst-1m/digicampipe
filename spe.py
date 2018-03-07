@@ -28,7 +28,7 @@ class FirstPhotoElectronPeakNotFound(Exception):
     pass
 
 
-def calibration_event_stream(path, telescope_id, max_events):
+def calibration_event_stream(path, telescope_id, max_events=None):
 
     container = CalibrationContainer()
 
@@ -256,10 +256,10 @@ def minimiser(x, y, y_err, f, *args):
 def main(args):
 
     files = args['<files>']
-    events = calibration_event_stream(files, telescope_id=1, max_events=100)
+    events = calibration_event_stream(files, telescope_id=1)
     mean, std, mode, max = compute_event_stats(events)
 
-    events = calibration_event_stream(files, telescope_id=1, max_events=10)
+    events = calibration_event_stream(files, telescope_id=1)
     events = subtract_baseline(events, mode)
     # events = normalize_adc_samples(events, std)
     # events = find_pulse_1(events, 0.5, 20)
@@ -279,16 +279,16 @@ def main(args):
     # window_template = filter_template(template_file, 0.1)
     # window_template = window_template[window_template > 0]
 
-    for event in tqdm(events):
+    for event, i in tqdm(zip(events, range(10000)), total=10000):
 
         charge_reco = event.reconstructed_charge[pixel]
         amp_reco = event.reconstructed_amplitude[pixel]
 
-        plt.plot(event.adc_samples[pixel])
-        plt.plot(charge_reco, linestyle='None', marker='x')
-        plt.plot(amp_reco, linestyle='None', marker='o')
-        plt.show()
-        spe.fill(event.reconstructed_charge)
+        # plt.plot(event.adc_samples[pixel])
+        # plt.plot(charge_reco, linestyle='None', marker='x')
+        # plt.plot(amp_reco, linestyle='None', marker='o')
+        # plt.show()
+        # spe.fill(event.reconstructed_charge)
 
     spe.save('temp.pk')
     spe = Histogram1D.load('temp.pk')
