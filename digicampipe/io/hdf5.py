@@ -2,6 +2,7 @@ import warnings
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
+import numpy as np
 
 __all__ = ['digicamtoy_event_source']
 
@@ -41,7 +42,11 @@ def digicamtoy_event_source(
 
     data = DataContainer()
     hdf5 = h5py.File(url, 'r')
-    n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
+
+    data_set = hdf5['data']['adc_count']
+    n_events, n_pixels, n_samples = data_set.shape
+    adc_count = np.zeros(data_set.shape)
+    data_set.read_direct(adc_count)
 
     if max_events is None:
 
@@ -56,7 +61,7 @@ def digicamtoy_event_source(
 
         for tel_id in data.r0.tels_with_data:
 
-            if event_id < 1:
+            if event_id == 0:
 
                 data.inst.num_channels[tel_id] = 1
                 data.inst.num_pixels[tel_id] = n_pixels
@@ -71,6 +76,6 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].gps_time = event_id
             data.r0.tel[tel_id].camera_event_type = None
             data.r0.tel[tel_id].array_event_type = None
-            data.r0.tel[tel_id].adc_samples = hdf5['data']['adc_count'][..., event_id]
+            data.r0.tel[tel_id].adc_samples = adc_count[event_id]
 
         yield data

@@ -2,12 +2,10 @@ from digicampipe.io.hdf5 import digicamtoy_event_source
 from digicampipe.io.event_stream import event_stream
 import pkg_resources
 import os
-import pytest
-import time
 
 example_file_paths = []
 
-for i in range(12):
+for i in range(1):
 
     path = pkg_resources.resource_filename(
         'digicampipe',
