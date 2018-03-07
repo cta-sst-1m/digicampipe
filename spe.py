@@ -284,11 +284,7 @@ def main(args):
         charge_reco = event.reconstructed_charge[pixel]
         amp_reco = event.reconstructed_amplitude[pixel]
 
-        window = np.array([0.1, 0.4, 0.6, 0.4, 0.1])
-        window /= np.sum(window)
-        # conv = scipy.ndimage.convolve1d(event.adc_samples, window_template)
         plt.plot(event.adc_samples[pixel])
-        # plt.plot(window_template)
         plt.plot(charge_reco, linestyle='None', marker='x')
         plt.plot(amp_reco, linestyle='None', marker='o')
         plt.show()
