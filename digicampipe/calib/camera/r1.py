@@ -3,6 +3,8 @@ from digicampipe.utils import calib
 
 
 def calibrate_to_r1(event_stream, dark_baseline):
+    if dark_baseline is not None:
+        dark_baseline = dark_baseline['baseline']
 
     for event in event_stream:
 
@@ -31,7 +33,7 @@ def calibrate_to_r1(event_stream, dark_baseline):
                     standard_deviation, 'std')
             else:
                 # compute NSB and Gain drop from baseline shift
-                r0_camera.dark_baseline = dark_baseline['baseline']
+                r0_camera.dark_baseline = dark_baseline
                 baseline_shift = baseline - r0_camera.dark_baseline
                 r1_camera.gain_drop = calib.compute_gain_drop(
                     baseline_shift, 'mean')
