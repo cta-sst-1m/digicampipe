@@ -1,4 +1,3 @@
-import warnings
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
@@ -11,7 +10,6 @@ def digicamtoy_event_source(
     url,
     camera=None,
     max_events=None,
-    camera_geometry=None
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
@@ -21,20 +19,14 @@ def digicamtoy_event_source(
     max_events : int, optional
         maximum number of events to read
     camera : utils.Camera() or None for DigiCam
-    camera_geometry: soon to be deprecated
     """
     if camera is None:
         camera = utils.DigiCam
 
     if not isinstance(camera, utils.Camera):
-        warnings.warn(
-            "camera should be utils.Camera not cts_core.camera.Camera",
-            FutureWarning
-        )
+        raise ValueError("camera should be utils.Camera"
+                         " not cts_core.camera.Camera")
 
-        patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
-        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
-        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
     else:
         patch_matrix = camera.patch_matrix
         cluster_7_matrix = camera.cluster_7_matrix
@@ -43,10 +35,10 @@ def digicamtoy_event_source(
     data = DataContainer()
     hdf5 = h5py.File(url, 'r')
 
-    data_set = hdf5['data']['adc_count']
-    n_events, n_pixels, n_samples = data_set.shape
-    adc_count = np.zeros(data_set.shape)
-    data_set.read_direct(adc_count)
+    full_data_set = hdf5['data']['adc_count']
+    n_events, n_pixels, n_samples = full_data_set.shape
+
+    chunk_size = 150
 
     if max_events is None:
 
@@ -71,11 +63,20 @@ def digicamtoy_event_source(
                 data.inst.patch_matrix[tel_id] = patch_matrix
                 data.inst.num_samples[tel_id] = n_samples
 
+            if (event_id % chunk_size) == 0:
+
+                index_in_chunk = 0
+                chunk_start = (event_id // chunk_size) * chunk_size
+                chunk_end = chunk_start + chunk_size
+                chunk_end = min(chunk_end, n_events)
+                adc_count = full_data_set[chunk_start:chunk_end]
+
             data.r0.tel[tel_id].camera_event_number = event_id
             data.r0.tel[tel_id].local_camera_clock = None
             data.r0.tel[tel_id].gps_time = event_id
             data.r0.tel[tel_id].camera_event_type = None
             data.r0.tel[tel_id].array_event_type = None
-            data.r0.tel[tel_id].adc_samples = adc_count[event_id]
+            data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
+            index_in_chunk += 1
 
         yield data
