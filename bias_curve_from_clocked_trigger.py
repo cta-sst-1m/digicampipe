@@ -1,18 +1,19 @@
+'''
+Make a "Bias Curve" or perform a "Rate-scan",
+i.e. measure the trigger rate as a function of threshold.
+
+Usage:
+  bias_curve_from_clocked_trigger <outfile> <fitsfiles>...
+'''
+from docopt import docopt
 from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
 import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    # Data configuration
+    args = docopt(__doc__)
 
-    directory = '/home/alispach/data/CRAB_01/'  #
-    filename = directory + 'CRAB_01_0_000.%03d.fits.fz'
-    urls = [filename % number for number in range(3, 23)]
-    camera_config_file = '/home/alispach/ctasoft/CTS/config/camera_config.cfg'
-    trigger_filename = 'trigger_rate_no_blinding.npz'
-
-    # Trigger configuration
     blinding = True
     by_cluster = False
     thresholds = np.arange(0, 500, 5)
@@ -44,21 +45,11 @@ if __name__ == '__main__':
     nsb_care = [1.5, 1.0, 0.9]
 
     # Define the event stream
-    data_stream = event_stream(urls)
+
+    data_stream = event_stream(args['<fitsfiles>'])
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 
-    # unwanted_patch = None  # [306, 318, 330, 342, 200]
-    # data_stream = filter.set_patches_to_zero(
-    #     data_stream,
-    #     unwanted_patch=unwanted_patch
-    # )
-    # data_stream = save_bias_curve(data_stream, thresholds=thresholds,
-    #                              output_filename=directory+trigger_filename,
-    #                              camera=digicam,
-    #                              blinding=blinding,
-    #                              by_cluster=by_cluster)
-
-    data = np.load(directory + trigger_filename)
+    data = np.load(args['<outfile>'])
 
     fig = plt.figure()
     axis = fig.add_subplot(111)
