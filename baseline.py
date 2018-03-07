@@ -23,9 +23,9 @@ from tqdm import tqdm
 from docopt import docopt
 
 
-def main(baseline_file_path, files, unwanted_pixels=[]):
+def main(baseline_file_path, urls, unwanted_pixels=[]):
 
-    data_stream = event_stream(file_list=files)
+    data_stream = event_stream(urls)
     data_stream = filter.set_pixels_to_zero(
         data_stream,
         unwanted_pixels=unwanted_pixels)
@@ -42,6 +42,6 @@ if __name__ == "__main__":
         int(x) for x in args['--unwanted_pixels'].split(',') if x]
     main(
         baseline_file_path=args['<baseline_file_path>'],
-        files=args['<files>'],
+        urls=args['<files>'],
         unwanted_pixels=args['--unwanted_pixels']
     )

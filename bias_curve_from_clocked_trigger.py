@@ -45,6 +45,7 @@ if __name__ == '__main__':
     nsb_care = [1.5, 1.0, 0.9]
 
     # Define the event stream
+
     data_stream = event_stream(args['<fitsfiles>'])
     data_stream = filter.filter_event_types(data_stream, flags=[8])
 

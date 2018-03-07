@@ -12,7 +12,8 @@ Options:
   -h --help     Show this screen.
   -i <file>, --input=<file>  input file [default: {example_file}]
   -o <dir>, --outdir=<dir>  output directory [default: .]
-  --unwanted_patches=<integers>   list of integers with commas [default: 306, 318, 330, 342, 200]
+  --unwanted_patches=<integers>  list of integers with commas \
+[default: 306, 318, 330, 342, 200]
   --unwanted_clusters=<integers>   list of integers with commas [default: 200]
   --unblind   do not use blind
 '''
@@ -43,7 +44,7 @@ __doc__ = __doc__.format(
 
 def main(
     output_directory,
-    files,
+    urls,
     unwanted_patches,
     unwanted_clusters,
     blinding
@@ -54,7 +55,7 @@ def main(
     thresholds = np.arange(0, 400, 10)
 
     data_stream = event_stream(
-        file_list=files,
+        urls,
         camera=DigiCam
     )
     data_stream = filter.set_patches_to_zero(
@@ -115,7 +116,7 @@ if __name__ == "__main__":
 
     main(
         output_directory=args['--outdir'],
-        files=args['--input'],
+        urls=args['--input'],
         unwanted_patches=args['--unwanted_patches'],
         unwanted_clusters=args['--unwanted_clusters'],
         blinding=not args['--unblind'],
