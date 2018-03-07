@@ -1,44 +1,23 @@
-#!/usr/bin/env python
-'''
-
-Example:
-  ./pipeline_crab.py \
-  --baseline_path=../sst1m_crab/dark.npz \
-  --outfile_path=./hillas_output.txt \
-  ../sst1m_crab/SST1M01_20171030.01*
-
-Usage:
-  pipeline_crab.py [options] <files>...
-
-
-Options:
-  -h --help     Show this screen.
-  --display     Display rather than output data
-  -o <path>, --outfile_path=<path>   path to the output file
-  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
-  --min_photon <int>     Filtering on big showers [default: 20]
-'''
 from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
-from cts_core.utils import Camera
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text
+from digicampipe.io.save_hillas import save_hillas_parameters_in_list
 from digicampipe.visualization import EventViewer
 from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
-from docopt import docopt
 
 
-def main(args):
+def main(
+    files,
+    baseline_path,
+    min_photon=20,
+    display=False,
+):
+    hillas_parameters = []
+
     # Input/Output files
-    dark_baseline = np.load(args['--baseline_path'])
-
-    digicam = Camera(
-        # Source coordinates (in camera frame)
-        source_x=0. * u.mm,
-        source_y=0. * u.mm,
-    )
+    dark_baseline = np.load(baseline_path)
 
     # Config for NSB + baseline evaluation
     n_bins = 1000
@@ -85,19 +64,18 @@ def main(args):
     shower_distance = 200 * u.mm
 
     # Define the event stream
-    data_stream = event_stream(file_list=args['<files>'], camera=digicam)
+    data_stream = event_stream(files)
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)
     # Compute baseline with clocked triggered events (sliding average over n_bins)
-    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
+    data_stream = random_triggers.fill_baseline_r0_but_not_baseline(data_stream, n_bins=n_bins)
+
     # Stop events that are not triggered by DigiCam algorithm (end of clocked triggered events)
     data_stream = filter.filter_event_types(data_stream, flags=[1, 2])
-    # Do not return events that have not the baseline computed (only first events)
-    data_stream = filter.filter_missing_baseline(data_stream)
 
     # Run the r1 calibration (i.e baseline substraction)
-    data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
+    data_stream = r1.calibrate_to_r1_using_digicam_baseline_only_every_2_sec(data_stream, dark_baseline)
     # Run the dl0 calibration (data reduction, does nothing)
     data_stream = dl0.calibrate_to_dl0(data_stream)
     # Run the dl1 calibration (compute charge in photons + cleaning)
@@ -108,23 +86,23 @@ def main(args):
                                        boundary_threshold=boundary_threshold)
     # Return only showers with total number of p.e. above min_photon
     data_stream = filter.filter_shower(
-        data_stream, min_photon=args['--min_photon'])
+        data_stream, min_photon)
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(
         data_stream, reclean=reclean, shower_distance=shower_distance)
 
-    if args['--display']:
+    if display:
 
         with plt.style.context('ggplot'):
             display = EventViewer(data_stream)
             display.draw()
     else:
-        save_hillas_parameters_in_text(
-            data_stream=data_stream, output_filename=args['--outfile_path'])
+        save_hillas_parameters_in_list(
+            data_stream=data_stream,
+            list=hillas_parameters)
 
+    for event in data_stream:
+        assert np.isnan(event.r0.tel[1].baseline).all()
+        pass
 
-if __name__ == '__main__':
-    args = docopt(__doc__)
-    print(args)
-    args['--min_photon'] = int(args['--min_photon'])
-    main(args)
+    return hillas_parameters
