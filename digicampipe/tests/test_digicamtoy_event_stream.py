@@ -2,6 +2,8 @@ from digicampipe.io.hdf5 import digicamtoy_event_source
 from digicampipe.io.event_stream import event_stream
 import pkg_resources
 import os
+import pytest
+import time
 
 example_file_paths = []
 
@@ -23,10 +25,19 @@ TEL_WITH_DATA = 1
 N_PIXELS = 1296
 
 
-def test_digicamtoy_event_source():
+def test_event_source():
 
     for _ in digicamtoy_event_source(example_file_paths[0]):
         pass
+
+
+def test_event_source_speed_100_events(benchmark):
+
+    @benchmark
+    def func():
+        for _, i in zip(event_stream(example_file_paths), range(100)):
+            pass
+        assert i == 99
 
 
 def test_event_stream():
