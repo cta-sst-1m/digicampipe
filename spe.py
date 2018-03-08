@@ -255,7 +255,9 @@ def minimiser(x, y, y_err, f, *args):
 
 def main(args):
 
+
     files = args['<files>']
+
     events = calibration_event_stream(files, telescope_id=1)
     mean, std, mode, max = compute_event_stats(events)
 
@@ -269,6 +271,7 @@ def main(args):
     events = compute_amplitude(events)
 
     spe = Histogram1D(data_shape=(1296, ), bin_edges=np.arange(-20, 200, 1))
+    spe_amplitude = Histogram1D(data_shape=(1296, ), bin_edges=np.arange(-20, 200, 1))
 
     plt.figure()
 
@@ -281,19 +284,23 @@ def main(args):
 
     for event, i in tqdm(zip(events, range(10000)), total=10000):
 
-        charge_reco = event.reconstructed_charge[pixel]
-        amp_reco = event.reconstructed_amplitude[pixel]
+        spe.fill(event.reconstructed_charge)
+        spe_amplitude.fill(event.reconstructed_amplitude)
+        # print(event.reconstructed_charge)
 
         # plt.plot(event.adc_samples[pixel])
         # plt.plot(charge_reco, linestyle='None', marker='x')
         # plt.plot(amp_reco, linestyle='None', marker='o')
         # plt.show()
-        # spe.fill(event.reconstructed_charge)
 
     spe.save('temp.pk')
-    spe = Histogram1D.load('temp.pk')
+    spe.save('temp_amplitute.pk')
 
-    spe.draw(index=(0, ))
+    spe = Histogram1D.load('temp.pk')
+    print(spe.data)
+
+    spe.draw(index=(10, ))
+    plt.show()
 
     snr = 8
     temp = spe.data.sum(axis=0)
