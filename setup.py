@@ -1,9 +1,12 @@
 from setuptools import setup
 
+with open('digicampipe/VERSION') as f:
+    __version__ = f.read().strip()
+
 
 setup(
     name='digicampipe',
-    version='0.1.3',
+    version=__version__,
     packages=[
         'digicampipe',
         'digicampipe.io',
@@ -12,7 +15,8 @@ setup(
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
-        'digicampipe.instrument'
+        'digicampipe.instrument',
+        'digicampipe.scripts',
     ],
     url='https://github.com/calispac/digicampipe',
     license='GNU GPL 3.0',
@@ -31,6 +35,15 @@ setup(
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
     package_data={
-        '': ['tests/resources/*', 'tests/resources/stars_on_lid/*'],
+        '': [
+            'VERSION',
+            'tests/resources/*',
+            'tests/resources/stars_on_lid/*'
+        ],
     },
+    entry_points={
+        'console_scripts': [
+            'digicamview=digicampipe.scripts.digicamview:entry',
+        ],
+    }
 )

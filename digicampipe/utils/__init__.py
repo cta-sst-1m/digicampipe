@@ -30,6 +30,26 @@ class Camera(camera.Camera):
                     'camera_config.cfg'
                 )
             )
+            self.config_file = kwargs['_config_file']
+        elif args:
+            self.config_file = args[0]
+        else:
+            self.config_file = kwargs['_config_file']
         super().__init__(*args, **kwargs)
 
-        self.geometry = geometry.generate_geometry_from_camera(camera=self)
+        geometry_kwargs = {}
+        if 'source_x' in kwargs:
+            geometry_kwargs['source_x'] = kwargs['source_x']
+        if 'source_y' in kwargs:
+            geometry_kwargs['source_y'] = kwargs['source_y']
+        self.geometry = geometry.generate_geometry_from_camera(
+            camera=self,
+            **geometry_kwargs
+        )
+        self.patch_matrix = geometry.compute_patch_matrix(camera=self)
+        self.cluster_7_matrix = geometry.compute_cluster_matrix_7(camera=self)
+        self.cluster_19_matrix = geometry.compute_cluster_matrix_19(
+            camera=self)
+
+
+DigiCam = Camera()

@@ -12,7 +12,8 @@ Options:
   -h --help     Show this screen.
   -i <file>, --input=<file>  input file [default: {example_file}]
   -o <dir>, --outdir=<dir>  output directory [default: .]
-  --unwanted_patches=<integers>   list of integers with commas [default: 306, 318, 330, 342, 200]
+  --unwanted_patches=<integers>  list of integers with commas \
+[default: 306, 318, 330, 342, 200]
   --unwanted_clusters=<integers>   list of integers with commas [default: 200]
   --unblind   do not use blind
 '''
@@ -20,7 +21,7 @@ from digicampipe.calib.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve
-from digicampipe.utils import Camera
+from digicampipe.utils import DigiCam
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
@@ -43,7 +44,7 @@ __doc__ = __doc__.format(
 
 def main(
     output_directory,
-    files,
+    urls,
     unwanted_patches,
     unwanted_clusters,
     blinding
@@ -53,12 +54,9 @@ def main(
 
     thresholds = np.arange(0, 400, 10)
 
-    digicam = Camera()
     data_stream = event_stream(
-        file_list=files,
-        expert_mode=True,
-        camera_geometry=digicam.geometry,
-        camera=digicam
+        urls,
+        camera=DigiCam
     )
     data_stream = filter.set_patches_to_zero(
         data_stream,
@@ -118,7 +116,7 @@ if __name__ == "__main__":
 
     main(
         output_directory=args['--outdir'],
-        files=args['--input'],
+        urls=args['--input'],
         unwanted_patches=args['--unwanted_patches'],
         unwanted_clusters=args['--unwanted_clusters'],
         blinding=not args['--unblind'],
