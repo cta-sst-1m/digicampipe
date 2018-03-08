@@ -102,8 +102,20 @@ if __name__ == '__main__':
     example_lid_CCD_image_file_path = resource_filename('digicampipe',
                                                         'tests/resources/cones_1509411741.fits')
     """
-    example_lid_CCD_image_file_path = '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_1.tiff'
-    pos_predict = get_cones_position(example_lid_CCD_image_file_path, threshold_std=1)
+    lid_CCD_images = [
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_1.tiff',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_100.tiff',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_202.tiff',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_312.tiff',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_425.tiff',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_538.tiff',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_544_1.bmp',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_544_110.bmp',
+        '/home/yves/ctasoft/digicampipe/data/lidccd_images/VimbaImage_0_544_266.bmp',
+    ]
+    for example_lid_CCD_image_file_path in lid_CCD_images:
+        pos_predict = get_cones_position(example_lid_CCD_image_file_path, threshold_std=1)
+        print(pos_predict)
     """
     get_cones_position("../data/camera_2017-01-16.fits", threshold_std=15)
     """
