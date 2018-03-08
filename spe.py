@@ -255,7 +255,6 @@ def minimiser(x, y, y_err, f, *args):
 
 def main(args):
 
-
     files = args['<files>']
 
     events = calibration_event_stream(files, telescope_id=1)
