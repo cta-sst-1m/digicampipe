@@ -5,7 +5,7 @@ def fill_baseline_r0(event_stream, n_bins=10000):
     n_events = None
     baselines = []
     baselines_std = []
-    for count, event in enumerate(event_stream):
+    for event in event_stream:
         for telescope_id in event.r0.tels_with_data:
             r0_camera = event.r0.tel[telescope_id]
             adc_samples = r0_camera.adc_samples
