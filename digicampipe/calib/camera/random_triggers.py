@@ -13,9 +13,9 @@ def fill_baseline_r0(event_stream, n_bins=10000):
                 n_events = n_bins // adc_samples.shape[1]
 
             if r0_camera.camera_event_type == 8:
-                baselines.append(np.mean(adc_samples, axis=1))
+                baselines.append(adc_samples.mean(axis=1))
                 baselines = baselines[-n_events:]
-                baselines_std.append(np.std(adc_samples, axis=1))
+                baselines_std.append(adc_samples.std(axis=1))
                 baselines_std = baselines_std[-n_events:]
 
             if len(baselines) == n_events:
