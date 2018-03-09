@@ -2,51 +2,25 @@ import numpy as np
 
 
 def fill_baseline_r0(event_stream, n_bins=10000):
-
-    count_calib_events = 0
-
+    n_events = None
+    baselines = []
+    baselines_std = []
     for count, event in enumerate(event_stream):
-
         for telescope_id in event.r0.tels_with_data:
-
-            if count == 0:
-                n_pixels = event.inst.num_pixels[telescope_id]
-                n_samples = event.inst.num_samples[telescope_id]
-                n_events = n_bins // n_samples
-                baselines = np.zeros((n_pixels, n_events))
-                baselines_std = np.zeros((n_pixels, n_events))
-                baseline = np.zeros(n_pixels)
-                std = np.zeros(n_pixels)
-
             r0_camera = event.r0.tel[telescope_id]
+            adc_samples = r0_camera.adc_samples
+            if n_events is None:
+                n_events = n_bins // adc_samples.shape[1]
 
             if r0_camera.camera_event_type == 8:
+                baselines.append(np.mean(adc_samples, axis=1))
+                baselines = baselines[-n_events:]
+                baselines_std.append(np.std(adc_samples, axis=1))
+                baselines_std = baselines_std[-n_events:]
 
-                adc_samples = r0_camera.adc_samples
-                new_mean = np.mean(adc_samples, axis=-1)
-                new_std = np.std(adc_samples, axis=-1)
-
-                baselines = np.roll(baselines, 1, axis=-1)
-                baselines_std = np.roll(baselines_std, 1, axis=-1)
-
-                baseline += new_mean - baselines[..., 0]
-                std += new_std - baselines_std[..., 0]
-
-                baselines[..., 0] = new_mean
-                baselines_std[..., 0] = new_std
-
-                count_calib_events += 1
-
-            if count_calib_events >= n_events:
-
-                r0_camera.baseline = baseline / n_events
-                r0_camera.standard_deviation = std / n_events
-
-            else:
-
-                r0_camera.baseline = np.zeros(n_pixels) * np.nan
-                r0_camera.standard_deviation = np.zeros(n_pixels) * np.nan
-
+            if len(baselines) == n_events:
+                r0_camera.baseline = np.mean(baselines, axis=0)
+                r0_camera.standard_deviation = np.mean(baselines_std, axis=0)
         yield event
 
 

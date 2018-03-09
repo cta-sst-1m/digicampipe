@@ -140,12 +140,12 @@ class R0CameraContainer(Container):
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray, 
+    adc_samples = Field(ndarray,
                         "numpy array containing ADC samples"
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
                      "(n_channels, x n_pixels)")
-    baseline = Field(ndarray, "number of time samples for telescope")
+    baseline = Field(None, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
     dark_baseline = Field(ndarray, 'dark baseline')
@@ -310,7 +310,7 @@ class ReconstructedShowerContainer(Container):
     is_valid = (False,
                 ('direction validity flag. True if the shower direction'
                  'was properly reconstructed by the algorithm'))
-    tel_ids = Field([], 
+    tel_ids = Field([],
                     ('list of the telescope ids used in the'
                      ' reconstruction of the shower'))
     average_size = Field(0.0, 'average size of used')
