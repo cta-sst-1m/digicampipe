@@ -20,13 +20,85 @@ from scipy.signal import find_peaks_cwt
 from scipy import ndimage
 from scipy.interpolate import splrep, sproot
 import scipy
-from iminuit import Minuit
+from iminuit import Minuit, describe
 from digicampipe.io.containers import CalibrationContainer
 from digicampipe.utils.utils import filter_template
 
 
-class FirstPhotoElectronPeakNotFound(Exception):
+class PeakNotFound(Exception):
     pass
+
+
+def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
+
+    temp = count.copy()
+    mask = ((count / np.sqrt(count)) > snr) * (count > 0)
+    temp[~mask] = 0
+    peak_indices = scipy.signal.argrelmax(temp, order=4)[0]
+
+    if not len(peak_indices) > 0:
+
+        raise PeakNotFound('Could not detect enough peaks in the histogram'
+                           'N_peaks found : {} \n '
+                           'SNR : {} \n'.format(len(peak_indices), snr))
+
+    if len(peak_indices) == 1:
+
+        mask = (count > 0) * (bins < bins[peak_indices[0]])
+        val = np.min(count[mask])
+        peak_indices = np.insert(peak_indices, 0, val)
+
+    x_peaks = np.array(bins[peak_indices])
+    # y_peaks = np.array(count[peak_indices])
+
+    peak_distance = np.diff(x_peaks)
+    peak_distance = np.mean(peak_distance) // 2
+    peak_distance = peak_distance.astype(np.int)
+
+    highest_peak_index = np.argmax(count)
+
+    highest_peak_range = [highest_peak_index + i for i in range(-peak_distance, peak_distance)]
+
+    bins = bins[highest_peak_range]
+    count = count[highest_peak_range]
+
+    parameter_names = describe(gaussian)
+    del(parameter_names[0])
+
+    mean = np.average(bins, weights=count)
+    std = np.average((bins - mean)**2, weights=count)
+    std = np.sqrt(std)
+    amplitude = np.sum(count)
+    parameter_init = [mean, std, amplitude]
+    parameter_init = dict(zip(parameter_names, parameter_init))
+
+    bound_names = []
+
+    for name in parameter_names:
+
+        bound_names.append('limit_' + name)
+
+    bounds = [(0, np.max(bins)),
+              (0.5 * std, 1.5 * std),
+              (0.5 * amplitude, 1.5 * amplitude)]
+
+    bounds = dict(zip(bound_names, bounds))
+
+    gaussian_minimizer = lambda mean, sigma, amplitude: \
+        minimiser(bins, count, np.sqrt(count),
+                  gaussian, mean, sigma, amplitude)
+
+    minuit = Minuit(gaussian_minimizer, **parameter_init, **bounds)
+    minuit.migrad()
+
+    if debug:
+
+        plt.figure()
+        plt.plot(bins, count)
+        plt.plot(bins, gaussian(bins, **minuit.values))
+        plt.show()
+
+    return minuit.values, minuit.errors
 
 
 def calibration_event_stream(path, telescope_id, max_events=None):
@@ -43,7 +115,7 @@ def calibration_event_stream(path, telescope_id, max_events=None):
 
 def compute_event_stats(events):
 
-    for count, event in enumerate(events):
+    for count, event in tqdm(enumerate(events)):
 
         if count == 0:
 
@@ -52,12 +124,7 @@ def compute_event_stats(events):
 
         adc_histo.fill(event.adc_samples)
 
-    mode = adc_histo.mode()
-    mean = adc_histo.mean()
-    std = adc_histo.std()
-    max = adc_histo.max
-
-    return mean, std, mode, max
+    return adc_histo
 
 
 def subtract_baseline(events, baseline):
@@ -151,115 +218,60 @@ def spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
 
 def compute_fit_init_param(x, y, snr=8, sigma_e=None):
 
+    init_params = compute_gaussian_parameters_highest_peak(x, y, snr=snr,
+                                                           debug=False)[0]
+    del(init_params['mean'], init_params['amplitude'])
+    init_params['baseline'] = 0
+
+    if sigma_e is None:
+
+        init_params['sigma_s'] = init_params['sigma'] / 2
+        init_params['sigma_e'] = init_params['sigma_s']
+
+    else:
+
+        init_params['sigma_s'] = init_params['sigma'] ** 2 - sigma_e ** 2
+        init_params['sigma_s'] = np.sqrt(init_params['sigma_s'])
+        init_params['sigma_e'] = sigma_e
+
+    del (init_params['sigma'])
+
     temp = y.copy()
     mask = ((temp / np.sqrt(temp)) > snr) * (temp > 0)
     temp[~mask] = 0
     peak_indices = scipy.signal.argrelmax(temp, order=4)[0]
 
-    if not len(peak_indices) > 0:
+    if not len(peak_indices) > 1:
 
-        raise FirstPhotoElectronPeakNotFound('Could not detect any peak in the'
-                                             'histogram')
+        raise PeakNotFound('Could not detect enough peak in the histogram'
+                           'N_peaks : {} \n'
+                           'SNR : {} \n'.format(len(peak_indices), snr))
 
     peaks_y = np.array(y[peak_indices])
-    peaks_x = np.array(x[peak_indices])
-
-    peaks_y = np.insert(peaks_y, 0, 0)
-    peaks_x = np.insert(peaks_x, 0, 0)
-
-    print(peaks_y, peaks_x)
-
-    gain = np.diff(peaks_x)
+    gain = np.array(x[peak_indices])
+    gain = np.diff(gain)
     gain = np.mean(gain)
 
-    print(gain)
+    init_params['gain'] = gain
 
-    temp = np.argmax(peaks_y)
-    one_pe_peak_x = peaks_x[temp]
-    zero_pe_peak_x = peaks_x[temp - 1]
+    for i in range(1, max(peaks_y.shape[0], 4)):
 
-    baseline = zero_pe_peak_x
-    print(x, zero_pe_peak_x)
-    one_pe_peak_index = np.where(x == one_pe_peak_x)[0][0]
-    print(one_pe_peak_index)
+        val = 0
 
-    x_right = (gain / 2).astype(np.int)
-    print(x_right)
-    one_pe_peak_region = [one_pe_peak_index + i for i in range(-x_right, x_right)]
-    print(one_pe_peak_region)
-    # y_max = np.max(y[one_pe_peak_region])
-    # s = splrep(x[one_pe_peak_region], y[one_pe_peak_region] - y_max / 2, k=3)
-    # roots = sproot(s)
+        if i < peaks_y.shape[0]:
 
-    # print(roots)
+            val = peaks_y[i]
 
+        init_params['a_{}'.format(i)] = val
 
-    # interp = scipy.interpolate.interp1d(y[..., one_pe_peak_region], x[..., one_pe_peak_region], kind='cubic')
-
-    # fwhm = interp(y[..., one_pe_peak_index]/2) - x[..., one_pe_peak_index]
-    # fwhm = np.abs(roots[1] - roots[0])
-    # sigma = fwhm / 2.355
-
-    x_1 = x[one_pe_peak_region]
-    y_1 = y[one_pe_peak_region]
-    mean_x_1 = np.average(x_1, weights=y_1)
-    std_x_1 = np.average((x_1 - mean_x_1)**2, weights=y_1)
-    std_x_1 = np.sqrt(std_x_1)
-    n_entries = np.sum(y_1)
-
-
-    keys = [
-        'limit_mean', 'limit_sigma', 'limit_amplitude'
-    ]
-
-    values = [
-        (0, x_1.max()),
-        (0, x_1.max()),
-        (n_entries * 0.5, n_entries * 1.5)
-    ]
-
-    param_bounds = dict(zip(keys, values))
-
-    params_init = {'mean': mean_x_1, 'sigma': std_x_1, 'amplitude': n_entries}
-
-    # plt.figure()
-    # plt.plot(x, y)
-    # plt.plot(x[peak_indices], y[peak_indices], linestyle='None', marker='o')
-    # plt.plot(x_1, y_1, linestyle='None', marker='o')
-    # plt.plot(x_1, gaussian(x_1, **params_init))
-    # plt.show()
-
-    f = lambda mean, sigma, amplitude: minimiser(x_1, y_1, np.sqrt(y_1), gaussian, mean, sigma, amplitude)
-    m = Minuit(f, **params_init, **param_bounds, print_level=0, pedantic=False)
-    m.migrad()
-
-    # plt.plot(x, gaussian(x, **m.values))
-
-    sigma = m.values['sigma']
-
-    if sigma_e is None:
-
-        sigma_e = sigma
-        sigma_s = sigma
-
-    else:
-
-        sigma_s = np.sqrt(sigma**2 - sigma_e**2)
-
-    keys = ['baseline', 'gain', 'sigma_e', 'sigma_s']
-    for i in range(1, peaks_y.shape[0]):
-
-        keys.append('a_{}'.format(i))
-
-    values = [baseline, gain, sigma_e, sigma_s]
-    values = values + peaks_y[1:].tolist() # append to list
-
-    return dict(zip(keys, values))
+    return init_params
 
 
 def fit_spe(x, y, y_err):
 
     params_init = compute_fit_init_param(x, y, snr=8)
+
+    # print(params_init)
 
     mask = x > (params_init['baseline'] + params_init['gain'] / 2)
     mask *= y > 0
@@ -277,9 +289,9 @@ def fit_spe(x, y, y_err):
 
     values = [
         (0, params_init['gain']/2),
-        (0, 3 * params_init['gain']),
-        (0, params_init['gain']),
-        (0, params_init['gain']),
+        (0, 2 * params_init['gain']),
+        (0, 2 * params_init['sigma_e']),
+        (0, 2 * params_init['sigma_s']),
         (0, n_entries),
         (0, n_entries),
         (0, n_entries),
@@ -292,15 +304,23 @@ def fit_spe(x, y, y_err):
     m = Minuit(f, **params_init, **param_bounds, print_level=0, pedantic=False)
     m.migrad()
 
+    '''
     try:
         m.minos()
     except RuntimeError:
         pass
 
+    '''
+    # plt.figure()
     # plt.plot(x, y)
     # plt.plot(x, spe_fit_function(x, **m.values))
-    # plt.show()
 
+    # print(m.values, m.errors)
+    # print(m.fval)
+    # print(m.get_merrors())
+    # print((spe_fit_function(x, **m.values).sum() - n_entries)/n_entries)
+
+    # plt.show()
     return m.values, m.errors
 
 
@@ -319,13 +339,18 @@ def minimiser(x, y, y_err, f, *args):
     return np.sum(((y - f(x, *args)) / y_err)**2)
 
 
-def compute_histo(filename):
+def build_lsb_histo(filename):
 
     events = calibration_event_stream(filename, telescope_id=1)
-    mean, std, mode, max = compute_event_stats(events)
+    lsb_histo = compute_event_stats(events)
+
+    return lsb_histo
+
+
+def build_spe(filename, baseline, std):
 
     events = calibration_event_stream(filename, telescope_id=1)
-    events = subtract_baseline(events, mode)
+    events = subtract_baseline(events, baseline)
     # events = normalize_adc_samples(events, std)
     # events = find_pulse_1(events, 0.5, 20)
     events = find_pulse_2(events, widths=[5, 6], threshold=2 * std)
@@ -357,18 +382,25 @@ def compute_histo(filename):
         # plt.show()
 
     spe.save('temp.pk')
-    spe.save('temp_amplitute.pk')
+    spe_amplitude.save('temp_amplitute.pk')
+
+    return spe
 
 
 def main(args):
 
     files = args['<files>']
 
+    # lsb_histo = build_lsb_histo(files)
 
-    # compute_histo(files)
+    # lsb_histo.save('lsb_histo.pk')
+
+    lsb_histo = Histogram1D.load('lsb_histo.pk')
+    lsb_histo.draw(index=10)
+
+    # spe = build_spe(files, baseline=lsb_histo.mode(), std=lsb_histo.std())
 
     spe = Histogram1D.load('temp.pk')
-    print(spe.data)
 
     spe.draw(index=(10, ), log=True)
     plt.show()
@@ -381,7 +413,13 @@ def main(args):
 
     for pixel_id in range(spe.data.shape[0]):
 
+        # params_init = compute_gaussian_parameters_highest_peak(
+        #    lsb_histo._bin_centers(),
+        #    lsb_histo.data[pixel_id],
+        #    snr=1, debug=True)[0]
+
         try:
+
             params, params_err = fit_spe(
                 spe._bin_centers(),
                 spe.data[pixel_id],
@@ -392,18 +430,23 @@ def main(args):
 
             parameters['pixel_id'].append(pixel_id)
 
-        except FirstPhotoElectronPeakNotFound:
+        except PeakNotFound:
 
             print('Could not fit for pixel_id : {}'.format(pixel_id))
 
-    plt.figure()
-    plt.hist(parameters['sigma_e'], bins='auto')
+    for key, val in parameters.items():
+        parameters[key] = np.array(val)
+
+    mask = np.isfinite(parameters['sigma_e']) * np.isfinite(parameters['sigma_s']) * np.isfinite(parameters['gain'])
 
     plt.figure()
-    plt.hist(parameters['gain'], bins='auto')
+    plt.hist(parameters['sigma_e'][mask], bins='auto')
 
     plt.figure()
-    plt.hist(parameters['sigma_s'], bins='auto')
+    plt.hist(parameters['gain'][mask], bins='auto')
+
+    plt.figure()
+    plt.hist(parameters['sigma_s'][mask], bins='auto')
 
     plt.show()
 
