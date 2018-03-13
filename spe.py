@@ -93,7 +93,8 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     #    minimiser(bins, count, np.sqrt(count),
     #              gaussian, mean, sigma, amplitude)
 
-    gaussian_minimizer = Chi2Regression(gaussian, bins, count, error=np.sqrt(count))
+    gaussian_minimizer = Chi2Regression(gaussian, bins, count,
+                                        error=np.sqrt(count))
 
     minuit = Minuit(gaussian_minimizer, **parameter_init, **bounds,
                     print_level=0, pedantic=False)
