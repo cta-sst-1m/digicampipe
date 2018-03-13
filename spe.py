@@ -22,7 +22,7 @@ from scipy.interpolate import splrep, sproot
 import scipy
 from iminuit import Minuit, describe
 from digicampipe.io.containers import CalibrationContainer
-from digicampipe.utils.utils import filter_template
+from probfit.costfunc import Chi2Regression
 
 
 class PeakNotFound(Exception):
@@ -62,6 +62,10 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     bins = bins[highest_peak_range]
     count = count[highest_peak_range]
 
+    mask = count > 0
+    bins = bins[mask]
+    count = count[mask]
+
     parameter_names = describe(gaussian)
     del(parameter_names[0])
 
@@ -84,11 +88,14 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
     bounds = dict(zip(bound_names, bounds))
 
-    gaussian_minimizer = lambda mean, sigma, amplitude: \
-        minimiser(bins, count, np.sqrt(count),
-                  gaussian, mean, sigma, amplitude)
+    # gaussian_minimizer = lambda mean, sigma, amplitude: \
+    #    minimiser(bins, count, np.sqrt(count),
+    #              gaussian, mean, sigma, amplitude)
 
-    minuit = Minuit(gaussian_minimizer, **parameter_init, **bounds)
+    gaussian_minimizer = Chi2Regression(gaussian, bins, count, error=np.sqrt(count))
+
+    minuit = Minuit(gaussian_minimizer, **parameter_init, **bounds,
+                    print_level=0, pedantic=False)
     minuit.migrad()
 
     if debug:
