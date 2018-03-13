@@ -1,9 +1,11 @@
 """
-Container structures for data that should be read or written to disk. The main data container is DataContainer()
-and holds the containers of each data processing level. The data processing levels start from R0 up to DL2,
-where R0 holds the cameras raw data and DL2 the air shower high-level parameters.
-In general each major pipeline step is associated with a given data level. Please keep in mind that the data level definition and the associated fields might change rapidly
-as there is no final data level definition.
+Container structures for data that should be read or written to disk. The main
+data container is DataContainer() and holds the containers of each data
+processing level. The data processing levels start from R0 up to DL2, where R0
+holds the cameras raw data and DL2 the air shower high-level parameters.
+In general each major pipeline step is associated with a given data level.
+Please keep in mind that the data level definition and the associated fields
+might change rapidly as there is no final data level definition.
 """
 
 from astropy import units as u
@@ -184,8 +186,6 @@ class R1CameraContainer(Container):
 
     adc_samples = Field(ndarray, "baseline subtracted ADCs, (n_pixels, \
                         n_samples)")
-    pulse_indices = Field(list, 'Reconstructed time of each waveform (n_pixels, ?)')
-    reconstructed_charge = Field(list, 'Reconstructed charge of each signal in each waveform (n_pixels, ?)')
     nsb = Field(ndarray, "nsb rate in GHz")
     pde = Field(ndarray, "Photo Detection Efficiency at given NSB")
     gain_drop = Field(ndarray, "gain drop")
