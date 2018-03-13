@@ -92,5 +92,3 @@ dependencies:
   - travis-sphinx
   - peakutils==1.0.3
   - sphinx-automodapi
-  - peakutils==1.0.3
-
