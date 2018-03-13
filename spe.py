@@ -23,6 +23,7 @@ import scipy
 from iminuit import Minuit, describe
 from digicampipe.io.containers import CalibrationContainer
 from probfit.costfunc import Chi2Regression
+from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 
 
 class PeakNotFound(Exception):
@@ -38,7 +39,7 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
     if not len(peak_indices) > 0:
 
-        raise PeakNotFound('Could not detect enough peaks in the histogram'
+        raise PeakNotFound('Could not detect enough peaks in the histogram\n'
                            'N_peaks found : {} \n '
                            'SNR : {} \n'.format(len(peak_indices), snr))
 
@@ -223,10 +224,10 @@ def spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
     return temp
 
 
-def compute_fit_init_param(x, y, snr=8, sigma_e=None):
+def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
 
     init_params = compute_gaussian_parameters_highest_peak(x, y, snr=snr,
-                                                           debug=False)[0]
+                                                           debug=debug)[0]
     del(init_params['mean'], init_params['amplitude'])
     init_params['baseline'] = 0
 
@@ -250,7 +251,7 @@ def compute_fit_init_param(x, y, snr=8, sigma_e=None):
 
     if not len(peak_indices) > 1:
 
-        raise PeakNotFound('Could not detect enough peak in the histogram'
+        raise PeakNotFound('Could not detect enough peak in the histogram \n'
                            'N_peaks : {} \n'
                            'SNR : {} \n'.format(len(peak_indices), snr))
 
@@ -261,7 +262,7 @@ def compute_fit_init_param(x, y, snr=8, sigma_e=None):
 
     init_params['gain'] = gain
 
-    for i in range(1, max(peaks_y.shape[0], 4)):
+    for i in range(1, max(min(peaks_y.shape[0], 4), 4)):
 
         val = 0
 
@@ -274,9 +275,9 @@ def compute_fit_init_param(x, y, snr=8, sigma_e=None):
     return init_params
 
 
-def fit_spe(x, y, y_err):
+def fit_spe(x, y, y_err, snr=4, debug=False):
 
-    params_init = compute_fit_init_param(x, y, snr=8)
+    params_init = compute_fit_init_param(x, y, snr=snr, debug=debug)
 
     # print(params_init)
 
@@ -307,8 +308,10 @@ def fit_spe(x, y, y_err):
 
     param_bounds = dict(zip(keys, values))
 
-    f = lambda baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4: minimiser(x, y, y_err, spe_fit_function, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4)
-    m = Minuit(f, **params_init, **param_bounds, print_level=0, pedantic=False)
+    # f = lambda baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4: minimiser(x, y, y_err, spe_fit_function, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4)
+
+    chi2 = Chi2Regression(single_photoelectron_pdf, x, y, y_err)
+    m = Minuit(chi2, **params_init, **param_bounds, print_level=0, pedantic=False)
     m.migrad()
 
     '''
@@ -318,27 +321,15 @@ def fit_spe(x, y, y_err):
         pass
 
     '''
-    # plt.figure()
-    # plt.plot(x, y)
-    # plt.plot(x, spe_fit_function(x, **m.values))
 
-    # print(m.values, m.errors)
-    # print(m.fval)
-    # print(m.get_merrors())
-    # print((spe_fit_function(x, **m.values).sum() - n_entries)/n_entries)
+    if debug:
+        plt.figure()
+        plt.plot(x, y)
+        plt.plot(x, single_photoelectron_pdf(x, **m.values))
+        print(m.values, m.errors)
+        plt.show()
 
-    # plt.show()
     return m.values, m.errors
-
-
-def gaussian(x, mean, sigma, amplitude):
-
-    pdf = (x - mean)**2 / (2 * sigma**2)
-    pdf = np.exp(-pdf)
-    pdf /= np.sqrt(2 * np.pi) * sigma
-    pdf *= amplitude
-
-    return pdf
 
 
 def minimiser(x, y, y_err, f, *args):
@@ -418,7 +409,7 @@ def main(args):
     parameters = {'a_1': [], 'a_2':[], 'a_3':[], 'a_4':[], 'sigma_s': [], 'sigma_e':[], 'gain':[], 'baseline':[], 'pixel_id':[]}
     parameters_error = []
 
-    for pixel_id in range(spe.data.shape[0]):
+    for pixel_id in tqdm(range(spe.data.shape[0])):
 
         # params_init = compute_gaussian_parameters_highest_peak(
         #    lsb_histo._bin_centers(),
@@ -430,19 +421,24 @@ def main(args):
             params, params_err = fit_spe(
                 spe._bin_centers(),
                 spe.data[pixel_id],
-                spe.errors(index=pixel_id))
+                spe.errors(index=pixel_id), snr=3, debug=False)
 
             for key, val in params.items():
                 parameters[key].append(val)
 
             parameters['pixel_id'].append(pixel_id)
 
-        except PeakNotFound:
+        except PeakNotFound as e:
 
+            print(e)
             print('Could not fit for pixel_id : {}'.format(pixel_id))
 
     for key, val in parameters.items():
         parameters[key] = np.array(val)
+
+    np.savez('spe_fit_params.npz', **parameters)
+
+    parameters = np.load('spe_fit_params.npz')
 
     mask = np.isfinite(parameters['sigma_e']) * np.isfinite(parameters['sigma_s']) * np.isfinite(parameters['gain'])
 
