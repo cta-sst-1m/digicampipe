@@ -12,8 +12,11 @@ class CalibrationContainer(Container):
     config = Field(list, 'List of the input parameters'
                          ' of the calibration analysis')  # Should use dict?
     n_pixels = Field(int, 'number of pixels')
-    event = CalibrationEventContainer()
-    histo = CalibrationHistogramContainer()
+    data = CalibrationDataContainer(None, 'Contains the raw data as well as the'
+                                          'intermidiate steps'
+                                          ' of the p.e. reconstruction')
+    histo = CalibrationHistogramContainer(list, 'A list of the histograms'
+                                                ' of the data')
     result = CalibrationResultContainer()
 
 
@@ -21,7 +24,7 @@ class CalibrationEventContainer(Container):
     # Raw
 
     adc_samples = Field(ndarray, 'the raw data')
-    camera_baseline = Field(ndarray, 'the baseline computed by the camera')
+    digicam_baseline = Field(ndarray, 'the baseline computed by the camera')
 
     # Processed
 

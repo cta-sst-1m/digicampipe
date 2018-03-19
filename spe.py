@@ -10,7 +10,7 @@ Options:
 '''
 
 from docopt import docopt
-from digicampipe.io.event_stream import event_stream
+from digicampipe.io.event_stream import calibration_event_stream
 import numpy as np
 import matplotlib.pyplot as plt
 from histogram.histogram import Histogram1D
@@ -105,18 +105,6 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
         plt.show()
 
     return minuit.values, minuit.errors
-
-
-def calibration_event_stream(path, telescope_id, max_events=None):
-
-    container = CalibrationContainer()
-
-    for event in event_stream(path, max_events=max_events):
-
-        container.adc_samples = event.r0.tel[telescope_id].adc_samples
-        container.n_pixels = container.adc_samples.shape[0]
-
-        yield container
 
 
 def compute_event_stats(events):
