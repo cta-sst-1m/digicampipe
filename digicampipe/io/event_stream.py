@@ -53,7 +53,7 @@ def calibration_event_stream(path, telescope_id, max_events=None):
 
         container.data.adc_samples = r0_event.adc_samples
         container.data.digicam_baseline = r0_event.digicam_baseline
-        container.n_pixels = container.adc_samples.shape[0]
+        container.n_pixels = container.data.adc_samples.shape[0]
 
         yield container
 

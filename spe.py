@@ -7,6 +7,10 @@ Usage:
 
 Options:
   -h --help     Show this screen.
+  -c --compute  Compute the data
+  -f --fit      Fit
+  -d --display  Display
+  -v --debug    Enter the debug mode
 '''
 
 from docopt import docopt
@@ -25,6 +29,8 @@ from digicampipe.io.containers_calib import CalibrationContainer
 from probfit.costfunc import Chi2Regression
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
+from digicampipe.utils.histogram import convert_histogram_to_container
+from itertools import tee
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -109,7 +115,9 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
 def compute_raw_data_histogram(events):
 
-    for count, event in tqdm(enumerate(events)):
+    events_1, events_2 = tee(events, 2)
+
+    for count, event in tqdm(enumerate(events_1)):
 
         if count == 0:
 
@@ -118,15 +126,32 @@ def compute_raw_data_histogram(events):
 
         adc_histo.fill(event.data.adc_samples)
 
-    return adc_histo
+    for count, event in enumerate(events_2):
+
+        if count == 0:
+
+            event.histo[0] = convert_histogram_to_container(adc_histo)
+
+        yield event
 
 
-def subtract_baseline(events, baseline):
+def fill_electronic_baseline(events):
 
     for event in events:
 
-        event.adc_samples = event.adc_samples.astype(baseline.dtype)
-        event.adc_samples -= baseline[..., np.newaxis]
+        event.data.baseline = event.histo[0].mode
+
+        yield event
+
+
+def subtract_baseline(events):
+
+    for event in events:
+
+        baseline = event.data.baseline
+
+        event.data.adc_samples = event.data.adc_samples.astype(baseline.dtype)
+        event.data.adc_samples -= baseline[..., np.newaxis]
 
         yield event
 
@@ -137,21 +162,25 @@ def find_pulse_1(events, threshold, min_distance):
 
         pulse_mask = np.zeros(event.adc_samples.shape, dtype=np.bool)
 
-        for pixel_id, adc_sample in enumerate(event.adc_samples):
+        for pixel_id, adc_sample in enumerate(event.data.adc_samples):
 
             peak_index = peakutils.indexes(adc_sample, threshold, min_distance)
             pulse_mask[pixel_id, peak_index] = True
 
-        event.pulse_mask = pulse_mask
+        event.data.pulse_mask = pulse_mask
 
         yield event
 
 
-def find_pulse_2(events, threshold, widths, **kwargs):
+def find_pulse_2(events, threshold_sigma, widths, **kwargs):
 
     for count, event in enumerate(events):
 
-        adc_samples = event.adc_samples
+        if count == 0:
+
+            threshold = threshold_sigma * event.histo[0].std
+
+        adc_samples = event.data.adc_samples
         pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
 
         for pixel_id, adc_sample in enumerate(adc_samples):
@@ -160,7 +189,7 @@ def find_pulse_2(events, threshold, widths, **kwargs):
             peak_index = peak_index[adc_sample[peak_index] > threshold[pixel_id]]
             pulse_mask[pixel_id, peak_index] = True
 
-        event.pulse_mask = pulse_mask
+        event.data.pulse_mask = pulse_mask
 
         yield event
 
@@ -169,13 +198,13 @@ def compute_charge(events, integral_width):
 
     for count, event in enumerate(events):
 
-        adc_samples = event.adc_samples
-        pulse_mask = event.pulse_mask
+        adc_samples = event.data.adc_samples
+        pulse_mask = event.data.pulse_mask
 
         convolved_signal = ndimage.convolve1d(adc_samples, np.ones(integral_width), axis=-1)
         charges = np.ones(convolved_signal.shape) * np.nan
         charges[pulse_mask] = convolved_signal[pulse_mask]
-        event.reconstructed_charge = charges
+        event.data.reconstructed_charge = charges
 
         yield event
 
@@ -184,12 +213,12 @@ def compute_amplitude(events):
 
     for count, event in enumerate(events):
 
-        adc_samples = event.adc_samples
-        pulse_indices = event.pulse_mask
+        adc_samples = event.data.adc_samples
+        pulse_indices = event.data.pulse_mask
 
         charges = np.ones(adc_samples.shape) * np.nan
         charges[pulse_indices] = adc_samples[pulse_indices]
-        event.reconstructed_amplitude = charges
+        event.data.reconstructed_amplitude = charges
 
         yield event
 
@@ -323,54 +352,27 @@ def minimiser(x, y, y_err, f, *args):
     return np.sum(((y - f(x, *args)) / y_err)**2)
 
 
-def build_lsb_histo(filename):
+def build_spe(events, max_events):
 
-    events = calibration_event_stream(filename, telescope_id=1)
-    lsb_histo = compute_raw_data_histo(events)
-
-
-
-    return lsb_histo
-
-
-def build_spe(filename, baseline, std):
-
-    events = calibration_event_stream(filename, telescope_id=1)
-    events = subtract_baseline(events, baseline)
-    # events = normalize_adc_samples(events, std)
-    # events = find_pulse_1(events, 0.5, 20)
-    events = find_pulse_2(events, widths=[5, 6], threshold=2 * std)
-    # events = normalize_adc_samples(events, 1./std)
-    events = compute_charge(events, width=7)
-    events = compute_amplitude(events)
-
-    spe = Histogram1D(data_shape=(1296,), bin_edges=np.arange(-20, 200, 1))
+    spe_charge = Histogram1D(data_shape=(1296,), bin_edges=np.arange(-20, 200, 1))
     spe_amplitude = Histogram1D(data_shape=(1296,),
                                 bin_edges=np.arange(-20, 200, 1))
 
-    plt.figure()
+    events_1, events_2 = tee(events, 2)
 
-    pixel = 10
+    for _, event in tqdm(zip(range(max_events), events_1), total=max_events):
 
-    template_file = 'digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat'
+        spe_charge.fill(event.data.reconstructed_charge)
+        spe_amplitude.fill(event.data.reconstructed_amplitude)
 
-    # window_template = filter_template(template_file, 0.1)
-    # window_template = window_template[window_template > 0]
+    for count, event in enumerate(events_2):
 
-    for event, i in tqdm(zip(events, range(10000)), total=10000):
-        spe.fill(event.reconstructed_charge)
-        spe_amplitude.fill(event.reconstructed_amplitude)
-        # print(event.reconstructed_charge)
+        if count == 0:
 
-        # plt.plot(event.adc_samples[pixel])
-        # plt.plot(charge_reco, linestyle='None', marker='x')
-        # plt.plot(amp_reco, linestyle='None', marker='o')
-        # plt.show()
+            event.histo[1] = convert_histogram_to_container(spe_charge)
+            event.histo[2] = convert_histogram_to_container(spe_amplitude)
 
-    spe.save('temp.pk')
-    spe_amplitude.save('temp_amplitute.pk')
-
-    return spe
+        yield event
 
 
 def main(args):
@@ -381,13 +383,23 @@ def main(args):
 
     if args['--compute']:
 
-        lsb_histo = build_lsb_histo(files)
-        lsb_histo.save('lsb_histo.pk')
-        # lsb_histo = Histogram1D.load('lsb_histo.pk')
+        events = calibration_event_stream(files, telescope_id=1)
+        events = compute_raw_data_histogram(events)
+        events = fill_electronic_baseline(events)
+        events = subtract_baseline(events)
+        # events = normalize_adc_samples(events, std)
+        # events = find_pulse_1(events, 0.5, 20)
+        events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
+        # events = normalize_adc_samples(events, 1./std)
 
-        # lsb_histo.draw(index=10)
-        spe = build_spe(files, baseline=lsb_histo.mode(), std=lsb_histo.std())
-        spe.save('spe.pk')
+        events = compute_charge(events, integral_width=7)
+        events = compute_amplitude(events)
+        events = build_spe(events, 100)
+
+        for event in tqdm(events):
+
+            pass
+
 
     if args['--fit']:
 

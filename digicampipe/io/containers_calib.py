@@ -11,7 +11,7 @@ class CalibrationEventContainer(Container):
 
     # Processed
 
-    reconstructed_baseline = Field(ndarray, 'the reconstructed baseline')
+    baseline = Field(ndarray, 'the reconstructed baseline')
     pulse_mask = Field(ndarray, 'mask of adc_samples. True if the adc sample'
                                 'contains a pulse  else False')
     reconstructed_amplitude = Field(ndarray, 'array of the same shape as '
@@ -29,8 +29,19 @@ class CalibrationEventContainer(Container):
 
 class CalibrationHistogramContainer(Container):
 
-    bin_edges = Field(ndarray, '')
+    bins = Field(ndarray, '')
     count = Field(ndarray, '')
+    shape = Field(ndarray, '')
+    n_bins = Field(ndarray, '')
+    name = Field(ndarray, '')
+    axis_name = Field(ndarray, '')
+    underflow = Field(ndarray, '')
+    overflow = Field(ndarray, '')
+    max = Field(ndarray, '')
+    min = Field(ndarray, '')
+    mean = Field(ndarray, '')
+    std = Field(ndarray, '')
+    mode = Field(ndarray, '')
 
 
 class CalibrationResultContainer(Container):
@@ -74,10 +85,7 @@ class CalibrationContainer(Container):
     config = Field(list, 'List of the input parameters'
                          ' of the calibration analysis')  # Should use dict?
     n_pixels = Field(int, 'number of pixels')
-    data = CalibrationEventContainer(None, 'Contains the raw data as well as the'
-                                          'intermidiate steps'
-                                          ' of the p.e. reconstruction')
-    histo = CalibrationHistogramContainer(list, 'A list of the histograms'
-                                                ' of the data')
+    data = CalibrationEventContainer()
+    histo = Field(Map(CalibrationHistogramContainer))
     result = CalibrationResultContainer()
 
