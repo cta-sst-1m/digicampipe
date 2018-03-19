@@ -1,4 +1,4 @@
-from digicampipe.calib.camera import r1, dl0, dl2, dl1
+from digicampipe.reco.camera import r1, dl0, dl2, dl1
 from digicampipe.io import containers
 from digicampipe.visualization import EventViewer
 from digicampipe.utils import utils

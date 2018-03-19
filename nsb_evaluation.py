@@ -14,7 +14,7 @@ Options:
   -b <path>, --baseline_path=<path>  \
 path to baseline file usually called "dark.npz"
 '''
-from digicampipe.calib.camera import filter, r1, random_triggers
+from digicampipe.reco.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import Camera
 from digicampipe.io.save_external_triggers import save_external_triggers

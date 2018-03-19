@@ -6,7 +6,7 @@ Usage:
   bias_curve_mc <hdf5_file> <outfile>
 '''
 from docopt import docopt
-from digicampipe.calib.camera import filter, r0, random_triggers
+from digicampipe.reco.camera import filter, r0, random_triggers
 from digicampipe.io.save_bias_curve import save_bias_curve
 from digicampipe.io.event_stream import event_stream
 import numpy as np

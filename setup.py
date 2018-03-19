@@ -10,8 +10,8 @@ setup(
     packages=[
         'digicampipe',
         'digicampipe.io',
-        'digicampipe.calib',
-        'digicampipe.calib.camera',
+        'digicampipe.reco',
+        'digicampipe.reco.camera',
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',

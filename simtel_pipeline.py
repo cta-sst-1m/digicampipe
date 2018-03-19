@@ -8,7 +8,7 @@ from digicampipe.utils import utils
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
     save_hillas_parameters
 
-from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
+from digicampipe.reco.camera import dl0, dl2, filter, r1, dl1
 from digicampipe.utils import utils, calib
 import simtel_baseline
 import events_image

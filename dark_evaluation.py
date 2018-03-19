@@ -17,7 +17,7 @@ Options:
   --unwanted_clusters=<integers>   list of integers with commas [default: 200]
   --unblind   do not use blind
 '''
-from digicampipe.calib.camera import filter, r0
+from digicampipe.reco.camera import filter, r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve

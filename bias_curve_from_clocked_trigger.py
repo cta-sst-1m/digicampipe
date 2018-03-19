@@ -6,7 +6,7 @@ Usage:
   bias_curve_from_clocked_trigger <outfile> <fitsfiles>...
 '''
 from docopt import docopt
-from digicampipe.calib.camera import filter
+from digicampipe.reco.camera import filter
 from digicampipe.io.event_stream import event_stream
 import numpy as np
 import matplotlib.pyplot as plt
