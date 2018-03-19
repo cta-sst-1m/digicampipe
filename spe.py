@@ -107,7 +107,7 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     return minuit.values, minuit.errors
 
 
-def compute_event_stats(events):
+def compute_raw_data_histogram(events):
 
     for count, event in tqdm(enumerate(events)):
 
@@ -116,7 +116,7 @@ def compute_event_stats(events):
             n_pixels = event.n_pixels
             adc_histo = Histogram1D(data_shape=(n_pixels, ), bin_edges=np.arange(0, 4095, 1), axis_name='[LSB]')
 
-        adc_histo.fill(event.adc_samples)
+        adc_histo.fill(event.data.adc_samples)
 
     return adc_histo
 
@@ -326,7 +326,9 @@ def minimiser(x, y, y_err, f, *args):
 def build_lsb_histo(filename):
 
     events = calibration_event_stream(filename, telescope_id=1)
-    lsb_histo = compute_event_stats(events)
+    lsb_histo = compute_raw_data_histo(events)
+
+
 
     return lsb_histo
 

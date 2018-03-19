@@ -3,23 +3,6 @@ from ctapipe.core import Field
 from numpy import ndarray
 
 
-class CalibrationContainer(Container):
-    """
-    This Container() is used for the camera calibration pipeline.
-    It is meant to save each step of the calibration pipeline
-    """
-
-    config = Field(list, 'List of the input parameters'
-                         ' of the calibration analysis')  # Should use dict?
-    n_pixels = Field(int, 'number of pixels')
-    data = CalibrationDataContainer(None, 'Contains the raw data as well as the'
-                                          'intermidiate steps'
-                                          ' of the p.e. reconstruction')
-    histo = CalibrationHistogramContainer(list, 'A list of the histograms'
-                                                ' of the data')
-    result = CalibrationResultContainer()
-
-
 class CalibrationEventContainer(Container):
     # Raw
 
@@ -55,6 +38,20 @@ class CalibrationResultContainer(Container):
     pass
 
 
+class SPEParameters(Container):
+
+    a_1 = Field(ndarray, 'Amplitude of the 1 p.e. peak')
+    a_2 = Field(ndarray, '')
+    a_3 = Field(ndarray, '')
+    a_4 = Field(ndarray, '')
+    baseline = Field(ndarray, 'Position of the 0 p.e. peak')
+    gain = Field(ndarray, 'Gain')
+    sigma_e = Field(ndarray, 'Electronic noise')
+    sigma_s = Field(ndarray, 'Sensor noise')
+    dark_count = Field(ndarray, 'Dark count rate')
+    crosstalk = Field(ndarray, 'Crosstalk')
+
+
 class SPEResultContainer(CalibrationResultContainer):
     """
     Container holding the results of the Single Photo Electron Spectrum
@@ -68,15 +65,19 @@ class SPEResultContainer(CalibrationResultContainer):
     param_errors = SPEParameters()
 
 
-class SPEParameters(Container):
+class CalibrationContainer(Container):
+    """
+    This Container() is used for the camera calibration pipeline.
+    It is meant to save each step of the calibration pipeline
+    """
 
-    a_1 = Field(ndarray, 'Amplitude of the 1 p.e. peak')
-    a_2 = Field(ndarray, '')
-    a_3 = Field(ndarray, '')
-    a_4 = Field(ndarray, '')
-    baseline = Field(ndarray, 'Position of the 0 p.e. peak')
-    gain = Field(ndarray, 'Gain')
-    sigma_e = Field(ndarray, 'Electronic noise')
-    sigma_s = Field(ndarray, 'Sensor noise')
-    dark_count = Field(ndarray, 'Dark count rate')
-    crosstalk = Field(ndarray, 'Crosstalk')
+    config = Field(list, 'List of the input parameters'
+                         ' of the calibration analysis')  # Should use dict?
+    n_pixels = Field(int, 'number of pixels')
+    data = CalibrationEventContainer(None, 'Contains the raw data as well as the'
+                                          'intermidiate steps'
+                                          ' of the p.e. reconstruction')
+    histo = CalibrationHistogramContainer(list, 'A list of the histograms'
+                                                ' of the data')
+    result = CalibrationResultContainer()
+
