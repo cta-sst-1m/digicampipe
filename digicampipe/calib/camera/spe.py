@@ -24,10 +24,7 @@ from iminuit import Minuit, describe
 from digicampipe.io.containers import CalibrationContainer
 from probfit.costfunc import Chi2Regression
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
-
-
-class PeakNotFound(Exception):
-    pass
+from digicampipe.utils.exception import PeakNotFound
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -180,16 +177,16 @@ def find_pulse_2(events, threshold, widths, **kwargs):
         yield event
 
 
-def compute_charge(events, width):
+def compute_charge(events, integral_width):
 
     for count, event in enumerate(events):
 
         adc_samples = event.adc_samples
-        pulse_indices = event.pulse_mask
+        pulse_mask = event.pulse_mask
 
-        convolved_signal = ndimage.convolve1d(adc_samples, np.ones(width), axis=-1)
+        convolved_signal = ndimage.convolve1d(adc_samples, np.ones(integral_width), axis=-1)
         charges = np.ones(convolved_signal.shape) * np.nan
-        charges[pulse_indices] = convolved_signal[pulse_indices]
+        charges[pulse_mask] = convolved_signal[pulse_mask]
         event.reconstructed_charge = charges
 
         yield event
@@ -390,69 +387,70 @@ def main(args):
 
     files = args['<files>']
 
-    # lsb_histo = build_lsb_histo(files)
+    debug = args['--debug']
 
-    # lsb_histo.save('lsb_histo.pk')
+    if args['--compute']:
 
-    lsb_histo = Histogram1D.load('lsb_histo.pk')
-    lsb_histo.draw(index=10)
+        lsb_histo = build_lsb_histo(files)
+        lsb_histo.save('lsb_histo.pk')
+        # lsb_histo = Histogram1D.load('lsb_histo.pk')
 
-    # spe = build_spe(files, baseline=lsb_histo.mode(), std=lsb_histo.std())
+        # lsb_histo.draw(index=10)
+        spe = build_spe(files, baseline=lsb_histo.mode(), std=lsb_histo.std())
+        spe.save('spe.pk')
 
-    spe = Histogram1D.load('temp.pk')
+    if args['--fit']:
 
-    spe.draw(index=(10, ), log=True)
-    plt.show()
+        spe = Histogram1D.load('temp.pk')
 
-    # snr = 8
-    # temp = spe.data.sum(axis=0)
+        # spe.draw(index=(10, ), log=True)
+        # plt.show()
 
-    parameters = {'a_1': [], 'a_2':[], 'a_3':[], 'a_4':[], 'sigma_s': [], 'sigma_e':[], 'gain':[], 'baseline':[], 'pixel_id':[]}
-    parameters_error = []
+        parameters = {'a_1': [], 'a_2':[], 'a_3':[], 'a_4':[], 'sigma_s': [], 'sigma_e':[], 'gain':[], 'baseline':[], 'pixel_id':[]}
+        parameters_error = []
 
-    for pixel_id in tqdm(range(spe.data.shape[0])):
+        n_pixels = spe.data.shape[0]
 
-        # params_init = compute_gaussian_parameters_highest_peak(
-        #    lsb_histo._bin_centers(),
-        #    lsb_histo.data[pixel_id],
-        #    snr=1, debug=True)[0]
+        for pixel_id in tqdm(range(n_pixels)):
 
-        try:
+            try:
 
-            params, params_err = fit_spe(
-                spe._bin_centers(),
-                spe.data[pixel_id],
-                spe.errors(index=pixel_id), snr=3, debug=False)
+                params, params_err = fit_spe(
+                    spe._bin_centers(),
+                    spe.data[pixel_id],
+                    spe.errors(index=pixel_id), snr=3, debug=debug)
 
-            for key, val in params.items():
-                parameters[key].append(val)
+                for key, val in params.items():
+                    parameters[key].append(val)
 
-            parameters['pixel_id'].append(pixel_id)
+                parameters['pixel_id'].append(pixel_id)
 
-        except PeakNotFound as e:
+            except PeakNotFound as e:
 
-            print(e)
-            print('Could not fit for pixel_id : {}'.format(pixel_id))
+                print(e)
+                print('Could not fit for pixel_id : {}'.format(pixel_id))
 
-    for key, val in parameters.items():
-        parameters[key] = np.array(val)
+        for key, val in parameters.items():
+            parameters[key] = np.array(val)
 
-    np.savez('spe_fit_params.npz', **parameters)
+        np.savez('spe_fit_params.npz', **parameters)
 
-    parameters = np.load('spe_fit_params.npz')
+    if args['--display']:
 
-    mask = np.isfinite(parameters['sigma_e']) * np.isfinite(parameters['sigma_s']) * np.isfinite(parameters['gain'])
+        parameters = np.load('spe_fit_params.npz')
 
-    plt.figure()
-    plt.hist(parameters['sigma_e'][mask], bins='auto')
+        mask = np.isfinite(parameters['sigma_e']) * np.isfinite(parameters['sigma_s']) * np.isfinite(parameters['gain'])
 
-    plt.figure()
-    plt.hist(parameters['gain'][mask], bins='auto')
+        plt.figure()
+        plt.hist(parameters['sigma_e'][mask], bins='auto')
 
-    plt.figure()
-    plt.hist(parameters['sigma_s'][mask], bins='auto')
+        plt.figure()
+        plt.hist(parameters['gain'][mask], bins='auto')
 
-    plt.show()
+        plt.figure()
+        plt.hist(parameters['sigma_s'][mask], bins='auto')
+
+        plt.show()
 
     return
 
