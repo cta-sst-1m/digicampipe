@@ -59,11 +59,17 @@ def calibration_event_stream(path, telescope_id, max_events=None):
 
 
 def guess_source_from_path(path):
+
     if path.endswith('.fits.fz'):
+
         return zfits.zfits_event_source
+
     elif path.endswith('.h5') or path.endswith('.hdf5'):
+
         return hdf5.digicamtoy_event_source
+
     else:
+
         return hessio_digicam.hessio_event_source
 
 

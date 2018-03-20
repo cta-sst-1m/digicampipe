@@ -30,8 +30,8 @@ from probfit.costfunc import Chi2Regression
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.histogram import convert_histogram_to_container
-from itertools import tee
 from ctapipe.io import HDF5TableWriter
+import os
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -396,30 +396,42 @@ def main(args):
 
     telescope_id = 1
 
+    max_events = 10000
+
     output_file = './spe_analysis.hdf5'
 
     if args['--compute']:
 
-        events = calibration_event_stream(files, telescope_id=telescope_id, max_events=10)
-        raw_histo = build_raw_data_histogram(events)
-        save_container(raw_histo, output_file, 'histo', 'raw_lsb')
+        if not os.path.exists(output_file):
 
-        events = calibration_event_stream(files, telescope_id=telescope_id, max_events=10)
-        events = fill_histogram(events, 0, raw_histo)
-        events = fill_electronic_baseline(events)
-        events = subtract_baseline(events)
-        # events = normalize_adc_samples(events, std)
-        # events = find_pulse_1(events, 0.5, 20)
-        events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        # events = normalize_adc_samples(events, 1./std)
+            events = calibration_event_stream(files,
+                                              telescope_id=telescope_id,
+                                              max_events=max_events)
+            raw_histo = build_raw_data_histogram(events)
+            save_container(raw_histo, output_file, 'histo', 'raw_lsb')
 
-        events = compute_charge(events, integral_width=7)
-        events = compute_amplitude(events)
-        events = save_event_data(events, output_file, 'data')
-        spe_charge, spe_amplitude = build_spe(events, 100)
+            events = calibration_event_stream(files,
+                                              telescope_id=telescope_id,
+                                              max_events=max_events)
+            events = fill_histogram(events, 0, raw_histo)
+            events = fill_electronic_baseline(events)
+            events = subtract_baseline(events)
+            # events = normalize_adc_samples(events, std)
+            # events = find_pulse_1(events, 0.5, 20)
+            events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
+            # events = normalize_adc_samples(events, 1./std)
 
-        save_container(spe_charge, output_file, 'histo', 'spe_charge')
-        save_container(spe_amplitude, output_file, 'histo', 'spe_amplitude')
+            events = compute_charge(events, integral_width=7)
+            events = compute_amplitude(events)
+            events = save_event_data(events, output_file, 'data')
+            spe_charge, spe_amplitude = build_spe(events, max_events)
+
+            save_container(spe_charge, output_file, 'histo', 'spe_charge')
+            save_container(spe_amplitude, output_file, 'histo', 'spe_amplitude')
+
+        else:
+
+            raise IOError('File {} already exists'.format(output_file))
 
     if args['--fit']:
 
