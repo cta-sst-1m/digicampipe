@@ -1,4 +1,5 @@
 from digicampipe.io.containers_calib import CalibrationHistogramContainer
+import numpy as np
 
 
 def convert_histogram_to_container(histogram):
@@ -10,14 +11,14 @@ def convert_histogram_to_container(histogram):
 
     container = CalibrationHistogramContainer()
 
-    container.bins = histogram.bins
-    container.count = histogram.data
+    container.bins = histogram.bins.astype(np.int) # TODO make ctapipe.HDFTableWriter accept unit32
+    container.count = histogram.data.astype(np.int)
     container.shape = histogram.shape
     container.n_bins = histogram.n_bins
     container.name = histogram.name
     container.axis_name = histogram.axis_name
-    container.underflow = histogram.underflow
-    container.overflow = histogram.overflow
+    container.underflow = histogram.underflow.astype(np.int)
+    container.overflow = histogram.overflow.astype(np.int)
     container.max = histogram.max
     container.min = histogram.min
     container.mode = histogram.mode()

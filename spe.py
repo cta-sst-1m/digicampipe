@@ -31,6 +31,7 @@ from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.histogram import convert_histogram_to_container
 from itertools import tee
+from ctapipe.io import HDF5TableWriter
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -113,11 +114,9 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     return minuit.values, minuit.errors
 
 
-def compute_raw_data_histogram(events):
+def build_raw_data_histogram(events):
 
-    events_1, events_2 = tee(events, 2)
-
-    for count, event in tqdm(enumerate(events_1)):
+    for count, event in tqdm(enumerate(events)):
 
         if count == 0:
 
@@ -126,11 +125,14 @@ def compute_raw_data_histogram(events):
 
         adc_histo.fill(event.data.adc_samples)
 
-    for count, event in enumerate(events_2):
+    return convert_histogram_to_container(adc_histo)
 
-        if count == 0:
 
-            event.histo[0] = convert_histogram_to_container(adc_histo)
+def fill_histogram(events, id, histogram):
+
+    for event in events:
+
+        event.histo[id] = histogram
 
         yield event
 
@@ -358,21 +360,32 @@ def build_spe(events, max_events):
     spe_amplitude = Histogram1D(data_shape=(1296,),
                                 bin_edges=np.arange(-20, 200, 1))
 
-    events_1, events_2 = tee(events, 2)
-
-    for _, event in tqdm(zip(range(max_events), events_1), total=max_events):
+    for _, event in tqdm(zip(range(max_events), events), total=max_events):
 
         spe_charge.fill(event.data.reconstructed_charge)
         spe_amplitude.fill(event.data.reconstructed_amplitude)
 
-    for count, event in enumerate(events_2):
+    spe_charge = convert_histogram_to_container(spe_charge)
+    spe_amplitude = convert_histogram_to_container(spe_amplitude)
 
-        if count == 0:
+    return spe_charge, spe_amplitude
 
-            event.histo[1] = convert_histogram_to_container(spe_charge)
-            event.histo[2] = convert_histogram_to_container(spe_amplitude)
 
-        yield event
+def save_container(container, filename, group_name, table_name):
+
+    with HDF5TableWriter(filename, group_name=group_name) as h5_table:
+        h5_table.write(table_name, container)
+
+
+def save_event_data(events, filename, group_name):
+
+    with HDF5TableWriter(filename, group_name=group_name) as h5_table:
+
+        for event in events:
+
+            h5_table.write('waveforms', event.data)
+
+            yield event
 
 
 def main(args):
@@ -381,10 +394,18 @@ def main(args):
 
     debug = args['--debug']
 
+    telescope_id = 1
+
+    output_file = './spe_analysis_{}.hdf5'
+
     if args['--compute']:
 
-        events = calibration_event_stream(files, telescope_id=1)
-        events = compute_raw_data_histogram(events)
+        events = calibration_event_stream(files, telescope_id=telescope_id, max_events=10)
+        raw_histo = build_raw_data_histogram(events)
+        save_container(raw_histo, output_file.format('lsb'), 'histo', 'raw_lsb')
+
+        events = calibration_event_stream(files, telescope_id=telescope_id, max_events=10)
+        events = fill_histogram(events, 0, raw_histo)
         events = fill_electronic_baseline(events)
         events = subtract_baseline(events)
         # events = normalize_adc_samples(events, std)
@@ -394,14 +415,15 @@ def main(args):
 
         events = compute_charge(events, integral_width=7)
         events = compute_amplitude(events)
-        events = build_spe(events, 100)
+        events = save_event_data(events, output_file.format('raw'), 'data')
+        spe_charge, spe_amplitude = build_spe(events, 100)
 
-        for event in tqdm(events):
-
-            pass
-
+        save_container(spe_charge, output_file.format('spe_c'), 'histo', 'spe_charge')
+        save_container(spe_amplitude, output_file.format('spe_a'), 'histo', 'spe_amplitude')
 
     if args['--fit']:
+
+        events = calibration_event_stream(files, telescope_id=telescope_id)
 
         spe = Histogram1D.load('temp.pk')
 
