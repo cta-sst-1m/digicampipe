@@ -373,13 +373,13 @@ def build_spe(events, max_events):
 
 def save_container(container, filename, group_name, table_name):
 
-    with HDF5TableWriter(filename, group_name=group_name) as h5_table:
+    with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5_table:
         h5_table.write(table_name, container)
 
 
 def save_event_data(events, filename, group_name):
 
-    with HDF5TableWriter(filename, group_name=group_name) as h5_table:
+    with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5_table:
 
         for event in events:
 
@@ -396,13 +396,13 @@ def main(args):
 
     telescope_id = 1
 
-    output_file = './spe_analysis_{}.hdf5'
+    output_file = './spe_analysis.hdf5'
 
     if args['--compute']:
 
         events = calibration_event_stream(files, telescope_id=telescope_id, max_events=10)
         raw_histo = build_raw_data_histogram(events)
-        save_container(raw_histo, output_file.format('lsb'), 'histo', 'raw_lsb')
+        save_container(raw_histo, output_file, 'histo', 'raw_lsb')
 
         events = calibration_event_stream(files, telescope_id=telescope_id, max_events=10)
         events = fill_histogram(events, 0, raw_histo)
@@ -415,11 +415,11 @@ def main(args):
 
         events = compute_charge(events, integral_width=7)
         events = compute_amplitude(events)
-        events = save_event_data(events, output_file.format('raw'), 'data')
+        events = save_event_data(events, output_file, 'data')
         spe_charge, spe_amplitude = build_spe(events, 100)
 
-        save_container(spe_charge, output_file.format('spe_c'), 'histo', 'spe_charge')
-        save_container(spe_amplitude, output_file.format('spe_a'), 'histo', 'spe_amplitude')
+        save_container(spe_charge, output_file, 'histo', 'spe_charge')
+        save_container(spe_amplitude, output_file, 'histo', 'spe_amplitude')
 
     if args['--fit']:
 

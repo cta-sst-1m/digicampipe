@@ -5,5 +5,5 @@ https://github.com/cta-sst-1m/protozfitsreader/archive/v0.44.1.tar.gz
 -e git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
 -e git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
 https://github.com/calispac/histogram/archive/0.1.1.tar.gz
-git+https://github.com/iminuit/probfit.git
-git+https://github.com/uvemas/ViTables.git
+-e git+https://github.com/iminuit/probfit.git
+-e git+https://github.com/uvemas/ViTables.git
