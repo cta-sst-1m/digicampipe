@@ -32,7 +32,7 @@ from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.histogram import convert_histogram_to_container, convert_container_to_histogram
 from ctapipe.io import HDF5TableWriter, HDF5TableReader
 import os
-from digicampipe.io.containers_calib import CalibrationHistogramContainer
+from digicampipe.io.containers_calib import *
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -347,7 +347,7 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
         print(m.values, m.errors)
         plt.show()
 
-    return m.values, m.errors
+    return m.values, m.errors, params_init, param_bounds
 
 
 def minimiser(x, y, y_err, f, *args):
@@ -397,7 +397,7 @@ def main(args):
 
     telescope_id = 1
 
-    max_events = 20
+    max_events = 20000
 
     output_file = './spe_analysis.hdf5'
 
@@ -424,6 +424,7 @@ def main(args):
 
             events = compute_charge(events, integral_width=7)
             events = compute_amplitude(events)
+            # events = save_event_data(events, output_file, 'data')
             spe_charge, spe_amplitude = build_spe(events, max_events)
 
             save_container(spe_charge, output_file, 'histo', 'spe_charge')
@@ -435,47 +436,66 @@ def main(args):
 
     if args['--fit']:
 
-        with HDF5TableReader('spe_analysis.hdf5') as h5_table:
+#        with HDF5TableReader('spe_analysis.hdf5') as h5_table:
 
-            spe_charge = h5_table.read('/histo/spe_charge',
-                                       CalibrationHistogramContainer)
+#            spe_charge = h5_table.read('/histo/spe_charge',
+#                                       CalibrationHistogramContainer())
 
-            spe_amplitude = h5_table.read('/histo/spe_amplitude',
-                                          CalibrationHistogramContainer)
+#            spe_amplitude = h5_table.read('/histo/spe_amplitude',
+#                                          CalibrationHistogramContainer())
 
-            spe_charge = convert_container_to_histogram(spe_charge)
-            spe_amplitude = convert_container_to_histogram(spe_amplitude)
-
-
-        spe = spe_charge
+#            spe_charge = convert_container_to_histogram(next(spe_charge))
+#            spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
 
 
-        # spe.draw(index=(10, ), log=True)
-        # plt.show()
+        # spe = spe_charge
+        spe = Histogram1D.load('temp.pk')
+        spe.draw(index=(10, ), log=True)
+        plt.show()
 
         parameters = {'a_1': [], 'a_2':[], 'a_3':[], 'a_4':[], 'sigma_s': [], 'sigma_e':[], 'gain':[], 'baseline':[], 'pixel_id':[]}
         parameters_error = []
 
         n_pixels = spe.data.shape[0]
 
-        for pixel_id in tqdm(range(n_pixels)):
+        results = SPEResultContainer()
 
-            try:
+        with HDF5TableWriter('spe_fit_results.h5', 'analysis', mode='a') as h5:
 
-                params, params_err = fit_spe(
-                    spe._bin_centers(),
-                    spe.data[pixel_id],
-                    spe.errors(index=pixel_id), snr=3, debug=debug)
+            for pixel_id in tqdm(range(n_pixels)):
 
-                for key, val in params.items():
-                    parameters[key].append(val)
+                try:
 
-                parameters['pixel_id'].append(pixel_id)
+                    params, params_err, params_init, params_bound = fit_spe(
+                        spe._bin_centers(),
+                        spe.data[pixel_id],
+                        spe.errors(index=pixel_id), snr=3, debug=debug)
 
-            except PeakNotFound as e:
+                    for key, val in params.items():
+                        parameters[key].append(val)
 
-                print(e)
-                print('Could not fit for pixel_id : {}'.format(pixel_id))
+                    parameters['pixel_id'].append(pixel_id)
+
+                    for key, val in params_init.items():
+
+                        results.init[key] = val
+                        results.param[key] = params[key]
+                        results.param_errors[key] = params_err[key]
+                        results.bound_min[key] = params_bound['limit_' + key][0]
+                        results.bound_max[key] = params_bound['limit_' + key][1]
+
+                    for key, val in results.items():
+
+                        results[key]['pixel'] = pixel_id
+
+                except PeakNotFound as e:
+
+                    print(e)
+                    print('Could not fit for pixel_id : {}'.format(pixel_id))
+
+                for key, val in results.items():
+
+                    h5.write('spe_' + key, val)
 
         for key, val in parameters.items():
             parameters[key] = np.array(val)
@@ -485,6 +505,8 @@ def main(args):
     if args['--display']:
 
         parameters = np.load('spe_fit_params.npz')
+
+        print(parameters['sigma_e'])
 
         mask = np.isfinite(parameters['sigma_e']) * np.isfinite(parameters['sigma_s']) * np.isfinite(parameters['gain'])
 

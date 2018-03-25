@@ -4,6 +4,9 @@ from numpy import ndarray
 
 
 class CalibrationEventContainer(Container):
+    """
+    description test
+    """
     # Raw
 
     adc_samples = Field(ndarray, 'the raw data')
@@ -28,20 +31,23 @@ class CalibrationEventContainer(Container):
 
 
 class CalibrationHistogramContainer(Container):
+    """
+    description test
+    """
 
-    bins = Field(ndarray, '')
-    count = Field(ndarray, '')
-    shape = Field(ndarray, '')
-    n_bins = Field(ndarray, '')
-    name = Field(ndarray, '')
-    axis_name = Field(ndarray, '')
-    underflow = Field(ndarray, '')
-    overflow = Field(ndarray, '')
-    max = Field(ndarray, '')
-    min = Field(ndarray, '')
-    mean = Field(ndarray, '')
-    std = Field(ndarray, '')
-    mode = Field(ndarray, '')
+    bins = Field(ndarray, 'bins')
+    count = Field(ndarray, 'count fs fe')
+    shape = Field(ndarray, 'shape fsd ')
+    n_bins = Field(ndarray, 'n_binsf f')
+    name = Field(ndarray, 'namef fsf')
+    axis_name = Field(ndarray, 'axis_namef sf')
+    underflow = Field(ndarray, 'underflow fs')
+    overflow = Field(ndarray, 'overflow sf')
+    max = Field(ndarray, 'maxs f')
+    min = Field(ndarray, 'min sf')
+    mean = Field(ndarray, 'means f')
+    std = Field(ndarray, 'stdsf')
+    mode = Field(ndarray, 'modesf sd')
 
 
 class CalibrationResultContainer(Container):
@@ -52,15 +58,16 @@ class CalibrationResultContainer(Container):
 class SPEParameters(Container):
 
     a_1 = Field(ndarray, 'Amplitude of the 1 p.e. peak')
-    a_2 = Field(ndarray, '')
-    a_3 = Field(ndarray, '')
-    a_4 = Field(ndarray, '')
+    a_2 = Field(ndarray, 'Amplitude of the 2 p.e. peak')
+    a_3 = Field(ndarray, 'Amplitude of the 3 p.e. peak')
+    a_4 = Field(ndarray, 'Amplitude of the 4 p.e. peak')
     baseline = Field(ndarray, 'Position of the 0 p.e. peak')
     gain = Field(ndarray, 'Gain')
     sigma_e = Field(ndarray, 'Electronic noise')
     sigma_s = Field(ndarray, 'Sensor noise')
     dark_count = Field(ndarray, 'Dark count rate')
     crosstalk = Field(ndarray, 'Crosstalk')
+    pixel = Field(ndarray, 'pixel id')
 
 
 class SPEResultContainer(CalibrationResultContainer):
@@ -69,11 +76,11 @@ class SPEResultContainer(CalibrationResultContainer):
     analysis
     """
 
-    init = SPEParameters()
-    bound_min = SPEParameters()
-    bound_max = SPEParameters()
-    param = SPEParameters()
-    param_errors = SPEParameters()
+    init = Field(SPEParameters())
+    bound_min = Field(SPEParameters())
+    bound_max = Field(SPEParameters())
+    param = Field(SPEParameters())
+    param_errors = Field(SPEParameters())
 
 
 class CalibrationContainer(Container):
