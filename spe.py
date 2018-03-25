@@ -29,9 +29,10 @@ from digicampipe.io.containers_calib import CalibrationContainer
 from probfit.costfunc import Chi2Regression
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.histogram import convert_histogram_to_container
-from ctapipe.io import HDF5TableWriter
+from digicampipe.utils.histogram import convert_histogram_to_container, convert_container_to_histogram
+from ctapipe.io import HDF5TableWriter, HDF5TableReader
 import os
+from digicampipe.io.containers_calib import CalibrationHistogramContainer
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -434,9 +435,20 @@ def main(args):
 
     if args['--fit']:
 
-        events = calibration_event_stream(files, telescope_id=telescope_id)
+        with HDF5TableReader('spe_analysis.hdf5') as h5_table:
 
-        spe = Histogram1D.load('temp.pk')
+            spe_charge = h5_table.read('/histo/spe_charge',
+                                       CalibrationHistogramContainer)
+
+            spe_amplitude = h5_table.read('/histo/spe_amplitude',
+                                          CalibrationHistogramContainer)
+
+            spe_charge = convert_container_to_histogram(spe_charge)
+            spe_amplitude = convert_container_to_histogram(spe_amplitude)
+
+
+        spe = spe_charge
+
 
         # spe.draw(index=(10, ), log=True)
         # plt.show()
