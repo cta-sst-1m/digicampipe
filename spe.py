@@ -396,7 +396,7 @@ def main(args):
 
     telescope_id = 1
 
-    max_events = 10000
+    max_events = 20
 
     output_file = './spe_analysis.hdf5'
 
@@ -423,7 +423,6 @@ def main(args):
 
             events = compute_charge(events, integral_width=7)
             events = compute_amplitude(events)
-            events = save_event_data(events, output_file, 'data')
             spe_charge, spe_amplitude = build_spe(events, max_events)
 
             save_container(spe_charge, output_file, 'histo', 'spe_charge')

@@ -2,6 +2,7 @@ from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
 from digicampipe.io.containers_calib import CalibrationContainer
+import itertools
 
 
 def event_stream(filelist, source=None, **kwargs):
@@ -47,7 +48,15 @@ def calibration_event_stream(path, telescope_id, max_events=None):
 
     container = CalibrationContainer()
 
-    for event in event_stream(path, max_events=max_events):
+    if max_events is None:
+
+        max_events = itertools.count
+
+    else:
+
+        max_events = range(max_events)
+
+    for event, _ in zip(event_stream(path), max_events):
 
         r0_event = event.r0.tel[telescope_id]
 
