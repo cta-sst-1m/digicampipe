@@ -26,7 +26,7 @@ from scipy.interpolate import splrep, sproot
 import scipy
 from iminuit import Minuit, describe
 from digicampipe.io.containers_calib import CalibrationContainer
-from probfit.costfunc import Chi2Regression
+from probfit import Chi2Regression
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.histogram import convert_histogram_to_container, convert_container_to_histogram

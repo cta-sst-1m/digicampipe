@@ -12,6 +12,7 @@ dependencies:
 - certifi=2017.11.5
 - coverage=4.4.2
 - cycler=0.10.0
+- cython
 - dbus=1.10.22
 - decorator=4.1.2
 - docopt=0.6.2
