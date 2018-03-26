@@ -488,14 +488,14 @@ def main(args):
 
                         results[key]['pixel'] = pixel_id
 
+                    for key, val in results.items():
+
+                        h5.write('spe_' + key, val)
+
                 except PeakNotFound as e:
 
                     print(e)
                     print('Could not fit for pixel_id : {}'.format(pixel_id))
-
-                for key, val in results.items():
-
-                    h5.write('spe_' + key, val)
 
         for key, val in parameters.items():
             parameters[key] = np.array(val)
@@ -504,20 +504,57 @@ def main(args):
 
     if args['--display']:
 
-        parameters = np.load('spe_fit_params.npz')
+        import pandas as pd
 
-        print(parameters['sigma_e'])
+        parameters = pd.HDFStore('spe_fit_results.h5', mode='r')
+        parameters = parameters['analysis/spe_param']
+        n_entries = 0
 
-        mask = np.isfinite(parameters['sigma_e']) * np.isfinite(parameters['sigma_s']) * np.isfinite(parameters['gain'])
+        for i in range(1, 3):
+
+            n_entries += parameters['a_{}'.format(i)]
+
+        xt = (n_entries - parameters['a_1']) / n_entries
+        dark_count = n_entries / (4 * 92 * 10000)
+
+        for key, val in parameters.items():
+
+            fig = plt.figure()
+            axes = fig.add_subplot(111)
+            axes.hist(val, bins='auto', log=True)
+            axes.set_xlabel(key + ' []')
+            axes.set_ylabel('count []')
 
         plt.figure()
-        plt.hist(parameters['sigma_e'][mask], bins='auto')
+        plt.hist(xt, bins='auto', log=True)
+        plt.xlabel('XT []')
 
         plt.figure()
-        plt.hist(parameters['gain'][mask], bins='auto')
+        plt.hist(dark_count, bins='auto', log=True)
+        plt.xlabel('dark count rate [GHz]')
 
-        plt.figure()
-        plt.hist(parameters['sigma_s'][mask], bins='auto')
+#        with HDF5TableReader('spe_analysis.hdf5') as h5_table:
+
+#            spe_charge = h5_table.read('/histo/spe_charge',
+#                                              CalibrationHistogramContainer())
+
+#            spe_amplitude = h5_table.read('/histo/spe_amplitude',
+ #                                                 CalibrationHistogramContainer())
+
+            # raw_histo = h5_table.read('/histo/raw_lsb', CalibrationHistogramContainer())
+
+
+
+#            spe_charge = convert_container_to_histogram(next(spe_charge))
+            # raw_histo = convert_container_to_histogram(next(raw_histo))
+#            spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
+
+
+        spe_charge = Histogram1D.load('temp_10000.pk')
+
+        # raw_histo.draw(index=(10, ))
+        spe_charge.draw(index=(10, ), log=True)
+        # spe_amplitude.draw(index=(10, ))
 
         plt.show()
 
