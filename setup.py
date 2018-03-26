@@ -38,7 +38,8 @@ setup(
         '': [
             'VERSION',
             'tests/resources/*',
-            'tests/resources/stars_on_lid/*'
+            'tests/resources/stars_on_lid/*',
+            'tests/resources/digicamtoy/*',
         ],
     },
     entry_points={
