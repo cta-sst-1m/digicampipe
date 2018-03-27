@@ -7,18 +7,31 @@ from scipy.interpolate import interp1d
 def filter_template(filename_pulse_shape, n_samples, dt):
 
     time_steps, amplitudes = np.loadtxt(filename_pulse_shape, unpack=True)
-    pulse_template = interp1d(time_steps, amplitudes, kind='cubic',
-                                   bounds_error=False,
-                                   fill_value=0., assume_sorted=True)
+    pulse_template = interp1d(
+        time_steps,
+        amplitudes,
+        kind='cubic',
+        bounds_error=False,
+        fill_value=0.,
+        assume_sorted=True
+    )
 
-    temp_times = np.arange(time_steps[0], time_steps[-1],
-                           (time_steps[1] - time_steps[0])/1000)
+    temp_times = np.arange(
+        time_steps[0],
+        time_steps[-1],
+        (time_steps[1] - time_steps[0]) / 1000
+    )
 
     temp_amplitudes = pulse_template(temp_times)
     amplitudes = amplitudes / np.max(temp_amplitudes)
-    pulse_template = interp1d(time_steps, amplitudes, kind='cubic',
-                                   bounds_error=False,
-                                   fill_value=0., assume_sorted=True)
+    pulse_template = interp1d(
+        time_steps,
+        amplitudes,
+        kind='cubic',
+        bounds_error=False,
+        fill_value=0.,
+        assume_sorted=True
+    )
 
     t = np.arange(0, n_samples * dt, dt)
     return pulse_template(t)
@@ -81,7 +94,11 @@ def extract_charge(
     if np.any(is_saturated):
         sat_indices = tuple(np.where(is_saturated)[0])
         _data = data[sat_indices, ...]
-        charge[sat_indices, ...] = np.apply_along_axis(contiguous_regions, 1, _data)
+        charge[sat_indices, ...] = np.apply_along_axis(
+            contiguous_regions,
+            1,
+            _data
+        )
 
     return charge, index_max
 

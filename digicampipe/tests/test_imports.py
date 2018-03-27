@@ -3,7 +3,8 @@
 
 def test_imports():
 
-    from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
+    from digicampipe.calib.camera import (
+        filter, r1, random_triggers, dl0, dl2, dl1)
     from digicampipe.io.event_stream import event_stream
     from digicampipe.utils import geometry
     from cts_core.camera import Camera

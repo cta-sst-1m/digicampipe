@@ -12,7 +12,8 @@ def convert_histogram_to_container(histogram):
 
     container = CalibrationHistogramContainer()
 
-    container.bins = histogram.bins.astype(np.int)  # TODO make ctapipe.HDFTableWriter accept unit32
+    # TODO make ctapipe.HDFTableWriter accept unit32
+    container.bins = histogram.bins.astype(np.int)
     container.count = histogram.data.astype(np.int)
     container.shape = histogram.shape  # TODO need to accept tuple
     container.n_bins = histogram.n_bins
@@ -49,4 +50,3 @@ def convert_container_to_histogram(container):
     else:
 
         raise TypeError
-

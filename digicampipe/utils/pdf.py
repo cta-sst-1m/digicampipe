@@ -27,4 +27,3 @@ def single_photoelectron_pdf(x, baseline, gain,
     pdf /= np.sqrt(2 * np.pi)
 
     return pdf
-
