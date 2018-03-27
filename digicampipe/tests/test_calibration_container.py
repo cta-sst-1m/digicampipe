@@ -14,19 +14,34 @@ example_file_path = pkg_resources.resource_filename(
 
 def test_calibration_event_stream():
 
-    path = example_file_path
+
+    example_file_path
     max_events = 10
     telescope_id = 1
 
-    calib_stream = calibration_event_stream(path, telescope_id, max_events)
-    obs_stream = event_stream(path, max_events=max_events)
+    calib_stream = calibration_event_stream(example_file_path,
+                                            telescope_id,
+                                            max_events)
 
-    for event_calib, event_obs in zip(calib_stream, obs_stream):
+    obs_stream = event_stream(example_file_path, max_events=max_events)
 
-        assert (event_calib.data.adc_samples == \
-               event_obs.r0.tel[telescope_id].adc_samples).all()
-        assert (event_calib.data.digicam_baseline == \
-               event_obs.r0.tel[telescope_id].digicam_baseline).all()
+    values = []
 
-        assert event_calib.n_pixels == \
-               event_obs.r0.tel[telescope_id].adc_samples.shape[0]
+    for event_calib in calib_stream:
+
+        values.append([
+            event_calib.data.adc_samples,
+            event_calib.data.digicam_baseline,
+            event_calib.n_pixels
+            ])
+
+    for i, event in enumerate(obs_stream):
+
+        event = event.r0.tel[telescope_id]
+
+        assert (values[i][0] == event.adc_samples).all()
+
+        assert (values[i][1] == event.digicam_baseline).all()
+
+        assert values[i][2] == event.adc_samples.shape[0]
+
