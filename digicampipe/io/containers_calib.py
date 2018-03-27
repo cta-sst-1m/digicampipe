@@ -36,18 +36,18 @@ class CalibrationHistogramContainer(Container):
     """
 
     bins = Field(ndarray, 'bins')
-    count = Field(ndarray, 'count fs fe')
-    shape = Field(ndarray, 'shape fsd ')
-    n_bins = Field(ndarray, 'n_binsf f')
-    name = Field(ndarray, 'namef fsf')
-    axis_name = Field(ndarray, 'axis_namef sf')
-    underflow = Field(ndarray, 'underflow fs')
-    overflow = Field(ndarray, 'overflow sf')
-    max = Field(ndarray, 'maxs f')
-    min = Field(ndarray, 'min sf')
-    mean = Field(ndarray, 'means f')
-    std = Field(ndarray, 'stdsf')
-    mode = Field(ndarray, 'modesf sd')
+    count = Field(ndarray, 'count')
+    shape = Field(ndarray, 'shape')
+    n_bins = Field(ndarray, 'n_bins')
+    name = Field(ndarray, 'name')
+    axis_name = Field(ndarray, 'axis_name')
+    underflow = Field(ndarray, 'underflow')
+    overflow = Field(ndarray, 'overflow')
+    max = Field(ndarray, 'max')
+    min = Field(ndarray, 'min')
+    mean = Field(ndarray, 'mean')
+    std = Field(ndarray, 'std')
+    mode = Field(ndarray, 'mode')
 
 
 class CalibrationResultContainer(Container):
