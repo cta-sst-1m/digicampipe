@@ -140,7 +140,7 @@ class R0CameraContainer(Container):
 
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
-    adc_samples = Field(ndarray, 
+    adc_samples = Field(ndarray,
                         "numpy array containing ADC samples"
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
@@ -310,7 +310,7 @@ class ReconstructedShowerContainer(Container):
     is_valid = (False,
                 ('direction validity flag. True if the shower direction'
                  'was properly reconstructed by the algorithm'))
-    tel_ids = Field([], 
+    tel_ids = Field([],
                     ('list of the telescope ids used in the'
                      ' reconstruction of the shower'))
     average_size = Field(0.0, 'average size of used')
