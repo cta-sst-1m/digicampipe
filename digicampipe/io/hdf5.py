@@ -1,15 +1,15 @@
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
-import numpy as np
 
 __all__ = ['digicamtoy_event_source']
 
 
 def digicamtoy_event_source(
     url,
-    camera=None,
+    camera=utils.DigiCam,
     max_events=None,
+    chunk_size=150,
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
@@ -18,27 +18,13 @@ def digicamtoy_event_source(
         path to file to open
     max_events : int, optional
         maximum number of events to read
-    camera : utils.Camera() or None for DigiCam
+    camera : utils.Camera() default: utils.DigiCam
     """
-    if camera is None:
-        camera = utils.DigiCam
-
-    if not isinstance(camera, utils.Camera):
-        raise ValueError("camera should be utils.Camera"
-                         " not cts_core.camera.Camera")
-
-    else:
-        patch_matrix = camera.patch_matrix
-        cluster_7_matrix = camera.cluster_7_matrix
-        cluster_19_matrix = camera.cluster_19_matrix
-
     data = DataContainer()
     hdf5 = h5py.File(url, 'r')
 
     full_data_set = hdf5['data']['adc_count']
     n_events, n_pixels, n_samples = full_data_set.shape
-
-    chunk_size = 150
 
     if max_events is None:
 
@@ -58,9 +44,9 @@ def digicamtoy_event_source(
                 data.inst.num_channels[tel_id] = 1
                 data.inst.num_pixels[tel_id] = n_pixels
                 data.inst.geom[tel_id] = camera.geometry
-                data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
-                data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
-                data.inst.patch_matrix[tel_id] = patch_matrix
+                data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = camera.patch_matrix
                 data.inst.num_samples[tel_id] = n_samples
 
             if (event_id % chunk_size) == 0:
