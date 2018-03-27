@@ -40,10 +40,8 @@ def calibration_event_stream(path, telescope_id, max_events=None):
     Event stream for the calibration of the camera based on the observation
     event_stream()
     """
-
     container = CalibrationContainer()
     for event in event_stream(path, max_events=max_events):
-
         r0_event = event.r0.tel[telescope_id]
 
         container.data.adc_samples = r0_event.adc_samples
