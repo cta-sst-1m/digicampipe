@@ -1,6 +1,7 @@
 from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
+from digicampipe.io.containers_calib import CalibrationContainer
 
 
 def event_stream(filelist, source=None, **kwargs):
@@ -32,6 +33,21 @@ def event_stream(filelist, source=None, **kwargs):
         data_stream = source(url=file, **kwargs)
         for event in data_stream:
             yield event
+
+
+def calibration_event_stream(path, telescope_id, max_events=None):
+    """
+    Event stream for the calibration of the camera based on the observation
+    event_stream()
+    """
+    container = CalibrationContainer()
+    for event in event_stream(path, max_events=max_events):
+        r0_event = event.r0.tel[telescope_id]
+
+        container.data.adc_samples = r0_event.adc_samples
+        container.data.digicam_baseline = r0_event.digicam_baseline
+        container.n_pixels = container.data.adc_samples.shape[0]
+        yield container
 
 
 def guess_source_from_path(path):
