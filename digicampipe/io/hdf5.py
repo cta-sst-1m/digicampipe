@@ -9,6 +9,7 @@ def digicamtoy_event_source(
     url,
     camera=utils.DigiCam,
     max_events=None,
+    chunk_size=150,
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
@@ -25,8 +26,6 @@ def digicamtoy_event_source(
 
     full_data_set = hdf5['data']['adc_count']
     n_events, n_pixels, n_samples = full_data_set.shape
-
-    chunk_size = 150
 
     if max_events is None:
 
