@@ -95,4 +95,3 @@ class CalibrationContainer(Container):
     data = CalibrationEventContainer()
     histo = Field(Map(CalibrationHistogramContainer))
     result = CalibrationResultContainer()
-
