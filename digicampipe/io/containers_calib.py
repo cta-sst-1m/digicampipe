@@ -48,7 +48,7 @@ class CalibrationHistogramContainer(Container):
     mean = Field(ndarray, 'mean')
     std = Field(ndarray, 'std')
     mode = Field(ndarray, 'mode')
-    
+
 
 class CalibrationResultContainer(Container):
 
