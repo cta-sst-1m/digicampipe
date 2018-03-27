@@ -1,7 +1,6 @@
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
-import numpy as np
 
 __all__ = ['digicamtoy_event_source']
 
