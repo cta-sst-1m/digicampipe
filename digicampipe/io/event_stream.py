@@ -41,10 +41,7 @@ def calibration_event_stream(path, telescope_id, max_events=None):
     event_stream()
     """
     container = CalibrationContainer()
-    for event_count, event in enumerate(event_stream(path)):
-        if max_events is not None and event_count == max_events:
-            break
-
+    for event in event_stream(path, max_events=max_events):
         r0_event = event.r0.tel[telescope_id]
 
         container.data.adc_samples = r0_event.adc_samples
