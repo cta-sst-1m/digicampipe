@@ -19,7 +19,7 @@ Options:
 path to baseline file usually called "dark.npz"
   --min_photon <int>     Filtering on big showers [default: 20]
 '''
-from digicampipe.reco.camera import filter, r1, random_triggers, dl0, dl2, dl1
+from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from cts_core.utils import Camera
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text

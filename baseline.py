@@ -16,7 +16,7 @@ Options:
   -h --help     Show this screen.
   --unwanted_pixels=<integers>   list of integers with commas [default: ]
 '''
-from digicampipe.reco.camera import filter
+from digicampipe.calib.camera import filter
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from tqdm import tqdm

@@ -1,4 +1,4 @@
-from digicampipe.reco.camera import filter, random_triggers, r1, dl0, dl2, dl1
+from digicampipe.calib.camera import filter, random_triggers, r1, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import utils, geometry
 from cts_core.camera import Camera

@@ -3,7 +3,7 @@ import pkg_resources
 import numpy as np
 from tempfile import TemporaryDirectory
 
-from digicampipe.reco.camera import filter, r1, random_triggers, dl0
+from digicampipe.calib.camera import filter, r1, random_triggers, dl0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import utils
 
@@ -19,7 +19,7 @@ example_file_path = pkg_resources.resource_filename(
 
 
 def make_dark_base_line():
-    from digicampipe.reco.camera import filter
+    from digicampipe.calib.camera import filter
     from digicampipe.io.event_stream import event_stream
     from digicampipe.io.save_adc import save_dark
 
@@ -46,7 +46,7 @@ def make_dark_base_line():
 
 
 def test_calibrate_to_dl1():
-    from digicampipe.reco.camera.dl1 import calibrate_to_dl1
+    from digicampipe.calib.camera.dl1 import calibrate_to_dl1
 
     # The next 50 lines are just setp.
     dark_baseline = make_dark_base_line()

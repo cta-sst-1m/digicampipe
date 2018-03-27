@@ -357,10 +357,10 @@ class CameraDisplay:
         return ellipse
 
     def overlay_moments(self, momparams, with_label=True, keep_old=False, **kwargs):
-        """helper to overlay ellipse from a `reco.MomentParameters` structure
+        """helper to overlay ellipse from a `calib.MomentParameters` structure
         Parameters
         ----------
-        momparams: `reco.MomentParameters`
+        momparams: `calib.MomentParameters`
             structuring containing Hillas-style parameterization
         with_label: bool
             If True, show coordinates of centroid and width and length
@@ -523,10 +523,10 @@ class ArrayDisplay:
         return polygon
 
     def overlay_moments(self, momparams, tel_position, scale_fac, **kwargs):
-        """helper to overlay ellipse from a `reco.MomentParameters` structure
+        """helper to overlay ellipse from a `calib.MomentParameters` structure
         Parameters
         ----------
-        momparams: `reco.MomentParameters`
+        momparams: `calib.MomentParameters`
             structuring containing Hillas-style parameterization
         tel_position: list
             (x, y) positions of each telescope
@@ -559,10 +559,10 @@ class ArrayDisplay:
         self.axes_hillas.add_collection(patches)
 
     def overlay_axis(self, momparams, tel_position, **kwargs):
-        """helper to overlay ellipse from a `reco.MomentParameters` structure
+        """helper to overlay ellipse from a `calib.MomentParameters` structure
         Parameters
         ----------
-        momparams: `reco.MomentParameters`
+        momparams: `calib.MomentParameters`
             structuring containing Hillas-style parameterization
         tel_position: list
             (x, y) positions of each telescope
