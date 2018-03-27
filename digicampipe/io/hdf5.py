@@ -20,6 +20,7 @@ def digicamtoy_event_source(
         maximum number of events to read
     camera : utils.Camera() default: utils.DigiCam
     """
+
     data = DataContainer()
     hdf5 = h5py.File(url, 'r')
 
