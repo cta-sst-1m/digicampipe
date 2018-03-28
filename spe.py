@@ -76,7 +76,7 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     count = count[mask]
 
     parameter_names = describe(gaussian)
-    del(parameter_names[0])
+    del parameter_names[0]
 
     mean = np.average(bins, weights=count)
     std = np.average((bins - mean)**2, weights=count)
@@ -259,7 +259,7 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
 
     init_params = compute_gaussian_parameters_highest_peak(x, y, snr=snr,
                                                            debug=debug)[0]
-    del(init_params['mean'], init_params['amplitude'])
+    del init_params['mean'], init_params['amplitude']
     init_params['baseline'] = 0
 
     if sigma_e is None:
@@ -273,7 +273,7 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
         init_params['sigma_s'] = np.sqrt(init_params['sigma_s'])
         init_params['sigma_e'] = sigma_e
 
-    del (init_params['sigma'])
+    del init_params['sigma']
 
     temp = y.copy()
     mask = ((temp / np.sqrt(temp)) > snr) * (temp > 0)
