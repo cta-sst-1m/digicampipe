@@ -26,23 +26,12 @@ import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
-from digicampipe.io.containers_calib import CalibrationContainer
+from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.histogram import (
-    convert_histogram_to_container,
-    convert_container_to_histogram,
-)
-from ctapipe.io import HDF5TableWriter, HDF5TableReader
-from digicampipe.io.containers_calib import (
-    CalibrationEventContainer,
-    CalibrationHistogramContainer,
-    CalibrationResultContainer,
-    SPEParameters,
-    SPEResultContainer,
-    CalibrationContainer,
-)
+from digicampipe.utils.histogram import convert_histogram_to_container
+from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 
 
