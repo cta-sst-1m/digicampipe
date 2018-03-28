@@ -22,17 +22,26 @@ from tqdm import tqdm
 import peakutils
 from scipy.signal import find_peaks_cwt
 from scipy import ndimage
-from scipy.interpolate import splrep, sproot
 import scipy
 from iminuit import Minuit, describe
 from digicampipe.io.containers_calib import CalibrationContainer
 from probfit import Chi2Regression
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.histogram import convert_histogram_to_container, convert_container_to_histogram
+from digicampipe.utils.histogram import (
+    convert_histogram_to_container,
+    convert_container_to_histogram,
+)
 from ctapipe.io import HDF5TableWriter, HDF5TableReader
 import os
-from digicampipe.io.containers_calib import *
+from digicampipe.io.containers_calib import (
+    CalibrationEventContainer,
+    CalibrationHistogramContainer,
+    CalibrationResultContainer,
+    SPEParameters,
+    SPEResultContainer,
+    CalibrationContainer,
+)
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
