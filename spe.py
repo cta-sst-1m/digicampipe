@@ -493,7 +493,6 @@ def main(args):
             'baseline': [],
             'pixel_id': [],
         }
-        parameters_error = []
 
         n_pixels = spe.data.shape[0]
 
