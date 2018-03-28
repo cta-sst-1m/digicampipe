@@ -12,20 +12,22 @@ Options:
   -d --display  Display
   -v --debug    Enter the debug mode
 '''
-
+import os
 from docopt import docopt
-from digicampipe.io.event_stream import calibration_event_stream
+from tqdm import tqdm
+
 import numpy as np
 import matplotlib.pyplot as plt
-from histogram.histogram import Histogram1D
-from tqdm import tqdm
-import peakutils
 from scipy.signal import find_peaks_cwt
 from scipy import ndimage
 import scipy
+
+import peakutils
 from iminuit import Minuit, describe
-from digicampipe.io.containers_calib import CalibrationContainer
 from probfit import Chi2Regression
+
+from digicampipe.io.containers_calib import CalibrationContainer
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.histogram import (
@@ -33,7 +35,6 @@ from digicampipe.utils.histogram import (
     convert_container_to_histogram,
 )
 from ctapipe.io import HDF5TableWriter, HDF5TableReader
-import os
 from digicampipe.io.containers_calib import (
     CalibrationEventContainer,
     CalibrationHistogramContainer,
@@ -42,6 +43,7 @@ from digicampipe.io.containers_calib import (
     SPEResultContainer,
     CalibrationContainer,
 )
+from histogram.histogram import Histogram1D
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
