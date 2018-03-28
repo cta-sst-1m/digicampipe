@@ -72,7 +72,10 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
     highest_peak_index = np.argmax(count)
 
-    highest_peak_range = [highest_peak_index + i for i in range(-peak_distance, peak_distance)]
+    highest_peak_range = [
+        highest_peak_index + i
+        for i in range(-peak_distance, peak_distance)
+    ]
 
     bins = bins[highest_peak_range]
     count = count[highest_peak_range]
@@ -131,7 +134,11 @@ def build_raw_data_histogram(events):
         if count == 0:
 
             n_pixels = event.n_pixels
-            adc_histo = Histogram1D(data_shape=(n_pixels, ), bin_edges=np.arange(0, 4095, 1), axis_name='[LSB]')
+            adc_histo = Histogram1D(
+                data_shape=(n_pixels, ),
+                bin_edges=np.arange(0, 4095, 1),
+                axis_name='[LSB]'
+            )
 
         adc_histo.fill(event.data.adc_samples)
 
@@ -198,7 +205,9 @@ def find_pulse_2(events, threshold_sigma, widths, **kwargs):
         for pixel_id, adc_sample in enumerate(adc_samples):
 
             peak_index = find_peaks_cwt(adc_sample, widths, **kwargs)
-            peak_index = peak_index[adc_sample[peak_index] > threshold[pixel_id]]
+            peak_index = peak_index[
+                adc_sample[peak_index] > threshold[pixel_id]
+            ]
             pulse_mask[pixel_id, peak_index] = True
 
         event.data.pulse_mask = pulse_mask
@@ -213,7 +222,11 @@ def compute_charge(events, integral_width):
         adc_samples = event.data.adc_samples
         pulse_mask = event.data.pulse_mask
 
-        convolved_signal = ndimage.convolve1d(adc_samples, np.ones(integral_width), axis=-1)
+        convolved_signal = ndimage.convolve1d(
+            adc_samples,
+            np.ones(integral_width),
+            axis=-1
+        )
         charges = np.ones(convolved_signal.shape) * np.nan
         charges[pulse_mask] = convolved_signal[pulse_mask]
         event.data.reconstructed_charge = charges
@@ -335,7 +348,21 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
 
     param_bounds = dict(zip(keys, values))
 
-    # f = lambda baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4: minimiser(x, y, y_err, spe_fit_function, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4)
+    # def f(baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
+    #     return minimiser(
+    #         x,
+    #         y,
+    #         y_err,
+    #         spe_fit_function,
+    #         baseline,
+    #         gain,
+    #         sigma_e,
+    #         sigma_s,
+    #         a_1,
+    #         a_2,
+    #         a_3,
+    #         a_4
+    #     )
 
     chi2 = Chi2Regression(single_photoelectron_pdf, x, y, y_err)
     m = Minuit(chi2, **params_init, **param_bounds, print_level=0, pedantic=False)
@@ -366,7 +393,10 @@ def minimiser(x, y, y_err, f, *args):
 
 def build_spe(events, max_events):
 
-    spe_charge = Histogram1D(data_shape=(1296,), bin_edges=np.arange(-20, 200, 1))
+    spe_charge = Histogram1D(
+        data_shape=(1296,),
+        bin_edges=np.arange(-20, 200, 1)
+    )
     spe_amplitude = Histogram1D(data_shape=(1296,),
                                 bin_edges=np.arange(-20, 200, 1))
 
@@ -445,24 +475,33 @@ def main(args):
 
     if args['--fit']:
 
-#        with HDF5TableReader('spe_analysis.hdf5') as h5_table:
+        # with HDF5TableReader('spe_analysis.hdf5') as h5_table:
 
-#            spe_charge = h5_table.read('/histo/spe_charge',
-#                                       CalibrationHistogramContainer())
+        #     spe_charge = h5_table.read('/histo/spe_charge',
+        #                                CalibrationHistogramContainer())
 
-#            spe_amplitude = h5_table.read('/histo/spe_amplitude',
-#                                          CalibrationHistogramContainer())
+        #     spe_amplitude = h5_table.read('/histo/spe_amplitude',
+        #                                   CalibrationHistogramContainer())
 
-#            spe_charge = convert_container_to_histogram(next(spe_charge))
-#            spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
-
+        #     spe_charge = convert_container_to_histogram(next(spe_charge))
+        #     spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
 
         # spe = spe_charge
         spe = Histogram1D.load('temp.pk')
         spe.draw(index=(10, ), log=True)
         plt.show()
 
-        parameters = {'a_1': [], 'a_2':[], 'a_3':[], 'a_4':[], 'sigma_s': [], 'sigma_e':[], 'gain':[], 'baseline':[], 'pixel_id':[]}
+        parameters = {
+            'a_1': [],
+            'a_2': [],
+            'a_3': [],
+            'a_4': [],
+            'sigma_s': [],
+            'sigma_e': [],
+            'gain': [],
+            'baseline': [],
+            'pixel_id': [],
+        }
         parameters_error = []
 
         n_pixels = spe.data.shape[0]
@@ -542,22 +581,19 @@ def main(args):
         plt.hist(dark_count, bins='auto', log=True)
         plt.xlabel('dark count rate [GHz]')
 
-#        with HDF5TableReader('spe_analysis.hdf5') as h5_table:
+        # with HDF5TableReader('spe_analysis.hdf5') as h5_table:
 
-#            spe_charge = h5_table.read('/histo/spe_charge',
-#                                              CalibrationHistogramContainer())
+        #     spe_charge = h5_table.read('/histo/spe_charge',
+        #                                       CalibrationHistogramContainer())
 
-#            spe_amplitude = h5_table.read('/histo/spe_amplitude',
- #                                                 CalibrationHistogramContainer())
+        #     spe_amplitude = h5_table.read('/histo/spe_amplitude',
+        #                                           CalibrationHistogramContainer())
 
-            # raw_histo = h5_table.read('/histo/raw_lsb', CalibrationHistogramContainer())
+        #    # raw_histo = h5_table.read('/histo/raw_lsb', CalibrationHistogramContainer())
 
-
-
-#            spe_charge = convert_container_to_histogram(next(spe_charge))
-            # raw_histo = convert_container_to_histogram(next(raw_histo))
-#            spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
-
+        #     spe_charge = convert_container_to_histogram(next(spe_charge))
+        #    # raw_histo = convert_container_to_histogram(next(raw_histo))
+        #     spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
 
         spe_charge = Histogram1D.load('temp_10000.pk')
 
