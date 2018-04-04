@@ -40,7 +40,7 @@ Finally change into the digicampipe directory.
 
     cd digicampipe
 
-### Tests
+## Tests
 
 Run the tests on your machine:
 
@@ -69,6 +69,20 @@ You can open the html files with your favorite web browser.
 To delete the documentation us:
 
     make clean
+
+# Software usage
+
+## Mounting the data on your machine
+
+You may want to mount the data from a remote onto your local machine. To do this
+you can use `sshfs`. Information about `sshfs` can be found here
+[sshfs](https://www.tecmint.com/sshfs-mount-remote-linux-filesystem-directory-using-ssh/)
+
+Usage example :
+
+```
+sudo sshfs -o allow_other <username>@<remote_adress>:<remote_path> <local_path>
+```
 
 ## Example: Viewer
 
