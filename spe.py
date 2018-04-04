@@ -6,14 +6,15 @@ Usage:
   spe.py [options] [FILE] [INPUT ...]
 
 Options:
-  -h --help     Show this screen.
-  -o FILE --output=FILE
-  -i INPUT --input=FILE
-  -c --compute  Compute the data
-  -f --fit      Fit
-  -d --display  Display
-  -v --debug    Enter the debug mode
-  -p --pixel=PIXEL    Give a list of pixel IDs
+  -h --help               Show this screen.
+  -o FILE --output=FILE.  Output file.
+  -i INPUT --input=INPUT. Input files.
+  -c --compute            Compute the data.
+  -f --fit                Fit.
+  -d --display            Display.
+  -v --debug              Enter the debug mode.
+  -p --pixel=PIXEL        Give a list of pixel IDs
+                          [default: [...]].
 '''
 import os
 from docopt import docopt
@@ -433,6 +434,8 @@ def main(args):
     max_events = 20
     output_file = args['FILE'] #  './spe_analysis.hdf5'
     pixel_id = args['--pixel']
+
+    print(pixel_id)
 
     if args['--compute']:
 

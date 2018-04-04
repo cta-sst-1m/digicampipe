@@ -1,6 +1,11 @@
-from digicampipe.scripts import spe
+import spe
 import numpy as np
 import pytest
+from digicampipe.utils.exception import PeakNotFound
+import numpy as np
+import pytest
+
+import spe
 from digicampipe.utils.exception import PeakNotFound
 
 
@@ -15,7 +20,7 @@ def test_compute_gaussian_parameters_highest_peak():
 
         spe.compute_gaussian_parameters_highest_peak(bins, count, snr)
 
-    spe.compute_gaussian_parameters_highest_peak(bins, count, snr-0.1)
+    spe.compute_gaussian_parameters_highest_peak(bins, count, snr - 0.1)
 
 
 @pytest.mark.xfail
