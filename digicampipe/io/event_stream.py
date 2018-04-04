@@ -5,7 +5,7 @@ from digicampipe.io.containers_calib import CalibrationContainer
 import numpy as np
 
 
-def event_stream(filelist, source=None, **kwargs):
+def event_stream(filelist, source=None, max_events=np.inf, **kwargs):
     '''Iterable of events in the form of `DataContainer`.
 
     Parameters
@@ -28,11 +28,18 @@ def event_stream(filelist, source=None, **kwargs):
     if isinstance(filelist, (str, bytes)):
         filelist = [filelist]
 
+    count = 0
+
     for file in filelist:
         if source is None:
             source = guess_source_from_path(file)
         data_stream = source(url=file, **kwargs)
         for event in data_stream:
+
+            if count >= max_events:
+                raise StopIteration
+
+            count += 1
             yield event
 
 

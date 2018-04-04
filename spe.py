@@ -450,7 +450,7 @@ def main(args):
     debug = args['--debug']
     telescope_id = 1
     max_events = 2000
-    output_file = args['FILE'] #  './spe_analysis.hdf5'
+    output_file = args['FILE']
     pixel_id = _convert_pixel_args(args['--pixel'])
 
     if args['--compute']:
