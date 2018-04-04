@@ -40,13 +40,11 @@ digicam_config_file_default = resource_filename(
 )
 
 
-def animate(data, max_event=100):
+def animate(data):
     plt.ion()
     first = True
     plt.figure()
     for i, data_event in enumerate(data):
-        if i >= max_event:
-            break
         n_sample = data_event.shape[2]
         for t in range(n_sample):
             title_text = 'event: %i / %i\nt: %i / %i ns' % \
@@ -155,10 +153,10 @@ class CameraData(object):
         events_stream = dl0.calibrate_to_dl0(events_stream)
         # Run the dl1 calibration (compute charge in photons + cleaning)
         events_stream = dl1.calibrate_to_dl1(events_stream,
-                                             time_integration_options,
-                                             additional_mask=additional_mask,
-                                             picture_threshold=picture_threshold,
-                                             boundary_threshold=boundary_threshold)
+                                           time_integration_options,
+                                           additional_mask=additional_mask,
+                                           picture_threshold=picture_threshold,
+                                           boundary_threshold=boundary_threshold)
         """
         # Return only showers with total number of p.e. above min_photon
         events_stream = filter.filter_shower(
@@ -275,6 +273,7 @@ class CameraData(object):
 
     def get_used_pixel_in_skew_base(self):
         nvs = self.get_pixels_pos_in_skew_base(self.digicam_config_file)
+        nvs[self.unwanted_pixels]
         mask_shape =  np.max(nvs, axis=0)
         mask = np.zeros(mask_shape+1)
         for i, (x, y) in enumerate(nvs):
@@ -357,9 +356,8 @@ def show_file(camera_data):
 
 
 if __name__ == '__main__':
-    camera_data = os.path.join('/home/yves/ctasoft/digicampipe/data',
+    camera_data = os.path.join('/home/reniery/prog/digicampipe/autoencoder',
                                'camera_data_test.fits')
-    create_file(camera_data,
-                datafiles_list=['/home/yves/ctasoft/digicampipe/digicampipe/tests/resources/example_100_evts.000.fits.fz'],
-                print_every=10)
+    #create_file(camera_data,
+    #            print_every=10)
     show_file(camera_data)
