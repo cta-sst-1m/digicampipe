@@ -1,6 +1,8 @@
 from ctapipe.core import Container, Map
 from ctapipe.core import Field
 from numpy import ndarray
+import numpy as np
+from histogram.histogram import Histogram1D
 
 
 class CalibrationEventContainer(Container):
@@ -48,6 +50,46 @@ class CalibrationHistogramContainer(Container):
     mean = Field(ndarray, 'mean')
     std = Field(ndarray, 'std')
     mode = Field(ndarray, 'mode')
+
+    def to_container(self, histogram):
+        """
+        Utility function to convert an Histogram to a
+        CalibrationHistogramContainer
+        :param histogram:
+        :return: CalibrationHistogramContainer
+        """
+
+        # TODO make ctapipe.HDFTableWriter accept unit32
+        self.bins = histogram.bins.astype(np.int)
+        self.count = histogram.data.astype(np.int)
+        self.shape = histogram.shape  # TODO need to accept tuple
+        self.n_bins = histogram.n_bins
+        self.name = histogram.name  # TODO need to accept str
+        self.axis_name = histogram.axis_name  # TODO need to accept str
+        self.underflow = histogram.underflow.astype(np.int)
+        self.overflow = histogram.overflow.astype(np.int)
+        self.max = histogram.max
+        self.min = histogram.min
+        self.mode = histogram.mode()
+        self.std = histogram.std()
+        self.mean = histogram.mean()
+
+        return self
+
+    def to_histogram(self):
+
+        histo = Histogram1D(bin_edges=self.bins,
+                            data_shape=self.count.shape,
+                            name=self.name,
+                            axis_name=self.axis_name)
+
+        histo.data = self.count
+        histo.underflow = self.underflow
+        histo.overflow = self.overflow
+        histo.max = self.max
+        histo.min = self.min
+
+        return histo
 
 
 class CalibrationResultContainer(Container):
