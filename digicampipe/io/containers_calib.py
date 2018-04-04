@@ -59,7 +59,7 @@ class CalibrationHistogramContainer(Container):
         :return: CalibrationHistogramContainer
         """
 
-        # TODO make ctapipe.HDFTableWriter accept unit32
+        # TODO make ctapipe.HDFTableWriter accept unit32, tuple, str
         self.bins = histogram.bins.astype(np.int)
         self.count = histogram.data.astype(np.int)
         self.shape = histogram.shape[:-1]  # TODO need to accept tuple
@@ -79,7 +79,7 @@ class CalibrationHistogramContainer(Container):
     def to_histogram(self):
 
         histo = Histogram1D(bin_edges=self.bins,
-                            data_shape=self.shape,
+                            data_shape=self.count.shape[:-1],
                             name=self.name,
                             axis_name=self.axis_name)
 
@@ -133,7 +133,7 @@ class CalibrationContainer(Container):
 
     config = Field(list, 'List of the input parameters'
                          ' of the calibration analysis')  # Should use dict?
-    n_pixels = Field(int, 'number of pixels')
+    pixel_id = Field(ndarray, 'pixel ids')
     data = CalibrationEventContainer()
     histo = Field(Map(CalibrationHistogramContainer))
     result = CalibrationResultContainer()

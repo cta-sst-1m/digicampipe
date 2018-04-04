@@ -3,14 +3,17 @@
 Do the Single Photoelectron anaylsis
 
 Usage:
-  spe.py [options] <files>...
+  spe.py [options] [FILE] [INPUT ...]
 
 Options:
   -h --help     Show this screen.
+  -o FILE --output=FILE
+  -i INPUT --input=FILE
   -c --compute  Compute the data
   -f --fit      Fit
   -d --display  Display
   -v --debug    Enter the debug mode
+  -p --pixel=PIXEL    Give a list of pixel IDs
 '''
 import os
 from docopt import docopt
@@ -21,17 +24,17 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks_cwt
 from scipy import ndimage
 import scipy
+import pandas as pd
 
 import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
-from ctapipe.io import HDF5TableWriter
+from ctapipe.io import HDF5TableWriter, HDF5TableReader
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.io.containers_calib import SPEResultContainer, \
-    CalibrationHistogramContainer
+from digicampipe.io.containers_calib import SPEResultContainer, CalibrationHistogramContainer
 from histogram.histogram import Histogram1D
 
 
@@ -97,10 +100,6 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
     bounds = dict(zip(bound_names, bounds))
 
-    # gaussian_minimizer = lambda mean, sigma, amplitude: \
-    #    minimiser(bins, count, np.sqrt(count),
-    #              gaussian, mean, sigma, amplitude)
-
     gaussian_minimizer = Chi2Regression(gaussian, bins, count,
                                         error=np.sqrt(count))
 
@@ -133,7 +132,7 @@ def build_raw_data_histogram(events):
 
         adc_histo.fill(event.data.adc_samples)
 
-    return CalibrationHistogramContainer.from_histogram(adc_histo)
+    return CalibrationHistogramContainer().from_histogram(adc_histo)
 
 
 def fill_histogram(events, id, histogram):
@@ -428,15 +427,12 @@ def save_event_data(events, filename, group_name):
 
 def main(args):
 
-    files = args['<files>']
-
+    files = args['INPUT']
     debug = args['--debug']
-
     telescope_id = 1
-
-    max_events = 20000
-
-    output_file = './spe_analysis.hdf5'
+    max_events = 20
+    output_file = args['FILE'] #  './spe_analysis.hdf5'
+    pixel_id = args['--pixel']
 
     if args['--compute']:
 
@@ -444,6 +440,7 @@ def main(args):
 
             events = calibration_event_stream(files,
                                               telescope_id=telescope_id,
+                                              pixel_id=pixel_id,
                                               max_events=max_events)
             raw_histo = build_raw_data_histogram(events)
             save_container(raw_histo, output_file, 'histo', 'raw_lsb')
@@ -509,7 +506,7 @@ def main(args):
 
         results = SPEResultContainer()
 
-        with HDF5TableWriter('spe_fit_results.h5', 'analysis', mode='a') as h5:
+        with HDF5TableWriter(output_file, 'analysis', mode='a') as h5:
 
             for pixel_id in tqdm(range(n_pixels)):
 
@@ -553,9 +550,24 @@ def main(args):
 
     if args['--display']:
 
-        import pandas as pd
+        with HDF5TableReader(output_file, mode='r') as h5:
 
-        parameters = pd.HDFStore('spe_fit_results.h5', mode='r')
+            for node in h5._h5file.iter_nodes('/histo'):
+
+                histo_path = node._v_name
+                histo_path = '/histo/' + histo_path
+
+                histo = CalibrationHistogramContainer()
+
+                for _, event in zip(range(1), h5.read(histo_path, histo)):
+
+                    histo = event.to_histogram()
+
+                histo.draw(index=(0, ))
+
+        plt.show()
+
+        parameters = pd.HDFStore(output_file, mode='r')
         parameters = parameters['analysis/spe_param']
         n_entries = 0
 
@@ -611,19 +623,6 @@ def entry():
     args = docopt(__doc__)
     main(args)
 
-    x = np.arange(0, 100, 0.1)
-
-    baseline = 10
-    gain = 5.8
-    sigma_e = 0.8
-    sigma_s = 0.8
-    a = np.array([0.4, 0.1, 0.1, 0.4])
-    a = a / a.sum()
-    y = spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a[0], a[1], a[2], a[3])
-
-    plt.figure()
-    plt.plot(x, y)
-    plt.show()
 
 if __name__ == '__main__':
     entry()
