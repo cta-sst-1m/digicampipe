@@ -1,6 +1,8 @@
 import numpy as np
 import itertools
 
+from utils.histogram import Histogram
+
 
 def fill_hist_adc_samples(data_stream, output_filename, histogram):
 
@@ -107,14 +109,11 @@ def save_dark(data_stream, output_filename, n_events=None):
     for event, i in zip(data_stream, iter_events):
 
         for telescope_id in event.r0.tels_with_data:
-
+            data = event.r0.tel[telescope_id].adc_samples
             if i == 0:
-
-                data = event.r0.tel[telescope_id].adc_samples
                 baseline = np.zeros(data.shape[0])
                 std = np.zeros(data.shape[0])
 
-            data = event.r0.tel[telescope_id].adc_samples
             baseline += np.mean(data, axis=-1)
             std += np.std(data, axis=-1)
 
@@ -125,3 +124,43 @@ def save_dark(data_stream, output_filename, n_events=None):
     np.savez(output_filename, baseline=baseline, standard_deviation=std)
 
 
+class AdcSampleStatistics:
+    def __call__(self, data_stream):
+        for i, event in enumerate(data_stream):
+            for r0 in event.r0.tel.values():
+                data = r0.adc_samples
+                if i == 0:
+                    mean = np.zeros(data.shape[0])
+                    std = np.zeros(data.shape[0])
+
+                mean += np.mean(data, axis=-1)
+                std += np.std(data, axis=-1)
+
+            yield event
+
+        self.mean = mean / i
+        self.std = std / i
+        self.N = i
+
+
+class R0HistogramFiller:
+    '''
+    cumulates r0 field into the specified histogram.
+    field_name examples:
+        adc_samples
+        trigger_input_offline
+        trigger_input_traces
+        trigger_input_7
+        trigger_input_19
+    '''
+    def __init__(self, field_name='adc_samples', *args, **kwargs):
+        self.field_name = field_name
+        self.histogram = Histogram(*args, **kwargs)
+
+    def __call__(self, data_stream):
+        for event in data_stream:
+            for r0 in event.r0.tel.values():
+                self.histogram.fill_with_batch(
+                    getattr(r0, self.field_name)
+                )
+            yield event

@@ -133,7 +133,7 @@ def build_raw_data_histogram(events):
 
         adc_histo.fill(event.data.adc_samples)
 
-    return convert_histogram_to_container(adc_histo)
+    return CalibrationHistogramContainer.from_histogram(adc_histo)
 
 
 def fill_histogram(events, id, histogram):
