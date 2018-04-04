@@ -13,8 +13,7 @@ Options:
   -f --fit                Fit.
   -d --display            Display.
   -v --debug              Enter the debug mode.
-  -p --pixel=PIXEL        Give a list of pixel IDs
-                          [default: [...]].
+  -p --pixel=<PIXEL>      Give a list of pixel IDs.
 '''
 import os
 from docopt import docopt
@@ -124,7 +123,7 @@ def build_raw_data_histogram(events):
 
         if count == 0:
 
-            n_pixels = event.n_pixels
+            n_pixels = len(event.pixel_id)
             adc_histo = Histogram1D(
                 data_shape=(n_pixels, ),
                 bin_edges=np.arange(0, 4095, 1),
@@ -390,14 +389,18 @@ def minimiser(x, y, y_err, f, *args):
 
 def build_spe(events, max_events):
 
-    spe_charge = Histogram1D(
-        data_shape=(1296,),
-        bin_edges=np.arange(-20, 200, 1)
-    )
-    spe_amplitude = Histogram1D(data_shape=(1296,),
-                                bin_edges=np.arange(-20, 200, 1))
+    for i, event in tqdm(zip(range(max_events), events), total=max_events):
 
-    for _, event in tqdm(zip(range(max_events), events), total=max_events):
+        if i == 0:
+
+            n_pixels = len(event.pixel_id)
+
+            spe_charge = Histogram1D(
+                data_shape=(n_pixels,),
+                bin_edges=np.arange(-20, 200, 1)
+            )
+            spe_amplitude = Histogram1D(data_shape=(n_pixels,),
+                                        bin_edges=np.arange(-20, 200, 1))
 
         spe_charge.fill(event.data.reconstructed_charge)
         spe_amplitude.fill(event.data.reconstructed_amplitude)
@@ -426,16 +429,29 @@ def save_event_data(events, filename, group_name):
             yield event
 
 
+def _convert_pixel_args(text):
+
+    if text is not None:
+
+        text = text.split(',')
+        pixel_id = list(map(int, text))
+        pixel_id = np.array(pixel_id)
+
+    else:
+
+        pixel_id = [...]
+
+    return pixel_id
+
+
 def main(args):
 
     files = args['INPUT']
     debug = args['--debug']
     telescope_id = 1
-    max_events = 20
+    max_events = 2000
     output_file = args['FILE'] #  './spe_analysis.hdf5'
-    pixel_id = args['--pixel']
-
-    print(pixel_id)
+    pixel_id = _convert_pixel_args(args['--pixel'])
 
     if args['--compute']:
 
@@ -450,7 +466,9 @@ def main(args):
 
             events = calibration_event_stream(files,
                                               telescope_id=telescope_id,
-                                              max_events=max_events)
+                                              max_events=max_events,
+                                              pixel_id=pixel_id)
+
             events = fill_histogram(events, 0, raw_histo)
             events = fill_electronic_baseline(events)
             events = subtract_baseline(events)

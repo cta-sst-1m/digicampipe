@@ -1,6 +1,7 @@
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
+import numpy as np
 
 __all__ = ['digicamtoy_event_source']
 
@@ -64,6 +65,8 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].camera_event_type = None
             data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
+            baseline = np.ones(adc_count.shape) * np.nan
+            data.r0.tel[tel_id].digicam_baseline = baseline
             index_in_chunk += 1
 
         yield data
