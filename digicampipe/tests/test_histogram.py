@@ -27,5 +27,3 @@ def test_container_to_histogram():
         else:
 
             assert (val == getattr(histo, key)), '{} not equal'.format(key)
-
-

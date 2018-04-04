@@ -356,7 +356,13 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
     #     )
 
     chi2 = Chi2Regression(single_photoelectron_pdf, x, y, y_err)
-    m = Minuit(chi2, **params_init, **param_bounds, print_level=0, pedantic=False)
+    m = Minuit(
+        chi2,
+        **params_init,
+        **param_bounds,
+        print_level=0,
+        pedantic=False
+    )
     m.migrad()
 
     '''
@@ -404,17 +410,17 @@ def build_spe(events, max_events):
 
 def save_container(container, filename, group_name, table_name):
 
-    with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5_table:
-        h5_table.write(table_name, container)
+    with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5:
+        h5.write(table_name, container)
 
 
 def save_event_data(events, filename, group_name):
 
-    with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5_table:
+    with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5:
 
         for event in events:
 
-            h5_table.write('waveforms', event.data)
+            h5.write('waveforms', event.data)
 
             yield event
 
@@ -458,7 +464,11 @@ def main(args):
             spe_charge, spe_amplitude = build_spe(events, max_events)
 
             save_container(spe_charge, output_file, 'histo', 'spe_charge')
-            save_container(spe_amplitude, output_file, 'histo', 'spe_amplitude')
+            save_container(
+                spe_amplitude,
+                output_file,
+                'histo',
+                'spe_amplitude')
 
         else:
 
