@@ -607,8 +607,7 @@ def main(args):
     return
 
 
-if __name__ == '__main__':
-
+def entry():
     args = docopt(__doc__)
     main(args)
 
@@ -625,3 +624,6 @@ if __name__ == '__main__':
     plt.figure()
     plt.plot(x, y)
     plt.show()
+
+if __name__ == '__main__':
+    entry()
