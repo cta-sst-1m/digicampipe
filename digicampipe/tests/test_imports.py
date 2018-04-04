@@ -12,7 +12,3 @@ def test_imports():
     from digicampipe.io.save_hillas import save_hillas_parameters
     from digicampipe.visualization import EventViewer
     from digicampipe.utils import utils
-    import protozfitsreader
-    from protozfitsreader import rawzfitsreader
-    from protozfitsreader import ZFile
-    from histogram.histogram import Histogram1D
