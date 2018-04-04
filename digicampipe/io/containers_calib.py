@@ -51,7 +51,7 @@ class CalibrationHistogramContainer(Container):
     std = Field(ndarray, 'std')
     mode = Field(ndarray, 'mode')
 
-    def to_container(self, histogram):
+    def from_histogram(self, histogram):
         """
         Utility function to convert an Histogram to a
         CalibrationHistogramContainer
@@ -62,7 +62,7 @@ class CalibrationHistogramContainer(Container):
         # TODO make ctapipe.HDFTableWriter accept unit32
         self.bins = histogram.bins.astype(np.int)
         self.count = histogram.data.astype(np.int)
-        self.shape = histogram.shape  # TODO need to accept tuple
+        self.shape = histogram.shape[:-1]  # TODO need to accept tuple
         self.n_bins = histogram.n_bins
         self.name = histogram.name  # TODO need to accept str
         self.axis_name = histogram.axis_name  # TODO need to accept str
@@ -79,7 +79,7 @@ class CalibrationHistogramContainer(Container):
     def to_histogram(self):
 
         histo = Histogram1D(bin_edges=self.bins,
-                            data_shape=self.count.shape,
+                            data_shape=self.shape,
                             name=self.name,
                             axis_name=self.axis_name)
 
