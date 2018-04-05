@@ -32,6 +32,9 @@ class CalibrationEventContainer(Container):
                                                 'electrons for each adc sample'
                                        )
 
+    reconstructed_time = Field(ndarray, 'reconstructed time for each '
+                                        'for each adc sample')
+
     def plot(self, pixel_id):
 
         plt.figure()
@@ -122,7 +125,7 @@ class SPEParameters(Container):
     sigma_s = Field(ndarray, 'Sensor noise')
     dark_count = Field(ndarray, 'Dark count rate')
     crosstalk = Field(ndarray, 'Crosstalk')
-    pixel = Field(ndarray, 'pixel id')
+    pixel_id = Field(ndarray, 'pixel id')
 
 
 class SPEResultContainer(CalibrationResultContainer):

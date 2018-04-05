@@ -37,6 +37,7 @@ from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.io.containers_calib import SPEResultContainer, CalibrationHistogramContainer
 from histogram.histogram import Histogram1D
+from digicampipe.utils.utils import get_pulse_shape
 
 
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
@@ -55,11 +56,10 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     if len(peak_indices) == 1:
 
         mask = (count > 0) * (bins < bins[peak_indices[0]])
-        val = np.min(count[mask])
+        val = np.argmin(count[mask])
         peak_indices = np.insert(peak_indices, 0, val)
 
     x_peaks = np.array(bins[peak_indices])
-    # y_peaks = np.array(count[peak_indices])
 
     peak_distance = np.diff(x_peaks)
     peak_distance = np.mean(peak_distance) // 2
@@ -182,20 +182,6 @@ def find_pulse_1(events, threshold, min_distance):
         yield event
 
 
-def plot_adc_samples(events, pixel_id):
-
-    plt.figure()
-
-    for i, event in enumerate(events):
-
-        if i == 0:
-            pixel_id = event.pixel_id[pixel_id]
-        plt.plot(event.data.adc_samples[pixel_id])
-        plt.show()
-
-        yield event
-
-
 def find_pulse_2(events, threshold_sigma, widths, **kwargs):
 
     for count, event in enumerate(events):
@@ -247,27 +233,10 @@ def compute_charge(events, integral_width, maximum_width=2):
         charges[pulse_mask] = convolved_signal[pulse_mask]
         event.data.reconstructed_charge = charges
 
-
-        # charges = np.zeros(convolved_signal.shape + bins.shape) * np.nan
-        # pulse_mask_indices = np.where(pulse_mask)
-
-        # for i, bin in enumerate(bins):
-
-#            indices = pulse_mask_indices[-1] + bin
-#            indices[indices >= convolved_signal.shape[-1]] = convolved_signal.shape[-1] - 1
-#            indices[indices < 0] = 0
-#            indices = pulse_mask_indices[:-1] + (indices, )
-#            charges[indices + (i, )] = convolved_signal[indices]
-
-#        charges = np.nanmax(charges, axis=-1)
-#       charges_max = np.zeros(charges.shape) * np.nan
-#        charges_max[pulse_mask] = np.nanmax(charges, axis=-1)
-        # event.data.reconstructed_charge = charges_max
-
         yield event
 
 
-def compute_amplitude(events, maximum_width=2):
+def compute_amplitude(events):
 
     for count, event in enumerate(events):
 
@@ -277,6 +246,65 @@ def compute_amplitude(events, maximum_width=2):
         charges = np.ones(adc_samples.shape) * np.nan
         charges[pulse_indices] = adc_samples[pulse_indices]
         event.data.reconstructed_amplitude = charges
+
+        yield event
+
+
+def fit_template(events, pulse_width=(4, 5), rise_time=12):
+
+    for event in events:
+
+        adc_samples = event.data.adc_samples.copy()
+        time = np.arange(adc_samples.shape[-1]) * 4
+        pulse_indices = event.data.pulse_mask
+        pulse_indices = np.argwhere(pulse_indices)
+        pulse_indices = [tuple(arr) for arr in pulse_indices]
+        amplitudes = np.zeros(adc_samples.shape) * np.nan
+        times = np.zeros(adc_samples.shape) * np.nan
+
+        plt.figure()
+
+        for pulse_index in pulse_indices:
+
+            left = pulse_index[-1] - int(pulse_width[0])
+            left = max(0, left)
+            right = pulse_index[-1] + int(pulse_width[1]) + 1
+            right = min(adc_samples.shape[-1] - 1, right)
+
+            y = adc_samples[pulse_index[0], left:right]
+            t = time[left:right]
+
+            where_baseline = np.arange(adc_samples.shape[-1])
+            where_baseline = (where_baseline < left) + (where_baseline >= right)
+            where_baseline = adc_samples[pulse_index[0]][where_baseline]
+
+            baseline_0 = np.mean(where_baseline)
+            baseline_std = np.std(where_baseline)
+            limit_baseline = (baseline_0 - baseline_std,
+                              baseline_0 + baseline_std)
+
+            t_0 = time[pulse_index[-1]] - rise_time
+            limit_t = (t_0 - 2 * 4, t_0 + 2 * 4)
+
+            amplitude_0 = np.max(y)
+            limit_amplitude = (max(np.min(y), 0), amplitude_0 * 1.2)
+
+            chi2 = Chi2Regression(get_pulse_shape, t, y)
+            m = Minuit(chi2, t=t_0,
+                       amplitude=amplitude_0,
+                       limit_t=limit_t,
+                       limit_amplitude=limit_amplitude,
+                       baseline=baseline_0,
+                       limit_baseline=limit_baseline,
+                       print_level=0, pedantic=False)
+            m.migrad()
+
+            adc_samples[pulse_index[0]] -= get_pulse_shape(time, **m.values)
+            amplitudes[pulse_index] = m.values['amplitude']
+            times[pulse_index] = m.values['t']
+
+        event.data.reconstructed_amplitude = amplitudes
+        event.data.reconstructed_time = times
 
         yield event
 
@@ -335,15 +363,22 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
 
     init_params['gain'] = gain
 
-    for i in range(1, max(min(peaks_y.shape[0], 4), 4)):
+    for i in range(0, max(min(peaks_y.shape[0], 4), 4)):
 
         val = 0
 
         if i < peaks_y.shape[0]:
+            left = peak_indices[i] - int(gain / 2)
+            left = max(0, left)
+            right = peak_indices[i] + int(gain / 2)
+            right = min(y.shape[0] - 1, right)
 
-            val = peaks_y[i]
+            if right == left:
+                right = right + 1
 
-        init_params['a_{}'.format(i)] = val
+            val = np.sum(y[left:right]) # peaks_y[i]
+
+        init_params['a_{}'.format(i+1)] = val
 
     return init_params
 
@@ -351,8 +386,6 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
 def fit_spe(x, y, y_err, snr=4, debug=False):
 
     params_init = compute_fit_init_param(x, y, snr=snr, debug=debug)
-
-    # print(params_init)
 
     mask = x > (params_init['baseline'] + params_init['gain'] / 2)
     mask *= y > 0
@@ -381,22 +414,6 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
 
     param_bounds = dict(zip(keys, values))
 
-    # def f(baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
-    #     return minimiser(
-    #         x,
-    #         y,
-    #         y_err,
-    #         spe_fit_function,
-    #         baseline,
-    #         gain,
-    #         sigma_e,
-    #         sigma_s,
-    #         a_1,
-    #         a_2,
-    #         a_3,
-    #         a_4
-    #     )
-
     chi2 = Chi2Regression(single_photoelectron_pdf, x, y, y_err)
     m = Minuit(
         chi2,
@@ -423,11 +440,6 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
         plt.show()
 
     return m.values, m.errors, params_init, param_bounds
-
-
-def minimiser(x, y, y_err, f, *args):
-
-    return np.sum(((y - f(x, *args)) / y_err)**2)
 
 
 def build_spe(events, max_events):
@@ -497,14 +509,29 @@ def _convert_pixel_args(text):
     return pixel_id
 
 
+def _convert_max_events_args(text):
+
+    if text is not None:
+
+        max_events = int(text)
+
+    else:
+
+        max_events = text
+
+    return max_events
+
+
 def main(args):
 
     files = args['INPUT']
     debug = args['--debug']
     telescope_id = 1
-    max_events = int(args['--max_events'])
+
+    max_events = _convert_max_events_args(args['--max_events'])
     output_file = args['FILE']
     pixel_id = _convert_pixel_args(args['--pixel'])
+    n_pixels = len(pixel_id)
 
     if args['--compute']:
 
@@ -514,7 +541,6 @@ def main(args):
                                               telescope_id=telescope_id,
                                               pixel_id=pixel_id,
                                               max_events=max_events)
-            # events = plot_adc_samples(events, pixel_id=0)
             raw_histo = build_raw_data_histogram(events)
             save_container(raw_histo, output_file, 'histo', 'raw_lsb')
 
@@ -526,14 +552,12 @@ def main(args):
             events = fill_histogram(events, 0, raw_histo)
             events = fill_electronic_baseline(events)
             events = subtract_baseline(events)
-            # events = normalize_adc_samples(events, std)
             # events = find_pulse_1(events, 0.5, 20)
             events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-            # events = normalize_adc_samples(events, 1./std)
 
             events = compute_charge(events, integral_width=7)
-            events = compute_amplitude(events)
-            # events = save_event_data(events, output_file, 'data')
+            # events = compute_amplitude(events)
+            events = fit_template(events)
 
             if debug:
                 events = plot_event(events, 0)
@@ -553,79 +577,55 @@ def main(args):
 
     if args['--fit']:
 
-        # with HDF5TableReader('spe_analysis.hdf5') as h5_table:
+        with HDF5TableReader(output_file) as h5_table:
 
-        #     spe_charge = h5_table.read('/histo/spe_charge',
-        #                                CalibrationHistogramContainer())
+            spe_charge = h5_table.read('/histo/spe_charge',
+                                        CalibrationHistogramContainer())
+            spe_amplitude = h5_table.read('/histo/spe_amplitude',
+                                           CalibrationHistogramContainer())
 
-        #     spe_amplitude = h5_table.read('/histo/spe_amplitude',
-        #                                   CalibrationHistogramContainer())
+            spe_charge = next(spe_charge).to_histogram()
+            spe_amplitude = next(spe_amplitude).to_histogram()
 
-        #     spe_charge = convert_container_to_histogram(next(spe_charge))
-        #     spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
+        spes = [spe_charge, spe_amplitude]
+        names = ['charge', 'amplitude']
 
-        # spe = spe_charge
-        spe = Histogram1D.load('temp.pk')
-        spe.draw(index=(10, ), log=True)
-        plt.show()
+        spe_amplitude.draw(index=(0, ), log=True)
 
-        parameters = {
-            'a_1': [],
-            'a_2': [],
-            'a_3': [],
-            'a_4': [],
-            'sigma_s': [],
-            'sigma_e': [],
-            'gain': [],
-            'baseline': [],
-            'pixel_id': [],
-        }
+        for name, spe in zip(names, spes):
 
-        n_pixels = spe.data.shape[0]
+            results = SPEResultContainer()
+            spe.draw(index=(0, ), log=True)
+            plt.show()
 
-        results = SPEResultContainer()
+            with HDF5TableWriter(output_file, 'analysis_' + name, mode='a') as h5:
 
-        with HDF5TableWriter(output_file, 'analysis', mode='a') as h5:
+                for i, pixel in tqdm(enumerate(pixel_id)):
 
-            for pixel_id in tqdm(range(n_pixels)):
+                    try:
 
-                try:
+                        params, params_err, params_init, params_bound = fit_spe(
+                            spe._bin_centers(),
+                            spe.data[i],
+                            spe.errors(index=i), snr=3, debug=debug)
 
-                    params, params_err, params_init, params_bound = fit_spe(
-                        spe._bin_centers(),
-                        spe.data[pixel_id],
-                        spe.errors(index=pixel_id), snr=3, debug=debug)
+                        for key, val in params.items():
 
-                    for key, val in params.items():
-                        parameters[key].append(val)
+                            setattr(results.init, key, params_init[key])
+                            setattr(results.param, key, params[key])
+                            setattr(results.param_errors, key, params_err[key])
 
-                    parameters['pixel_id'].append(pixel_id)
+                        for key, val in results.items():
+                            results[key]['pixel_id'] = pixel
 
-                    for key, val in params_init.items():
+                        for key, val in results.items():
 
-                        results.init[key] = val
-                        results.param[key] = params[key]
-                        results.param_errors[key] = params_err[key]
-                        results.bound_min[key] = params_bound['limit_' + key][0]
-                        results.bound_max[key] = params_bound['limit_' + key][1]
+                            h5.write('spe_' + key, val)
 
-                    for key, val in results.items():
+                    except PeakNotFound as e:
 
-                        results[key]['pixel'] = pixel_id
-
-                    for key, val in results.items():
-
-                        h5.write('spe_' + key, val)
-
-                except PeakNotFound as e:
-
-                    print(e)
-                    print('Could not fit for pixel_id : {}'.format(pixel_id))
-
-        for key, val in parameters.items():
-            parameters[key] = np.array(val)
-
-        np.savez('spe_fit_params.npz', **parameters)
+                        print(e)
+                        print('Could not fit for pixel_id : {}'.format(pixel_id))
 
     if args['--display']:
 
