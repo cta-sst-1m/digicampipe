@@ -7,6 +7,7 @@ Usage:
 
 Options:
   -h --help               Show this screen.
+  --max_events=N          Maximum number of events to analyse
   -o FILE --output=FILE.  Output file.
   -i INPUT --input=INPUT. Input files.
   -c --compute            Compute the data.
@@ -181,6 +182,20 @@ def find_pulse_1(events, threshold, min_distance):
         yield event
 
 
+def plot_adc_samples(events, pixel_id):
+
+    plt.figure()
+
+    for i, event in enumerate(events):
+
+        if i == 0:
+            pixel_id = event.pixel_id[pixel_id]
+        plt.plot(event.data.adc_samples[pixel_id])
+        plt.show()
+
+        yield event
+
+
 def find_pulse_2(events, threshold_sigma, widths, **kwargs):
 
     for count, event in enumerate(events):
@@ -205,7 +220,17 @@ def find_pulse_2(events, threshold_sigma, widths, **kwargs):
         yield event
 
 
-def compute_charge(events, integral_width):
+def compute_charge(events, integral_width, maximum_width=2):
+    """
+
+    :param events: a stream of events
+    :param integral_width: width of the integration window
+    :param maximum_width: width of the region (bin size) to compute charge,
+    maximum value is retained. (not implemented yet)
+    :return:
+    """
+
+    # bins = np.arange(-maximum_width, maximum_width + 1, 1)
 
     for count, event in enumerate(events):
 
@@ -217,14 +242,32 @@ def compute_charge(events, integral_width):
             np.ones(integral_width),
             axis=-1
         )
-        charges = np.ones(convolved_signal.shape) * np.nan
+
+        charges = np.zeros(convolved_signal.shape) * np.nan
         charges[pulse_mask] = convolved_signal[pulse_mask]
         event.data.reconstructed_charge = charges
+
+
+        # charges = np.zeros(convolved_signal.shape + bins.shape) * np.nan
+        # pulse_mask_indices = np.where(pulse_mask)
+
+        # for i, bin in enumerate(bins):
+
+#            indices = pulse_mask_indices[-1] + bin
+#            indices[indices >= convolved_signal.shape[-1]] = convolved_signal.shape[-1] - 1
+#            indices[indices < 0] = 0
+#            indices = pulse_mask_indices[:-1] + (indices, )
+#            charges[indices + (i, )] = convolved_signal[indices]
+
+#        charges = np.nanmax(charges, axis=-1)
+#       charges_max = np.zeros(charges.shape) * np.nan
+#        charges_max[pulse_mask] = np.nanmax(charges, axis=-1)
+        # event.data.reconstructed_charge = charges_max
 
         yield event
 
 
-def compute_amplitude(events):
+def compute_amplitude(events, maximum_width=2):
 
     for count, event in enumerate(events):
 
@@ -397,7 +440,7 @@ def build_spe(events, max_events):
 
             spe_charge = Histogram1D(
                 data_shape=(n_pixels,),
-                bin_edges=np.arange(-20, 200, 1)
+                bin_edges=np.arange(-20, 500, 1)
             )
             spe_amplitude = Histogram1D(data_shape=(n_pixels,),
                                         bin_edges=np.arange(-20, 200, 1))
@@ -429,6 +472,16 @@ def save_event_data(events, filename, group_name):
             yield event
 
 
+def plot_event(events, pixel_id):
+
+    for event in events:
+
+        event.data.plot(pixel_id=pixel_id)
+        plt.show()
+
+        yield event
+
+
 def _convert_pixel_args(text):
 
     if text is not None:
@@ -449,7 +502,7 @@ def main(args):
     files = args['INPUT']
     debug = args['--debug']
     telescope_id = 1
-    max_events = 2000
+    max_events = int(args['--max_events'])
     output_file = args['FILE']
     pixel_id = _convert_pixel_args(args['--pixel'])
 
@@ -461,6 +514,7 @@ def main(args):
                                               telescope_id=telescope_id,
                                               pixel_id=pixel_id,
                                               max_events=max_events)
+            # events = plot_adc_samples(events, pixel_id=0)
             raw_histo = build_raw_data_histogram(events)
             save_container(raw_histo, output_file, 'histo', 'raw_lsb')
 
@@ -480,6 +534,10 @@ def main(args):
             events = compute_charge(events, integral_width=7)
             events = compute_amplitude(events)
             # events = save_event_data(events, output_file, 'data')
+
+            if debug:
+                events = plot_event(events, 0)
+
             spe_charge, spe_amplitude = build_spe(events, max_events)
 
             save_container(spe_charge, output_file, 'histo', 'spe_charge')
@@ -584,7 +642,7 @@ def main(args):
 
                     histo = event.to_histogram()
 
-                histo.draw(index=(0, ))
+                histo.draw(index=(0, ), log=True)
 
         plt.show()
 

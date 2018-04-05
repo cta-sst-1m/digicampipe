@@ -65,7 +65,7 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].camera_event_type = None
             data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
-            baseline = np.ones(adc_count.shape) * np.nan
+            baseline = np.ones(data.r0.tel[tel_id].adc_samples.shape[:-1]) * np.nan
             data.r0.tel[tel_id].digicam_baseline = baseline
             index_in_chunk += 1
 

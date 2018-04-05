@@ -2,6 +2,7 @@ from ctapipe.core import Container, Map
 from ctapipe.core import Field
 from numpy import ndarray
 import numpy as np
+import matplotlib.pyplot as plt
 from histogram.histogram import Histogram1D
 
 
@@ -30,6 +31,18 @@ class CalibrationEventContainer(Container):
     reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
                                                 'electrons for each adc sample'
                                        )
+
+    def plot(self, pixel_id):
+
+        plt.figure()
+        plt.title('pixel : {}'.format(pixel_id))
+        plt.plot(self.adc_samples[pixel_id], label='raw')
+        plt.plot(self.pulse_mask[pixel_id], label='peak position')
+        plt.plot(self.reconstructed_charge[pixel_id], label='charge',
+                 linestyle='None', marker='o')
+        plt.plot(self.reconstructed_amplitude[pixel_id], label='amplitude',
+                 linestyle='None', marker='o')
+        plt.legend()
 
 
 class CalibrationHistogramContainer(Container):

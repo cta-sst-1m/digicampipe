@@ -5,7 +5,7 @@ from digicampipe.io.containers_calib import CalibrationContainer
 import numpy as np
 
 
-def event_stream(filelist, source=None, max_events=np.inf, **kwargs):
+def event_stream(filelist, source=None, max_events=None, **kwargs):
     '''Iterable of events in the form of `DataContainer`.
 
     Parameters
@@ -29,6 +29,10 @@ def event_stream(filelist, source=None, max_events=np.inf, **kwargs):
         filelist = [filelist]
 
     count = 0
+
+    if max_events is None:
+
+        max_events = np.inf
 
     for file in filelist:
         if source is None:
