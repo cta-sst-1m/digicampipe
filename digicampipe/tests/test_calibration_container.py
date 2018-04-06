@@ -30,7 +30,7 @@ def test_calibration_event_stream():
         values.append([
             event_calib.data.adc_samples,
             event_calib.data.digicam_baseline,
-            event_calib.n_pixels
+            event_calib.pixel_id
             ])
 
     for i, event in enumerate(obs_stream):
@@ -41,5 +41,5 @@ def test_calibration_event_stream():
 
         assert (values[i][1] == event.digicam_baseline).all()
 
-        assert values[i][2] == event.adc_samples.shape[0]
+        assert (values[i][2] == event.pixel_id).all()
 
