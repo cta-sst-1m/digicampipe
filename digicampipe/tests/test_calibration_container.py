@@ -16,10 +16,9 @@ def test_calibration_event_stream():
 
     max_events = 10
     telescope_id = 1
-
     calib_stream = calibration_event_stream(example_file_path,
                                             telescope_id,
-                                            max_events)
+                                            max_events=max_events)
 
     obs_stream = event_stream(example_file_path, max_events=max_events)
 
@@ -32,6 +31,7 @@ def test_calibration_event_stream():
             event_calib.data.digicam_baseline,
             event_calib.pixel_id
             ])
+    assert len(values) == max_events
 
     for i, event in enumerate(obs_stream):
 
@@ -42,4 +42,3 @@ def test_calibration_event_stream():
         assert (values[i][1] == event.digicam_baseline).all()
 
         assert (values[i][2] == event.pixel_id).all()
-
