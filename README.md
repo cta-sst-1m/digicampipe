@@ -40,7 +40,7 @@ Finally change into the digicampipe directory.
 
     cd digicampipe
 
-### Tests
+## Tests
 
 Run the tests on your machine:
 
@@ -50,6 +50,12 @@ Some tests depend on astrometry.net (see below) and take long, so by default you
 If you want to execute all tests, please do:
 
     pytest -c all_tests.ini
+
+### Writing tests
+
+To write tests please follow the instructions in the [Pytest-doc](https://docs.pytest.org/en/latest/getting-started.html).
+It is important that you add the test resources to the repo. To do this add the resource path to "package_data=" in the setup.py
+file.
 
 ## Build the documentation with [Sphinx](http://www.sphinx-doc.org/en/stable/) (optional)
 
@@ -64,11 +70,25 @@ To delete the documentation us:
 
     make clean
 
+# Software usage
+
+## Mounting the data on your machine
+
+You may want to mount the data from a remote onto your local machine. To do this
+you can use `sshfs`. Information about `sshfs` can be found here
+[sshfs](https://www.tecmint.com/sshfs-mount-remote-linux-filesystem-directory-using-ssh/)
+
+Usage example :
+
+```
+sudo sshfs -o allow_other <username>@<remote_adress>:<remote_path> <local_path>
+```
+
 ## Example: Viewer
 
-With `digicampipe` comes the example program `digicamview`. To use it, just go call it like this:
+With `digicampipe` comes the example program `digicam-view`. To use it, just go call it like this:
 ```
-dneise@lair:~/sst/data$ digicamview SST1M01_20171030.066.fits.fz
+dneise@lair:~/sst/data$ digicam-view SST1M01_20171030.066.fits.fz
 ```
 
 And you might see something like this:

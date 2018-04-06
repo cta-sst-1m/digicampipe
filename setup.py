@@ -44,7 +44,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'digicamview=digicampipe.scripts.digicamview:entry',
+            'digicam-view=digicampipe.scripts.digicamview:entry',
+            'digicam-spe=digicampipe.scripts.spe:entry',
+
         ],
     }
 )

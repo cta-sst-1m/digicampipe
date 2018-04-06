@@ -1,6 +1,9 @@
 from ctapipe.core import Container, Map
 from ctapipe.core import Field
 from numpy import ndarray
+import numpy as np
+import matplotlib.pyplot as plt
+from histogram.histogram import Histogram1D
 
 
 class CalibrationEventContainer(Container):
@@ -29,6 +32,21 @@ class CalibrationEventContainer(Container):
                                                 'electrons for each adc sample'
                                        )
 
+    reconstructed_time = Field(ndarray, 'reconstructed time '
+                                        'for each adc sample')
+
+    def plot(self, pixel_id):
+
+        plt.figure()
+        plt.title('pixel : {}'.format(pixel_id))
+        plt.plot(self.adc_samples[pixel_id], label='raw')
+        plt.plot(self.pulse_mask[pixel_id], label='peak position')
+        plt.plot(self.reconstructed_charge[pixel_id], label='charge',
+                 linestyle='None', marker='o')
+        plt.plot(self.reconstructed_amplitude[pixel_id], label='amplitude',
+                 linestyle='None', marker='o')
+        plt.legend()
+
 
 class CalibrationHistogramContainer(Container):
     """
@@ -49,6 +67,46 @@ class CalibrationHistogramContainer(Container):
     std = Field(ndarray, 'std')
     mode = Field(ndarray, 'mode')
 
+    def from_histogram(self, histogram):
+        """
+        Utility function to convert an Histogram to a
+        CalibrationHistogramContainer
+        :param histogram:
+        :return: CalibrationHistogramContainer
+        """
+
+        # TODO make ctapipe.HDFTableWriter accept unit32, tuple, str
+        self.bins = histogram.bins.astype(np.int)
+        self.count = histogram.data.astype(np.int)
+        self.shape = histogram.shape[:-1]  # TODO need to accept tuple
+        self.n_bins = histogram.n_bins
+        self.name = histogram.name  # TODO need to accept str
+        self.axis_name = histogram.axis_name  # TODO need to accept str
+        self.underflow = histogram.underflow.astype(np.int)
+        self.overflow = histogram.overflow.astype(np.int)
+        self.max = histogram.max
+        self.min = histogram.min
+        self.mode = histogram.mode()
+        self.std = histogram.std()
+        self.mean = histogram.mean()
+
+        return self
+
+    def to_histogram(self):
+
+        histo = Histogram1D(bin_edges=self.bins,
+                            data_shape=self.count.shape[:-1],
+                            name=self.name,
+                            axis_name=self.axis_name)
+
+        histo.data = self.count
+        histo.underflow = self.underflow
+        histo.overflow = self.overflow
+        histo.max = self.max
+        histo.min = self.min
+
+        return histo
+
 
 class CalibrationResultContainer(Container):
 
@@ -67,7 +125,7 @@ class SPEParameters(Container):
     sigma_s = Field(ndarray, 'Sensor noise')
     dark_count = Field(ndarray, 'Dark count rate')
     crosstalk = Field(ndarray, 'Crosstalk')
-    pixel = Field(ndarray, 'pixel id')
+    pixel_id = Field(ndarray, 'pixel id')
 
 
 class SPEResultContainer(CalibrationResultContainer):
@@ -91,7 +149,7 @@ class CalibrationContainer(Container):
 
     config = Field(list, 'List of the input parameters'
                          ' of the calibration analysis')  # Should use dict?
-    n_pixels = Field(int, 'number of pixels')
+    pixel_id = Field(ndarray, 'pixel ids')
     data = CalibrationEventContainer()
     histo = Field(Map(CalibrationHistogramContainer))
     result = CalibrationResultContainer()
