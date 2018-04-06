@@ -43,4 +43,4 @@ def test_calibration_event_stream():
 
         assert (values[i][1] == event.digicam_baseline).all()
 
-        assert (values[i][2] == event.pixel_id).all()
+        assert len(values[i][2]) == event.adc_samples.shape[0]
