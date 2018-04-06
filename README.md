@@ -27,24 +27,23 @@ to make a so called environment, with all the dependencies in it.
 
 ### Create new environment
 
-    ```
-    conda env create -f digicampipe/environment.yml
-
-    ```
+```
+conda env create -f digicampipe/environment.yml
+```
 
 ### Update your environment
 This is usefull when new packages are added to the `environment.yml`
 
-    ```
-    conda env update -f digicampipe/environment.yml
-    ```
+```
+conda env update -f digicampipe/environment.yml
+```
 
 
 ### Activate the anaconda environment
 
-    ```
-    source activate digicampipe
-    ```
+```
+source activate digicampipe
+```
 
 **Please Note**: When working with digicampipe, please always make sure you are really using the `digicampipe` environment. After `source activate digicampipe`
 your prompt should look similar to this this:
