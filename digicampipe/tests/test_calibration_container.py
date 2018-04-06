@@ -20,8 +20,6 @@ def test_calibration_event_stream():
                                             telescope_id,
                                             max_events=max_events)
 
-    obs_stream = event_stream(example_file_path, max_events=max_events)
-
     values = []
 
     for event_calib in calib_stream:
@@ -32,6 +30,10 @@ def test_calibration_event_stream():
             event_calib.pixel_id
             ])
     assert len(values) == max_events
+
+    del calib_stream
+
+    obs_stream = event_stream(example_file_path, max_events=max_events)
 
     for i, event in enumerate(obs_stream):
 

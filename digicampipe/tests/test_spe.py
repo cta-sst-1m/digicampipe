@@ -16,8 +16,6 @@ def test_compute_gaussian_parameters_highest_peak():
 
         spe.compute_gaussian_parameters_highest_peak(bins, count, snr)
 
-    spe.compute_gaussian_parameters_highest_peak(bins, count, snr - 0.1)
-
 
 @pytest.mark.xfail
 def test_build_raw_data_histogram():
