@@ -1,11 +1,7 @@
-import spe
-import numpy as np
-import pytest
-from digicampipe.utils.exception import PeakNotFound
 import numpy as np
 import pytest
 
-import spe
+from digicampipe.scripts import spe
 from digicampipe.utils.exception import PeakNotFound
 
 
