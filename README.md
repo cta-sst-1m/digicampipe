@@ -86,7 +86,7 @@ sudo sshfs -o allow_other <username>@<remote_adress>:<remote_path> <local_path>
 
 ## Example: Viewer
 
-With `digicampipe` comes the example program `digicamview`. To use it, just go call it like this:
+With `digicampipe` comes the example program `digicam-view`. To use it, just go call it like this:
 ```
 dneise@lair:~/sst/data$ digicam-view SST1M01_20171030.066.fits.fz
 ```
