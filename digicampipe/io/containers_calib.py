@@ -32,7 +32,7 @@ class CalibrationEventContainer(Container):
                                                 'electrons for each adc sample'
                                        )
 
-    reconstructed_time = Field(ndarray, 'reconstructed time for each '
+    reconstructed_time = Field(ndarray, 'reconstructed time '
                                         'for each adc sample')
 
     def plot(self, pixel_id):
