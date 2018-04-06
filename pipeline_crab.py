@@ -33,8 +33,8 @@ import pkg_resources
 from os import path
 
 
-def main(args):
 
+def main(args):
     digicam_config_file = pkg_resources.resource_filename(
         'digicampipe',
         path.join(
@@ -98,8 +98,8 @@ def main(args):
     )
 
     # Image cleaning configuration
-    picture_threshold = 15
-    boundary_threshold = 10
+    picture_threshold = options.picture_threshold  #
+    boundary_threshold = options.boundary_threshold  #
     shower_distance = 200 * u.mm
 
     # Define the event stream
@@ -120,6 +120,7 @@ def main(args):
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
+    
     # Run the dl0 calibration (data reduction, does nothing)
     data_stream = dl0.calibrate_to_dl0(data_stream)
     # Run the dl1 calibration (compute charge in photons + cleaning)

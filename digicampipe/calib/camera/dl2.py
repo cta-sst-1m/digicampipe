@@ -27,7 +27,6 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
     '''
     Skips events with size==0
     '''
-
     for i, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
@@ -63,7 +62,7 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
         event.dl2.classification = None
 
         yield event
-
+    
 
 def find_mask_near_center(geom, cen_x, cen_y, distance):
 
@@ -82,3 +81,4 @@ def find_mask_near_max(geom, distance, index_max):
         cen_y=geom.pix_y[index_max],
         distance=distance
     )
+
