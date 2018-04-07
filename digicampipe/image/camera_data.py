@@ -41,7 +41,7 @@ digicam_config_file_default = resource_filename(
 )
 
 
-def animate(data):
+def animate(data, n_event_max=np.inf):
     plt.ion()
     first = True
     plt.figure()
@@ -62,6 +62,8 @@ def animate(data):
             plt.pause(.04)
             #if t == 10:
             #    plt.pause(2)
+        if i >= n_event_max - 1:
+            break
     plt.ioff()
 
 
@@ -339,8 +341,8 @@ class CameraData(object):
         picked_events = np.random.permutation(n_event)[:batch_size]
         return data[picked_events, :, :, :n_sample]
 
-    def animate(self):
-        animate(self.data)
+    def animate(self, n_event_max=np.inf):
+        animate(self.data, n_event_max=n_event_max)
 
     def hist_adc(self):
         plt.ioff()
@@ -380,8 +382,8 @@ def show_file(camera_data):
     # load fits file:
     data = CameraData(camera_data)
     # show data:
-    #data.animate()
-    data.hist_adc()
+    data.animate(n_event_max=10)
+    #data.hist_adc()
 
 
 if __name__ == '__main__':
@@ -397,7 +399,7 @@ if __name__ == '__main__':
             mc_files.append(os.path.join(mc_dir, file))
     #create_file(camera_data,
     #            print_every=10)
-    CameraData(camera_data, datafiles_list=mc_files,
+    CameraData(camera_data, #datafiles_list=mc_files,
                digicam_config_file=digicam_config_file_default,
                min_adc=10,
                print_every=10,

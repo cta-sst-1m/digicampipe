@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-from camera_data import CameraData
+from digicampipe.image.camera_data import CameraData
 
 __all__ = [
     "AutoEncoder",

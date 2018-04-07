@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     # MC files from
-    # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/ 
+    # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
                       default='data/mc_simtel/')
     parser.add_option("-o", "--output", dest="output", help="output filename", default="hillas", type=str)
