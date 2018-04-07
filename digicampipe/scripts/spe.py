@@ -23,9 +23,9 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks_cwt
-from scipy import ndimage
 import scipy
 import pandas as pd
+from scipy.ndimage.filters import convolve1d
 
 import peakutils
 from iminuit import Minuit, describe
@@ -206,6 +206,32 @@ def find_pulse_2(events, threshold_sigma, widths, **kwargs):
         yield event
 
 
+def find_pulse_3(events):
+    w = np.array([1, 2, 3, 4, 5, 4, 3, 2, 1], dtype=np.float32)
+    w /= w.sum()
+    SOME_THRESHOLD = 2
+
+    for count, event in enumerate(events):
+        adc_samples = event.data.adc_samples
+        pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
+
+        c = convolve1d(
+            input=adc_samples,
+            weights=w,
+            axis=1,
+            mode='constant',
+        )
+        pulse_mask[:, 4:-4] = (
+            (c[:, :-2] <= c[:, 1:-1]) &
+            (c[:, 1:-1] >= c[:, 2:]) &
+            (c[:, 1:-1] > SOME_THRESHOLD)
+        )[:, 3:-3]
+
+        event.data.pulse_mask = pulse_mask
+
+        yield event
+
+
 def compute_charge(events, integral_width, maximum_width=2):
     """
 
@@ -223,7 +249,7 @@ def compute_charge(events, integral_width, maximum_width=2):
         adc_samples = event.data.adc_samples
         pulse_mask = event.data.pulse_mask
 
-        convolved_signal = ndimage.convolve1d(
+        convolved_signal = convolve1d(
             adc_samples,
             np.ones(integral_width),
             axis=-1
@@ -553,11 +579,12 @@ def main(args):
             events = fill_electronic_baseline(events)
             events = subtract_baseline(events)
             # events = find_pulse_1(events, 0.5, 20)
-            events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
+            # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
+            events = find_pulse_3(events)
 
             events = compute_charge(events, integral_width=7)
-            # events = compute_amplitude(events)
-            events = fit_template(events)
+            events = compute_amplitude(events)
+            # events = fit_template(events)
 
             if debug:
                 events = plot_event(events, 0)
