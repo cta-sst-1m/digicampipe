@@ -16,6 +16,7 @@ from digicampipe.calib.camera import filter, r0, r1, dl0, dl1, dl2, random_trigg
 from digicampipe.utils import geometry
 from digicampipe.utils import utils
 from digicampipe.image.cones_image import get_pixel_nvs
+import simtel_baseline
 
 __all__ = [
     "CameraData",
@@ -58,9 +59,9 @@ def animate(data):
             else:
                 img.set_array(data_event[:, :, t])
                 title.set_text(title_text)
-            plt.pause(.02)
-            if t == 10:
-                plt.pause(5)
+            plt.pause(.04)
+            #if t == 10:
+            #    plt.pause(2)
     plt.ioff()
 
 
@@ -75,14 +76,21 @@ class CameraData(object):
             unwanted_pixels=None,
             flags=None,
             min_adc=None,
-            print_every=100
+            print_every=100,
+            max_events=None,
+            mc=False
     ):
         self.digicam_config_file = digicam_config_file
         self.digicam = Camera(_config_file=self.digicam_config_file)
         self.geo = geometry.generate_geometry_from_camera(camera=self.digicam)
-        self.unwanted_pixels = unwanted_pixels
+        if unwanted_pixels is not None:
+            self.unwanted_pixels = unwanted_pixels
+        else:
+            self.unwanted_pixels = []
         self.flags = flags
         self.min_adc = min_adc
+        self.max_events = max_events
+        self.mc = mc
         if datafiles_list is not None:
             self.create_fits_file(filename, datafiles_list,
                                   print_every=print_every)
@@ -103,10 +111,10 @@ class CameraData(object):
                                     'mask_edges': None,
                                     'peak': None,
                                     'window_start': 3,
-                                    'window_width': 7,
+                                    'window_width': 15,
                                     'threshold_saturation': np.inf,
                                     'n_samples': 50,
-                                    'timing_width': 6,
+                                    'timing_width': 10,
                                     'central_sample': 11}
         peak_position = utils.fake_timing_hist(
             time_integration_options['n_samples'],
@@ -122,9 +130,10 @@ class CameraData(object):
             time_integration_options['window_width'],
             peak_position
         )
-        additional_mask = np.ones(1296)
-        additional_mask[self.unwanted_pixels] = 0
-        additional_mask = additional_mask > 0
+        additional_mask = np.ones(1296, dtype=bool)
+        if self.unwanted_pixels:
+            additional_mask[self.unwanted_pixels] = 0
+            additional_mask = additional_mask > 0
         picture_threshold = 15
         boundary_threshold = 10
         shower_distance = 200 * u.mm
@@ -133,21 +142,28 @@ class CameraData(object):
             camera_geometry=self.geo,
             camera=self.digicam,
             expert_mode=True,
+            max_events=self.max_events,
+            mc=self.mc
         )
         if self.unwanted_pixels is not None:
             events_stream = filter.set_pixels_to_zero(
                 events_stream,
                 unwanted_pixels=self.unwanted_pixels
             )
-        events_stream = random_triggers.fill_baseline_r0(events_stream, n_bins=100)
-        #events_stream = r0.fill_baseline_r0(events_stream, unwanted_pixels=self.unwanted_pixels)
-        # Stop events that are not triggered by DigiCam algorithm (end of clocked triggered events)
-        if self.flags is not None:
-            events_stream = filter.filter_event_types(
-                events_stream,
-                flags=self.flags
+        if self.mc:
+            events_stream = simtel_baseline.fill_baseline_r0(
+                events_stream, n_bins0=9, n_bins1=30, method='data'
             )
-        events_stream = filter.filter_missing_baseline(events_stream)
+        else:
+            events_stream = random_triggers.fill_baseline_r0(events_stream, n_bins=100)
+            # Stop events that are not triggered by DigiCam algorithm
+            # (end of clocked triggered events)
+            if self.flags is not None:
+                events_stream = filter.filter_event_types(
+                    events_stream,
+                    flags=self.flags
+                )
+            events_stream = filter.filter_missing_baseline(events_stream)
         events_stream = r1.calibrate_to_r1(events_stream, None)
         # Run the dl0 calibration (data reduction, does nothing)
         events_stream = dl0.calibrate_to_dl0(events_stream)
@@ -174,10 +190,19 @@ class CameraData(object):
             tel = event.r0.tels_with_data[0]
             r0_cont = event.r0.tel[tel]
             adc_samples = r0_cont.adc_samples[wanted_pixels, :]
-            baseline = np.reshape(r0_cont.digicam_baseline[wanted_pixels], (-1, 1))
+            if isinstance(r0_cont.digicam_baseline, np.ndarray):
+                baseline = np.reshape(r0_cont.digicam_baseline[wanted_pixels],
+                                      (-1, 1))
+            else:
+                if isinstance(r0_cont.baseline, np.ndarray):
+                    baseline = np.reshape(r0_cont.baseline[wanted_pixels],
+                                      (-1, 1))
+                    r0_cont.digicam_baseline = np.round(baseline)
+                else:
+                    print('WARNING: no baseline available !')
             if self.min_adc is None:
                 yield event
-            if np.any(adc_samples - baseline > self.min_adc):
+            elif np.any(adc_samples - baseline > self.min_adc):
                 yield event
 
     def create_fits_file(self, filename, datafiles_list,
@@ -192,11 +217,15 @@ class CameraData(object):
         if os.path.isfile(filename):
             os.remove(filename)
         events_stream = self._new_event_stream(datafiles_list)
-        n_unwanted_pixel = len(self.unwanted_pixels)
-        wanted_pixels = []
-        for i in range(pix_pos.shape[0]):
-            if i not in self.unwanted_pixels:
-                wanted_pixels.append(i)
+        n_unwanted_pixel = 0
+        if self.unwanted_pixels is not None:
+            n_unwanted_pixel = len(self.unwanted_pixels)
+            wanted_pixels = []
+            for i in range(pix_pos.shape[0]):
+                if i not in self.unwanted_pixels:
+                    wanted_pixels.append(i)
+        else:
+            wanted_pixels = range(len(nvs))
         with open(filename, 'ab+') as file:
             hdr = fits.Header()
             hdr['SIMPLE'] = (True, 'conforms to FITS standard')
@@ -212,7 +241,7 @@ class CameraData(object):
             for event in events_stream:
                 tel = event.r0.tels_with_data[0]
                 r0 = event.r0.tel[tel]
-                adc_samples = r0.adc_samples
+                adc_samples = np.array(r0.adc_samples)
                 hillas = event.dl2.shower
                 psi = hillas.psi.rad
                 rot_angle = psi + np.pi/2
@@ -228,7 +257,7 @@ class CameraData(object):
                 for t in range(n_sample):
                     f_2d_interp = LinearNDInterpolator(
                         np.vstack((pix_pos_transform[wanted_pixels], pix_pos_transform[self.unwanted_pixels])),
-                        np.hstack((adc_samples[wanted_pixels, t] - baseline[wanted_pixels],
+                        np.hstack((adc_samples[wanted_pixels, t] - baseline[wanted_pixels].reshape(-1),
                                    np.zeros((n_unwanted_pixel,)))),
                         fill_value=0)
                     data_event[:, :, t] = f_2d_interp(image_x, image_y)
@@ -351,13 +380,27 @@ def show_file(camera_data):
     # load fits file:
     data = CameraData(camera_data)
     # show data:
-    data.animate()
+    #data.animate()
     data.hist_adc()
 
 
 if __name__ == '__main__':
-    camera_data = os.path.join('/home/reniery/prog/digicampipe/autoencoder',
-                               'camera_data_test.fits')
+    camera_data = os.path.join('/home/yves/ctasoft/digicampipe/data',
+                               'camera_data_mc.fits')
+    # MC files from
+    # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/
+    mc_dir = '/home/yves/ctasoft/digicampipe/data/mc_simtel'
+    all_file_list = os.listdir(mc_dir)
+    mc_files = []
+    for file in all_file_list:
+        if file.endswith('.simtel.gz'):
+            mc_files.append(os.path.join(mc_dir, file))
     #create_file(camera_data,
     #            print_every=10)
+    CameraData(camera_data, datafiles_list=mc_files,
+               digicam_config_file=digicam_config_file_default,
+               min_adc=10,
+               print_every=10,
+               max_events=1000,
+               mc=True)
     show_file(camera_data)

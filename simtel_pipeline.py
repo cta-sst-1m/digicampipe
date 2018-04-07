@@ -8,6 +8,7 @@ from digicampipe.utils import geometry
 from cts_core.camera import Camera
 from digicampipe.utils import utils
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text, save_hillas_parameters
+from digicamviewer.viewer import EventViewer
 
 from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
 from digicampipe.utils import utils, calib
@@ -26,8 +27,10 @@ if __name__ == '__main__':
 
 
     parser = OptionParser()
+    # MC files from
+    # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/ 
     parser.add_option("-p", "--path", dest="directory", help="directory to data files",
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/')
+                      default='data/mc_simtel/')
     parser.add_option("-o", "--output", dest="output", help="output filename", default="hillas", type=str)
 
     parser.add_option('-c', "--camera_config", dest='camera_config_file', help='camera config file to load Camera()'
@@ -105,7 +108,7 @@ if __name__ == '__main__':
     min_photon = 50
 
     # Config for Hillas parameters analysis
-    n_showers = 100000000
+    n_showers = 100
     reclean = True
 
 
@@ -179,9 +182,17 @@ if __name__ == '__main__':
 
     #Save Hillas
     hillas_filename = options.output + '_' + options.primary + '_ze' + str(options.zenit_angle).zfill(2) + '_az' + str(options.azimut).zfill(3) + '_p' + str(options.picture_threshold).zfill(2) + '_b' + str(options.boundary_threshold).zfill(2)
-    save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
+    #save_hillas_parameters(data_stream=data_stream, n_showers=n_showers, output_filename=directory + hillas_filename)
     #save_hillas_parameters_in_text(data_stream=data_stream, output_filename=directory + hillas_filename)
-    
+    with plt.style.context('ggplot'):
+        display = EventViewer(
+            data_stream,
+            n_samples=50,
+            camera_config_file=digicam_config_file,
+            scale='lin',
+        )
+        display.draw()
+        pass
     """
     import matplotlib.pyplot as plt
     for event in data_stream:

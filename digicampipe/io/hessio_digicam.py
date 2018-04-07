@@ -93,7 +93,7 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None, allowed_te
         would be 1 telescope per file (whereas in current monte-carlo,
         they are all interleaved into one file)
     requested_event : int
-        Seek to a paricular event index
+        Seek to a particular event index
     use_event_id : bool
         If True ,'requested_event' now seeks for a particular event id instead
         of index
@@ -191,7 +191,6 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None, allowed_te
 
                 data.r0.tel[tel_id].adc_samples = \
                     pyhessio.get_adc_sample(tel_id)
-
                 data.r0.tel[tel_id].adc_samples = data.r0.tel[tel_id].adc_samples[0]    #
                 data.r0.tel[tel_id].local_camera_clock = 0                              #
 

@@ -28,17 +28,12 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
     Skips events with size==0
     '''
     for i, event in enumerate(event_stream):
-
         for telescope_id in event.r0.tels_with_data:
-
+            moments = None
             if i == 0:
-
                 geom = event.inst.geom[telescope_id]
-
             dl1_camera = event.dl1.tel[telescope_id]
-
             image = dl1_camera.pe_samples
-
             mask = dl1_camera.cleaning_mask
             image[~mask] = 0.
             moments_first = hillas_parameters(geom, image)
@@ -57,15 +52,15 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                     continue
             else:
                 moments = moments_first
+        if moments is None:
+            continue
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None
-
         yield event
     
 
 def find_mask_near_center(geom, cen_x, cen_y, distance):
-
     d = np.sqrt(
         (geom.pix_x - cen_x)**2 +
         (geom.pix_y - cen_y)**2
@@ -81,4 +76,3 @@ def find_mask_near_max(geom, distance, index_max):
         cen_y=geom.pix_y[index_max],
         distance=distance
     )
-
