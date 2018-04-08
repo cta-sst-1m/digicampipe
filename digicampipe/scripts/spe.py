@@ -442,9 +442,9 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
     return m.values, m.errors, params_init, param_bounds
 
 
-def build_spe(events, max_events):
+def build_spe(events):
 
-    for i, event in tqdm(zip(range(max_events), events), total=max_events):
+    for i, event in tqdm(enumerate(events)):
 
         if i == 0:
 
@@ -562,7 +562,7 @@ def main(args):
             if debug:
                 events = plot_event(events, 0)
 
-            spe_charge, spe_amplitude = build_spe(events, max_events)
+            spe_charge, spe_amplitude = build_spe(events)
 
             save_container(spe_charge, output_file, 'histo', 'spe_charge')
             save_container(
