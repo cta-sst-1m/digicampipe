@@ -15,6 +15,10 @@ Options:
   -d --display            Display.
   -v --debug              Enter the debug mode.
   -p --pixel=<PIXEL>      Give a list of pixel IDs.
+  --shift=N               number of bins to shift before integrating
+                          [default: 0].
+  --integral_width=N      number of bins to integrate over
+                          [default: 7].
 '''
 import os
 from docopt import docopt
@@ -221,18 +225,18 @@ def find_pulse_3(events):
             axis=1,
             mode='constant',
         )
-        pulse_mask[:, 4:-4] = (
+        pulse_mask[:, 6:-6] = (
             (c[:, :-2] <= c[:, 1:-1]) &
             (c[:, 1:-1] >= c[:, 2:]) &
             (c[:, 1:-1] > SOME_THRESHOLD)
-        )[:, 3:-3]
+        )[:, 5:-5]
 
         event.data.pulse_mask = pulse_mask
 
         yield event
 
 
-def compute_charge(events, integral_width, maximum_width=2):
+def compute_charge(events, integral_width, shift, maximum_width=2):
     """
 
     :param events: a stream of events
@@ -256,7 +260,9 @@ def compute_charge(events, integral_width, maximum_width=2):
         )
 
         charges = np.zeros(convolved_signal.shape) * np.nan
-        charges[pulse_mask] = convolved_signal[pulse_mask]
+        charges[pulse_mask] = convolved_signal[
+            np.roll(pulse_mask, shift, axis=1)
+        ]
         event.data.reconstructed_charge = charges
 
         yield event
@@ -559,6 +565,9 @@ def main(args):
     pixel_id = _convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
 
+    integral_width = int(args['--integral_width'])
+    shift = int(args['--shift'])
+
     if args['--compute']:
 
         if not os.path.exists(output_file):
@@ -582,7 +591,11 @@ def main(args):
             # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
             events = find_pulse_3(events)
 
-            events = compute_charge(events, integral_width=7)
+            events = compute_charge(
+                events,
+                integral_width=integral_width,
+                shift=shift
+            )
             events = compute_amplitude(events)
             # events = fit_template(events)
 
