@@ -208,7 +208,7 @@ class AutoEncoder(object):
         with tf.control_dependencies(update_ops):
             train_step = optimizer.minimize(self.loss)
         self.sess.run(tf.global_variables_initializer())
-        n_event = self.data.shape[0]
+        n_event = self.data.n_event
         max_iter = int(float(n_event * n_epoch) / batch_size)
 
         print('\n######## TRAINING ##########\n')
@@ -220,31 +220,32 @@ class AutoEncoder(object):
         losses_val = []
         iter_val = []
         for it in range(max_iter):
-            batch_x = self.data.get_batch(batch_size,
-                                          n_sample=self.t_size,
-                                          type_set='train')
+            events = self.data.get_batch(batch_size,
+                                         n_sample=self.t_size,
+                                         type_set='train')
             _, loss, loss_reco, loss_reg = self.sess.run(
                 [train_step, self.loss, self.loss_reco, self.loss_reg],
-                feed_dict={self.x: batch_x, self.is_train: True}
+                feed_dict={self.x: events['data'], self.is_train: True}
             )
             losses_train.append(loss)
-            del batch_x
+            del events
             if it % print_every == 0:
-                batch_x_val = self.data.get_batch(
+                events_val = self.data.get_batch(
                     batch_size,
                     n_sample=self.t_size,
                     type_set='val'
                 )
                 loss_val = self.sess.run(
                     self.loss,
-                    feed_dict={self.x: batch_x_val, self.is_train: False}
+                    feed_dict={self.x: events_val['data'],
+                               self.is_train: False}
                 )
                 print('iter', it+1, '/', max_iter, ',',
                       'loss=%.1f (%.1f+%.1f)'% (loss, loss_reco, loss_reg), 
                       '\tvalidation_loss=%.1f' % loss_val)
                 losses_val.append(loss_val)
                 iter_val.append(it)
-                del batch_x_val
+                del events_val
         self.saver.save(self.sess, model_path)
         print('model saved in', model_path)
         return losses_train, losses_val, iter_val

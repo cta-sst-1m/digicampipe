@@ -97,12 +97,12 @@ class CameraData(object):
             self.create_fits_file(filename, datafiles_list,
                                   print_every=print_every)
         self._fits = fits.open(filename, memmap=True)
+        self.n_event = len(self._fits)
         # print('shape of data from file', self._fits[0].data.shape)
-        self.data = self._fits[0].data
-        # print('shape of data', self.data.shape)
-        self.shape = self.data.shape
-        data_shuffle_indexes = np.random.permutation(self.data.shape[0])
-        self.data = self.data[data_shuffle_indexes, :, :, :]
+        self.event_shape = self._fits[0].data.shape
+        self.data_shuffle_indexes = np.random.RandomState(seed=42).permutation(
+            self.n_event
+        )
 
     def __del__(self):
         if self._fits is not None:
@@ -228,48 +228,55 @@ class CameraData(object):
                     wanted_pixels.append(i)
         else:
             wanted_pixels = range(len(nvs))
-        with open(filename, 'ab+') as file:
-            hdr = fits.Header()
-            hdr['SIMPLE'] = (True, 'conforms to FITS standard')
-            hdr['BITPIX'] = (16, 'array data type')  # dtype=int16
-            hdr['NAXIS'] = (4, 'number of array dimensions')
-            hdr['NAXIS1'] = n_sample
-            hdr['NAXIS2'] = n_pixel_u
-            hdr['NAXIS3'] = n_pixel_v
-            hdr['NAXIS4'] = n_event
-            hdr['EXTEND'] = True
-            shdu = fits.StreamingHDU(file, hdr)
-            event_loaded = 0
-            for event in events_stream:
-                tel = event.r0.tels_with_data[0]
-                r0 = event.r0.tel[tel]
-                adc_samples = np.array(r0.adc_samples)
-                hillas = event.dl2.shower
-                psi = hillas.psi.rad
-                rot_angle = psi + np.pi/2
-                cen_x = u.Quantity(hillas.cen_x).value
-                cen_y = u.Quantity(hillas.cen_y).value
-                baseline = r0.digicam_baseline
-                data_event = np.zeros([n_pixel_u, n_pixel_v, n_sample],
-                                      dtype=np.int16)
-                pix_pos_translate = pix_pos - np.array([cen_x, cen_y])
-                pix_pos_transform = pix_pos_translate.dot(
-                    np.array([[np.cos(rot_angle), np.sin(-rot_angle)], [np.sin(rot_angle), np.cos(rot_angle)]])
-                )
-                for t in range(n_sample):
-                    f_2d_interp = LinearNDInterpolator(
-                        np.vstack((pix_pos_transform[wanted_pixels], pix_pos_transform[self.unwanted_pixels])),
-                        np.hstack((adc_samples[wanted_pixels, t] - baseline[wanted_pixels].reshape(-1),
-                                   np.zeros((n_unwanted_pixel,)))),
-                        fill_value=0)
-                    data_event[:, :, t] = f_2d_interp(image_x, image_y)
-                event_loaded += 1
-                shdu.write(data_event)
-                if event_loaded % print_every == 0:
-                    print(event_loaded, "events loaded")
-            print('closing stream after', event_loaded, "events loaded")
-            events_stream.close()
-            shdu.close()
+        hdr = fits.Header()
+        hdr['SIMPLE'] = (True, 'conforms to FITS standard')
+        hdr['BITPIX'] = (16, 'array data type')  # dtype=int16
+        hdr['NAXIS'] = (3, 'number of array dimensions')
+        hdr['NAXIS1'] = (n_sample, 'number of samples per event')
+        hdr['NAXIS2'] = (n_pixel_u, 'number of horizontal pixels in image')
+        hdr['NAXIS3'] = (n_pixel_v, 'number of vertical pixels in image')
+        hdr['EXTEND'] = True
+        event_loaded = 0
+        for event in events_stream:
+            tel = event.r0.tels_with_data[0]
+            r0 = event.r0.tel[tel]
+            adc_samples = np.array(r0.adc_samples)
+            hillas = event.dl2.shower
+            psi = hillas.psi.rad
+            rot_angle = psi + np.pi/2
+            cen_x = u.Quantity(hillas.cen_x).value
+            cen_y = u.Quantity(hillas.cen_y).value
+            hdr['rotation'] = (rot_angle, 'rotation applied in rad')
+            hdr['offset_x'] = (-cen_x, 'horizontal offset applied')
+            hdr['offset_y'] = (-cen_y, 'vertical offset applied')
+            baseline = r0.digicam_baseline
+            if self.mc:
+                hdr['energy'] = u.Quantity(event.mc.energy).value
+                hdr['alt'] = u.Quantity(event.mc.alt).value
+                hdr['az'] = u.Quantity(event.mc.az).value
+                hdr['core_x'] = u.Quantity(event.mc.core_x).value
+                hdr['core_y'] = u.Quantity(event.mc.core_y).value
+                hdr['HFstInt'] = (u.Quantity(event.mc.h_first_int).value,
+                                  'Height of first interaction.')
+            data_event = np.zeros([n_pixel_u, n_pixel_v, n_sample],
+                                  dtype=np.int16)
+            pix_pos_translate = pix_pos - np.array([cen_x, cen_y])
+            pix_pos_transform = pix_pos_translate.dot(
+                np.array([[np.cos(rot_angle), np.sin(-rot_angle)], [np.sin(rot_angle), np.cos(rot_angle)]])
+            )
+            for t in range(n_sample):
+                f_2d_interp = LinearNDInterpolator(
+                    np.vstack((pix_pos_transform[wanted_pixels], pix_pos_transform[self.unwanted_pixels])),
+                    np.hstack((adc_samples[wanted_pixels, t] - baseline[wanted_pixels].reshape(-1),
+                               np.zeros((n_unwanted_pixel,)))),
+                    fill_value=0)
+                data_event[:, :, t] = f_2d_interp(image_x, image_y)
+            event_loaded += 1
+            fits.append(filename, data_event, hdr)
+            if event_loaded % print_every == 0:
+                print(event_loaded, "events loaded")
+        print('closing stream after', event_loaded, "events loaded")
+        events_stream.close()
 
     def get_data_size(self, datafiles_list):
         print("getting size of the event stream ...")
@@ -313,43 +320,77 @@ class CameraData(object):
             mask[x, y] = 1
         return mask
 
-    def get_batch(self, batch_size, n_sample=None, type_set='train'):
-        n_event = self.data.shape[0]
+    def get_batch(self, batch_size=None, n_sample=None, type_set='train'):
+        #get indexes for the 3 types of sets
+        n_event = self.n_event
         n_train = int(0.8 * n_event)
         n_val = int(0.1 * n_event)
         n_test = n_event - n_train - n_val
-        train_data, val_data, test_data = np.split(self.data,
-                                                   [n_train, n_train+n_val],
-                                                   axis=0)
+        train_indexes, val_indexes, test_indexes = np.split(
+            self.data_shuffle_indexes,
+            [n_train, n_train+n_val],
+            axis=0
+        )
         if type_set == 'train':
-            data = train_data
-            n_event = n_train
+            if batch_size is None:
+                indexes = train_indexes[np.random.permutation(n_train)]
+            else:
+                indexes = train_indexes[
+                    np.random.permutation(n_train)[:batch_size]
+                ]
         elif type_set == 'val':
-            data = val_data
-            n_event = n_val
+            if batch_size is None:
+                indexes = val_indexes[np.random.permutation(n_val)]
+            else:
+                indexes = val_indexes[
+                    np.random.permutation(n_val)[:batch_size]
+                ]
         elif type_set == 'test':
             print('WARNING: test data should only be used once !')
-            data = test_data
-            n_event = n_test
+            if batch_size is None:
+                indexes = test_indexes[np.random.permutation(n_test)]
+            else:
+                indexes = test_indexes[
+                    np.random.permutation(n_test)[:batch_size]
+                ]
         else:
             print('ERROR: unknown type_set:', type_set)
             return
+
         if n_sample is None:
-            n_sample = data.shape[-1]
-        if batch_size > n_event:
-            print('WARNING: the given batch size is too big for the dataset')
-        picked_events = np.random.permutation(n_event)[:batch_size]
-        return data[picked_events, :, :, :n_sample]
+            n_sample = self.event_shape[-1]
+        events = {}
+        events['data'] = np.zeros((batch_size, self.event_shape[0],
+                                   self.event_shape[1], n_sample))
+        events['rotation'] = np.zeros((batch_size, ))
+        events['offset_x'] = np.zeros((batch_size, ))
+        events['offset_y'] = np.zeros((batch_size, ))
+        if self.mc:
+            events['energy'] = np.zeros((batch_size, ))
+            events['alt'] = np.zeros((batch_size, ))
+            events['az'] = np.zeros((batch_size, ))
+            events['core_x'] = np.zeros((batch_size, ))
+            events['core_y'] = np.zeros((batch_size, ))
+            events['HFstInt'] = np.zeros((batch_size, ))
+        for i, index in enumerate(indexes):
+            event = self._fits[index]
+            events['data'][i, :, :, :] = \
+                event.data[:, :, :n_sample]
+            events['rotation'][i] = event.header['rotation']
+            events['offset_x'][i] = event.header['offset_x']
+            events['offset_y'][i] = event.header['offset_y']
+            if self.mc:
+                events['energy'][i] = event.header['energy']
+                events['alt'][i] = event.header['alt']
+                events['az'][i] = event.header['az']
+                events['core_x'][i] = event.header['core_x']
+                events['core_y'][i] = event.header['core_y']
+                events['HFstInt'][i] = event.header['HFstInt']
+        return events
 
-    def animate(self, n_event_max=np.inf):
-        animate(self.data, n_event_max=n_event_max)
-
-    def hist_adc(self):
-        plt.ioff()
-        plt.figure()
-        max_data = np.max(self.data, axis=(1, 2, 3))
-        plt.hist(max_data,100, log=True)
-        plt.show()
+    def animate(self, batch_size=None, type_set='train'):
+        events = self.get_batch(batch_size, type_set=type_set)
+        animate(events['data'])
 
 
 def create_file(camera_data, datafiles_list=None, print_every=100):
@@ -378,31 +419,46 @@ def create_file(camera_data, datafiles_list=None, print_every=100):
     )
 
 
-def show_file(camera_data):
+def show_file(camera_data, batch_size=None, type_set='train'):
     # load fits file:
     data = CameraData(camera_data)
     # show data:
-    data.animate(n_event_max=10)
-    #data.hist_adc()
+    data.animate(batch_size=batch_size, type_set=type_set)
 
 
 if __name__ == '__main__':
-    camera_data = os.path.join('/home/yves/ctasoft/digicampipe/data',
-                               'camera_data_mc.fits')
     # MC files from
     # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/
     mc_dir = '/home/yves/ctasoft/digicampipe/data/mc_simtel'
     all_file_list = os.listdir(mc_dir)
-    mc_files = []
+    mc_proton_files = []
+    mc_gamma_files = []
     for file in all_file_list:
         if file.endswith('.simtel.gz'):
-            mc_files.append(os.path.join(mc_dir, file))
+            if file.startswith('proton'):
+                mc_proton_files.append(os.path.join(mc_dir, file))
+            if file.startswith('gamma'):
+                mc_gamma_files.append(os.path.join(mc_dir, file))
     #create_file(camera_data,
     #            print_every=10)
-    CameraData(camera_data, #datafiles_list=mc_files,
+    proton_data = os.path.join('/home/yves/ctasoft/digicampipe/data',
+                               'proton_data_mc.fits')
+    CameraData(proton_data, datafiles_list=mc_proton_files,
                digicam_config_file=digicam_config_file_default,
                min_adc=10,
-               print_every=10,
-               max_events=1000,
+               print_every=100,
+               max_events=None,
                mc=True)
-    show_file(camera_data)
+    show_file(proton_data, batch_size=10)
+
+    """
+    gamma_data = os.path.join('/home/yves/ctasoft/digicampipe/data',
+                              'gamma_data_mc.fits')
+    CameraData(gamma_data, datafiles_list=mc_gamma_files,
+               digicam_config_file=digicam_config_file_default,
+               min_adc=10,
+               print_every=100,
+               max_events=10000,
+               mc=True)
+    show_file(gamma_data)
+    """
