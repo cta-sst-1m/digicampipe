@@ -25,7 +25,7 @@ class AutoEncoder(object):
         self.data = camera_data
         tf.reset_default_graph()
         self.sess = tf.Session()
-        _, self.h_size, self.v_size, t_size = self.data.shape
+        _, self.h_size, self.v_size, t_size = self.data.event_shape
         if n_sample is None:
             self.t_size = t_size
         else:
