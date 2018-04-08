@@ -207,6 +207,7 @@ def find_pulse_2(events, threshold_sigma, widths, **kwargs):
 
 
 def find_pulse_3(events):
+
     w = np.array([1, 2, 3, 4, 5, 4, 3, 2, 1], dtype=np.float32)
     w /= w.sum()
     SOME_THRESHOLD = 2
