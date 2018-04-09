@@ -162,8 +162,6 @@ class CameraData(object):
             events_stream = random_triggers.fill_baseline_r0(
                 events_stream, n_bins=100
             )
-            # Stop events that are not triggered by DigiCam algorithm
-            # (end of clocked triggered events)
             if self.flags is not None:
                 events_stream = filter.filter_event_types(
                     events_stream,
@@ -316,21 +314,6 @@ class CameraData(object):
                 t0 = time.perf_counter()
         print('closing stream after', event_loaded, "events saved in", filename)
         events_stream.close()
-
-    def get_data_size(self, datafiles_list):
-        print("getting size of the event stream ...")
-        events_stream = self._new_event_stream(datafiles_list)
-        event = next(events_stream)
-        tel = event.r0.tels_with_data[0]
-        r0 = event.r0.tel[tel]
-        adc_samples = r0.adc_samples
-        n_pixels, n_samples = adc_samples.shape
-        size = 1
-        for _ in events_stream:
-            size += 1
-        events_stream.close()
-        print("got", size, 'events with', n_samples, 'samples')
-        return size, n_samples
 
     @staticmethod
     def get_pixels_pos_in_skew_base(camera_config_file):
