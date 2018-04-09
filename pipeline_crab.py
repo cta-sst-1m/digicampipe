@@ -15,14 +15,15 @@ Options:
   -h --help     Show this screen.
   --display     Display rather than output data
   -o <path>, --outfile_path=<path>   path to the output file
-  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
+  -b <path>, --baseline_path=<path>  \
+path to baseline file usually called "dark.npz"
   --min_photon <int>     Filtering on big showers [default: 20]
 '''
 from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import event_stream
 from cts_core.utils import Camera
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text
-from digicamviewer.viewer import EventViewer
+from digicampipe.visualization import EventViewer
 from digicampipe.utils import utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -85,15 +86,19 @@ def main(args):
     shower_distance = 200 * u.mm
 
     # Define the event stream
-    data_stream = event_stream(file_list=args['<files>'], camera=digicam)
+    data_stream = event_stream(args['<files>'], camera=digicam)
     # Clean pixels
-    data_stream = filter.set_pixels_to_zero(
-        data_stream, unwanted_pixels=pixel_not_wanted)
-    # Compute baseline with clocked triggered events (sliding average over n_bins)
-    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
-    # Stop events that are not triggered by DigiCam algorithm (end of clocked triggered events)
+    data_stream = filter.set_pixels_to_zero(data_stream,
+                                            unwanted_pixels=pixel_not_wanted)
+    # Compute baseline with clocked triggered events
+    # (sliding average over n_bins)
+    data_stream = random_triggers.fill_baseline_r0(data_stream,
+                                                   n_bins=n_bins)
+    # Stop events that are not triggered by DigiCam algorithm
+    # (end of clocked triggered events)
     data_stream = filter.filter_event_types(data_stream, flags=[1, 2])
-    # Do not return events that have not the baseline computed (only first events)
+    # Do not return events that have not the baseline computed
+    # (only first events)
     data_stream = filter.filter_missing_baseline(data_stream)
 
     # Run the r1 calibration (i.e baseline substraction)
@@ -116,14 +121,8 @@ def main(args):
     if args['--display']:
 
         with plt.style.context('ggplot'):
-            display = EventViewer(
-                data_stream,
-                n_samples=50,
-                camera_config_file=digicam.config_file,
-                scale='lin'
-                )
+            display = EventViewer(data_stream)
             display.draw()
-            pass
     else:
         save_hillas_parameters_in_text(
             data_stream=data_stream, output_filename=args['--outfile_path'])

@@ -2,7 +2,6 @@
 # called from pipeline_crab.py
 
 import numpy as np
-# from astropy.units import Quantity
 from astropy.coordinates import Angle
 import astropy.units as u
 from ctapipe.instrument import CameraGeometry
@@ -49,10 +48,10 @@ def save_events(event_stream, filename_pix, filename_eventsimage):
             image[~mask] = 0.
 
         # saving cleaned event images
-        pix_x, pix_y, image = make_image(geom, image)  #
-        event_number = event.r0.event_id  #
+        pix_x, pix_y, image = make_image(geom, image)
+        event_number = event.r0.event_id
         image = np.hstack((event_number, image))  # [event_number,image_values]
-        image_all.append(image)  #
+        image_all.append(image)
         print('saving event', i)
 
         yield event

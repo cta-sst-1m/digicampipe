@@ -30,6 +30,7 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
 
     for i, event in enumerate(event_stream):
 
+        moments = None
         for telescope_id in event.r0.tels_with_data:
 
             if i == 0:
@@ -58,6 +59,8 @@ def calibrate_to_dl2(event_stream, reclean=False, shower_distance=80*u.mm):
                     continue
             else:
                 moments = moments_first
+        if moments is None:
+            continue
         event.dl2.shower = moments
         event.dl2.energy = None
         event.dl2.classification = None

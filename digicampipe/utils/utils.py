@@ -1,7 +1,19 @@
 import numpy as np
 import scipy.ndimage as ndimage
-
+from scipy.interpolate import interp1d
+import pkg_resources
+import os
 # Define the integration function
+
+
+TEMPLATE = pkg_resources.resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_SST-1M_pixel_0.dat'
+    )
+)
 
 
 def integrate(data, window_width):
@@ -61,7 +73,11 @@ def extract_charge(
     if np.any(is_saturated):
         sat_indices = tuple(np.where(is_saturated)[0])
         _data = data[sat_indices, ...]
-        charge[sat_indices, ...] = np.apply_along_axis(contiguous_regions, 1, _data)
+        charge[sat_indices, ...] = np.apply_along_axis(
+            contiguous_regions,
+            1,
+            _data
+        )
 
     return charge, index_max
 
@@ -141,3 +157,20 @@ def generate_timing_mask(window_start, window_width, peak_positions):
     mask_windows_edge = mask_windows_edge[..., shift:]
     mask_windows_edge = mask_windows_edge[..., :-missing]
     return peak, mask_window, mask_windows_edge
+
+
+def _template_pulse(filename):
+
+    time_steps, amplitudes = np.loadtxt(filename, unpack=True,
+                                        skiprows=1)
+
+    return interp1d(time_steps, amplitudes, kind='cubic',
+                                          bounds_error=False, fill_value=0.,
+                                          assume_sorted=True)
+
+
+def get_pulse_shape(time, t, amplitude, baseline):
+
+    f = _template_pulse(TEMPLATE)
+
+    return amplitude * f(time - t) + baseline

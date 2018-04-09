@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import digicampipe.io.hessio_digicam as hsm     #
 import astropy.units as u
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
@@ -11,16 +10,13 @@ from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
 
 from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
 from digicampipe.utils import utils, calib
-import simtel_baseline      #
-import events_image         #
-import mc_shower            #
+import simtel_baseline
+import events_image
+import mc_shower
 
 from optparse import OptionParser
 import os
 
-
-# import inspect
-# print(inspect.getfile(dl2))
 
 if __name__ == '__main__':
 
@@ -46,15 +42,13 @@ if __name__ == '__main__':
     parser.add_option('-r', "--primary", dest='primary',
                       help='Primary particle', default='gamma', type=str)
     parser.add_option('-d', "--baseline0", dest='baseline_beginning',
-                      help='N bins from the beginning of the waveform for \
-                      baseline calculation', type=int, default=9)
+                      help='N bins from the beginning of the waveform for '
+                      'baseline calculation', type=int, default=9)
     parser.add_option('-e', "--baseline1", dest='baseline_end',
-                      help='N bins from the end of the waveform for baseline \
-                      calculation', type=int, default=15)
+                      help='N bins from the end of the waveform for baseline '
+                      'calculation', type=int, default=15)
 
     (options, args) = parser.parse_args()
-
-    digicam_config_file = 'camera_config_digicampipe.cfg'
 
     # Input/Output files
     directory = options.directory
@@ -134,12 +128,6 @@ if __name__ == '__main__':
         camera_geometry=digicam_geometry,
         camera=digicam)
 
-    # create data_stream
-    # data_stream = hsm.hessio_event_source(
-    #    data,
-    #    camera_geometry=digicam_geometry,
-    #    camera=digicam)
-
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
         data_stream, unwanted_pixels=pixel_not_wanted)
@@ -148,21 +136,21 @@ if __name__ == '__main__':
     #
     # Methods:
     #
-    # 'data'
+    # simtel_baseline.baseline_data()
     # Baseline is computed as a mean of 'n_bins0' first time samples,
     # 'n_bins1' last time samples.
     # A key assumption in this method is that the shower in simulated
     # data is somewhere in the middle of 50 samples.
     # Each pixel in each event has its own baseline
     #
-    # 'simtel'
+    # simtel_baseline.baseline_simtel()
     # Baseline is taken as simulated value event.mc.pedestal/50 that can
     # be set up with the use of variable 'fadc_pedestal'
     # in CTA-ULTRA6-SST-DC.cfg.
 
-    data_stream = simtel_baseline.fill_baseline_r0(
+    data_stream = simtel_baseline.baseline_data(
         data_stream, n_bins0=options.baseline_beginning,
-        n_bins1=options.baseline_end, method='data')
+        n_bins1=options.baseline_end)
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
@@ -217,9 +205,6 @@ if __name__ == '__main__':
                          )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
-
-    # for event in data_stream:
-    #    print(event.dl0.event_id)
 
     # Save Hillas
     hillas_filename = options.output + '_' + suffix

@@ -1,13 +1,16 @@
-# This just checks if all imports from pipeline_crab.py work
+# This just checks some imports work
 
-from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
-from digicampipe.io.event_stream import event_stream
-from digicampipe.utils import geometry
-from cts_core.camera import Camera
-from digicampipe.io.save_hillas import save_hillas_parameters
-from digicampipe.io.save_hillas import save_hillas_parameters
-from digicamviewer.viewer import EventViewer
-from digicampipe.utils import utils
-import protozfitsreader
-from protozfitsreader import rawzfitsreader
-from protozfitsreader import ZFile
+
+def test_imports():
+
+    # TODO make real unit tests for each of these imports
+
+    from digicampipe.calib.camera import (
+        filter, r1, random_triggers, dl0, dl2, dl1)
+    from digicampipe.io.event_stream import event_stream
+    from digicampipe.utils import geometry
+    from cts_core.camera import Camera
+    from digicampipe.io.save_hillas import save_hillas_parameters
+    from digicampipe.io.save_hillas import save_hillas_parameters
+    from digicampipe.visualization import EventViewer
+    from digicampipe.utils import utils

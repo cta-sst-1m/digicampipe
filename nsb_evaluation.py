@@ -11,7 +11,8 @@ Options:
   -h --help     Show this screen.
   --display     show plots
   -o <path>, --outfile_path=<path>   path to the output file
-  -b <path>, --baseline_path=<path>  path to baseline file usually called "dark.npz"
+  -b <path>, --baseline_path=<path>  \
+path to baseline file usually called "dark.npz"
 '''
 from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
@@ -24,7 +25,7 @@ from docopt import docopt
 
 
 def main(
-    files,
+    urls,
     outfile_path,
     baseline_path,
     do_plots=False
@@ -33,7 +34,7 @@ def main(
 
     digicam = Camera()
     data_stream = event_stream(
-        file_list=files,
+        urls,
         expert_mode=True,
         camera=digicam,
         camera_geometry=digicam.geometry
@@ -188,7 +189,7 @@ def plot_1(data):
 if __name__ == '__main__':
     args = docopt(__doc__)
     main(
-        files=args['<files>'],
+        urls=args['<files>'],
         outfile_path=args['--outfile_path'],
         baseline_path=args['--baseline_path'],
         do_plots=args['--display']
