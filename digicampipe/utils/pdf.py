@@ -11,7 +11,8 @@ def gaussian(x, mean, sigma, amplitude):
     return pdf
 
 
-def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, a_9):
+def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, a_0=0, a_1=0, a_2=0, a_3=0
+                , a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
 
     params = {'baseline': baseline,
               'gain': gain,
@@ -38,7 +39,6 @@ def fmpe_pdf(x, **params):
     sigma_s = params['sigma_s']
     gain = params['gain']
 
-    amplitudes = []
     ids = []
 
     for key, val in params.items():
@@ -47,9 +47,17 @@ def fmpe_pdf(x, **params):
 
             id = int(key[2:])
             ids.append(id)
-            amplitudes.append(val)
 
-    amplitudes = np.array(amplitudes)[ids]
+    n_peaks = len(ids)
+
+    amplitudes = np.zeros(n_peaks)
+
+    for key, val in params.items():
+
+        if key[:2] == 'a_':
+
+            id = int(key[2:])
+            amplitudes[id] = val
 
     N = np.arange(0, amplitudes.shape[0], 1)
     sigma = sigma_e**2 + N * sigma_s**2

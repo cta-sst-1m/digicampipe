@@ -11,6 +11,9 @@ Options:
   -o FILE --output=FILE.  Output file.
   -i INPUT --input=INPUT. Input files.
   -c --compute            Compute the data.
+  -d --dark
+  -t --time
+  -m --fmpe
   -f --fit                Fit.
   -d --display            Display.
   -v --debug              Enter the debug mode.
@@ -39,14 +42,22 @@ from digicampipe.io.containers_calib import SPEResultContainer, \
     CalibrationHistogramContainer, CalibrationContainer
 from histogram.histogram import Histogram1D
 from digicampipe.utils.utils import get_pulse_shape
-from digicampipe.scripts.spe import compute_charge, compute_amplitude
+from digicampipe.scripts.spe import compute_charge, compute_amplitude, subtract_baseline
 from digicampipe.utils.pdf import fmpe_pdf_10
+
+
+def fill_baseline(events, baseline):
+
+    for event in events:
+
+        event.data.baseline = baseline
+
+        yield event
 
 
 def fill_peak_position(events, peak_position):
 
     peak_position = peak_position.reshape(peak_position.shape + (1, ))
-    print(peak_position)
 
     for count, event in enumerate(events):
 
@@ -72,7 +83,7 @@ def _convert_pixel_args(text):
 
     else:
 
-        pixel_id = [...]
+        pixel_id = np.arange(0, 1296, 1)
 
     return pixel_id
 
@@ -97,57 +108,94 @@ def entry():
     args = docopt(__doc__)
     input_files = args['INPUT']
     pixel_id = _convert_pixel_args(args['--pixel'])
+    debug = args['--debug']
 
     max_events = args['--max_events']
     max_events = max_events if max_events is None else int(max_events)
 
     fmpe_filename = 'fmpe.pk'
     time_histo_filename = 'time.pk'
+    dark_histo_filename = 'dark.pk'
 
-    print(max_events, pixel_id)
+    print(max_events, pixel_id, input_files)
 
     if args['--compute']:
 
-        events = calibration_event_stream(input_files, telescope_id=1,
-                                      max_events=max_events,
-                                      pixel_id=pixel_id)
+        if args['--time']:
 
-        time_histo = Histogram1D(bin_edges=np.arange(0, 100, 1),
-                                 data_shape=(len(pixel_id), ))
+            events = calibration_event_stream(input_files, telescope_id=1,
+                                          max_events=max_events,
+                                          pixel_id=pixel_id)
 
-        for event in tqdm(events, total=max_events):
+            time_histo = Histogram1D(bin_edges=np.arange(0, 100, 1),
+                                     data_shape=(len(pixel_id), ))
 
-            adc_samples = event.data.adc_samples
-            bin_max = np.argmax(adc_samples, axis=-1)
-            bin_max = bin_max.reshape((bin_max.shape + (1, )))
-            time_histo.fill(bin_max)
+            for event in tqdm(events, total=max_events):
 
-        peak_position = time_histo.mode()
-        time_histo.save(time_histo_filename)
-        time_histo.draw(index=(0, ))
-        plt.show()
+                adc_samples = event.data.adc_samples
+                bin_max = np.argmax(adc_samples, axis=-1)
+                bin_max = bin_max.reshape((bin_max.shape + (1, )))
+                time_histo.fill(bin_max)
 
-        events = calibration_event_stream(input_files, telescope_id=1,
-                                      max_events=max_events,
-                                      pixel_id=pixel_id)
+            time_histo.save(time_histo_filename)
+            time_histo.draw(index=(0, ))
 
-        events = fill_peak_position(events, peak_position=peak_position)
-        events = compute_charge(events, integral_width=7)
+            plt.show()
 
-        fmpe = Histogram1D(bin_edges=np.arange(0, 4096, 1),
-                           data_shape=(len(pixel_id), ),
-                           axis_name='[LSB]')
+        if args['--dark']:
 
-        for count, event in tqdm(enumerate(events), total=max_events):
+            time_histo = Histogram1D.load(time_histo_filename)
+            peak_position = time_histo.mode()
 
-            fmpe.fill(event.data.reconstructed_charge)
+            events = calibration_event_stream(input_files, telescope_id=1,
+                                              max_events=max_events,
+                                              pixel_id=pixel_id)
 
-        fmpe.save(fmpe_filename)
-        fmpe.draw(index=(0, ), log=True)
-        plt.show()
+            events = fill_peak_position(events,
+                                        peak_position=peak_position)
+            events = compute_amplitude(events)
+
+            dark_histo = Histogram1D(bin_edges=np.arange(0, 4096, 1),
+                                     data_shape=(len(pixel_id),))
+
+            for event in tqdm(events, total=max_events):
+
+                dark_histo.fill(event.data.reconstructed_amplitude)
+
+            dark_histo.save(dark_histo_filename)
+            dark_histo.draw(index=(0, ))
+            plt.show()
+
+        if args['--fmpe']:
+
+            dark_histo = Histogram1D.load(dark_histo_filename)
+            time_histo = Histogram1D.load(time_histo_filename)
+
+            peak_position = time_histo.mode()
+            baseline = dark_histo.mean()
+
+            events = calibration_event_stream(input_files, telescope_id=1,
+                                          max_events=max_events,
+                                          pixel_id=pixel_id)
+
+            events = fill_peak_position(events, peak_position=peak_position)
+            events = fill_baseline(events, baseline)
+            events = subtract_baseline(events)
+            events = compute_charge(events, integral_width=7, shift=0)
+
+            fmpe = Histogram1D(bin_edges=np.arange(-4096, 4096, 1),
+                               data_shape=(len(pixel_id), ),
+                               axis_name='[LSB]')
+
+            for count, event in tqdm(enumerate(events), total=max_events):
+
+                fmpe.fill(event.data.reconstructed_charge)
+
+            fmpe.save(fmpe_filename)
+            fmpe.draw(index=(0, ), log=True)
+            plt.show()
 
     if args['--fit']:
-        print('hello')
 
         fmpe = Histogram1D.load(fmpe_filename)
         bin_centers = fmpe._bin_centers()
@@ -160,13 +208,36 @@ def entry():
             yerr = np.sqrt(y)
 
             init_params = compute_init_fmpe(x, y, yerr)
-            print(init_params)
-            # limit_params = compute_limit_fmpe(x, y, yerr, init_params)
+            limit_params = compute_limit_fmpe(init_params)
 
-            # fit_fmpe(x, y, yerr, **init_params, **limit_params)
+            fit_fmpe(x, y, yerr, init_params, limit_params, debug)
 
 
-def compute_init_fmpe(x, y, yerr, thres=0.1, min_dist=3):
+def compute_limit_fmpe(init_params):
+
+    limit_params = {}
+
+    baseline = init_params['baseline']
+    gain = init_params['gain']
+    sigma_e = init_params['sigma_e']
+    sigma_s = init_params['sigma_s']
+
+    limit_params['limit_baseline'] = (baseline - sigma_e, baseline + sigma_e)
+    limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
+    limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
+    limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
+
+    for key, val in init_params.items():
+
+        if key[:2] == 'a_':
+
+            limit_params['limit_{}'.format(key)] = (0.5 * val,
+                                                    val * 1.5 )
+
+    return limit_params
+
+
+def compute_init_fmpe(x, y, yerr, thres=0.08, min_dist=5):
 
     y = y.astype(np.float)
 
@@ -223,7 +294,7 @@ def compute_init_fmpe(x, y, yerr, thres=0.1, min_dist=3):
     sigma_s = np.sqrt(sigma_s)
 
     params = {'baseline': mean_peak_x[0], 'sigma_e': sigma_e,
-              'sigma_s': sigma_s, 'gain': gain }
+              'sigma_s': sigma_s, 'gain': gain}
 
     for i, amplitude in enumerate(amplitudes):
 
@@ -232,30 +303,38 @@ def compute_init_fmpe(x, y, yerr, thres=0.1, min_dist=3):
     return params
 
 
-def fit_fmpe(x, y, yerr, **kwargs):
+def fit_fmpe(x, y, yerr, init_params, limit_params, debug=False):
 
     chi2 = Chi2Regression(fmpe_pdf_10, x=x, y=y, error=yerr)
 
+    params = describe(fmpe_pdf_10, verbose=False)[1:]
+    fixed_params = {}
+
+    for param in params:
+
+        if param not in init_params.keys():
+
+            fixed_params['fix_{}'.format(param)] = True
+
     m = Minuit(
         chi2,
-        **kwargs,
-        baseline=1400,
-        gain=22,
-        sigma_e=1.2,
-        sigma_s=1.2,
-        a_1=2100,
-        a_2=500,
-        a_3=300,
+        **init_params,
+        **limit_params,
+        **fixed_params,
         print_level=0,
         pedantic=False
     )
     m.migrad()
 
-    print(m.values)
-    plt.figure()
-    plt.plot(x, y)
-    plt.plot(x, fmpe_pdf_10(x, **m.values))
-    plt.show()
+    if debug:
+
+        print(m.values)
+        plt.figure()
+        plt.plot(x, y)
+        plt.plot(x, fmpe_pdf_10(x, **init_params), label='init')
+        plt.plot(x, fmpe_pdf_10(x, **m.values), label='fit')
+        plt.legend()
+        plt.show()
 
     return m.values, m.errors
 
