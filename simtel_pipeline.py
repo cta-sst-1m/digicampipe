@@ -96,10 +96,10 @@ if __name__ == '__main__':
                                 'mask_edges': None,
                                 'peak': None,
                                 'window_start': 3,
-                                'window_width': 15,  # length of integration window
+                                'window_width': 7,  # length of integration window
                                 'threshold_saturation': np.inf,
                                 'n_samples': 50,
-                                'timing_width': 10,
+                                'timing_width': 6,
                                 'central_sample': 11}
 
     peak_position = utils.fake_timing_hist(
@@ -223,13 +223,13 @@ if __name__ == '__main__':
 
     # Save Hillas
     hillas_filename = options.output + '_' + suffix
-    save_hillas_parameters(
-        data_stream=data_stream,
-        n_showers=n_showers,
-        output_filename=directory + hillas_filename)
-    # save_hillas_parameters_in_text(
+    #save_hillas_parameters(
     #    data_stream=data_stream,
+    #    n_showers=n_showers,
     #    output_filename=directory + hillas_filename)
+    save_hillas_parameters_in_text(
+        data_stream=data_stream,
+        output_filename=directory + hillas_filename)
 
     """
     import matplotlib.pyplot as plt
