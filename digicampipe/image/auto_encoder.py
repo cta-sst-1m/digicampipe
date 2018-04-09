@@ -34,8 +34,9 @@ class AutoEncoder(object):
         self.n_out = int(n_out)
         self.n_filter = int(n_filter)
         print('\n####### MODEL CREATION #######\n')
-        print('kernel size:', kernel_size, 'n_out:', n_out, 't_size:', 
-              self.t_size)
+        print('kernel size:', kernel_size,
+              'n_out:', n_out,
+              't_size:', self.t_size)
         self.x = tf.placeholder(
             tf.float32, 
             [None, self.h_size, self.v_size, self.t_size]
@@ -57,9 +58,9 @@ class AutoEncoder(object):
         print("mask_data=", mask_data.shape)
         self.x_decoded = tf.multiply(self.x_decoded, 
                                      tf.cast(mask_data, tf.float32))
-        diff = self.x - self.x_decoded
         """
         norm_order = 2
+        diff = self.x - self.x_decoded
         self.losses = tf.norm(diff, ord=norm_order , axis=[1,2,3], )
         self.losses /= tf.reduce_sum(
             tf.cast(self.mask_loss, tf.float32), 
