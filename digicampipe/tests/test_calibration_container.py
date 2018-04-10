@@ -15,9 +15,7 @@ example_file_path = pkg_resources.resource_filename(
 def test_calibration_event_stream():
 
     max_events = 10
-    telescope_id = 1
     calib_stream = calibration_event_stream(example_file_path,
-                                            telescope_id,
                                             max_events=max_events)
 
     values = []
