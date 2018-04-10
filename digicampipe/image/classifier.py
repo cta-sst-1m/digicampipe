@@ -213,11 +213,12 @@ class Classifier(object):
                     feed_dict={self.x: data_val, self.label: classes_val,
                            self.is_train: False}
                 )
-                accuracy = np.sum(classes_val == label_val) / batch_size
+                accuracy_val = np.sum(classes_val == label_val) / batch_size
                 print('iter', it + 1, '/', max_iter, ',',
                       'loss=%.1f (%.1f+%.1f)' % (loss, loss_class, loss_reg),
-                      '\tvalidation_loss=%.1f' % loss_val,
-                      '\taccuracy=%.1f%%' % (accuracy*100))
+                      'accuracy=%.1f%%' % (np.mean(accuracies_train[-print_every:]) * 100),
+                      '\tval_loss=%.1f' % loss_val,
+                      'val_accuracy=%.1f%%' % (accuracy_val*100))
                 losses_val.append(loss_val)
                 iter_val.append(it)
                 accuracies_val.append(accuracy)
@@ -240,11 +241,10 @@ def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
     proton_data = CameraData(proton_file)
 
     kernel_size_str = '%dx%dx%d' % (
-    kernel_size[0], kernel_size[1], kernel_size[2])
-    opt_str = kernel_size_str + '_' + '_' + str(
-        learning_rate) + \
-              '_' + str(batch_size) + '_' + str(n_epoch) + '_' + \
-              str(regularizer_scale) + '_' + str(n_filter)
+        kernel_size[0], kernel_size[1], kernel_size[2])
+    opt_str = kernel_size_str + '_' + str(learning_rate) + \
+        '_' + str(batch_size) + '_' + str(n_epoch) + '_' + \
+        str(regularizer_scale) + '_' + str(n_filter)
 
     model_path = os.path.join(
         '/home/reniery/prog/digicampipe/autoencoder/models',
@@ -267,7 +267,8 @@ def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
     )
     t_spent = time.clock() - t_start
     print('training took', t_spent, 's')
-    np.savez('models/classifier_loss_' + opt_str + '.npz',
+    np.savez('/home/reniery/prog/digicampipe/autoencoder/models/' +
+             'classifier_loss_' + opt_str + '.npz',
              losses_train=losses_train,
              accuracies_train=accuracies_train,
              losses_val=losses_val,
@@ -295,8 +296,8 @@ def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
 def main():
     kernel_size = (4, 4, 4)
     learning_rate = 1e-3
-    batch_size = 50
-    n_epoch = 20
+    batch_size = 100
+    n_epoch = 2
     regularizer_scale = 1e-3
     n_filter = 128
     print('\n######## MAIN ##########\n')
