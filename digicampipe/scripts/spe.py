@@ -74,10 +74,11 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
     highest_peak_index = np.argmax(count)
 
-    highest_peak_range = [
-        highest_peak_index + i
-        for i in range(-peak_distance, peak_distance)
-    ]
+    highest_peak_range = np.arange(-peak_distance, peak_distance + 1)
+    highest_peak_range += highest_peak_index
+    highest_peak_range[highest_peak_range < 0] = 0
+    highest_peak_range[highest_peak_range >= len(count)] = len(count) + 1
+    highest_peak_range = np.unique(highest_peak_range)
 
     bins = bins[highest_peak_range]
     count = count[highest_peak_range]
@@ -657,6 +658,29 @@ def main(args):
 
         spe_charge = Histogram1D.load(charge_histo_filename)
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
+        max_histo = Histogram1D.load(max_histo_filename)
+
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
+            x = max_histo._bin_centers()
+            y = max_histo.data[i]
+
+            mask = (y > 0)
+            x = x[mask]
+            y = y[mask]
+
+            try:
+
+                val, err = compute_gaussian_parameters_highest_peak(x,
+                                                                    y,
+                                                                    snr=3,
+                                                                    debug=True
+                                                                    )
+
+                print(val, err)
+
+            except PeakNotFound as e:
+
+                print(e)
 
         spes = [spe_charge, spe_amplitude]
         names = ['charge', 'amplitude']
@@ -696,6 +720,7 @@ def main(args):
                         print(e)
                         print('Could not fit for pixel_id : {}'.format(pixel))
 
+
     if args['--display']:
 
         spe_charge = Histogram1D.load(charge_histo_filename)
@@ -703,10 +728,10 @@ def main(args):
         raw_histo = Histogram1D.load(raw_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
-        spe_charge.draw(index=(0, ), log=True)
-        spe_amplitude.draw(index=(0, ), log=True)
-        raw_histo.draw(index=(0, ), log=True)
-        max_histo.draw(index=(0, ), log=True)
+        spe_charge.draw(index=(0, ), log=True, legend=False)
+        spe_amplitude.draw(index=(0, ), log=True, legend=False)
+        raw_histo.draw(index=(0, ), log=True, legend=False)
+        max_histo.draw(index=(0, ), log=True, legend=False)
         plt.show()
 
         parameters = pd.HDFStore(results_filename, mode='r')
