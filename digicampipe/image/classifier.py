@@ -199,6 +199,8 @@ class Classifier(object):
                 feed_dict={self.x: data, self.label: classes_train,
                            self.is_train: True}
             )
+            print('label:', label.shape, label.dtype)
+            print('classes_train:', classes_train.shape, classes_train.dtype)
             accuracy = (classes_train == label) / batch_size
             losses_train.append(loss)
             accuracies_train.append(accuracy)
