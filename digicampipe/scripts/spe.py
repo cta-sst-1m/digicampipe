@@ -561,8 +561,9 @@ def _convert_max_events_args(text):
     return max_events
 
 
-def main(args):
+def entry():
 
+    args = docopt(__doc__)
     files = args['INPUT']
     debug = args['--debug']
 
@@ -582,6 +583,7 @@ def main(args):
     max_histo_filename = output_path + 'max_histo.pk'
     results_filename = output_path + 'fit_results.h5'
     dark_count_rate_filename = output_path + 'dark_count_rate.npz'
+    crosstalk_filename = output_path + 'crosstalk.npz'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
@@ -672,8 +674,7 @@ def main(args):
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
-        dark_count_rate = np.zeros(n_pixels)
-        pix = []
+        dark_count_rate = np.zeros(n_pixels) * np.nan
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
 
@@ -694,57 +695,63 @@ def main(args):
                                                                     )
 
                 number_of_zeros = val['amplitude']
+                window_length = 4 * n_samples
                 rate = compute_dark_rate(number_of_zeros,
-                                                    n_entries,
-                                                    4 * n_samples)
-                dark_count_rate[i] = rate
-                pix.append(pixel)
+                                         n_entries,
+                                         window_length)
+                dark_count_rate[pixel] = rate
 
             except Exception as e:
 
                 print('Could not compute dark count rate in pixel {}'
                       .format(pixel))
                 print(e)
-        pix = np.array(pixel)
-        np.savez(dark_count_rate_filename, pixel=pix, dcr=dark_count_rate)
 
-        spes = [spe_charge, spe_amplitude]
-        names = ['charge', 'amplitude']
+        np.savez(dark_count_rate_filename, dcr=dark_count_rate)
 
-        for name, spe in zip(names, spes):
+        spe = spe_charge
+        name = 'charge'
+        crosstalk = np.zeros(n_pixels) * np.nan
 
-            results = SPEResultContainer()
+        results = SPEResultContainer()
 
-            table_name = 'analysis_' + name
+        table_name = 'analysis_' + name
 
-            with HDF5TableWriter(results_filename, table_name, mode='a') as h5:
+        with HDF5TableWriter(results_filename, table_name, mode='a') as h5:
 
-                for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
+            for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
 
-                    try:
+                try:
 
-                        params, params_err, params_init, params_bound = \
-                            fit_spe(spe._bin_centers(),
-                            spe.data[i],
-                            spe.errors(index=i), snr=3, debug=debug)
+                    x = spe._bin_centers()
+                    y = spe.data[i]
+                    y_err = spe.errors(index=i)
+                    n_entries = np.sum(y)
 
-                        for key, val in params.items():
+                    params, params_err, params_init, params_bound = \
+                        fit_spe(x, y, y_err, snr=3, debug=debug)
 
-                            setattr(results.init, key, params_init[key])
-                            setattr(results.param, key, params[key])
-                            setattr(results.param_errors, key, params_err[key])
+                    for key, val in params.items():
 
-                        for key, val in results.items():
-                            results[key]['pixel_id'] = pixel
+                        setattr(results.init, key, params_init[key])
+                        setattr(results.param, key, params[key])
+                        setattr(results.param_errors, key, params_err[key])
 
-                        for key, val in results.items():
+                    for key, val in results.items():
+                        results[key]['pixel_id'] = pixel
 
-                            h5.write('spe_' + key, val)
+                    for key, val in results.items():
 
-                    except Exception as e:
+                        h5.write('spe_' + key, val)
 
-                        print('Could not fit for pixel_id : {}'.format(pixel))
-                        print(e)
+                    crosstalk[pixel] = (n_entries - params['a_1']) / n_entries
+
+                except Exception as e:
+
+                    print('Could not fit for pixel_id : {}'.format(pixel))
+                    print(e)
+
+            np.savez(crosstalk_filename, crosstalk)
 
     if args['--display']:
 
@@ -761,22 +768,9 @@ def main(args):
 
         parameters = pd.HDFStore(results_filename, mode='r')
         parameters = parameters['analysis_charge/spe_param']
-        n_entries = 0
 
         dark_count_rate = np.load(dark_count_rate_filename)['dcr']
-
-        plt.figure()
-        plt.hist(dark_count_rate)
-        plt.xlabel('$f_{dark}$ [GHz]')
-        plt.ylabel('count')
-        plt.show()
-
-        for i in range(1, 3):
-
-            n_entries += parameters['a_{}'.format(i)]
-
-        xt = (n_entries - parameters['a_1']) / n_entries
-        dark_count = n_entries / (4 * 92 * 10000)
+        crosstalk = np.load(crosstalk_filename)
 
         for key, val in parameters.items():
 
@@ -787,11 +781,11 @@ def main(args):
             axes.set_ylabel('count []')
 
         plt.figure()
-        plt.hist(xt, bins='auto', log=True)
+        plt.hist(crosstalk, bins='auto', log=True)
         plt.xlabel('XT []')
 
         plt.figure()
-        plt.hist(dark_count, bins='auto', log=True)
+        plt.hist(dark_count_rate, bins='auto', log=True)
         plt.xlabel('dark count rate [GHz]')
 
         plt.show()
@@ -799,10 +793,6 @@ def main(args):
     return
 
 
-def entry():
-    args = docopt(__doc__)
-    main(args)
-
-
 if __name__ == '__main__':
+
     entry()
