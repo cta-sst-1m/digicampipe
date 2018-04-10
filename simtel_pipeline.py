@@ -14,8 +14,15 @@ import simtel_baseline
 import events_image
 import mc_shower
 
+#from digicamviewer.viewer import EventViewer
+
 from optparse import OptionParser
 import os
+
+def files(path):
+    for file in os.listdir(path):
+        if os.path.isfile(os.path.join(path, file)):
+            yield file
 
 
 if __name__ == '__main__':
@@ -23,7 +30,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-p", "--path", dest="directory",
                       help="directory to data files",
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/')
+                      default='/mnt/data1/jurysek/simulace_cta_sst/sim_telarray/cta-prod3-sst-dc-2018/0.0deg/Data/')
     parser.add_option("-o", "--output", dest="output",
                       help="output filename", default="hillas", type=str)
     parser.add_option('-c', "--camera_config",
@@ -47,21 +54,37 @@ if __name__ == '__main__':
     parser.add_option('-e', "--baseline1", dest='baseline_end',
                       help='N bins from the end of the waveform for baseline '
                       'calculation', type=int, default=15)
+    parser.add_option('-u', "--lower_run_no", dest='low_run_no',
+                      help='Lower number of run selected for processing',
+                      type=int, default=0)
+    parser.add_option('-n', "--higher_run_no", dest='high_run_no',
+                      help='Higher number of run selected for processing',
+                      type=int, default=1000000000000)
 
     (options, args) = parser.parse_args()
 
     # Input/Output files
     directory = options.directory
-    all_file_list = os.listdir(directory)
+    all_file_list = files(directory)
     file_list = []
     string1 = (options.primary + '_' + str(options.zenit_angle) +
                'deg_' + str(options.azimut) + 'deg_')
-    print(string1)
+
     for fi in all_file_list:
-        if (string1 in fi and '___cta-prod3-sst-dc-2150m--sst-dc' in fi and
-                '.simtel.gz' in fi):
-            print(fi)
-            file_list.append(directory + fi)
+
+        if '.simtel.gz' in fi:
+
+            # Run number extraction
+            run_ind = fi.find('run')
+            run_ind2 = fi[run_ind:].find('_')
+            run = fi[run_ind:][:run_ind2]
+            run_n = int(run[3:])
+
+            if (string1 in fi and '___cta-prod3-sst-dc-' in fi
+                and run_n <= options.high_run_no
+                and run_n >= options.low_run_no):
+                print(fi)
+                file_list.append(directory + fi)
 
     digicam_config_file = options.camera_config_file
     dark_baseline = None
@@ -144,14 +167,17 @@ if __name__ == '__main__':
     # Each pixel in each event has its own baseline
     #
     # simtel_baseline.baseline_simtel()
-    # Baseline is taken as simulated value event.mc.pedestal/50 that can
-    # be set up with the use of variable 'fadc_pedestal'
-    # in CTA-ULTRA6-SST-DC.cfg.
+    # Baseline is taken as a value reported by sim_telarray
+    # event.mc.tel[tel_id].pedestal/event.r0.tel[tel_id].num_samples.
+    # That should be OK for all sim_telarray version from April
+    # 2018, where an error for DC coupled simulations was corrected.
 
     data_stream = simtel_baseline.baseline_data(
         data_stream, n_bins0=options.baseline_beginning,
         n_bins1=options.baseline_end)
 
+    # data_stream = simtel_baseline.baseline_simtel(data_stream)
+ 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
 
@@ -208,13 +234,26 @@ if __name__ == '__main__':
 
     # Save Hillas
     hillas_filename = options.output + '_' + suffix
-    #save_hillas_parameters(
-    #    data_stream=data_stream,
-    #    n_showers=n_showers,
-    #    output_filename=directory + hillas_filename)
-    save_hillas_parameters_in_text(
+    save_hillas_parameters(
         data_stream=data_stream,
+        n_showers=n_showers,
         output_filename=directory + hillas_filename)
+    #save_hillas_parameters_in_text(
+    #    data_stream=data_stream,
+    #    output_filename=directory + hillas_filename)
+
+    """
+    # To be added when 'fail_nicely' branch of digicamviewer is in master
+    with plt.style.context('ggplot'):
+        display = EventViewer(
+            data_stream,
+            n_samples=50,
+            camera_config_file=digicam_config_file,
+            scale='lin',
+        )
+        display.draw()
+        pass
+    """
 
     """
     import matplotlib.pyplot as plt
