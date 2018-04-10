@@ -19,6 +19,9 @@ Options:
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
+  --pulse_finder_threshold=F  threshold of pulse finder in arbitrary units
+                              [default: 2.0].
+
 '''
 import os
 from docopt import docopt
@@ -201,11 +204,9 @@ def find_pulse_2(events, threshold_sigma, widths, **kwargs):
         yield event
 
 
-def find_pulse_3(events):
-
+def find_pulse_3(events, threshold):
     w = np.array([1, 2, 3, 4, 5, 4, 3, 2, 1], dtype=np.float32)
     w /= w.sum()
-    SOME_THRESHOLD = 2
 
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
@@ -220,7 +221,7 @@ def find_pulse_3(events):
         pulse_mask[:, 6:-6] = (
             (c[:, :-2] <= c[:, 1:-1]) &
             (c[:, 1:-1] >= c[:, 2:]) &
-            (c[:, 1:-1] > SOME_THRESHOLD)
+            (c[:, 1:-1] > threshold)
         )[:, 5:-5]
 
         event.data.pulse_mask = pulse_mask
@@ -544,6 +545,7 @@ def main(args):
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
+    pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
     if args['--compute']:
 
@@ -570,11 +572,12 @@ def main(args):
                                           max_events=max_events,
                                           pixel_id=pixel_id)
 
-        events = fill_baseline(events, baseline)
+        events = fill_histogram(events, 0, raw_histo)
+        events = fill_electronic_baseline(events)
         events = subtract_baseline(events)
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        events = find_pulse_3(events)
+        events = find_pulse_3(events, threshold=pulse_finder_threshold)
 
         events = compute_charge(
             events,
