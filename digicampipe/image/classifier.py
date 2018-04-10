@@ -206,7 +206,6 @@ class Classifier(object):
             if it % print_every == 0:
                 data_val, classes_val = self.get_batch(
                     batch_size,
-                    n_sample=self.t_size,
                     type_set='val'
                 )
                 loss_val, label_val = self.sess.run(
