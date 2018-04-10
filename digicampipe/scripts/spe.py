@@ -527,7 +527,6 @@ def main(args):
 
     files = args['INPUT']
     debug = args['--debug']
-    telescope_id = 22
 
     max_events = _convert_max_events_args(args['--max_events'])
     output_path = args['OUTPUT']
@@ -567,7 +566,6 @@ def main(args):
         baseline = raw_histo.mode()
 
         events = calibration_event_stream(files,
-                                          telescope_id=telescope_id,
                                           max_events=max_events,
                                           pixel_id=pixel_id)
 
@@ -660,7 +658,7 @@ def main(args):
         plt.show()
 
         parameters = pd.HDFStore(results_filename, mode='r')
-        parameters = parameters['analysis/spe_param']
+        parameters = parameters['analysis_charge/spe_param']
         n_entries = 0
 
         for i in range(1, 3):
