@@ -212,7 +212,8 @@ class Classifier(object):
                 )
                 loss_val, label_val = self.sess.run(
                     [self.loss, self.label_predictions],
-                    feed_dict={self.x: data_val, self.is_train: False}
+                    feed_dict={self.x: data_val, self.label: classes_val,
+                           self.is_train: False}
                 )
                 accuracy = (classes_val == label_val) / batch_size
                 print('iter', it + 1, '/', max_iter, ',',
