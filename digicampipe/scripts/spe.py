@@ -21,6 +21,7 @@ Options:
                               [default: 7].
   --pulse_finder_threshold=F  threshold of pulse finder in arbitrary units
                               [default: 2.0].
+  --save_figures              Save the plots to the OUTPUT folder
 
 '''
 import os
@@ -112,7 +113,7 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
         bound_names.append('limit_' + name)
 
-    bounds = [(0, np.max(bins)),
+    bounds = [(np.min(bins), np.max(bins)),
               (0.5 * std, 1.5 * std),
               (0.5 * amplitude, 1.5 * amplitude)]
 
@@ -589,7 +590,7 @@ def entry():
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
-    n_samples = 50
+    n_samples = 50 # TODO access this in a better way !
 
     if args['--compute']:
 
@@ -620,7 +621,8 @@ def entry():
 
         max_histo = Histogram1D(
                             data_shape=(n_pixels,),
-                            bin_edges=np.arange(-200, 4096 * integral_width, 1),
+                            bin_edges=np.arange(-4096 * integral_width,
+                                                4096 * integral_width),
                             axis_name='[LSB]'
                         )
 
@@ -653,11 +655,11 @@ def entry():
 
         spe_charge = Histogram1D(
             data_shape=(n_pixels,),
-            bin_edges=np.arange(-20, 500, 1)
+            bin_edges=np.arange(-4096 * integral_width, 4096 * integral_width)
         )
         spe_amplitude = Histogram1D(data_shape=(n_pixels,),
-                                    bin_edges=np.arange(-20,
-                                                        200,
+                                    bin_edges=np.arange(-4096,
+                                                        4096,
                                                         1))
 
         for i, event in tqdm(enumerate(events), total=max_events):
@@ -717,7 +719,7 @@ def entry():
 
         table_name = 'analysis_' + name
 
-        with HDF5TableWriter(results_filename, table_name, mode='a') as h5:
+        with HDF5TableWriter(results_filename, table_name, mode='w') as h5:
 
             for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
 
@@ -753,6 +755,48 @@ def entry():
 
             np.savez(crosstalk_filename, crosstalk)
 
+    if args['--save_figures']:
+
+        spe_charge = Histogram1D.load(charge_histo_filename)
+        spe_amplitude = Histogram1D.load(amplitude_histo_filename)
+        raw_histo = Histogram1D.load(raw_histo_filename)
+        max_histo = Histogram1D.load(max_histo_filename)
+
+        figure_directory = output_path + 'figures/'
+
+        if not os.path.exists(figure_directory):
+            os.makedirs(figure_directory)
+
+        histograms = [spe_charge, spe_amplitude, raw_histo, max_histo]
+        names = ['histogram_charge/', 'histogram_amplitude/', 'histogram_raw/',
+                 'histo_max/']
+
+        for i, histo in enumerate(histograms):
+
+            figure = plt.figure()
+            histogram_figure_directory = figure_directory + names[i]
+
+            if not os.path.exists(histogram_figure_directory):
+                os.makedirs(histogram_figure_directory)
+
+            for j, pixel in enumerate(pixel_id):
+                axis = figure.add_subplot(111)
+                figure_path = histogram_figure_directory + 'pixel_{}'. \
+                    format(pixel)
+
+                try:
+
+                    histo.draw(index=(j,), axis=axis, log=True, legend=False)
+                    figure.savefig(figure_path)
+
+                except Exception as e:
+
+                    print('Could not save pixel {} to : {} \n'.
+                          format(pixel, figure_path))
+                    print(e)
+
+                axis.remove()
+
     if args['--display']:
 
         spe_charge = Histogram1D.load(charge_histo_filename)
@@ -764,13 +808,12 @@ def entry():
         spe_amplitude.draw(index=(0, ), log=True, legend=False)
         raw_histo.draw(index=(0, ), log=True, legend=False)
         max_histo.draw(index=(0, ), log=True, legend=False)
-        plt.show()
 
         parameters = pd.HDFStore(results_filename, mode='r')
         parameters = parameters['analysis_charge/spe_param']
 
         dark_count_rate = np.load(dark_count_rate_filename)['dcr']
-        crosstalk = np.load(crosstalk_filename)
+        crosstalk = np.load(crosstalk_filename)['arr_0']
 
         for key, val in parameters.items():
 
@@ -781,11 +824,13 @@ def entry():
             axes.set_ylabel('count []')
 
         plt.figure()
-        plt.hist(crosstalk, bins='auto', log=True)
+        plt.hist(crosstalk[np.isfinite(crosstalk)], bins='auto', log=True)
         plt.xlabel('XT []')
 
         plt.figure()
-        plt.hist(dark_count_rate, bins='auto', log=True)
+        plt.hist(dark_count_rate[np.isfinite(dark_count_rate)],
+                 bins='auto',
+                 log=True)
         plt.xlabel('dark count rate [GHz]')
 
         plt.show()
