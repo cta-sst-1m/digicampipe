@@ -15,9 +15,7 @@ example_file_path = pkg_resources.resource_filename(
 def test_calibration_event_stream():
 
     max_events = 10
-    telescope_id = 1
     calib_stream = calibration_event_stream(example_file_path,
-                                            telescope_id,
                                             max_events=max_events)
 
     values = []
@@ -37,7 +35,7 @@ def test_calibration_event_stream():
 
     for i, event in enumerate(obs_stream):
 
-        event = event.r0.tel[telescope_id]
+        event = list(event.r0.tel.values())[0]
 
         assert (values[i][0] == event.adc_samples).all()
 
