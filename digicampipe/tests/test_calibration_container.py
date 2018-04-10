@@ -35,7 +35,7 @@ def test_calibration_event_stream():
 
     for i, event in enumerate(obs_stream):
 
-        event = event.r0.tel[telescope_id]
+        event = list(event.r0.tel.values())[0]
 
         assert (values[i][0] == event.adc_samples).all()
 
