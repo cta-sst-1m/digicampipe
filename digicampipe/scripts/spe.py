@@ -809,8 +809,9 @@ def entry():
         raw_histo.draw(index=(0, ), log=True, legend=False)
         max_histo.draw(index=(0, ), log=True, legend=False)
 
-        parameters = pd.HDFStore(results_filename, mode='r')
-        parameters = parameters['analysis_charge/spe_param']
+        df = pd.HDFStore(results_filename, mode='r')
+        parameters = df['analysis_charge/spe_param']
+        parameters_error = df['analysis_charge/spe_param_errors']
 
         dark_count_rate = np.load(dark_count_rate_filename)['dcr']
         crosstalk = np.load(crosstalk_filename)['arr_0']
@@ -821,6 +822,12 @@ def entry():
             axes = fig.add_subplot(111)
             axes.hist(val, bins='auto', log=True)
             axes.set_xlabel(key + ' []')
+            axes.set_ylabel('count []')
+
+            fig = plt.figure()
+            axes = fig.add_subplot(111)
+            axes.hist(parameters_error[key], bins='auto', log=True)
+            axes.set_xlabel(key + 'error' + ' []')
             axes.set_ylabel('count []')
 
         plt.figure()
