@@ -85,7 +85,7 @@ class Classifier(object):
         )
         self.loss = self.loss_class + self.loss_reg
         self.scores = tf.nn.softmax(self.logits)
-        self.label_predictions = tf.argmax(self.logits)
+        self.label_predictions = tf.argmax(self.logits, axis=1)
         self.saver = tf.train.Saver()
         if model_path is not None:
             self.saver.restore(self.sess, model_path)
