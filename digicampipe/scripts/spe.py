@@ -590,7 +590,7 @@ def entry():
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
-    n_samples = 50 # TODO access this in a better way !
+    n_samples = 50  # TODO access this in a better way !
 
     if args['--compute']:
 
