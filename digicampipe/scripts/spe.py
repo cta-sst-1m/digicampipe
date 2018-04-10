@@ -47,6 +47,15 @@ from histogram.histogram import Histogram1D
 from digicampipe.utils.utils import get_pulse_shape
 
 
+def compute_dark_rate(number_of_zeros, total_number_of_events, time):
+
+    p_0 = number_of_zeros / total_number_of_events
+    rate = - np.log(p_0)
+    rate /= time
+
+    return rate
+
+
 def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
 
     temp = count.copy()
@@ -572,10 +581,13 @@ def main(args):
     charge_histo_filename = output_path + 'charge_histo.pk'
     max_histo_filename = output_path + 'max_histo.pk'
     results_filename = output_path + 'fit_results.h5'
+    dark_count_rate_filename = output_path + 'dark_count_rate.npz'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
+
+    n_samples = 50
 
     if args['--compute']:
 
@@ -588,7 +600,7 @@ def main(args):
                             axis_name='[LSB]'
                         )
 
-        for event in tqdm(events, total=max_events):
+        for i, event in tqdm(enumerate(events), total=max_events):
 
             raw_histo.fill(event.data.adc_samples)
 
@@ -660,9 +672,15 @@ def main(args):
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
+        dark_count_rate = np.zeros(n_pixels)
+        pix = []
+
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
+
             x = max_histo._bin_centers()
             y = max_histo.data[i]
+
+            n_entries = np.sum(y)
 
             mask = (y > 0)
             x = x[mask]
@@ -673,14 +691,22 @@ def main(args):
                 val, err = compute_gaussian_parameters_highest_peak(x,
                                                                     y,
                                                                     snr=3,
-                                                                    debug=True
                                                                     )
 
-                print(val, err)
+                number_of_zeros = val['amplitude']
+                rate = compute_dark_rate(number_of_zeros,
+                                                    n_entries,
+                                                    4 * n_samples)
+                dark_count_rate[i] = rate
+                pix.append(pixel)
 
-            except PeakNotFound as e:
+            except Exception as e:
 
+                print('Could not compute dark count rate in pixel {}'
+                      .format(pixel))
                 print(e)
+        pix = np.array(pixel)
+        np.savez(dark_count_rate_filename, pixel=pix, dcr=dark_count_rate)
 
         spes = [spe_charge, spe_amplitude]
         names = ['charge', 'amplitude']
@@ -715,11 +741,10 @@ def main(args):
 
                             h5.write('spe_' + key, val)
 
-                    except PeakNotFound as e:
+                    except Exception as e:
 
-                        print(e)
                         print('Could not fit for pixel_id : {}'.format(pixel))
-
+                        print(e)
 
     if args['--display']:
 
@@ -737,6 +762,14 @@ def main(args):
         parameters = pd.HDFStore(results_filename, mode='r')
         parameters = parameters['analysis_charge/spe_param']
         n_entries = 0
+
+        dark_count_rate = np.load(dark_count_rate_filename)['dcr']
+
+        plt.figure()
+        plt.hist(dark_count_rate)
+        plt.xlabel('$f_{dark}$ [GHz]')
+        plt.ylabel('count')
+        plt.show()
 
         for i in range(1, 3):
 
