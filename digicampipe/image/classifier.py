@@ -217,7 +217,7 @@ class Classifier(object):
                 print('iter', it + 1, '/', max_iter, ',',
                       'loss=%.1f (%.1f+%.1f)' % (loss, loss_class, loss_reg),
                       '\tvalidation_loss=%.1f' % loss_val,
-                      '\taccuracy=%.1f%%' % accuracy*100)
+                      '\taccuracy=%.1f%%' % (accuracy*100))
                 losses_val.append(loss_val)
                 iter_val.append(it)
                 accuracies_val.append(accuracy)
