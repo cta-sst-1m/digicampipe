@@ -820,14 +820,14 @@ def entry():
 
             fig = plt.figure()
             axes = fig.add_subplot(111)
-            axes.hist(val, bins='auto', log=True)
+            axes.hist(val, bins='auto')
             axes.set_xlabel(key + ' []')
             axes.set_ylabel('count []')
 
             fig = plt.figure()
             axes = fig.add_subplot(111)
-            axes.hist(parameters_error[key], bins='auto', log=True)
-            axes.set_xlabel(key + 'error' + ' []')
+            axes.hist(parameters_error[key])
+            axes.set_xlabel(key + '_error' + ' []')
             axes.set_ylabel('count []')
 
         plt.figure()
