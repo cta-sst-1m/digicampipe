@@ -152,6 +152,16 @@ def fill_baseline(events, baseline):
         yield event
 
 
+def compute_baseline_with_min(events):
+
+    for event in events:
+
+        adc_samples = event.data.adc_samples
+        event.data.baseline = np.min(adc_samples, axis=-1)
+
+        yield event
+
+
 def subtract_baseline(events):
 
     for event in events:
@@ -224,6 +234,24 @@ def find_pulse_3(events, threshold):
             (c[:, 1:-1] > threshold)
         )[:, 5:-5]
 
+        event.data.pulse_mask = pulse_mask
+
+        yield event
+
+
+def find_pulse_with_max(events):
+
+    for i, event in enumerate(events):
+
+        adc_samples = event.data.adc_samples
+
+        if i == 0:
+
+            n_samples = adc_samples.shape[-1]
+            bins = np.arange(n_samples)
+
+        arg_max = np.argmax(adc_samples, axis=-1)
+        pulse_mask = (bins == arg_max[..., np.newaxis])
         event.data.pulse_mask = pulse_mask
 
         yield event
@@ -541,6 +569,7 @@ def main(args):
     raw_histo_filename = output_path + 'raw_histo.pk'
     amplitude_histo_filename = output_path + 'amplitude_histo.pk'
     charge_histo_filename = output_path + 'charge_histo.pk'
+    max_histo_filename = output_path + 'max_histo.pk'
     results_filename = output_path + 'fit_results.h5'
 
     integral_width = int(args['--integral_width'])
@@ -564,6 +593,27 @@ def main(args):
 
         raw_histo.save(raw_histo_filename)
         baseline = raw_histo.mode()
+
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                          max_events=max_events)
+
+        # events = compute_baseline_with_min(events)
+        events = fill_baseline(events, baseline)
+        events = subtract_baseline(events)
+        events = find_pulse_with_max(events)
+        events = compute_charge(events, integral_width, shift)
+
+        max_histo = Histogram1D(
+                            data_shape=(n_pixels,),
+                            bin_edges=np.arange(-200, 4096 * integral_width, 1),
+                            axis_name='[LSB]'
+                        )
+
+        for event in tqdm(events, total=max_events):
+
+            max_histo.fill(event.data.reconstructed_charge)
+
+        max_histo.save(max_histo_filename)
 
         events = calibration_event_stream(files,
                                           max_events=max_events,
@@ -651,10 +701,12 @@ def main(args):
         spe_charge = Histogram1D.load(charge_histo_filename)
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
         raw_histo = Histogram1D.load(raw_histo_filename)
+        max_histo = Histogram1D.load(max_histo_filename)
 
         spe_charge.draw(index=(0, ), log=True)
         spe_amplitude.draw(index=(0, ), log=True)
         raw_histo.draw(index=(0, ), log=True)
+        max_histo.draw(index=(0, ), log=True)
         plt.show()
 
         parameters = pd.HDFStore(results_filename, mode='r')
