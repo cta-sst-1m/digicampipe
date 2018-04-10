@@ -199,9 +199,7 @@ class Classifier(object):
                 feed_dict={self.x: data, self.label: classes_train,
                            self.is_train: True}
             )
-            print('label:', label.shape, label.dtype)
-            print('classes_train:', classes_train.shape, classes_train.dtype)
-            accuracy = (classes_train == label) / batch_size
+            accuracy = np.sum(classes_train == label) / batch_size
             losses_train.append(loss)
             accuracies_train.append(accuracy)
             del data
@@ -215,7 +213,7 @@ class Classifier(object):
                     feed_dict={self.x: data_val, self.label: classes_val,
                            self.is_train: False}
                 )
-                accuracy = (classes_val == label_val) / batch_size
+                accuracy = np.sum(classes_val == label_val) / batch_size
                 print('iter', it + 1, '/', max_iter, ',',
                       'loss=%.1f (%.1f+%.1f)' % (loss, loss_class, loss_reg),
                       '\tvalidation_loss=%.1f' % loss_val,
