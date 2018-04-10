@@ -37,7 +37,8 @@ def baseline_simtel(event_stream):
             n_pixels = event.inst.num_pixels[telescope_id]
             r0_camera = event.r0.tel[telescope_id]
             r0_camera.baseline = (event.mc.tel[telescope_id].pedestal[0]
-                                 / event.r0.tel[telescope_id].num_samples)
+                                  / event.r0.tel[telescope_id].num_samples
+                                  )
             # standard_deviation should be set up manualy and it should be
             # probably equal to value of 'fadc_noise' variable from simtel
             # configuration file

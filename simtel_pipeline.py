@@ -14,10 +14,11 @@ import simtel_baseline
 import events_image
 import mc_shower
 
-#from digicamviewer.viewer import EventViewer
+# from digicamviewer.viewer import EventViewer
 
 from optparse import OptionParser
 import os
+
 
 def files(path):
     for file in os.listdir(path):
@@ -80,9 +81,9 @@ if __name__ == '__main__':
             run = fi[run_ind:][:run_ind2]
             run_n = int(run[3:])
 
-            if (string1 in fi and '___cta-prod3-sst-dc-' in fi
-                and run_n <= options.high_run_no
-                and run_n >= options.low_run_no):
+            if (string1 in fi and '___cta-prod3-sst-dc-' in fi and
+                run_n <= options.high_run_no and
+                run_n >= options.low_run_no):
                 print(fi)
                 file_list.append(directory + fi)
 
@@ -177,7 +178,7 @@ if __name__ == '__main__':
         n_bins1=options.baseline_end)
 
     # data_stream = simtel_baseline.baseline_simtel(data_stream)
- 
+
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
 
@@ -238,7 +239,7 @@ if __name__ == '__main__':
         data_stream=data_stream,
         n_showers=n_showers,
         output_filename=directory + hillas_filename)
-    #save_hillas_parameters_in_text(
+    # save_hillas_parameters_in_text(
     #    data_stream=data_stream,
     #    output_filename=directory + hillas_filename)
 
