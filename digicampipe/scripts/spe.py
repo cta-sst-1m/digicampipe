@@ -3,22 +3,22 @@
 Do the Single Photoelectron anaylsis
 
 Usage:
-  spe.py [options] [FILE] [INPUT ...]
+  spe.py [options] [OUTPUT] [INPUT ...]
 
 Options:
-  -h --help               Show this screen.
-  --max_events=N          Maximum number of events to analyse
-  -o FILE --output=FILE.  Output file.
-  -i INPUT --input=INPUT. Input files.
-  -c --compute            Compute the data.
-  -f --fit                Fit.
-  -d --display            Display.
-  -v --debug              Enter the debug mode.
-  -p --pixel=<PIXEL>      Give a list of pixel IDs.
-  --shift=N               number of bins to shift before integrating
-                          [default: 0].
-  --integral_width=N      number of bins to integrate over
-                          [default: 7].
+  -h --help                   Show this screen.
+  --max_events=N              Maximum number of events to analyse
+  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+  -i INPUT --input=INPUT.     Input files.
+  -c --compute                Compute the data.
+  -f --fit                    Fit.
+  -d --display                Display.
+  -v --debug                  Enter the debug mode.
+  -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  --shift=N                   number of bins to shift before integrating
+                              [default: 0].
+  --integral_width=N          number of bins to integrate over
+                              [default: 7].
 '''
 import os
 from docopt import docopt
@@ -122,24 +122,6 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     return minuit.values, minuit.errors
 
 
-def build_raw_data_histogram(events):
-
-    for count, event in tqdm(enumerate(events)):
-
-        if count == 0:
-
-            n_pixels = len(event.pixel_id)
-            adc_histo = Histogram1D(
-                data_shape=(n_pixels, ),
-                bin_edges=np.arange(0, 4095, 1),
-                axis_name='[LSB]'
-            )
-
-        adc_histo.fill(event.data.adc_samples)
-
-    return CalibrationHistogramContainer().from_histogram(adc_histo)
-
-
 def fill_histogram(events, id, histogram):
 
     for event in events:
@@ -154,6 +136,15 @@ def fill_electronic_baseline(events):
     for event in events:
 
         event.data.baseline = event.histo[0].mode
+
+        yield event
+
+
+def fill_baseline(events, baseline):
+
+    for event in events:
+
+        event.data.baseline = baseline
 
         yield event
 
@@ -475,31 +466,6 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
     return m.values, m.errors, params_init, param_bounds
 
 
-def build_spe(events):
-
-    for i, event in tqdm(enumerate(events)):
-
-        if i == 0:
-
-            n_pixels = len(event.pixel_id)
-
-            spe_charge = Histogram1D(
-                data_shape=(n_pixels,),
-                bin_edges=np.arange(-20, 500, 1)
-            )
-            spe_amplitude = Histogram1D(data_shape=(n_pixels,),
-                                        bin_edges=np.arange(-20, 200, 1))
-
-        spe_charge.fill(event.data.reconstructed_charge)
-        spe_amplitude.fill(event.data.reconstructed_amplitude)
-
-    spe_charge = CalibrationHistogramContainer().from_histogram(spe_charge)
-    spe_amplitude = CalibrationHistogramContainer().from_histogram(
-        spe_amplitude)
-
-    return spe_charge, spe_amplitude
-
-
 def save_container(container, filename, group_name, table_name):
 
     with HDF5TableWriter(filename, mode='a', group_name=group_name) as h5:
@@ -537,7 +503,7 @@ def _convert_pixel_args(text):
 
     else:
 
-        pixel_id = [...]
+        pixel_id = np.arange(1296)
 
     return pixel_id
 
@@ -559,89 +525,102 @@ def main(args):
 
     files = args['INPUT']
     debug = args['--debug']
-    telescope_id = 1
+    telescope_id = 22
 
     max_events = _convert_max_events_args(args['--max_events'])
-    output_file = args['FILE']
+    output_path = args['OUTPUT']
+
+    if not os.path.exists(output_path):
+
+        raise IOError('Path for output does not exists \n')
+
     pixel_id = _convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
+
+    raw_histo_filename = output_path + 'raw_histo.pk'
+    amplitude_histo_filename = output_path + 'amplitude_histo.pk'
+    charge_histo_filename = output_path + 'charge_histo.pk'
+    results_filename = output_path + 'fit_results.h5'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
 
     if args['--compute']:
 
-        if not os.path.exists(output_file):
-
-            events = calibration_event_stream(files,
+        events = calibration_event_stream(files,
                                               telescope_id=telescope_id,
                                               pixel_id=pixel_id,
                                               max_events=max_events)
-            raw_histo = build_raw_data_histogram(events)
-            save_container(raw_histo, output_file, 'histo', 'raw_lsb')
 
-            events = calibration_event_stream(files,
-                                              telescope_id=telescope_id,
-                                              max_events=max_events,
-                                              pixel_id=pixel_id)
+        raw_histo = Histogram1D(
+                            data_shape=(n_pixels,),
+                            bin_edges=np.arange(0, 4096, 1),
+                            axis_name='[LSB]'
+                        )
 
-            events = fill_histogram(events, 0, raw_histo)
-            events = fill_electronic_baseline(events)
-            events = subtract_baseline(events)
-            # events = find_pulse_1(events, 0.5, 20)
-            # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-            events = find_pulse_3(events)
+        for event in tqdm(events, total=max_events):
 
-            events = compute_charge(
-                events,
-                integral_width=integral_width,
-                shift=shift
-            )
-            events = compute_amplitude(events)
-            # events = fit_template(events)
+            raw_histo.fill(event.data.adc_samples)
 
-            if debug:
-                events = plot_event(events, 0)
+        raw_histo.save(raw_histo_filename)
+        baseline = raw_histo.mode()
 
-            spe_charge, spe_amplitude = build_spe(events)
+        events = calibration_event_stream(files,
+                                          telescope_id=telescope_id,
+                                          max_events=max_events,
+                                          pixel_id=pixel_id)
 
-            save_container(spe_charge, output_file, 'histo', 'spe_charge')
-            save_container(
-                spe_amplitude,
-                output_file,
-                'histo',
-                'spe_amplitude')
+        events = fill_baseline(events, baseline)
+        events = subtract_baseline(events)
+        # events = find_pulse_1(events, 0.5, 20)
+        # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
+        events = find_pulse_3(events)
 
-        else:
+        events = compute_charge(
+            events,
+            integral_width=integral_width,
+            shift=shift
+        )
+        events = compute_amplitude(events)
+        # events = fit_template(events)
 
-            raise IOError('File {} already exists'.format(output_file))
+        if debug:
+            events = plot_event(events, 0)
+
+        spe_charge = Histogram1D(
+            data_shape=(n_pixels,),
+            bin_edges=np.arange(-20, 500, 1)
+        )
+        spe_amplitude = Histogram1D(data_shape=(n_pixels,),
+                                    bin_edges=np.arange(-20,
+                                                        200,
+                                                        1))
+
+        for i, event in tqdm(enumerate(events), total=max_events):
+
+            spe_charge.fill(event.data.reconstructed_charge)
+            spe_amplitude.fill(event.data.reconstructed_amplitude)
+
+        spe_charge.save(charge_histo_filename)
+        spe_amplitude.save(amplitude_histo_filename)
 
     if args['--fit']:
 
-        with HDF5TableReader(output_file) as h5_table:
-
-            spe_charge = h5_table.read('/histo/spe_charge',
-                                        CalibrationHistogramContainer())
-            spe_amplitude = h5_table.read('/histo/spe_amplitude',
-                                           CalibrationHistogramContainer())
-
-            spe_charge = next(spe_charge).to_histogram()
-            spe_amplitude = next(spe_amplitude).to_histogram()
+        spe_charge = Histogram1D.load(charge_histo_filename)
+        spe_amplitude = Histogram1D.load(amplitude_histo_filename)
 
         spes = [spe_charge, spe_amplitude]
         names = ['charge', 'amplitude']
 
-        spe_amplitude.draw(index=(0, ), log=True)
-
         for name, spe in zip(names, spes):
 
             results = SPEResultContainer()
-            spe.draw(index=(0, ), log=True)
-            plt.show()
 
-            with HDF5TableWriter(output_file, 'analysis_' + name, mode='a') as h5:
+            table_name = 'analysis_' + name
 
-                for i, pixel in tqdm(enumerate(pixel_id)):
+            with HDF5TableWriter(results_filename, table_name, mode='a') as h5:
+
+                for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
 
                     try:
 
@@ -670,24 +649,16 @@ def main(args):
 
     if args['--display']:
 
-        with HDF5TableReader(output_file, mode='r') as h5:
+        spe_charge = Histogram1D.load(charge_histo_filename)
+        spe_amplitude = Histogram1D.load(amplitude_histo_filename)
+        raw_histo = Histogram1D.load(raw_histo_filename)
 
-            for node in h5._h5file.iter_nodes('/histo'):
-
-                histo_path = node._v_name
-                histo_path = '/histo/' + histo_path
-
-                histo = CalibrationHistogramContainer()
-
-                for _, event in zip(range(1), h5.read(histo_path, histo)):
-
-                    histo = event.to_histogram()
-
-                histo.draw(index=(0, ), log=True)
-
+        spe_charge.draw(index=(0, ), log=True)
+        spe_amplitude.draw(index=(0, ), log=True)
+        raw_histo.draw(index=(0, ), log=True)
         plt.show()
 
-        parameters = pd.HDFStore(output_file, mode='r')
+        parameters = pd.HDFStore(results_filename, mode='r')
         parameters = parameters['analysis/spe_param']
         n_entries = 0
 
@@ -713,26 +684,6 @@ def main(args):
         plt.figure()
         plt.hist(dark_count, bins='auto', log=True)
         plt.xlabel('dark count rate [GHz]')
-
-        # with HDF5TableReader('spe_analysis.hdf5') as h5_table:
-
-        #     spe_charge = h5_table.read('/histo/spe_charge',
-        #                                       CalibrationHistogramContainer())
-
-        #     spe_amplitude = h5_table.read('/histo/spe_amplitude',
-        #                                           CalibrationHistogramContainer())
-
-        #    # raw_histo = h5_table.read('/histo/raw_lsb', CalibrationHistogramContainer())
-
-        #     spe_charge = convert_container_to_histogram(next(spe_charge))
-        #    # raw_histo = convert_container_to_histogram(next(raw_histo))
-        #     spe_amplitude = convert_container_to_histogram(next(spe_amplitude))
-
-        spe_charge = Histogram1D.load('temp_10000.pk')
-
-        # raw_histo.draw(index=(10, ))
-        spe_charge.draw(index=(10, ), log=True)
-        # spe_amplitude.draw(index=(10, ))
 
         plt.show()
 
