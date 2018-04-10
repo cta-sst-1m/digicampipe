@@ -645,7 +645,7 @@ def main(args):
                     except PeakNotFound as e:
 
                         print(e)
-                        print('Could not fit for pixel_id : {}'.format(pixel_id))
+                        print('Could not fit for pixel_id : {}'.format(pixel))
 
     if args['--display']:
 
