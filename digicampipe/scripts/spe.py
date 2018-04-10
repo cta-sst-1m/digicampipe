@@ -38,11 +38,11 @@ import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
-from ctapipe.io import HDF5TableWriter, HDF5TableReader
+from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.io.containers_calib import SPEResultContainer, CalibrationHistogramContainer
+from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 from digicampipe.utils.utils import get_pulse_shape
 
@@ -300,7 +300,8 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12):
             t = time[left:right]
 
             where_baseline = np.arange(adc_samples.shape[-1])
-            where_baseline = (where_baseline < left) + (where_baseline >= right)
+            where_baseline = (where_baseline < left) + \
+                             (where_baseline >= right)
             where_baseline = adc_samples[pulse_index[0]][where_baseline]
 
             baseline_0 = np.mean(where_baseline)
@@ -401,7 +402,7 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
             if right == left:
                 right = right + 1
 
-            val = np.sum(y[left:right]) # peaks_y[i]
+            val = np.sum(y[left:right])
 
         init_params['a_{}'.format(i+1)] = val
 
@@ -549,10 +550,8 @@ def main(args):
 
     if args['--compute']:
 
-        events = calibration_event_stream(files,
-                                              telescope_id=telescope_id,
-                                              pixel_id=pixel_id,
-                                              max_events=max_events)
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                          max_events=max_events)
 
         raw_histo = Histogram1D(
                             data_shape=(n_pixels,),
@@ -572,8 +571,7 @@ def main(args):
                                           max_events=max_events,
                                           pixel_id=pixel_id)
 
-        events = fill_histogram(events, 0, raw_histo)
-        events = fill_electronic_baseline(events)
+        events = fill_baseline(events, baseline)
         events = subtract_baseline(events)
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
@@ -627,8 +625,8 @@ def main(args):
 
                     try:
 
-                        params, params_err, params_init, params_bound = fit_spe(
-                            spe._bin_centers(),
+                        params, params_err, params_init, params_bound = \
+                            fit_spe(spe._bin_centers(),
                             spe.data[i],
                             spe.errors(index=i), snr=3, debug=debug)
 

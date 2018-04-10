@@ -19,30 +19,21 @@ Options:
   -v --debug              Enter the debug mode.
   -p --pixel=<PIXEL>      Give a list of pixel IDs.
 '''
-import os
 from docopt import docopt
 from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks_cwt
-import scipy
-import pandas as pd
-from scipy.ndimage.filters import convolve1d
 
 import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
-from ctapipe.io import HDF5TableWriter, HDF5TableReader
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.io.containers_calib import SPEResultContainer, \
-    CalibrationHistogramContainer, CalibrationContainer
 from histogram.histogram import Histogram1D
-from digicampipe.utils.utils import get_pulse_shape
-from digicampipe.scripts.spe import compute_charge, compute_amplitude, subtract_baseline
+from digicampipe.scripts.spe import compute_charge, compute_amplitude, \
+    subtract_baseline
 from digicampipe.utils.pdf import fmpe_pdf_10
 
 
@@ -123,9 +114,9 @@ def entry():
 
         if args['--time']:
 
-            events = calibration_event_stream(input_files, telescope_id=1,
-                                          max_events=max_events,
-                                          pixel_id=pixel_id)
+            events = calibration_event_stream(input_files,
+                                              max_events=max_events,
+                                              pixel_id=pixel_id)
 
             time_histo = Histogram1D(bin_edges=np.arange(0, 100, 1),
                                      data_shape=(len(pixel_id), ))
@@ -147,7 +138,7 @@ def entry():
             time_histo = Histogram1D.load(time_histo_filename)
             peak_position = time_histo.mode()
 
-            events = calibration_event_stream(input_files, telescope_id=1,
+            events = calibration_event_stream(input_files,
                                               max_events=max_events,
                                               pixel_id=pixel_id)
 
@@ -174,9 +165,9 @@ def entry():
             peak_position = time_histo.mode()
             baseline = dark_histo.mean()
 
-            events = calibration_event_stream(input_files, telescope_id=1,
-                                          max_events=max_events,
-                                          pixel_id=pixel_id)
+            events = calibration_event_stream(input_files,
+                                              max_events=max_events,
+                                              pixel_id=pixel_id)
 
             events = fill_peak_position(events, peak_position=peak_position)
             events = fill_baseline(events, baseline)
@@ -232,7 +223,7 @@ def compute_limit_fmpe(init_params):
         if key[:2] == 'a_':
 
             limit_params['limit_{}'.format(key)] = (0.5 * val,
-                                                    val * 1.5 )
+                                                    val * 1.5)
 
     return limit_params
 
@@ -249,11 +240,11 @@ def compute_init_fmpe(x, y, yerr, thres=0.08, min_dist=5):
 
     if len(peak_indices) <= 1:
 
-       raise PeakNotFound('Not enough peak found for : \n '
-                          'threshold : {} \t'
-                          'min distance : {} \n'
-                          'Need a least 2 peaks, found {}!!'.
-                          format(thres, min_dist, len(peak_indices)))
+        raise PeakNotFound('Not enough peak found for : \n'
+                           ' threshold : {} \t '
+                           'min distance : {} \n '
+                           'Need a least 2 peaks, found {}!!'.
+                           format(thres, min_dist, len(peak_indices)))
 
     x_peak = x[peak_indices]
     y_peak = y[peak_indices]

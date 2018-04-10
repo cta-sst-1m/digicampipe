@@ -11,8 +11,8 @@ def gaussian(x, mean, sigma, amplitude):
     return pdf
 
 
-def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, a_0=0, a_1=0, a_2=0, a_3=0
-                , a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
+def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, a_0=0, a_1=0, a_2=0,
+                a_3=0, a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
 
     params = {'baseline': baseline,
               'gain': gain,
