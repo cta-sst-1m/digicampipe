@@ -559,7 +559,6 @@ def main(args):
 
     files = args['INPUT']
     debug = args['--debug']
-    telescope_id = 1
 
     max_events = _convert_max_events_args(args['--max_events'])
     output_file = args['FILE']
@@ -575,14 +574,12 @@ def main(args):
         if not os.path.exists(output_file):
 
             events = calibration_event_stream(files,
-                                              telescope_id=telescope_id,
                                               pixel_id=pixel_id,
                                               max_events=max_events)
             raw_histo = build_raw_data_histogram(events)
             save_container(raw_histo, output_file, 'histo', 'raw_lsb')
 
             events = calibration_event_stream(files,
-                                              telescope_id=telescope_id,
                                               max_events=max_events,
                                               pixel_id=pixel_id)
 

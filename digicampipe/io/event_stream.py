@@ -47,7 +47,7 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
             yield event
 
 
-def calibration_event_stream(path, telescope_id,
+def calibration_event_stream(path,
                              pixel_id=[...],
                              max_events=None):
     """
@@ -57,8 +57,7 @@ def calibration_event_stream(path, telescope_id,
 
     container = CalibrationContainer()
     for event in event_stream(path, max_events=max_events):
-        r0_event = event.r0.tel[telescope_id]
-
+        r0_event = list(event.r0.tel.values())[0]
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
         container.data.adc_samples = r0_event.adc_samples[pixel_id]
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
