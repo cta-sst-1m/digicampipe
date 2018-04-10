@@ -191,27 +191,27 @@ class Classifier(object):
         iter_val = []
         accuracies_val = []
         for it in range(max_iter):
-            data, labels = self.get_batch(batch_size)
+            data, classes_train = self.get_batch(batch_size)
             # training
             _, loss, loss_class, loss_reg, label = self.sess.run(
                 [train_step, self.loss, self.loss_class, self.loss_reg,
                  self.label_predictions],
-                feed_dict={self.x: data, self.label:labels, self.is_train: True}
+                feed_dict={self.x: data, self.label: classes_train,
+                           self.is_train: True}
             )
-            accuracy = (class_batch == label) / batch_size
+            accuracy = (classes_train == label) / batch_size
             losses_train.append(loss)
             accuracies_train.append(accuracy)
             del data
             if it % print_every == 0:
-                data_val, classes_val = self.data.get_batch(
+                data_val, classes_val = self.get_batch(
                     batch_size,
                     n_sample=self.t_size,
                     type_set='val'
                 )
                 loss_val, label_val = self.sess.run(
                     self.loss, self.label_predictions,
-                    feed_dict={self.x: data_val['data'],
-                               self.is_train: False}
+                    feed_dict={self.x: data_val, self.is_train: False}
                 )
                 accuracy = (classes_val == label_val) / batch_size
                 print('iter', it + 1, '/', max_iter, ',',
@@ -293,10 +293,10 @@ def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
 
 
 def main():
-    kernel_size = (5, 5, 5)
+    kernel_size = (4, 4, 4)
     learning_rate = 1e-3
     batch_size = 50
-    n_epoch = 1
+    n_epoch = 20
     regularizer_scale = 1e-3
     n_filter = 128
     print('\n######## MAIN ##########\n')
