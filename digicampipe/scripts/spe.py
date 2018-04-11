@@ -661,7 +661,8 @@ def entry():
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
         # events = find_pulse_3(events, threshold=pulse_finder_threshold)
-        events = find_pulse_gaussian_filter(events, threshold=2)
+        events = find_pulse_gaussian_filter(events,
+                                            threshold=pulse_finder_threshold)
 
         events = compute_charge(
             events,
