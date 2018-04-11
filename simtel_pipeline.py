@@ -5,7 +5,6 @@ Example:
   ./simtel_pipeline.py \
   --outfile_path=./ \
   --outfile_suffix=gamma_ze00_az000 \
-  --camera_config=./digicampipe/tests/resources/camera_config.cfg \
   --picture_threshold=15 \
   --boundary_threshold=7 \
   --baseline0=9 \
@@ -20,7 +19,6 @@ Options:
   -h --help     Show this screen.
   -o <path>, --outfile_path=<path>  path to the output files
   -s <name>, --outfile_suffix=<name>    suffix of the output files
-  -c <path>, --camera_config=<path> camera config file to load Camera()
   -i <int>, --picture_threshold     [default: 15]
   -b <int>, --boundary_threshold    [default: 7]
   -d <int>, --baseline0             [default: 9]
@@ -31,12 +29,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from digicampipe.io.event_stream import event_stream
-from digicampipe.utils import geometry
-from cts_core.camera import Camera
-from digicampipe.utils import utils
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
+from digicampipe.io.save_hillas import (
+    save_hillas_parameters_in_text,
     save_hillas_parameters
-
+)
 from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
 from digicampipe.utils import utils, calib
 import simtel_baseline
@@ -46,23 +42,7 @@ from docopt import docopt
 
 
 def main(args):
-
-    # Input/Output files
-    digicam_config_file = args['--camera_config']
-
     dark_baseline = None
-
-    # Source coordinates (in camera frame)
-    source_x = 0. * u.mm
-    source_y = 0. * u.mm
-
-    # Camera and Geometry objects
-    # (mapping, pixel, patch + x,y coordinates pixels)
-    digicam = Camera(_config_file=digicam_config_file)
-    digicam_geometry = geometry.generate_geometry_from_camera(
-                        camera=digicam,
-                        source_x=source_x,
-                        source_y=source_y)
 
     # Noisy pixels not taken into account in Hillas
     pixel_not_wanted = [
@@ -109,10 +89,7 @@ def main(args):
     reclean = True
 
     # Define the event stream
-    data_stream = event_stream(
-        args['<files>'],
-        camera_geometry=digicam_geometry,
-        camera=digicam)
+    data_stream = event_stream(args['<files>'])
 
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
