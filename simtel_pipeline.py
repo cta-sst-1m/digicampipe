@@ -26,6 +26,7 @@ Options:
   -d <int>, --baseline0             [default: 9]
   -e <int>, --baseline1             [default: 15]
   --min_photon <int>     Filtering on big showers [default: 50]
+  --display     Display rather than output data
 '''
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,6 +35,7 @@ from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
 from digicampipe.utils import utils
+
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
     save_hillas_parameters
 
@@ -43,7 +45,7 @@ import simtel_baseline
 import events_image
 import mc_shower
 from docopt import docopt
-
+from digicampipe.visualization import EventViewer
 
 def main(args):
 
@@ -189,28 +191,24 @@ def main(args):
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
 
-    # Save Hillas
-    hillas_filename = 'hillas_' + suffix
-    save_hillas_parameters(
-        data_stream=data_stream,
-        n_showers=n_showers,
-        output_filename=args['--outfile_path'] + hillas_filename)
-    # save_hillas_parameters_in_text(
-    #    data_stream=data_stream,
-    #    output_filename=args['outfile_path'] + hillas_filename)
 
-    """
-    # To be added when 'fail_nicely' branch of digicamviewer is in master
-    with plt.style.context('ggplot'):
-        display = EventViewer(
-            data_stream,
-            n_samples=50,
-            camera_config_file=digicam_config_file,
-            scale='lin',
-        )
+    if args['--display']:
+
+        with plt.style.context('ggplot'):
+            display = EventViewer(data_stream)
         display.draw()
-        pass
-    """
+
+    else:
+        # Save Hillas
+        hillas_filename = 'hillas_' + suffix
+        save_hillas_parameters(
+            data_stream=data_stream,
+            n_showers=n_showers,
+            output_filename=args['--outfile_path'] + hillas_filename)
+        # save_hillas_parameters_in_text(
+        #    data_stream=data_stream,
+        #    output_filename=args['outfile_path'] + hillas_filename)
+
 
     """
     import matplotlib.pyplot as plt
