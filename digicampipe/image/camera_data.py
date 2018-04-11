@@ -525,4 +525,4 @@ if __name__ == '__main__':
         mc=True
     )
     """
-    plot_hists(proton_datafile, mc=True)
+    plot_hists(gamma_datafile, mc=True)
