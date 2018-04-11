@@ -41,7 +41,15 @@ import mc_shower
 from docopt import docopt
 
 
-def main(args):
+def main(
+    files,
+    picture_threshold,
+    boundary_threshold,
+    baseline0,
+    baseline1,
+    outfile_suffix,
+    outfile_path,
+):
     dark_baseline = None
 
     # Noisy pixels not taken into account in Hillas
@@ -77,8 +85,6 @@ def main(args):
         peak_position)
 
     # Image cleaning configuration
-    picture_threshold = args['--picture_threshold']
-    boundary_threshold = args['--boundary_threshold']
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
@@ -89,7 +95,7 @@ def main(args):
     reclean = True
 
     # Define the event stream
-    data_stream = event_stream(args['<files>'])
+    data_stream = event_stream(files)
 
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
@@ -113,8 +119,10 @@ def main(args):
     # 2018, where an error for DC coupled simulations was corrected.
 
     data_stream = simtel_baseline.baseline_data(
-        data_stream, n_bins0=args['--baseline0'],
-        n_bins1=args['--baseline1'])
+        data_stream,
+        n_bins0=baseline0,
+        n_bins1=baseline1
+    )
 
     # data_stream = simtel_baseline.baseline_simtel(data_stream)
 
@@ -132,20 +140,17 @@ def main(args):
     # Return only showers with total number of p.e. above min_photon
     data_stream = filter.filter_shower(data_stream, min_photon=min_photon)
 
-    # Suffix for output filenames
-    suffix = args['--outfile_suffix']
-
     # Save cleaned events - pixels and corresponding values
     filename_pix = 'pixels.txt'
-    filename_eventsimage = 'events_image_' + suffix + '.txt'
+    filename_eventsimage = 'events_image_' + outfile_suffix + '.txt'
     data_stream = events_image.save_events(
-        data_stream, args['--outfile_path'] + filename_pix,
-        args['--outfile_path'] + filename_eventsimage)
+        data_stream, outfile_path + filename_pix,
+        outfile_path + filename_eventsimage)
 
     # Save simulated shower paramters
-    filename_showerparam = 'pipedmc_param_' + suffix + '.txt'
+    filename_showerparam = 'pipedmc_param_' + outfile_suffix + '.txt'
     data_stream = mc_shower.save_shower(
-        data_stream, args['--outfile_path'] + filename_showerparam)
+        data_stream, outfile_path + filename_showerparam)
 
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(
@@ -153,28 +158,28 @@ def main(args):
         shower_distance=shower_distance)
 
     # Save arrival times of photons in pixels passed cleaning
-    filename_timing = 'timing_' + suffix + '.txt'
+    filename_timing = 'timing_' + outfile_suffix + '.txt'
     data_stream = events_image.save_timing(
-        data_stream, args['--outfile_path'] + filename_timing)
+        data_stream, outfile_path + filename_timing)
 
     # Save mean baseline in event pixels
     filename_baseline = (
-                         'baseline_' + suffix +
-                         '_bas' + str(args['--baseline0']).zfill(2) +
-                         str(args['--baseline1']).zfill(2) + '.txt'
+                         'baseline_' + outfile_suffix +
+                         '_bas' + str(baseline0).zfill(2) +
+                         str(baseline1).zfill(2) + '.txt'
                          )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
 
     # Save Hillas
-    hillas_filename = 'hillas_' + suffix
+    hillas_filename = 'hillas_' + outfile_suffix
     save_hillas_parameters(
         data_stream=data_stream,
         n_showers=n_showers,
-        output_filename=args['--outfile_path'] + hillas_filename)
+        output_filename=outfile_path + hillas_filename)
     # save_hillas_parameters_in_text(
     #    data_stream=data_stream,
-    #    output_filename=args['outfile_path'] + hillas_filename)
+    #    output_filename=outfile_path + hillas_filename)
 
     """
     # To be added when 'fail_nicely' branch of digicamviewer is in master
@@ -253,9 +258,12 @@ if __name__ == '__main__':
 
     args = docopt(__doc__)
     print(args)
-    args['--min_photon'] = int(args['--min_photon'])
-    args['--picture_threshold'] = int(args['--picture_threshold'])
-    args['--boundary_threshold'] = int(args['--boundary_threshold'])
-    args['--baseline0'] = int(args['--baseline0'])
-    args['--baseline1'] = int(args['--baseline1'])
-    main(args)
+    main(
+        files=args['<files>'],
+        picture_threshold=int(args['--picture_threshold']),
+        boundary_threshold=int(args['--boundary_threshold']),
+        baseline0=int(args['--baseline0']),
+        baseline1=int(args['--baseline1']),
+        outfile_suffix=args['--outfile_suffix'],
+        outfile_path=args['--outfile_path'],
+    )
