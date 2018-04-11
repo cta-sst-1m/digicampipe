@@ -73,9 +73,14 @@ def hessio_get_list_event_ids(url, max_events=None):
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry, camera, max_events=None,
-                        allowed_tels=None, requested_event=None,
-                        use_event_id=False):
+def hessio_event_source(
+    url,
+    camera=utils.DigiCam,
+    max_events=None,
+    allowed_tels=None,
+    requested_event=None,
+    use_event_id=False
+):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
 
@@ -83,6 +88,7 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None,
     ----------
     url : str
         path to file to open
+    camera : utils.Camera() default: utils.DigiCam
     max_events : int, optional
         maximum number of events to read
     allowed_tels : list[int]
@@ -174,7 +180,7 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None,
             data.dl1.tel.clear()
             data.mc.tel.clear()  # clear the previous telescopes
 
-            _fill_instrument_info(data, pyhessio_file, camera_geometry, camera)
+            _fill_instrument_info(data, pyhessio_file, camera)
 
             for tel_id in data.r0.tels_with_data:
 
@@ -231,7 +237,7 @@ def hessio_event_source(url, camera_geometry, camera, max_events=None,
                 return
 
 
-def _fill_instrument_info(data, pyhessio_file, camera_geometry, camera):
+def _fill_instrument_info(data, pyhessio_file, camera):
     """
     fill the data.inst structure with instrumental information.
 
@@ -273,7 +279,7 @@ def _fill_instrument_info(data, pyhessio_file, camera_geometry, camera):
                 data.inst.mirror_dish_area[tel_id] = mirror_area
                 data.inst.mirror_numtiles[tel_id] = num_tiles
 
-                geometry = camera_geometry
+                geometry = camera.geometry
                 patch_matrix = \
                     utils.geometry.compute_patch_matrix(camera=camera)
                 cluster_7_matrix = \
