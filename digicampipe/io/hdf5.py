@@ -1,16 +1,16 @@
-import warnings
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
+import numpy as np
 
 __all__ = ['digicamtoy_event_source']
 
 
 def digicamtoy_event_source(
     url,
-    camera=None,
-    camera_geometry=None,
-    max_events=None
+    camera=utils.DigiCam,
+    max_events=None,
+    chunk_size=150,
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
@@ -19,42 +19,20 @@ def digicamtoy_event_source(
         path to file to open
     max_events : int, optional
         maximum number of events to read
-    camera : utils.Camera() or None for DigiCam
-    camera_geometry: soon to be deprecated
+    camera : utils.Camera() default: utils.DigiCam
     """
-    if camera is None:
-        camera = utils.DigiCam
 
-    if camera_geometry is not None:
-        warnings.warn(
-            "camera_geometry will soon be deprecated, use utils.Camera",
-            FutureWarning
-        )
-        geometry = camera_geometry
-    else:
-        geometry = camera.geometry
-
+    data = DataContainer()
     hdf5 = h5py.File(url, 'r')
 
-    if not isinstance(camera, utils.Camera):
-        warnings.warn(
-            "camera should be utils.Camera not cts_core.camera.Camera",
-            FutureWarning
-        )
-
-        patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
-        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
-        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
-    else:
-        patch_matrix = camera.patch_matrix
-        cluster_7_matrix = camera.cluster_7_matrix
-        cluster_19_matrix = camera.cluster_19_matrix
-    data = DataContainer()
-    n_pixels, n_samples, n_events = hdf5['data']['adc_count'].shape
+    full_data_set = hdf5['data']['adc_count']
+    n_events, n_pixels, n_samples = full_data_set.shape
 
     if max_events is None:
 
         max_events = n_events
+
+    max_events = min(max_events, n_events)
 
     for event_id in range(max_events):
 
@@ -63,21 +41,32 @@ def digicamtoy_event_source(
 
         for tel_id in data.r0.tels_with_data:
 
-            if event_id < 1:
+            if event_id == 0:
 
                 data.inst.num_channels[tel_id] = 1
                 data.inst.num_pixels[tel_id] = n_pixels
-                data.inst.geom[tel_id] = geometry
-                data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
-                data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
-                data.inst.patch_matrix[tel_id] = patch_matrix
+                data.inst.geom[tel_id] = camera.geometry
+                data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = camera.patch_matrix
                 data.inst.num_samples[tel_id] = n_samples
 
+            if (event_id % chunk_size) == 0:
+
+                index_in_chunk = 0
+                chunk_start = (event_id // chunk_size) * chunk_size
+                chunk_end = chunk_start + chunk_size
+                chunk_end = min(chunk_end, n_events)
+                adc_count = full_data_set[chunk_start:chunk_end]
+
             data.r0.tel[tel_id].camera_event_number = event_id
-            data.r0.tel[tel_id].local_camera_clock = event_id
+            data.r0.tel[tel_id].local_camera_clock = None
             data.r0.tel[tel_id].gps_time = event_id
-            data.r0.tel[tel_id].event_type_1 = None
-            data.r0.tel[tel_id].event_type_2 = None
-            data.r0.tel[tel_id].adc_samples = hdf5['data']['adc_count'][..., event_id]
+            data.r0.tel[tel_id].camera_event_type = None
+            data.r0.tel[tel_id].array_event_type = None
+            data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
+            baseline = np.ones(data.r0.tel[tel_id].adc_samples.shape[:-1]) * np.nan
+            data.r0.tel[tel_id].digicam_baseline = baseline
+            index_in_chunk += 1
 
         yield data

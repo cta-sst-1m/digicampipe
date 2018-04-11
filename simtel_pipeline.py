@@ -1,3 +1,33 @@
+#!/usr/bin/env python
+'''
+
+Example:
+  ./simtel_pipeline.py \
+  --outfile_path=./ \
+  --outfile_suffix=gamma_ze00_az000 \
+  --camera_config=./digicampipe/tests/resources/camera_config.cfg \
+  --picture_threshold=15 \
+  --boundary_threshold=7 \
+  --baseline0=9 \
+  --baseline1=15 \
+  ../sst1m_simulations/*simtel.gz
+
+Usage:
+  simtel_pipeline.py [options] <files>...
+
+
+Options:
+  -h --help     Show this screen.
+  -o <path>, --outfile_path=<path>  path to the output files
+  -s <name>, --outfile_suffix=<name>    suffix of the output files
+  -c <path>, --camera_config=<path> camera config file to load Camera()
+  -i <int>, --picture_threshold     [default: 15]
+  -b <int>, --boundary_threshold    [default: 7]
+  -d <int>, --baseline0             [default: 9]
+  -e <int>, --baseline1             [default: 15]
+  --min_photon <int>     Filtering on big showers [default: 50]
+  --display     Display rather than output data
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
@@ -5,6 +35,7 @@ from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import geometry
 from cts_core.camera import Camera
 from digicampipe.utils import utils
+
 from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
     save_hillas_parameters
 
@@ -13,57 +44,22 @@ from digicampipe.utils import utils, calib
 import simtel_baseline
 import events_image
 import mc_shower
+from docopt import docopt
+from digicampipe.visualization import EventViewer
 
-from optparse import OptionParser
-import os
-
-
-if __name__ == '__main__':
-
-    parser = OptionParser()
-    parser.add_option("-p", "--path", dest="directory",
-                      help="directory to data files",
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/')
-    parser.add_option("-o", "--output", dest="output",
-                      help="output filename", default="hillas", type=str)
-    parser.add_option('-c', "--camera_config",
-                      dest='camera_config_file',
-                      help='camera config file to load Camera()',
-                      default='digicampipe/tests/resources/camera_config.cfg')
-    parser.add_option('-i', "--picture_threshold", dest='picture_threshold',
-                      help='Picture threshold', default=15, type=int)
-    parser.add_option('-b', "--boundary_threshold", dest='boundary_threshold',
-                      help='Boundary threshold', default=7, type=int)
-    parser.add_option('-z', "--zenit", dest='zenit_angle',
-                      help='Zenit distance, THETAP',
-                      default=0, type=int)
-    parser.add_option('-a', "--azimut", dest='azimut', help='Azimut, PHIP',
-                      default=0, type=int)
-    parser.add_option('-r', "--primary", dest='primary',
-                      help='Primary particle', default='gamma', type=str)
-    parser.add_option('-d', "--baseline0", dest='baseline_beginning',
-                      help='N bins from the beginning of the waveform for '
-                      'baseline calculation', type=int, default=9)
-    parser.add_option('-e', "--baseline1", dest='baseline_end',
-                      help='N bins from the end of the waveform for baseline '
-                      'calculation', type=int, default=15)
-
-    (options, args) = parser.parse_args()
+def main(
+    files,
+    outfile_path,
+    outfile_suffix,
+    picture_threshold=15,
+    boundary_threshold=7,
+    baseline0=9,
+    baseline1=15,
+    ):
 
     # Input/Output files
-    directory = options.directory
-    all_file_list = os.listdir(directory)
-    file_list = []
-    string1 = (options.primary + '_' + str(options.zenit_angle) +
-               'deg_' + str(options.azimut) + 'deg_')
-    print(string1)
-    for fi in all_file_list:
-        if (string1 in fi and '___cta-prod3-sst-dc-2150m--sst-dc' in fi and
-                '.simtel.gz' in fi):
-            print(fi)
-            file_list.append(directory + fi)
+    digicam_config_file = args['--camera_config']
 
-    digicam_config_file = options.camera_config_file
     dark_baseline = None
 
     # Source coordinates (in camera frame)
@@ -90,10 +86,10 @@ if __name__ == '__main__':
                                 'mask_edges': None,
                                 'peak': None,
                                 'window_start': 3,
-                                'window_width': 15,  # length of integration window
+                                'window_width': 7,  # length of integration window
                                 'threshold_saturation': np.inf,
                                 'n_samples': 50,
-                                'timing_width': 10,
+                                'timing_width': 6,
                                 'central_sample': 11}
 
     peak_position = utils.fake_timing_hist(
@@ -111,8 +107,6 @@ if __name__ == '__main__':
         peak_position)
 
     # Image cleaning configuration
-    picture_threshold = options.picture_threshold
-    boundary_threshold = options.boundary_threshold
     shower_distance = 200 * u.mm
 
     # Filtering on big showers
@@ -124,9 +118,10 @@ if __name__ == '__main__':
 
     # Define the event stream
     data_stream = event_stream(
-        filelist=file_list,
+        files,
         camera_geometry=digicam_geometry,
-        camera=digicam)
+        camera=digicam
+    )
 
     # Clean pixels
     data_stream = filter.set_pixels_to_zero(
@@ -144,13 +139,18 @@ if __name__ == '__main__':
     # Each pixel in each event has its own baseline
     #
     # simtel_baseline.baseline_simtel()
-    # Baseline is taken as simulated value event.mc.pedestal/50 that can
-    # be set up with the use of variable 'fadc_pedestal'
-    # in CTA-ULTRA6-SST-DC.cfg.
+    # Baseline is taken as a value reported by sim_telarray
+    # event.mc.tel[tel_id].pedestal/event.r0.tel[tel_id].num_samples.
+    # That should be OK for all sim_telarray version from April
+    # 2018, where an error for DC coupled simulations was corrected.
 
     data_stream = simtel_baseline.baseline_data(
-        data_stream, n_bins0=options.baseline_beginning,
-        n_bins1=options.baseline_end)
+            data_stream,
+            n_bins0=baseline0,
+            n_bins1=baseline1
+    )
+
+    # data_stream = simtel_baseline.baseline_simtel(data_stream)
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
@@ -166,26 +166,21 @@ if __name__ == '__main__':
     # Return only showers with total number of p.e. above min_photon
     data_stream = filter.filter_shower(data_stream, min_photon=min_photon)
 
-    # Suffix for output filenames
-    suffix = (
-              options.primary +
-              '_ze' + str(options.zenit_angle).zfill(2) +
-              '_az' + str(options.azimut).zfill(3) +
-              '_p' + str(options.picture_threshold).zfill(2) +
-              '_b' + str(options.boundary_threshold).zfill(2)
-             )
-
     # Save cleaned events - pixels and corresponding values
     filename_pix = 'pixels.txt'
-    filename_eventsimage = 'events_image_' + suffix + '.txt'
+    filename_eventsimage = 'events_image_' + outfile_suffix + '.txt'
     data_stream = events_image.save_events(
-        data_stream, directory + filename_pix,
-        directory + filename_eventsimage)
+        data_stream,
+        outfile_path + filename_pix,
+        outfile_path + filename_eventsimage
+    )
 
     # Save simulated shower paramters
-    filename_showerparam = 'pipedmc_param_' + suffix + '.txt'
+    filename_showerparam = 'pipedmc_param_' + outfile_suffix + '.txt'
     data_stream = mc_shower.save_shower(
-        data_stream, directory + filename_showerparam)
+        data_stream,
+        outfile_path + filename_showerparam
+    )
 
     # Run the dl2 calibration (Hillas)
     data_stream = dl2.calibrate_to_dl2(
@@ -193,28 +188,39 @@ if __name__ == '__main__':
         shower_distance=shower_distance)
 
     # Save arrival times of photons in pixels passed cleaning
-    filename_timing = 'timing_' + suffix + '.txt'
+    filename_timing = 'timing_' + outfile_suffix + '.txt'
     data_stream = events_image.save_timing(
-        data_stream, directory + filename_timing)
+        data_stream,
+        outfile_path + filename_timing
+    )
 
     # Save mean baseline in event pixels
     filename_baseline = (
-                         'baseline_' + suffix +
-                         '_bas' + str(options.baseline_beginning).zfill(2) +
-                         str(options.baseline_end).zfill(2) + '.txt'
+                         'baseline_' + outfile_suffix +
+                         '_bas' + str(baseline0).zfill(2) +
+                         str(baseline1).zfill(2) + '.txt'
                          )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
 
-    # Save Hillas
-    hillas_filename = options.output + '_' + suffix
-    save_hillas_parameters(
-        data_stream=data_stream,
-        n_showers=n_showers,
-        output_filename=directory + hillas_filename)
-    # save_hillas_parameters_in_text(
-    #    data_stream=data_stream,
-    #    output_filename=directory + hillas_filename)
+
+    if args['--display']:
+
+        with plt.style.context('ggplot'):
+            display = EventViewer(data_stream)
+        display.draw()
+
+    else:
+        # Save Hillas
+        hillas_filename = 'hillas_' + outfile_suffix
+        save_hillas_parameters(
+            data_stream=data_stream,
+            n_showers=n_showers,
+            output_filename=outfile_path + hillas_filename)
+        # save_hillas_parameters_in_text(
+        #    data_stream=data_stream,
+        #    output_filename=outfile_path + hillas_filename)
+
 
     """
     import matplotlib.pyplot as plt
@@ -275,3 +281,16 @@ if __name__ == '__main__':
 
         plt.show()
     """
+
+if __name__ == '__main__':
+
+    args = docopt(__doc__)
+    main(
+        files=args['<files>'],
+        picture_threshold=int(args['--picture_threshold']),
+        boundary_threshold=int(args['--boundary_threshold']),
+        baseline0=int(args['--baseline0']),
+        baseline1=int(args['--baseline1']),
+        outfile_suffix=args['--outfile_suffix'],
+        outfile_path=args['--outfile_path'],
+    )

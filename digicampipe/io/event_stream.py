@@ -1,9 +1,11 @@
 from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
+from digicampipe.io.containers_calib import CalibrationContainer
+import numpy as np
 
 
-def event_stream(filelist, source=None, **kwargs):
+def event_stream(filelist, source=None, max_events=None, **kwargs):
     '''Iterable of events in the form of `DataContainer`.
 
     Parameters
@@ -26,12 +28,41 @@ def event_stream(filelist, source=None, **kwargs):
     if isinstance(filelist, (str, bytes)):
         filelist = [filelist]
 
+    count = 0
+
+    if max_events is None:
+
+        max_events = np.inf
+
     for file in filelist:
         if source is None:
             source = guess_source_from_path(file)
         data_stream = source(url=file, **kwargs)
         for event in data_stream:
+
+            if count >= max_events:
+                raise StopIteration
+
+            count += 1
             yield event
+
+
+def calibration_event_stream(path,
+                             pixel_id=[...],
+                             max_events=None):
+    """
+    Event stream for the calibration of the camera based on the observation
+    event_stream()
+    """
+
+    container = CalibrationContainer()
+    for event in event_stream(path, max_events=max_events):
+        r0_event = list(event.r0.tel.values())[0]
+        container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
+        container.data.adc_samples = r0_event.adc_samples[pixel_id]
+        container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
+
+        yield container
 
 
 def guess_source_from_path(path):
