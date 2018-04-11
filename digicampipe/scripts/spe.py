@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks_cwt
 import scipy
 import pandas as pd
-from scipy.ndimage.filters import convolve1d
+from scipy.ndimage.filters import convolve1d, gaussian_filter1d
 
 import peakutils
 from iminuit import Minuit, describe
@@ -263,6 +263,26 @@ def find_pulse_with_max(events):
 
         arg_max = np.argmax(adc_samples, axis=-1)
         pulse_mask = (bins == arg_max[..., np.newaxis])
+        event.data.pulse_mask = pulse_mask
+
+        yield event
+
+
+def find_pulse_gaussian_filter(events, threshold=2, **kwargs):
+
+    for count, event in enumerate(events):
+
+        c = event.data.adc_samples
+        sigma = np.std(c)
+        c = gaussian_filter1d(c, sigma=sigma)
+        pulse_mask = np.zeros(c.shape, dtype=np.bool)
+
+        pulse_mask[:, 1:-1] = (
+            (c[:, :-2] <= c[:, 1:-1]) &
+            (c[:, 1:-1] >= c[:, 2:]) &
+            (c[:, 1:-1] > threshold)
+        )
+
         event.data.pulse_mask = pulse_mask
 
         yield event
@@ -640,7 +660,8 @@ def entry():
         events = subtract_baseline(events)
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        events = find_pulse_3(events, threshold=pulse_finder_threshold)
+        # events = find_pulse_3(events, threshold=pulse_finder_threshold)
+        events = find_pulse_gaussian_filter(events, threshold=2)
 
         events = compute_charge(
             events,
