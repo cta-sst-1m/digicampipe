@@ -43,12 +43,12 @@ from docopt import docopt
 
 def main(
     files,
-    picture_threshold,
-    boundary_threshold,
-    baseline0,
-    baseline1,
-    outfile_suffix,
     outfile_path,
+    outfile_suffix,
+    picture_threshold=15,
+    boundary_threshold=7,
+    baseline0=9,
+    baseline1=15,
 ):
     dark_baseline = None
 
