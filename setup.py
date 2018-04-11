@@ -18,7 +18,7 @@ setup(
         'digicampipe.instrument',
         'digicampipe.scripts',
     ],
-    url='https://github.com/calispac/digicampipe',
+    url='https://github.com/cta-sst-1m/digicampipe',
     license='GNU GPL 3.0',
     author='Cyril Alispach',
     author_email='cyril.alispach@gmail.com',
@@ -44,7 +44,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'digicamview=digicampipe.scripts.digicamview:entry',
+            'digicam-view=digicampipe.scripts.digicamview:entry',
+            'digicam-spe=digicampipe.scripts.spe:entry',
+
         ],
     }
 )

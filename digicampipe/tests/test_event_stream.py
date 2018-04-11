@@ -41,3 +41,14 @@ def test_event_source_new_style():
 
     for _ in event_stream(example_file_path):
         pass
+
+
+def test_event_source_speed_100_events(benchmark):
+
+    @benchmark
+    def func():
+        for _, i in zip(event_stream(example_file_path), range(100)):
+
+            pass
+
+        assert i == 99
