@@ -1,30 +1,4 @@
 #!/usr/bin/env python
-'''
-
-Example:
-  ./simtel_pipeline.py \
-  --outfile_path=./ \
-  --outfile_suffix=gamma_ze00_az000 \
-  --picture_threshold=15 \
-  --boundary_threshold=7 \
-  --baseline0=9 \
-  --baseline1=15 \
-  ../sst1m_simulations/*simtel.gz
-
-Usage:
-  simtel_pipeline.py [options] <files>...
-
-
-Options:
-  -h --help     Show this screen.
-  -o <path>, --outfile_path=<path>  path to the output files
-  -s <name>, --outfile_suffix=<name>    suffix of the output files
-  -i <int>, --picture_threshold     [default: 15]
-  -b <int>, --boundary_threshold    [default: 7]
-  -d <int>, --baseline0             [default: 9]
-  -e <int>, --baseline1             [default: 15]
-  --min_photon <int>     Filtering on big showers [default: 50]
-'''
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
@@ -38,9 +12,10 @@ from digicampipe.utils import utils, calib
 import simtel_baseline
 import events_image
 import mc_shower
-from docopt import docopt
+from commandr import command, Run, SetOptions
 
 
+@command('main')
 def main(
     files,
     outfile_path,
@@ -255,15 +230,5 @@ def main(
     """
 
 if __name__ == '__main__':
-
-    args = docopt(__doc__)
-    print(args)
-    main(
-        files=args['<files>'],
-        picture_threshold=int(args['--picture_threshold']),
-        boundary_threshold=int(args['--boundary_threshold']),
-        baseline0=int(args['--baseline0']),
-        baseline1=int(args['--baseline1']),
-        outfile_suffix=args['--outfile_suffix'],
-        outfile_path=args['--outfile_path'],
-    )
+    SetOptions(main='main')
+    Run()
