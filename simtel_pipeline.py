@@ -5,7 +5,6 @@ Example:
   ./simtel_pipeline.py \
   --outfile_path=./ \
   --outfile_suffix=gamma_ze00_az000 \
-  --camera_config=./digicampipe/tests/resources/camera_config.cfg \
   --picture_threshold=15 \
   --boundary_threshold=7 \
   --baseline0=9 \
