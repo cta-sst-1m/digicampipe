@@ -7,6 +7,7 @@ mpl_use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
 import tensorflow as tf
+import re
 
 from digicampipe.image.camera_data import CameraData
 
@@ -251,6 +252,40 @@ class Classifier(object):
         classes = np.hstack(classes)
         scores = np.vstack(scores)
         return [classes, scores]
+
+
+def load_classifier(model_path):
+    model_filename = os.path.basename(model_path)
+    if not model_filename.startswith('classifier_conv3d_'):
+        print('ERROR:', model_filename, 'is not a classifier !')
+        return None
+    mc_gamma_file = os.path.join('/home/reniery/prog/digicampipe/' +
+        'autoencoder/gamma_data_mc.fits')
+    mc_proton_file = os.path.join('/home/reniery/prog/digicampipe/' +
+        'autoencoder/proton_data_mc.fits')
+    m = re.search(r'classifier_conv3d_(?P<kernel>[0-9x]+)_(?P<lr>[\d\.e\-\+]+)_(?P<batch_size>\d+)_(?P<n_epoch>\d+)(_(?P<reg>[\d\.]+))?(_(?P<n_filter>\d+))?\.ckpt', model_filename)
+    if m is None:
+        print('ERROR:', model_filename, 'do no match the regexp')
+        return None
+    kernel_str = m.group('kernel')
+    kernel_size = tuple(int(s) for s in kernel_str.split('x'))
+    lr = float(m.group('lr'))
+    batch_size = int(m.group('batch_size'))
+    n_epoch = int(m.group('n_epoch'))
+    reg = float(m.group('reg'))
+    n_filter = int(m.group('n_filter'))
+    mc_gamma = CameraData(mc_gamma_file, mc=True)
+    mc_proton = CameraData(mc_proton_file, mc=True)
+    model = Classifier(
+        [mc_gamma, mc_proton],
+        classes=['gamma', 'proton'],
+        model_path=model_path,
+        kernel_size=kernel_size,
+        n_sample=48,
+        regularizer_scale=reg,
+        n_filter=n_filter
+    )
+    return model
 
 
 def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
