@@ -192,8 +192,6 @@ class Classifier(object):
         accuracies_val = []
         for it in range(max_iter):
             data, classes_train = self.get_batch(batch_size)
-            print('fraction of 1st class:',
-                  np.sum(classes_train == 0) / len(classes_train))
             # training
             _, loss, loss_class, loss_reg, label = self.sess.run(
                 [train_step, self.loss, self.loss_class, self.loss_reg,
@@ -230,13 +228,29 @@ class Classifier(object):
         return losses_train, accuracies_train, losses_val, iter_val, \
             accuracies_val
 
-    def classify(self, type_set='val', batch_size=100):
-        data, classes = self.get_batch(batch_size, type_set=type_set)
-        scores = self.sess.run(
-            self.scores,
-            feed_dict={self.x: data, self.is_train: False}
-        )
-        return [data, classes, scores]
+    def classify(self, type_set='val', batch_size=100, n_sample=10000):
+        classes = []
+        scores = []
+        remaining_samples = n_sample
+        while remaining_samples > 0:
+            if remaining_samples > batch_size:
+                size = batch_size
+            else:
+                size = remaining_samples
+            data_batch, classes_batch = self.get_batch(
+                size, type_set=type_set
+            )
+            scores_batch = self.sess.run(
+                self.scores,
+                feed_dict={self.x: data_batch, self.is_train: False}
+            )
+            print(np.ceil(remaining_samples / batch_size), 'batches remaining')
+            classes.append(classes_batch)
+            scores.append(scores_batch)
+            remaining_samples -= size
+        classes = np.hstack(classes)
+        scores = np.vstack(scores)
+        return [classes, scores]
 
 
 def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
@@ -289,17 +303,17 @@ def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
         fig, ax1 = plt.subplots()
         ax1.plot(losses_train, 'b-')
         ax1.plot(iter_val, losses_val, 'b--')
-        ax1.ylim([1, 1e4])
+        ax1.ylim([1, 20])
         ax1.xlabel('iterations')
         ax1.ylabel('loss', color='b')
         ax1.tick_params('y', colors='b')
         ax2 = ax1.twinx()
         ax2.plot(accuracies_train, 'r-')
         ax2.plot(iter_val, accuracies_val, 'r--')
-        ax2.ylim([1, 1e4])
+        ax2.ylim([1, 100])
         ax2.xlabel('')
         ax2.ylabel('accuracy (%)', color='r')
-        ax1.tick_params('y', colors='r')
+        ax2.tick_params('y', colors='r')
         plt.savefig('models/classifier_loss_' + opt_str + '.png')
 
 
@@ -307,7 +321,7 @@ def main():
     kernel_size = (4, 4, 4)
     learning_rate = 1e-3
     batch_size = 100
-    n_epoch = 2
+    n_epoch = 20
     regularizer_scale = 1e-3
     n_filter = 128
     print('\n######## MAIN ##########\n')
