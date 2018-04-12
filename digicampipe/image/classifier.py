@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from digicampipe.image.camera_data import CameraData
 
-__all__ = ["Classifier",]
+__all__ = ["Classifier", 'train']
 
 
 class Classifier(object):
@@ -74,10 +74,10 @@ class Classifier(object):
         else:
             self.regularizer = None
         self.logits = self._create_model(self.x, n_class)
-        one_hot = tf.one_hot(self.label, n_class)
-        print('one_hot:', one_hot.shape)
+        self.one_hot = tf.one_hot(self.label, n_class)
+        print('one_hot:', self.one_hot.shape)
         self.loss_class = tf.losses.softmax_cross_entropy(
-            one_hot, self.logits,
+            self.one_hot, self.logits,
             reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
         )
         self.loss_reg = tf.reduce_sum(
@@ -192,6 +192,8 @@ class Classifier(object):
         accuracies_val = []
         for it in range(max_iter):
             data, classes_train = self.get_batch(batch_size)
+            print('fraction of 1st class:',
+                  np.sum(classes_train == 0) / len(classes_train))
             # training
             _, loss, loss_class, loss_reg, label = self.sess.run(
                 [train_step, self.loss, self.loss_class, self.loss_reg,
@@ -227,6 +229,14 @@ class Classifier(object):
         print('model saved in', model_path)
         return losses_train, accuracies_train, losses_val, iter_val, \
             accuracies_val
+
+    def classify(self, type_set='val', batch_size=100):
+        data, classes = self.get_batch(batch_size, type_set=type_set)
+        scores = self.sess.run(
+            self.scores,
+            feed_dict={self.x: data, self.is_train: False}
+        )
+        return [data, classes, scores]
 
 
 def train(kernel_size=(3, 3, 3), learning_rate=1e-2,
