@@ -5,7 +5,7 @@ from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 from matplotlib.widgets import Button, RadioButtons, CheckButtons
 import matplotlib
 
-from . import mpl as visualization
+import ctapipe.visualization.mpl as visualization
 from ..utils import DigiCam
 
 
