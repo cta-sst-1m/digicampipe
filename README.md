@@ -50,18 +50,11 @@ your prompt should look similar to this this:
 
     (digicampipe) username@host:~/ctasoft$
 
-    pip install -r digicampipe/requirements.txt
     pip install -e digicampipe
+    pytest digicampipe
 
-Finally change into the digicampipe directory.
 
-    cd digicampipe
-
-## Tests
-
-Run the tests on your machine:
-
-    pytest
+## All Tests
 
 Some tests depend on astrometry.net (see below) and take long, so by default you might want to skip them.
 If you want to execute all tests, please do:
