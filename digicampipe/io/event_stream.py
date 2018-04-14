@@ -2,6 +2,8 @@ from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
 from digicampipe.io.containers_calib import CalibrationContainer
+import numpy as
+from tqdm import tqdm
 import numpy as np
 
 
@@ -27,14 +29,14 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
     # This is not clean but convenient.
     if isinstance(filelist, (str, bytes)):
         filelist = [filelist]
-
+    n_files = len(filelist)
     count = 0
 
     if max_events is None:
 
         max_events = np.inf
 
-    for file in filelist:
+    for file in tqdm(filelist, total=n_files):
         if source is None:
             source = guess_source_from_path(file)
         data_stream = source(url=file, **kwargs)

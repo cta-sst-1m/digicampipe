@@ -88,3 +88,10 @@ def single_photoelectron_pdf(x, baseline, gain,
     pdf /= np.sqrt(2 * np.pi)
 
     return pdf
+
+
+def log_spe(x, baseline, gain, sigma_e, sigma_s,
+                             a_1, a_2, a_3, a_4):
+
+    return np.log(single_photoelectron_pdf(x, baseline, gain, sigma_e, sigma_s,
+                             a_1, a_2, a_3, a_4))

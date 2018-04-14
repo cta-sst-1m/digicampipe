@@ -22,6 +22,7 @@ Options:
   --pulse_finder_threshold=F  threshold of pulse finder in arbitrary units
                               [default: 2.0].
   --save_figures              Save the plots to the OUTPUT folder
+  --n_samples=N               Number of samples per waveform
 
 '''
 import os
@@ -41,7 +42,7 @@ from probfit import Chi2Regression
 
 from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
+from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf, log_spe
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
@@ -57,24 +58,18 @@ def compute_dark_rate(number_of_zeros, total_number_of_events, time):
     return rate
 
 
-def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
+def compute_gaussian_parameters_first_peak(bins, count, snr=4, debug=False):
 
     temp = count.copy()
     mask = ((count / np.sqrt(count)) > snr) * (count > 0)
     temp[~mask] = 0
     peak_indices = scipy.signal.argrelmax(temp, order=4)[0]
 
-    if not len(peak_indices) > 0:
+    if not len(peak_indices) > 1:
 
         raise PeakNotFound('Could not detect enough peaks in the histogram\n'
                            'N_peaks found : {} \n '
                            'SNR : {} \n'.format(len(peak_indices), snr))
-
-    if len(peak_indices) == 1:
-
-        mask = (count > 0) * (bins < bins[peak_indices[0]])
-        val = np.argmin(count[mask])
-        peak_indices = np.insert(peak_indices, 0, val)
 
     x_peaks = np.array(bins[peak_indices])
 
@@ -82,7 +77,7 @@ def compute_gaussian_parameters_highest_peak(bins, count, snr=4, debug=False):
     peak_distance = np.mean(peak_distance) // 2
     peak_distance = peak_distance.astype(np.int)
 
-    highest_peak_index = np.argmax(count)
+    highest_peak_index = peak_indices[0]
 
     highest_peak_range = np.arange(-peak_distance, peak_distance + 1)
     highest_peak_range += highest_peak_index
@@ -412,10 +407,11 @@ def spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
 
 def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
 
-    init_params = compute_gaussian_parameters_highest_peak(x, y, snr=snr,
-                                                           debug=debug)[0]
+    init_params = compute_gaussian_parameters_first_peak(x, y, snr=snr,
+                                                         debug=debug)[0]
     del init_params['mean'], init_params['amplitude']
     init_params['baseline'] = 0
+
 
     if sigma_e is None:
 
@@ -423,9 +419,13 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
         init_params['sigma_e'] = init_params['sigma_s']
 
     else:
-
         init_params['sigma_s'] = init_params['sigma'] ** 2 - sigma_e ** 2
-        init_params['sigma_s'] = np.sqrt(init_params['sigma_s'])
+        if init_params['sigma_s'] > 0:
+
+            init_params['sigma_s'] = np.sqrt(init_params['sigma_s'])
+        else:
+            init_params['sigma_s'] = init_params['sigma']
+
         init_params['sigma_e'] = sigma_e
 
     del init_params['sigma']
@@ -468,9 +468,10 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
     return init_params
 
 
-def fit_spe(x, y, y_err, snr=4, debug=False):
+def fit_spe(x, y, y_err, sigma_e, snr=4, debug=False):
 
-    params_init = compute_fit_init_param(x, y, snr=snr, debug=debug)
+    params_init = compute_fit_init_param(x, y, snr=snr, sigma_e=sigma_e,
+                                         debug=debug)
 
     mask = x > (params_init['baseline'] + params_init['gain'] / 2)
     mask *= y > 0
@@ -487,27 +488,28 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
     ]
 
     values = [
-        (0, params_init['gain']/2),
-        (0, 2 * params_init['gain']),
-        (0, 2 * params_init['sigma_e']),
-        (0, 2 * params_init['sigma_s']),
-        (0, n_entries),
-        (0, n_entries),
-        (0, n_entries),
-        (0, n_entries),
+        (- 0.5 * params_init['gain'], 1.5 * params_init['gain'] ),
+        (0.5 * params_init['gain'], 1.5 * params_init['gain']),
+        (0.5 * params_init['sigma_e'], 1.5 * params_init['sigma_e']),
+        (0.5 * params_init['sigma_s'], 1.5 * params_init['sigma_s']),
+        (0.5 * params_init['a_1'], 1.5 * params_init['a_1']),
+        (0.5 * params_init['a_2'], 1.5 * params_init['a_2']),
+        (0, params_init['a_2']),
+        (0, params_init['a_2']),
         ]
 
     param_bounds = dict(zip(keys, values))
 
     chi2 = Chi2Regression(single_photoelectron_pdf, x, y, y_err)
+    # chi2 = Chi2Regression(log_spe, x, np.log(y), np.log(y_err))
     m = Minuit(
         chi2,
         **params_init,
         **param_bounds,
         print_level=0,
-        pedantic=False
+        pedantic=False,
     )
-    m.migrad()
+    m.migrad(nsplit=5, ncall=30000)
 
     '''
     try:
@@ -521,7 +523,7 @@ def fit_spe(x, y, y_err, snr=4, debug=False):
         plt.figure()
         plt.plot(x, y)
         plt.plot(x, single_photoelectron_pdf(x, **m.values))
-        print(m.values, m.errors)
+        print(m.values, m.errors, m.fval)
         plt.show()
 
     return m.values, m.errors, params_init, param_bounds
@@ -605,12 +607,13 @@ def entry():
     results_filename = output_path + 'fit_results.h5'
     dark_count_rate_filename = output_path + 'dark_count_rate.npz'
     crosstalk_filename = output_path + 'crosstalk.npz'
+    electronic_noise_filename = output_path + 'electronic_noise.npz'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
-    n_samples = 50  # TODO access this in a better way !
+    n_samples = int(args['--n_samples'])# TODO access this in a better way !
 
     if args['--compute']:
 
@@ -699,6 +702,7 @@ def entry():
         max_histo = Histogram1D.load(max_histo_filename)
 
         dark_count_rate = np.zeros(n_pixels) * np.nan
+        electronic_noise = np.zeros(n_pixels) * np.nan
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
 
@@ -713,10 +717,10 @@ def entry():
 
             try:
 
-                val, err = compute_gaussian_parameters_highest_peak(x,
-                                                                    y,
-                                                                    snr=3,
-                                                                    )
+                val, err = compute_gaussian_parameters_first_peak(x,
+                                                                  y,
+                                                                  snr=3,
+                                                                  )
 
                 number_of_zeros = val['amplitude']
                 window_length = 4 * n_samples
@@ -724,6 +728,7 @@ def entry():
                                          n_entries,
                                          window_length)
                 dark_count_rate[pixel] = rate
+                electronic_noise[pixel] = val['sigma']
 
             except Exception as e:
 
@@ -732,6 +737,7 @@ def entry():
                 print(e)
 
         np.savez(dark_count_rate_filename, dcr=dark_count_rate)
+        np.savez(electronic_noise_filename, electronic_noise)
 
         spe = spe_charge
         name = 'charge'
@@ -750,10 +756,12 @@ def entry():
                     x = spe._bin_centers()
                     y = spe.data[i]
                     y_err = spe.errors(index=i)
-                    n_entries = np.sum(y)
+                    sigma_e = electronic_noise[i]
+                    sigma_e = sigma_e if not np.isnan(sigma_e) else None
 
                     params, params_err, params_init, params_bound = \
-                        fit_spe(x, y, y_err, snr=3, debug=debug)
+                        fit_spe(x, y, y_err, sigma_e=sigma_e,
+                                snr=3, debug=debug)
 
                     for key, val in params.items():
 
@@ -768,7 +776,13 @@ def entry():
 
                         h5.write('spe_' + key, val)
 
+                    n_entries = params['a_1']
+                    n_entries += params['a_2']
+                    n_entries += params['a_3']
+                    n_entries += params['a_4']
                     crosstalk[pixel] = (n_entries - params['a_1']) / n_entries
+                    print(crosstalk[pixel])
+                    print(params['sigma_e'])
 
                 except Exception as e:
 
@@ -831,36 +845,54 @@ def entry():
         raw_histo.draw(index=(0, ), log=True, legend=False)
         max_histo.draw(index=(0, ), log=True, legend=False)
 
-        df = pd.HDFStore(results_filename, mode='r')
-        parameters = df['analysis_charge/spe_param']
-        parameters_error = df['analysis_charge/spe_param_errors']
+        try:
+            df = pd.HDFStore(results_filename, mode='r')
+            parameters = df['analysis_charge/spe_param']
+            parameters_error = df['analysis_charge/spe_param_errors']
 
-        dark_count_rate = np.load(dark_count_rate_filename)['dcr']
-        crosstalk = np.load(crosstalk_filename)['arr_0']
+            dark_count_rate = np.load(dark_count_rate_filename)['dcr']
+            crosstalk = np.load(crosstalk_filename)['arr_0']
+        except FileNotFoundError:
+
+            plt.show()
+            exit()
+
+
+
+        label = 'mean : {:2f} \n std : {:2f}'
 
         for key, val in parameters.items():
 
             fig = plt.figure()
             axes = fig.add_subplot(111)
-            axes.hist(val, bins='auto')
+            axes.hist(val, bins='auto', label=label.format(np.mean(val),
+                                                           np.std(val)))
             axes.set_xlabel(key + ' []')
             axes.set_ylabel('count []')
+            axes.legend(loc='best')
 
-            fig = plt.figure()
-            axes = fig.add_subplot(111)
-            axes.hist(parameters_error[key])
-            axes.set_xlabel(key + '_error' + ' []')
-            axes.set_ylabel('count []')
+            # fig = plt.figure()
+            # axes = fig.add_subplot(111)
+            # axes.hist(parameters_error[key])
+            # axes.set_xlabel(key + '_error' + ' []')
+            # axes.set_ylabel('count []')
+
+        crosstalk = crosstalk[np.isfinite(crosstalk)]
+        dark_count_rate = dark_count_rate[np.isfinite(dark_count_rate)]
 
         plt.figure()
-        plt.hist(crosstalk[np.isfinite(crosstalk)], bins='auto', log=True)
+        plt.hist(crosstalk, bins='auto', label=label.format(np.mean(crosstalk),
+                                                            np.std(crosstalk)))
         plt.xlabel('XT []')
+        plt.legend(loc='best')
 
         plt.figure()
         plt.hist(dark_count_rate[np.isfinite(dark_count_rate)],
                  bins='auto',
-                 log=True)
+                 label=label.format(np.mean(dark_count_rate),
+                                    np.std(dark_count_rate)))
         plt.xlabel('dark count rate [GHz]')
+        plt.legend(loc='best')
 
         plt.show()
 

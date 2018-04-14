@@ -14,7 +14,7 @@ def test_compute_gaussian_parameters_highest_peak():
 
     with pytest.raises(PeakNotFound):
 
-        spe.compute_gaussian_parameters_highest_peak(bins, count, snr)
+        spe.compute_gaussian_parameters_first_peak(bins, count, snr)
 
 
 @pytest.mark.xfail
