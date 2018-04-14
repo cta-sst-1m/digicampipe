@@ -852,8 +852,10 @@ def entry():
 
             dark_count_rate = np.load(dark_count_rate_filename)['dcr']
             crosstalk = np.load(crosstalk_filename)['arr_0']
-        except FileNotFoundError:
+        except FileNotFoundError as e:
 
+            print(e)
+            print('Could not find the analysis files !')
             plt.show()
             exit()
 
