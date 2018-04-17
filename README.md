@@ -5,8 +5,6 @@ The documentation can be found here: [Digicampipe documentation](https://cta-sst
 
 # Installation
 
-## Short Form
-
  * install Anaconda
  * `git clone https://github.com/cta-sst-1m/digicampipe`
  * `conda env create -f digicampipe/environment.yml`
