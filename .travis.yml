@@ -18,8 +18,10 @@ install:
 script:
 - pytest digicampipe
 - make -C docs/ html
-- pytest -c digicampipe/all_tests.ini
-  -if: TRAVIS_EVENT_TYPE = cron
+- |
+  if [ "${TRAVIS_EVENT_TYPE}" == "cron" ]; then
+    pytest -c digicampipe/all_tests.ini
+  fi
 env:
   global:
   - GITHUB_REPO: github.com/cta-sst-1m/digicampipe.git
