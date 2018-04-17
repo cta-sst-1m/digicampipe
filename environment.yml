@@ -93,3 +93,12 @@ dependencies:
   - travis-sphinx
   - peakutils==1.0.3
   - sphinx-automodapi
+  - https://github.com/cta-sst-1m/protozfitsreader/archive/v0.44.1b0.tar.gz
+  - -e git+https://github.com/cta-observatory/pyhessio.git#egg=pyhessio
+  - -e git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
+  - -e git+https://github.com/cta-observatory/ctapipe-extra.git#egg=ctapipe-extra
+  - -e git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
+  - -e git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
+  - https://github.com/calispac/histogram/archive/0.1.1.tar.gz
+  - -e git+https://github.com/iminuit/probfit.git#egg=probfit
+  - -e git+https://github.com/uvemas/ViTables.git#egg=vitables
