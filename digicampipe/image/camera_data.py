@@ -651,17 +651,18 @@ def main():
         display.draw()
         pass
     """
-    auto_encoder_file = os.path.join(
-        '/home/yves/ctasoft/digicampipe/digicampipe/tests/resources/',
-        'ae_conv3d_4x4x4_128_0.0002_50_100_0.01_64.ckpt'
+    proton_enc_dec_datafile = os.path.join(
+        '/home/yves/ctasoft/digicampipe/data',
+        'proton_data_mc_test_enc_dec.fits'
     )
-    auto_encoder = AutoEncoder(
-        proton_data,
-        auto_encoder_file,
-        kernel_size=(4, 4, 4),
-        n_out=128,
-        n_sample=48,
-        n_filter=64
+
+    proton_data_enc_dec = CameraData(
+        proton_enc_dec_datafile,
+        digicam_config_file=digicam_config_file_default,
+        min_adc=50,
+        print_every=50,
+        max_events=10000,
+        mc=True
     )
     fig1 = plt.figure()
     ax1, ax2, ax3, ax4 = fig1.subplots(2, 2)
@@ -681,12 +682,7 @@ def main():
         proton_data.display_event(i, hillas="original", ax=ax3)
         ax3.set_xlim([-500, 500])
         ax3.set_ylim([-500, 500])
-        geo_event = proton_data.get_geometry_event(i)
-        camera4 = CameraDisplay(geo_event, ax=ax4)
-        auto_encoded_data = auto_encoder.encode_decode(
-            proton_data._fits[i].data[:, :, :48].reshape([1, 48, 48, 48])
-        )
-        camera4.image = np.sum(auto_encoded_data, axis=2).flatten()
+        proton_data_enc_dec.display_event(i, hillas="original", ax=ax4)
         plt.pause(3)
 
     """
