@@ -269,7 +269,11 @@ class AutoEncoder(object):
             os.remove(output_fits_name)
         for i in range(n_events):
             event = input_fits[i]
-            data_enc_dec = self.encode_decode(event.data)
+            data_enc_dec = self.encode_decode(
+                event.data[:, :, :self.t_size].reshape(
+                    (1,self.h_size, self.v_size, self.t_size)
+                )
+            )
             fits.append(output_fits_name, data_enc_dec, event.header)
 
 
