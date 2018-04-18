@@ -16,7 +16,14 @@ from digicampipe.calib.camera import (
 )
 from digicampipe.utils import geometry
 from digicampipe.utils import utils
+from digicampipe.image.auto_encoder import AutoEncoder
 from digicampipe.image.cones_image import get_pixel_nvs
+from digicampipe.io.containers import DataContainer
+from digicamviewer.viewer import EventViewer
+from ctapipe.instrument import CameraGeometry
+from ctapipe.visualization import CameraDisplay
+from ctapipe.image import hillas_parameters
+
 import simtel_baseline
 
 __all__ = [
@@ -114,8 +121,8 @@ class CameraData(object):
         time_integration_options = {'mask': None,
                                     'mask_edges': None,
                                     'peak': None,
-                                    'window_start': 5,
-                                    'window_width': 45,
+                                    'window_start': 3,
+                                    'window_width': 15,
                                     'threshold_saturation': np.inf,
                                     'n_samples': 50,
                                     'timing_width': 10,
@@ -138,8 +145,8 @@ class CameraData(object):
         if self.unwanted_pixels:
             additional_mask[self.unwanted_pixels] = 0
             additional_mask = additional_mask > 0
-        picture_threshold = 15
-        boundary_threshold = 10
+        picture_threshold = 13
+        boundary_threshold = 7
         shower_distance = 200 * u.mm
         events_stream = event_stream(
             file_list=datafiles_list,
@@ -229,11 +236,11 @@ class CameraData(object):
         nvs = CameraData.get_pixels_pos_in_skew_base(
             self.digicam_config_file
         )
-        n_pixel_u, n_pixel_v = (np.max(nvs, axis=0) + 1).tolist()
+        n_pixel_u, n_pixel_v = (48, 48)
         pix_pos = np.array([self.geo.pix_x, self.geo.pix_y]).transpose()
-        image_x, image_y = (np.linspace(-504, 504, 48).reshape(-1, 1),
-                            np.linspace(-504, 504, 48))
-        # n_event, n_sample = self.get_data_size(datafiles_list)
+        image_x, image_y = np.meshgrid(np.linspace(-504, 504, n_pixel_u),
+                            np.linspace(-504, 504, n_pixel_v))
+        image_pos = np.array([image_x.flatten(), image_y.flatten()]).transpose()
         if os.path.isfile(filename):
             os.remove(filename)
         events_stream = self._new_event_stream(datafiles_list)
@@ -266,12 +273,30 @@ class CameraData(object):
                 hdr['EXTEND'] = True
             hillas = event.dl2.shower
             psi = hillas.psi.rad
-            rot_angle = psi + np.pi / 2
-            cen_x = hillas.cen_x.to(u.mm).value
-            cen_y = hillas.cen_y.to(u.mm).value
+            rot_angle = - psi
+            offset_x = hillas.cen_x.to(u.mm).value
+            offset_y = hillas.cen_y.to(u.mm).value
             hdr['rotation'] = (rot_angle, 'rotation applied in rad')
-            hdr['offset_x'] = (-cen_x, 'horizontal offset applied in mm')
-            hdr['offset_y'] = (-cen_y, 'vertical offset applied in mm')
+            hdr['offset_x'] = (offset_x, 'horizontal offset applied in mm')
+            hdr['offset_y'] = (offset_y, 'vertical offset applied in mm')
+            hdr['Hillas_cen_x'] = (hillas.cen_x.to(u.mm).value,
+                                   'Hillas cen_x in mm')
+            hdr['Hillas_cen_y'] = (hillas.cen_y.to(u.mm).value,
+                                   'Hillas cen_y in mm')
+            hdr['Hillas_length'] = (hillas.length.to(u.mm).value,
+                                   'Hillas length in mm')
+            hdr['Hillas_width'] = (hillas.width.to(u.mm).value,
+                                   'Hillas width in mm')
+            hdr['Hillas_r'] = (hillas.r.to(u.mm).value,
+                               'Hillas r in mm')
+            hdr['Hillas_phi'] = (hillas.phi.rad,
+                                 'Hillas phi in rad')
+            hdr['Hillas_psi'] = (hillas.psi.rad,
+                                 'Hillas psi in rad')
+            hdr['Hillas_miss'] = (hillas.miss.to(u.m).value,
+                                 'Hillas miss in m')
+            hdr['Hillas_skewness'] = hillas.skewness
+            hdr['Hillas_kurtosis'] = hillas.kurtosis
             baseline = r0.digicam_baseline
             if self.mc:
                 hdr['energy'] = (event.mc.energy.to(u.TeV).value,
@@ -286,22 +311,25 @@ class CameraData(object):
                                   'Height of first interaction in km')
             data_event = np.zeros([n_pixel_u, n_pixel_v, n_sample],
                                   dtype=np.int16)
-            pix_pos_translate = pix_pos - np.array([cen_x, cen_y])
-            pix_pos_transform = pix_pos_translate.dot(
+            image_pos_rotate = image_pos.dot(
                 np.array([[np.cos(rot_angle), np.sin(-rot_angle)],
                           [np.sin(rot_angle), np.cos(rot_angle)]])
             )
+            image_pos_transform = image_pos_rotate + np.array([offset_x, offset_y])
             for t in range(n_sample):
                 f_2d_interp = LinearNDInterpolator(
-                    np.vstack((pix_pos_transform[wanted_pixels],
-                               pix_pos_transform[self.unwanted_pixels])),
+                    np.vstack((pix_pos[wanted_pixels, :],
+                               pix_pos[self.unwanted_pixels, :])),
                     np.hstack((
                         adc_samples[wanted_pixels, t] -
                         baseline[wanted_pixels].reshape(-1),
                         np.zeros((n_unwanted_pixel,))
                     )),
                     fill_value=0)
-                data_event[:, :, t] = f_2d_interp(image_x, image_y)
+                data_t = f_2d_interp(
+                    image_pos_transform[:, 0],
+                    image_pos_transform[:, 1]).reshape(n_pixel_u, n_pixel_v)
+                data_event[:, :, t] = data_t
             event_loaded += 1
             fits.append(filename, data_event, hdr, verify=False)
             if event_loaded % print_every == 0:
@@ -396,6 +424,45 @@ class CameraData(object):
                 events[key][i] = event.header[key]
         return events
 
+    def get_original_hillas_event(self, event):
+        hdr = self._fits[event].header
+        return {
+            'cen_x': hdr['Hillas_cen_x'],
+            'cen_y': hdr['Hillas_cen_y'],
+            'length': hdr['Hillas_length'],
+            'width': hdr['Hillas_width'],
+            'r': hdr['Hillas_r'],
+            'phi': hdr['Hillas_phi'],
+            'psi': hdr['Hillas_psi'],
+            'miss': hdr['Hillas_miss'],
+            'skewness': hdr['Hillas_skewness'],
+            'kurtosis': hdr['Hillas_kurtosis'],
+        }
+
+    def get_geometry_event(self, event):
+        image_x = np.linspace(-504, 504, 48)
+        image_y = np.linspace(-504, 504, 48)
+        image_pos_x, image_pos_y = np.meshgrid(image_x, image_y)
+        image_pos = np.array(
+            [image_pos_x.flatten(), image_pos_y.flatten()]
+        ).transpose()
+        n_pixel = image_pos.shape[0]
+        pix_id = np.arange(n_pixel)
+        cam_id = self.geo.cam_id
+        rotation = self._fits[event].header['rotation']
+        offset_x = self._fits[event].header['offset_x']
+        offset_y = self._fits[event].header['offset_y']
+        image_rot = image_pos.dot(
+            np.array([[np.cos(rotation), np.sin(-rotation)],
+                        [np.sin(rotation), np.cos(rotation)]])
+        ) + np.array([offset_x, offset_y])
+        geom_event = CameraGeometry(
+            cam_id, pix_id, image_rot[:, 0] * u.mm, image_rot[:, 1] * u.mm,
+            None, 'rectangular', pix_rotation=-rotation*u.rad,
+            cam_rotation=0*u.rad
+        )
+        return geom_event
+
     def animate(self, batch_size=None, type_set='train'):
         events = self.get_batch(batch_size, type_set=type_set)
         animate(events['data'])
@@ -424,6 +491,45 @@ class CameraData(object):
         plt.ylabel('counts')
         plt.show()
 
+    def display_event(self, events, hillas=None, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        if len(np.shape(events)) == 0:
+            events = [events]
+        for event in events:
+            plt.cla()
+            geo_event = self.get_geometry_event(event)
+            camera = CameraDisplay(geo_event, ax=ax)
+            camera.image = np.sum(self._fits[event].data, axis=2).flatten()
+            if hillas == 'original':
+                hillas_params = self.get_original_hillas_event(event)
+                cen_x = hillas_params['cen_x']
+                cen_y = hillas_params['cen_y']
+                pos = np.array([cen_x, cen_y])
+                length = hillas_params['length']
+                width = hillas_params['width']
+                angle = hillas_params['psi']
+                asymmetry = 0  # hillas_params['???']
+                print(pos, length, width, angle, asymmetry)
+                camera.add_ellipse(pos, length*2, width*2, angle, asymmetry)
+            elif hillas == 'data':
+                hillas_params = hillas_parameters(
+                    self.get_geometry_event(event),
+                    camera.image
+                )
+                cen_x = hillas_params.cen_x.to(u.mm).value
+                cen_y = hillas_params.cen_y.to(u.mm).value
+                length = hillas_params.length.to(u.mm).value
+                width = hillas_params.width.to(u.mm).value
+                angle = hillas_params.psi.rad
+                asymmetry = 0  # hillas_params['???']
+                camera.add_ellipse([cen_x, cen_y], length, width, angle, asymmetry)
+            elif hillas is None:
+                pass
+            else:
+                raise SyntaxError('hillas must be "original", "data" or None')
+            camera.update()
+                #camera.add_colorbar()
 
 def create_file(camera_data, datafiles_list=None, max_events=None, mc=False,
                 print_every=100):
@@ -482,7 +588,7 @@ def plot_hists(camera_data, batch_size=None, type_set='train', mc=False):
     plt.show()
 
 
-if __name__ == '__main__':
+def main():
     # MC files from
     # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/
     mc_dir = '/home/yves/ctasoft/digicampipe/data/mc_simtel'
@@ -498,17 +604,18 @@ if __name__ == '__main__':
     # create_file(camera_data,
     #             print_every=10)
     proton_datafile = os.path.join('/home/yves/ctasoft/digicampipe/data',
-                                   'proton_data_mc.fits')
-    """
+                                   'proton_data_mc_test.fits')
+
     proton_data = CameraData(
         proton_datafile,
-        datafiles_list=mc_proton_files,
+        # datafiles_list=[mc_proton_files[0]],
         digicam_config_file=digicam_config_file_default,
         min_adc=50,
         print_every=50,
         max_events=10000,
         mc=True
     )
+    """
     show_file(proton_datafile, batch_size=10)
     del proton_data
     """
@@ -524,5 +631,78 @@ if __name__ == '__main__':
         max_events=10000,
         mc=True
     )
-    """
     plot_hists(gamma_datafile, mc=True)
+
+    digicam = Camera(_config_file=digicam_config_file_default)
+    digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
+    proton_stream_orig = event_stream(
+        file_list=mc_proton_files,
+        camera_geometry=digicam_geometry,
+        camera=digicam,
+        mc=True
+    )
+    with plt.style.context('ggplot'):
+        display = EventViewer(
+            proton_stream_orig,
+            n_samples=50,
+            camera_config_file=digicam_config_file_default,
+            scale='lin',
+        )
+        display.draw()
+        pass
+    """
+    auto_encoder_file = os.path.join(
+        '/home/yves/ctasoft/digicampipe/digicampipe/tests/resources/',
+        'ae_conv3d_4x4x4_128_0.0002_50_100_0.01_64.ckpt'
+    )
+    auto_encoder = AutoEncoder(
+        proton_data,
+        auto_encoder_file,
+        kernel_size=(4, 4, 4),
+        n_out=128,
+        n_sample=48,
+        n_filter=64
+    )
+    fig1 = plt.figure()
+    ax1, ax2, ax3, ax4 = fig1.subplots(2, 2)
+    proton_stream = proton_data._new_event_stream([mc_proton_files[0]])
+    camera1 = CameraDisplay(proton_data.geo, ax=ax1)
+    camera2 = CameraDisplay(proton_data.geo, ax=ax2)
+    for i, event in enumerate(proton_stream):
+        camera1.image = np.sum(event.r0.tel[1].adc_samples, axis=1)
+        camera1.update()
+        ax1.set_xlim([-500, 500])
+        ax1.set_ylim([-500, 500])
+        camera2.image = event.dl1.tel[1].pe_samples
+        camera2.overlay_moments(event.dl2.shower)
+        camera2.update()
+        ax2.set_xlim([-500, 500])
+        ax2.set_ylim([-500, 500])
+        proton_data.display_event(i, hillas="original", ax=ax3)
+        ax3.set_xlim([-500, 500])
+        ax3.set_ylim([-500, 500])
+        geo_event = proton_data.get_geometry_event(i)
+        camera4 = CameraDisplay(geo_event, ax=ax4)
+        auto_encoded_data = auto_encoder.encode_decode(
+            proton_data._fits[i].data[:, :, :48].reshape([1, 48, 48, 48])
+        )
+        camera4.image = np.sum(auto_encoded_data, axis=2).flatten()
+        plt.pause(3)
+
+    """
+    proton_stream = proton_data.create_data_stream()
+    with plt.style.context('ggplot'):
+        display = EventViewer(
+            proton_stream,
+            n_samples=50,
+            camera_config_file=digicam_config_file_default,
+            scale='lin',
+        )
+        display.draw()
+        pass
+"""
+
+
+if __name__ == '__main__':
+    main()
+
