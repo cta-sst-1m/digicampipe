@@ -7,6 +7,7 @@ mpl_use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
 import tensorflow as tf
+from astropy.io import fits
 
 from digicampipe.image.camera_data import CameraData
 
@@ -259,6 +260,17 @@ class AutoEncoder(object):
         batch_size = x.shape[0]
         assert(x_encoded.shape == (batch_size, self.n_out))
         return x_decoded, loss, weights
+
+    def encode_decode_to_fits(self, output_fits_name, input_fits=None):
+        if input_fits is None:
+            input_fits = self.data._fits
+        n_events = len(input_fits)
+        if os.path.isfile(output_fits_name):
+            os.remove(output_fits_name)
+        for i in range(n_events):
+            event = input_fits[i]
+            data_enc_dec = self.encode_decode(event.data)
+            fits.append(output_fits_name, data_enc_dec, event.header)
 
 
 def train(kernel_size=(3, 3, 3), n_out=512, learning_rate=1e-2, 
