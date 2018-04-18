@@ -16,7 +16,6 @@ from digicampipe.calib.camera import (
 )
 from digicampipe.utils import geometry
 from digicampipe.utils import utils
-from digicampipe.image.auto_encoder import AutoEncoder
 from digicampipe.image.cones_image import get_pixel_nvs
 from digicampipe.io.containers import DataContainer
 from digicamviewer.viewer import EventViewer
