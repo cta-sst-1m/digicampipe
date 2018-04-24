@@ -5,7 +5,16 @@ The documentation can be found here: [Digicampipe documentation](https://cta-sst
 
 # Installation
 
-## Anaconda
+ * install Anaconda
+ * `git clone https://github.com/cta-sst-1m/digicampipe`
+ * `conda env create -f digicampipe/environment.yml`
+ * `source activate digicampipe`
+ * `pip install -e digicampipe`
+ * `pytest digicampipe/digicampipe`
+
+## Long Form
+
+### Anaconda
 
 You'll need Anaconda, so if you don't have it yet, just install it now.
 Follow [the anaconda installation instructions](https://conda.io/docs/user-guide/install/linux.html).
@@ -14,7 +23,7 @@ We propose to use the most recent version.
     wget https://repo.continuum.io/archive/Anaconda3-5.0.0.1-Linux-x86_64.sh
     bash ./Anaconda3-5.0.0.1-Linux-x86_64.sh
 
-## digicampipe
+### digicampipe
 
 We propose to have a tidy place and clone `digicampipe` into a folder `ctasoft/`
 
@@ -50,18 +59,15 @@ your prompt should look similar to this this:
 
     (digicampipe) username@host:~/ctasoft$
 
-    pip install -r digicampipe/requirements.txt
     pip install -e digicampipe
 
-Finally change into the digicampipe directory.
 
-    cd digicampipe
+### Execute the tests
 
-## Tests
+    pytest digicampipe/digicampipe
 
-Run the tests on your machine:
 
-    pytest
+## All Tests
 
 Some tests depend on astrometry.net (see below) and take long, so by default you might want to skip them.
 If you want to execute all tests, please do:
