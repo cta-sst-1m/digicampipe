@@ -37,7 +37,8 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 from .spe import compute_gaussian_parameters_first_peak
-from digicampipe.calib.camera.baseline import fill_baseline, compute_baseline_with_min, subtract_baseline
+from digicampipe.calib.camera.baseline import fill_baseline, \
+    fill_digicam_baseline, subtract_baseline
 from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_2, find_pulse_3, find_pulse_4
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
 from digicampipe.utils.docopt import convert_max_events_args, convert_pixel_args
@@ -69,10 +70,8 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
 
-    raw_histo_filename = output_path + 'raw_histo.pk'
     amplitude_histo_filename = output_path + 'amplitude_histo.pk'
     charge_histo_filename = output_path + 'charge_histo.pk'
-    time_histo_filename = output_path + 'time_histo.pk'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
@@ -84,83 +83,18 @@ def entry():
         events = calibration_event_stream(files, pixel_id=pixel_id,
                                           max_events=max_events)
 
-        raw_histo = Histogram1D(
-                            data_shape=(n_pixels,),
-                            bin_edges=np.arange(0, 4095, 1),
-                            axis_name='[LSB]'
-                        )
-
-        for i, event in tqdm(enumerate(events), total=max_events):
-
-            raw_histo.fill(event.data.adc_samples)
-
-        raw_histo.save(raw_histo_filename)
-        raw_histo = Histogram1D.load(raw_histo_filename)
-        baseline = raw_histo.mode()
-
-        events = calibration_event_stream(files, pixel_id=pixel_id,
-                                          max_events=max_events)
-
         # events = compute_baseline_with_min(events)
-        events = fill_baseline(events, baseline)
+        events = fill_digicam_baseline(events)
         events = subtract_baseline(events)
         events = find_pulse_with_max(events)
         events = compute_charge(events, integral_width, shift)
 
-        max_histo = Histogram1D(
+        charge_histo = Histogram1D(
                             data_shape=(n_pixels,),
                             bin_edges=np.arange(-4096 * integral_width,
                                                 4096 * integral_width),
                             axis_name='[LSB]'
                         )
-
-        for event in tqdm(events, total=max_events):
-
-            max_histo.fill(event.data.reconstructed_charge)
-
-        max_histo.save(max_histo_filename)
-
-        events = calibration_event_stream(files,
-                                          max_events=max_events,
-                                          pixel_id=pixel_id)
-
-        events = fill_baseline(events, baseline)
-        events = subtract_baseline(events)
-        # events = find_pulse_1(events, 0.5, 20)
-        # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        # events = find_pulse_3(events, threshold=pulse_finder_threshold)
-        events = find_pulse_4(events, threshold=pulse_finder_threshold)
-        # events = find_pulse_gaussian_filter(events,
-        #                                    threshold=pulse_finder_threshold)
-
-        events = compute_charge(
-            events,
-            integral_width=integral_width,
-            shift=shift
-        )
-        events = compute_amplitude(events)
-        # events = fit_template(events)
-
-        if debug:
-            events = plot_event(events, 0)
-
-        spe_charge = Histogram1D(
-            data_shape=(n_pixels,),
-            bin_edges=np.arange(-4096 * integral_width, 4096 * integral_width)
-        )
-        spe_amplitude = Histogram1D(data_shape=(n_pixels,),
-                                    bin_edges=np.arange(-4096,
-                                                        4096,
-                                                        1))
-
-        for i, event in tqdm(enumerate(events), total=max_events):
-
-            spe_charge.fill(event.data.reconstructed_charge)
-            spe_amplitude.fill(event.data.reconstructed_amplitude)
-
-        spe_charge.save(charge_histo_filename)
-        spe_amplitude.save(amplitude_histo_filename)
-
     if args['--fit']:
 
         spe_charge = Histogram1D.load(charge_histo_filename)

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def fill_electronic_baseline(events):
 
     for event in events:
@@ -14,6 +15,15 @@ def fill_baseline(events, baseline):
     for event in events:
 
         event.data.baseline = baseline
+
+        yield event
+
+
+def fill_digicam_baseline(events):
+
+    for event in events:
+
+        event.data.baseline = event.data.digicam_baseline
 
         yield event
 
