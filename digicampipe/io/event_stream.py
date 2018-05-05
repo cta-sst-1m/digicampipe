@@ -35,7 +35,15 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
 
         max_events = np.inf
 
-    for file in tqdm(filelist, total=n_files):
+    if n_files == 1:
+
+        file_stream = filelist
+
+    else:
+
+        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=False)
+
+    for file in file_stream:
         if source is None:
             source = guess_source_from_path(file)
         data_stream = source(url=file, **kwargs)

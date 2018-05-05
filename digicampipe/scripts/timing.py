@@ -51,7 +51,7 @@ def compute(files, max_events, pixel_id, output_path, n_samples,
         axis_name='reconstructed time [ns]'
     )
 
-    for i, event in tqdm(enumerate(events), total=max_events):
+    for i, event in enumerate(events):
 
         timing_histo.fill(event.data.reconstructed_time)
 
