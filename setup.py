@@ -46,7 +46,9 @@ setup(
         'console_scripts': [
             'digicam-view=digicampipe.scripts.digicamview:entry',
             'digicam-spe=digicampipe.scripts.spe:entry',
-            'digicam-fmpe=digicampipe.scripts.fmpe:entry'
+            'digicam-fmpe=digicampipe.scripts.fmpe:entry',
+            'digicam-mpe=digicampipe.scripts.mpe:entry',
+            'digicam-raw=digicampipe.scripts.raw:entry',
 
         ],
     }
