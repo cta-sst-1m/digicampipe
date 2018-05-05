@@ -51,6 +51,8 @@ def compute(files, max_events, pixel_id, output_path, filename='raw_histo.pk'):
 
     raw_histo.save(filename)
 
+    return raw_histo
+
 
 def entry():
 
