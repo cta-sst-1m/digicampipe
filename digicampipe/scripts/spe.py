@@ -34,10 +34,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks_cwt
 import scipy
 import pandas as pd
-from scipy.ndimage.filters import convolve1d, gaussian_filter1d
-from scipy.signal import correlate
 
-import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
@@ -45,9 +42,12 @@ from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf, log_spe
 from digicampipe.utils.exception import PeakNotFound
+from digicampipe.utils.docopt import convert_pixel_args, convert_max_events_args
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
-from digicampipe.utils.utils import get_pulse_shape
+from digicampipe.calib.camera.baseline import fill_baseline, compute_baseline_with_min, subtract_baseline
+from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_2, find_pulse_3, find_pulse_4
+from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
@@ -132,337 +132,6 @@ def compute_gaussian_parameters_first_peak(bins, count, snr=4, debug=False):
     return minuit.values, minuit.errors
 
 
-def fill_histogram(events, id, histogram):
-
-    for event in events:
-
-        event.histo[id] = histogram
-
-        yield event
-
-
-def fill_electronic_baseline(events):
-
-    for event in events:
-
-        event.data.baseline = event.histo[0].mode
-
-        yield event
-
-
-def fill_baseline(events, baseline):
-
-    for event in events:
-
-        event.data.baseline = baseline
-
-        yield event
-
-
-def compute_baseline_with_min(events):
-
-    for event in events:
-
-        adc_samples = event.data.adc_samples
-        event.data.baseline = np.min(adc_samples, axis=-1)
-
-        yield event
-
-
-def subtract_baseline(events):
-
-    for event in events:
-
-        baseline = event.data.baseline
-
-        event.data.adc_samples = event.data.adc_samples.astype(baseline.dtype)
-        event.data.adc_samples -= baseline[..., np.newaxis]
-
-        yield event
-
-
-def find_pulse_1(events, threshold, min_distance):
-
-    for count, event in enumerate(events):
-
-        pulse_mask = np.zeros(event.adc_samples.shape, dtype=np.bool)
-
-        for pixel_id, adc_sample in enumerate(event.data.adc_samples):
-
-            peak_index = peakutils.indexes(adc_sample, threshold, min_distance)
-            pulse_mask[pixel_id, peak_index] = True
-
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def find_pulse_2(events, threshold_sigma, widths, **kwargs):
-
-    for count, event in enumerate(events):
-
-        if count == 0:
-
-            threshold = threshold_sigma * event.histo[0].std
-
-        adc_samples = event.data.adc_samples
-        pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
-
-        for pixel_id, adc_sample in enumerate(adc_samples):
-
-            peak_index = find_peaks_cwt(adc_sample, widths, **kwargs)
-            peak_index = peak_index[
-                adc_sample[peak_index] > threshold[pixel_id]
-            ]
-            pulse_mask[pixel_id, peak_index] = True
-
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def find_pulse_3(events, threshold):
-    w = np.array([1, 2, 3, 4, 5, 4, 3, 2, 1], dtype=np.float32)
-    w /= w.sum()
-
-    for count, event in enumerate(events):
-        adc_samples = event.data.adc_samples
-        pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
-
-        c = convolve1d(
-            input=adc_samples,
-            weights=w,
-            axis=1,
-            mode='constant',
-        )
-        pulse_mask[:, 1:-1] = (
-            (c[:, :-2] <= c[:, 1:-1]) &
-            (c[:, 1:-1] >= c[:, 2:]) &
-            (c[:, 1:-1] > threshold)
-        )
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def find_pulse_4(events, threshold):
-
-    #time = np.arange(0, 91, 1)
-    #time = time * 4
-
-    time = np.linspace(0, 91*4, num=91)
-    # time = time[time < 40]
-    # time = np.tile(time, (1296, 1))
-    delta_t = (time[-1] - time[0]) / len(time)
-
-    template = get_pulse_shape(time, t=0, amplitude=1, baseline=0)
-    template[template < 0.1] = 0
-    template = np.tile(template, (1296, 1))
-
-    # print(time.shape)
-    # template = get_pulse_shape(time, t=0, amplitude=1, baseline=0)
-    template = template / np.sum(template, axis=-1)[..., np.newaxis]
-
-    for count, event in enumerate(events):
-        adc_samples = event.data.adc_samples
-        pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
-
-        # c = correlate(adc_samples, template, mode='same')
-        print(template.shape)
-        print(adc_samples.shape)
-        # c = correlate(adc_samples, template, mode='full')
-        mean = np.mean(adc_samples, axis=-1)
-        std = np.std(adc_samples, axis=-1)
-
-        adc_samples = (adc_samples - mean[..., np.newaxis]) / std[..., np.newaxis]
-
-        # c = convolve1d(
-        #    input=adc_samples,
-        #    weights=template[0],
-        #    axis=1,
-        #    mode='reflect',)
-        # print(c.shape)
-
-        c = correlate(adc_samples, template)
-
-        # Convert this into lag units, but still not really physical
-        shift = (len(time) - 1)
-
-        # c = c[..., shift:]
-
-        # Convert your lags into physical units
-        #offsets = -lags * distancePerLag
-
-        print(c.shape)
-
-        plt.figure()
-        plt.plot(c[0])
-        plt.plot(c[5])
-        plt.plot(c[6])
-        plt.plot(c[7])
-        plt.plot(adc_samples[0])
-        plt.plot(template[0])
-        plt.show()
-
-        print(c.shape)
-
-        pulse_mask[:, 1:-1] = (
-            (c[:, :-2] <= c[:, 1:-1]) &
-            (c[:, 1:-1] >= c[:, 2:]) &
-            (c[:, 1:-1] > threshold)
-        )
-
-        print(pulse_mask[0])
-
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def find_pulse_with_max(events):
-
-    for i, event in enumerate(events):
-
-        adc_samples = event.data.adc_samples
-
-        if i == 0:
-
-            n_samples = adc_samples.shape[-1]
-            bins = np.arange(n_samples)
-
-        arg_max = np.argmax(adc_samples, axis=-1)
-        pulse_mask = (bins == arg_max[..., np.newaxis])
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def find_pulse_gaussian_filter(events, threshold=2, **kwargs):
-
-    for count, event in enumerate(events):
-
-        c = event.data.adc_samples
-        sigma = np.std(c)
-        c = gaussian_filter1d(c, sigma=sigma)
-        pulse_mask = np.zeros(c.shape, dtype=np.bool)
-
-        pulse_mask[:, 1:-1] = (
-            (c[:, :-2] < c[:, 1:-1]) &
-            (c[:, 1:-1] > c[:, 2:]) &
-            (c[:, 1:-1] > threshold)
-        )
-
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def compute_charge(events, integral_width, shift, maximum_width=2):
-    """
-
-    :param events: a stream of events
-    :param integral_width: width of the integration window
-    :param maximum_width: width of the region (bin size) to compute charge,
-    maximum value is retained. (not implemented yet)
-    :return:
-    """
-
-    # bins = np.arange(-maximum_width, maximum_width + 1, 1)
-
-    for count, event in enumerate(events):
-
-        adc_samples = event.data.adc_samples
-        pulse_mask = event.data.pulse_mask
-
-        convolved_signal = convolve1d(
-            adc_samples,
-            np.ones(integral_width),
-            axis=-1
-        )
-
-        charges = np.zeros(convolved_signal.shape) * np.nan
-        charges[pulse_mask] = convolved_signal[
-            np.roll(pulse_mask, shift, axis=1)
-        ]
-        event.data.reconstructed_charge = charges
-
-        yield event
-
-
-def compute_amplitude(events):
-
-    for count, event in enumerate(events):
-
-        adc_samples = event.data.adc_samples
-        pulse_indices = event.data.pulse_mask
-
-        charges = np.ones(adc_samples.shape) * np.nan
-        charges[pulse_indices] = adc_samples[pulse_indices]
-        event.data.reconstructed_amplitude = charges
-
-        yield event
-
-
-def fit_template(events, pulse_width=(4, 5), rise_time=12):
-
-    for event in events:
-
-        adc_samples = event.data.adc_samples.copy()
-        time = np.arange(adc_samples.shape[-1]) * 4
-        pulse_indices = event.data.pulse_mask
-        pulse_indices = np.argwhere(pulse_indices)
-        pulse_indices = [tuple(arr) for arr in pulse_indices]
-        amplitudes = np.zeros(adc_samples.shape) * np.nan
-        times = np.zeros(adc_samples.shape) * np.nan
-
-        plt.figure()
-
-        for pulse_index in pulse_indices:
-
-            left = pulse_index[-1] - int(pulse_width[0])
-            left = max(0, left)
-            right = pulse_index[-1] + int(pulse_width[1]) + 1
-            right = min(adc_samples.shape[-1] - 1, right)
-
-            y = adc_samples[pulse_index[0], left:right]
-            t = time[left:right]
-
-            where_baseline = np.arange(adc_samples.shape[-1])
-            where_baseline = (where_baseline < left) + \
-                             (where_baseline >= right)
-            where_baseline = adc_samples[pulse_index[0]][where_baseline]
-
-            baseline_0 = np.mean(where_baseline)
-            baseline_std = np.std(where_baseline)
-            limit_baseline = (baseline_0 - baseline_std,
-                              baseline_0 + baseline_std)
-
-            t_0 = time[pulse_index[-1]] - rise_time
-            limit_t = (t_0 - 2 * 4, t_0 + 2 * 4)
-
-            amplitude_0 = np.max(y)
-            limit_amplitude = (max(np.min(y), 0), amplitude_0 * 1.2)
-
-            chi2 = Chi2Regression(get_pulse_shape, t, y)
-            m = Minuit(chi2, t=t_0,
-                       amplitude=amplitude_0,
-                       limit_t=limit_t,
-                       limit_amplitude=limit_amplitude,
-                       baseline=baseline_0,
-                       limit_baseline=limit_baseline,
-                       print_level=0, pedantic=False)
-            m.migrad()
-
-            adc_samples[pulse_index[0]] -= get_pulse_shape(time, **m.values)
-            amplitudes[pulse_index] = m.values['amplitude']
-            times[pulse_index] = m.values['t']
-
-        event.data.reconstructed_amplitude = amplitudes
-        event.data.reconstructed_time = times
-
-        yield event
-
-
 def spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
 
     amplitudes = np.array([a_1, a_2, a_3, a_4])
@@ -485,7 +154,6 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
                                                          debug=debug)[0]
     del init_params['mean'], init_params['amplitude']
     init_params['baseline'] = 0
-
 
     if sigma_e is None:
 
@@ -630,48 +298,20 @@ def plot_event(events, pixel_id):
         yield event
 
 
-def _convert_pixel_args(text):
-
-    if text is not None:
-
-        text = text.split(',')
-        pixel_id = list(map(int, text))
-        pixel_id = np.array(pixel_id)
-
-    else:
-
-        pixel_id = np.arange(1296)
-
-    return pixel_id
-
-
-def _convert_max_events_args(text):
-
-    if text is not None:
-
-        max_events = int(text)
-
-    else:
-
-        max_events = text
-
-    return max_events
-
-
 def entry():
 
     args = docopt(__doc__)
     files = args['INPUT']
     debug = args['--debug']
 
-    max_events = _convert_max_events_args(args['--max_events'])
+    max_events = convert_max_events_args(args['--max_events'])
     output_path = args['OUTPUT']
 
     if not os.path.exists(output_path):
 
         raise IOError('Path for output does not exists \n')
 
-    pixel_id = _convert_pixel_args(args['--pixel'])
+    pixel_id = convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
 
     raw_histo_filename = output_path + 'raw_histo.pk'
@@ -687,7 +327,7 @@ def entry():
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
-    n_samples = int(args['--n_samples'])# TODO access this in a better way !
+    n_samples = int(args['--n_samples']) # TODO access this in a better way !
 
     if args['--compute']:
 
