@@ -3,205 +3,48 @@
 Do the Multiple Photoelectron anaylsis
 
 Usage:
-  fmpe.py [options] [FILE] [INPUT ...]
+  mpe.py [options] [OUTPUT] [INPUT ...]
 
 Options:
-  -h --help               Show this screen.
-  --max_events=N          Maximum number of events to analyse
-  -o FILE --output=FILE.  Output file.
-  -i INPUT --input=INPUT. Input files.
-  -c --compute            Compute the data.
-  -d --dark
-  -t --time
-  -m --fmpe
-  -f --fit                Fit.
-  -d --display            Display.
-  -v --debug              Enter the debug mode.
-  -p --pixel=<PIXEL>      Give a list of pixel IDs.
+  -h --help                   Show this screen.
+  --max_events=N              Maximum number of events to analyse
+  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+  -i INPUT --input=INPUT.     Input files.
+  -c --compute                Compute the data.
+  -f --fit                    Fit.
+  -d --display                Display.
+  -v --debug                  Enter the debug mode.
+  -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  --shift=N                   number of bins to shift before integrating
+                              [default: 0].
+  --integral_width=N          number of bins to integrate over
+                              [default: 7].
+  --save_figures              Save the plots to the OUTPUT folder
+  --n_samples=N               Number of samples per waveform
+  --bin_width=N               Bin width (in LSB) of the histogram
+                              [default: 1]
 '''
+import os
 from docopt import docopt
 from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-import peakutils
-from iminuit import Minuit, describe
-from probfit import Chi2Regression
-
+from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.exception import PeakNotFound
+from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
-from digicampipe.scripts.spe import compute_charge, compute_amplitude, \
-    subtract_baseline
-from digicampipe.utils.pdf import fmpe_pdf_10
+from .spe import compute_gaussian_parameters_first_peak
+from digicampipe.calib.camera.baseline import fill_baseline, \
+    fill_digicam_baseline, subtract_baseline
+from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_2, find_pulse_3, find_pulse_4, fill_pulse_indices
+from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
+from digicampipe.utils.docopt import convert_max_events_args, \
+    convert_pixel_args, convert_dac_level
+from digicampipe.scripts import timing
+from digicampipe.scripts import mpe
 
-
-def fill_baseline(events, baseline):
-
-    for event in events:
-
-        event.data.baseline = baseline
-
-        yield event
-
-
-def fill_peak_position(events, peak_position):
-
-    peak_position = peak_position.reshape(peak_position.shape + (1, ))
-
-    for count, event in enumerate(events):
-
-        if count == 0:
-
-            adc_samples = event.data.adc_samples
-            pulse_mask = np.arange(adc_samples.shape[1])
-            pulse_mask = np.tile(pulse_mask, (adc_samples.shape[0], 1))
-            pulse_mask = (pulse_mask == peak_position)
-
-        event.data.pulse_mask = pulse_mask
-
-        yield event
-
-
-def _convert_pixel_args(text):
-
-    if text is not None:
-
-        text = text.split(',')
-        pixel_id = list(map(int, text))
-        pixel_id = np.array(pixel_id)
-
-    else:
-
-        pixel_id = np.arange(0, 1296, 1)
-
-    return pixel_id
-
-
-def _convert_ac_level_args(text):
-
-    if text is not None:
-
-        text = text.split(',')
-        ac_level = list(map(int, text))
-        ac_level = np.array(ac_level)
-
-    else:
-
-        ac_level = None
-
-    return ac_level
-
-
-def entry():
-
-    args = docopt(__doc__)
-    input_files = args['INPUT']
-    pixel_id = _convert_pixel_args(args['--pixel'])
-    debug = args['--debug']
-
-    max_events = args['--max_events']
-    max_events = max_events if max_events is None else int(max_events)
-
-    fmpe_filename = 'fmpe.pk'
-    time_histo_filename = 'time.pk'
-    dark_histo_filename = 'dark.pk'
-
-    print(max_events, pixel_id, input_files)
-
-    if args['--compute']:
-
-        if args['--time']:
-
-            events = calibration_event_stream(input_files,
-                                              max_events=max_events,
-                                              pixel_id=pixel_id)
-
-            time_histo = Histogram1D(bin_edges=np.arange(0, 100, 1),
-                                     data_shape=(len(pixel_id), ))
-
-            for event in tqdm(events, total=max_events):
-
-                adc_samples = event.data.adc_samples
-                bin_max = np.argmax(adc_samples, axis=-1)
-                bin_max = bin_max.reshape((bin_max.shape + (1, )))
-                time_histo.fill(bin_max)
-
-            time_histo.save(time_histo_filename)
-            time_histo.draw(index=(0, ))
-
-            plt.show()
-
-        if args['--dark']:
-
-            time_histo = Histogram1D.load(time_histo_filename)
-            peak_position = time_histo.mode()
-
-            events = calibration_event_stream(input_files,
-                                              max_events=max_events,
-                                              pixel_id=pixel_id)
-
-            events = fill_peak_position(events,
-                                        peak_position=peak_position)
-            events = compute_amplitude(events)
-
-            dark_histo = Histogram1D(bin_edges=np.arange(0, 4096, 1),
-                                     data_shape=(len(pixel_id),))
-
-            for event in tqdm(events, total=max_events):
-
-                dark_histo.fill(event.data.reconstructed_amplitude)
-
-            dark_histo.save(dark_histo_filename)
-            dark_histo.draw(index=(0, ))
-            plt.show()
-
-        if args['--fmpe']:
-
-            dark_histo = Histogram1D.load(dark_histo_filename)
-            time_histo = Histogram1D.load(time_histo_filename)
-
-            peak_position = time_histo.mode()
-            baseline = dark_histo.mean()
-
-            events = calibration_event_stream(input_files,
-                                              max_events=max_events,
-                                              pixel_id=pixel_id)
-
-            events = fill_peak_position(events, peak_position=peak_position)
-            events = fill_baseline(events, baseline)
-            events = subtract_baseline(events)
-            events = compute_charge(events, integral_width=7, shift=0)
-
-            fmpe = Histogram1D(bin_edges=np.arange(-4096, 4096, 1),
-                               data_shape=(len(pixel_id), ),
-                               axis_name='[LSB]')
-
-            for count, event in tqdm(enumerate(events), total=max_events):
-
-                fmpe.fill(event.data.reconstructed_charge)
-
-            fmpe.save(fmpe_filename)
-            fmpe.draw(index=(0, ), log=True)
-            plt.show()
-
-    if args['--fit']:
-
-        fmpe = Histogram1D.load(fmpe_filename)
-        bin_centers = fmpe._bin_centers()
-
-        for pixel_id, y in tqdm(enumerate(fmpe.data),
-                                total=fmpe.data.shape[0]):
-            mask = y > 0
-            y = y[mask]
-            x = bin_centers[mask]
-            yerr = np.sqrt(y)
-
-            init_params = compute_init_fmpe(x, y, yerr)
-            limit_params = compute_limit_fmpe(init_params)
-
-            fit_fmpe(x, y, yerr, init_params, limit_params, debug)
 
 
 def compute_limit_fmpe(init_params):
@@ -330,5 +173,78 @@ def fit_fmpe(x, y, yerr, init_params, limit_params, debug=False):
     return m.values, m.errors
 
 
+def entry():
+
+    args = docopt(__doc__)
+    files = args['INPUT']
+    debug = args['--debug']
+
+    max_events = convert_max_events_args(args['--max_events'])
+    output_path = args['OUTPUT']
+
+    if not os.path.exists(output_path):
+
+        raise IOError('Path for output does not exists \n')
+
+    pixel_id = convert_pixel_args(args['--pixel'])
+    integral_width = int(args['--integral_width'])
+    shift = int(args['--shift'])
+    bin_width = int(args['--bin_width'])
+    n_samples = int(args['--n_samples']) # TODO access this in a better way !
+
+    n_pixels = len(pixel_id)
+
+    if args['--compute']:
+
+        charge_histo_filename = 'charge_histo_fmpe.pk'
+        amplitude_histo_filename = 'amplitude_histo_fmpe.pk'
+        timing_histo_filename = 'timing_histo_fmpe.pk'
+
+        timing_histo = timing.compute(files, max_events, pixel_id,
+                                      output_path,
+                                      n_samples,
+                                      filename=timing_histo_filename,
+                                      save=True)
+
+        pulse_indices = timing_histo.mode() // 4
+
+        mpe.compute(
+                files,
+                pixel_id, max_events, pulse_indices, integral_width,
+                shift, bin_width, output_path,
+                charge_histo_filename=charge_histo_filename,
+                amplitude_histo_filename=amplitude_histo_filename,
+                save=True)
+
+    if args['--fit']:
+
+        pass
+
+    if args['--save_figures']:
+
+        pass
+
+    if args['--display']:
+
+        amplitude_histo_path = os.path.join(output_path, 'amplitude_histo_fmpe.pk')
+        charge_histo_path = os.path.join(output_path, 'charge_histo_fmpe.pk')
+        timing_histo_path = os.path.join(output_path, 'timing_histo_fmpe.pk')
+
+        charge_histo = Histogram1D.load(charge_histo_path)
+        charge_histo.draw(index=(0,), log=False, legend=False)
+
+        amplitude_histo = Histogram1D.load(amplitude_histo_path)
+        amplitude_histo.draw(index=(0,), log=False, legend=False)
+
+        timing_histo = Histogram1D.load(timing_histo_path)
+        timing_histo.draw(index=(0,), log=False, legend=False)
+        plt.show()
+
+        pass
+
+    return
+
+
 if __name__ == '__main__':
+
     entry()
