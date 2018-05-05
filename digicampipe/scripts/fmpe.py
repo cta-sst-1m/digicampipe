@@ -190,7 +190,7 @@ def entry():
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
-    n_samples = int(args['--n_samples']) # TODO access this in a better way !
+    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
 
     n_pixels = len(pixel_id)
 
@@ -222,7 +222,47 @@ def entry():
 
     if args['--save_figures']:
 
-        pass
+        amplitude_histo_path = os.path.join(output_path,
+                                            'amplitude_histo_fmpe.pk')
+        charge_histo_path = os.path.join(output_path, 'charge_histo_fmpe.pk')
+        timing_histo_path = os.path.join(output_path, 'timing_histo_fmpe.pk')
+
+        charge_histo = Histogram1D.load(charge_histo_path)
+        amplitude_histo = Histogram1D.load(amplitude_histo_path)
+        timing_histo = Histogram1D.load(timing_histo_path)
+
+        figure_path = os.path.join(output_path, 'figures/')
+
+        if not os.path.exists(figure_path):
+            os.makedirs(figure_path)
+
+        figure_1 = plt.figure()
+        figure_2 = plt.figure()
+        figure_3 = plt.figure()
+        axis_1 = figure_1.add_subplot(111)
+        axis_2 = figure_2.add_subplot(111)
+        axis_3 = figure_3.add_subplot(111)
+
+        for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
+
+            try:
+
+                charge_histo.draw(index=(i,), axis=axis_1, log=True, legend=False)
+                amplitude_histo.draw(index=(i,), axis=axis_2, log=True, legend=False)
+                timing_histo.draw(index=(i,), axis=axis_3, log=True, legend=False)
+                figure_1.savefig(figure_path + 'charge_fmpe_pixel_{}'.format(pixel))
+                figure_2.savefig(figure_path + 'amplitude_fmpe_pixel_{}'.format(pixel))
+                figure_3.savefig(figure_path + 'timing_fmpe_pixel_{}'.format(pixel))
+
+            except Exception as e:
+
+                print('Could not save pixel {} to : {} \n'.
+                      format(pixel, figure_path))
+                print(e)
+
+            axis_1.clear()
+            axis_2.clear()
+            axis_3.clear()
 
     if args['--display']:
 
