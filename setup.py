@@ -49,6 +49,7 @@ setup(
             'digicam-fmpe=digicampipe.scripts.fmpe:entry',
             'digicam-mpe=digicampipe.scripts.mpe:entry',
             'digicam-raw=digicampipe.scripts.raw:entry',
+            'digicam-timing=digicampipe.scripts.timing:entry',
 
         ],
     }
