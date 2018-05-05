@@ -5,6 +5,7 @@ This requires the protozfitsreader python library to be installed
 """
 import logging
 import warnings
+from tqdm import tqdm
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 from protozfitsreader import ZFile
@@ -73,7 +74,17 @@ def zfits_event_source(
 
     loaded_telescopes = []
 
-    for event_counter, event in enumerate(ZFile(url)):
+    event_stream = ZFile(url)
+
+    if max_events is None:
+
+        n_events = event_stream.numrows
+    else:
+
+        n_events = max_events
+
+    for event_counter, event in tqdm(enumerate(event_stream), total=n_events,
+                                     desc='Events', leave=False):
         if max_events is not None and event_counter > max_events:
             break
 
@@ -114,6 +125,8 @@ def zfits_event_source(
             r0.digicam_baseline = event.baseline
 
         yield data
+
+    return
 
 
 def count_number_events(file_list):

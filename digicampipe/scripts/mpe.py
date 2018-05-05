@@ -101,7 +101,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
                   '[LSB]'
     )
 
-    for event in tqdm(events, total=max_events):
+    for event in events:
         charge_histo.fill(event.data.reconstructed_charge)
         amplitude_histo.fill(event.data.reconstructed_amplitude)
 
@@ -147,7 +147,8 @@ def entry():
         time = np.zeros((n_pixels, n_ac_levels))
 
         for i, (file, ac_level) in tqdm(enumerate(zip(files, ac_levels)),
-                                        total=n_ac_levels):
+                                        total=n_ac_levels, desc='DAC level',
+                                        leave=False):
 
             timing_histo_filename = 'timing_histo_ac_level_{}.pk'.format(ac_level)
             charge_histo_filename = 'charge_histo_ac_level_{}.pk'.format(ac_level)
@@ -157,7 +158,7 @@ def entry():
                                           output_path,
                                           n_samples,
                                           filename=timing_histo_filename,
-                                          save=True)
+                                          save=False)
             time[:, i] = timing_histo.mean()
             pulse_indices = time[:, i] // 4
 
@@ -167,13 +168,13 @@ def entry():
                     shift, bin_width, output_path,
                     charge_histo_filename=charge_histo_filename,
                     amplitude_histo_filename=amplitude_histo_filename,
-                    save=True)
+                    save=False)
 
             amplitude[:, i] = amplitude_histo.mean()
             charge[:, i] = charge_histo.mean()
 
         plt.figure()
-        plt.plot(amplitude, charge)
+        plt.plot(amplitude[0], charge[0])
         plt.show()
 
         np.savez(os.path.join(output_path, 'mpe_results'),
