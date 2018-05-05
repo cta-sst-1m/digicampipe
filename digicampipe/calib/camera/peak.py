@@ -181,3 +181,23 @@ def find_pulse_gaussian_filter(events, threshold=2, **kwargs):
         event.data.pulse_mask = pulse_mask
 
         yield event
+
+
+def fill_pulse_indices(events, pulse_indices):
+
+    pulse_indices = pulse_indices.astype(np.int)
+
+    for count, event in enumerate(events):
+
+        if count == 0:
+
+            data_shape = event.data.adc_samples.shape
+            n_pixels = data_shape[0]
+            pixel_ids = np.arange(data_shape[0], dtype=np.int)
+            pulse_indices = (pixel_ids, pulse_indices)
+
+        pulse_mask = np.zeros(data_shape, dtype=np.bool)
+        pulse_mask[pulse_indices] = True
+        event.data.pulse_mask = pulse_mask
+
+        yield event

@@ -16,6 +16,19 @@ def convert_pixel_args(text):
     return pixel_id
 
 
+def convert_dac_level(text):
+
+    if text is not None:
+
+        text = text.split(',')
+        dac_level = list(map(int, text))
+        dac_level = np.array(dac_level)
+
+    return dac_level
+
+
+
+
 def convert_max_events_args(text):
 
     if text is not None:
