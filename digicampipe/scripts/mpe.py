@@ -138,7 +138,8 @@ def entry():
 
     if n_ac_levels != len(files):
 
-        raise ValueError('Not as many of ac levels as files')
+        raise ValueError('n_ac levels = {} != '
+                         'n_files = {}'.format(n_ac_levels, len(files)))
 
     if args['--compute']:
 
