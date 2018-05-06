@@ -30,6 +30,9 @@ from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
+import peakutils
+from iminuit import Minuit, describe
+from probfit import Chi2Regression
 
 from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
@@ -44,7 +47,8 @@ from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
 from digicampipe.scripts import timing
 from digicampipe.scripts import mpe
-
+from digicampipe.utils.exception import PeakNotFound
+from digicampipe.utils.pdf import fmpe_pdf_10
 
 
 def compute_limit_fmpe(init_params):
@@ -71,15 +75,19 @@ def compute_limit_fmpe(init_params):
     return limit_params
 
 
-def compute_init_fmpe(x, y, yerr, thres=0.08, min_dist=5):
+def compute_init_fmpe(x, y, yerr, n_pe_peaks,
+                      thres=0.08, min_dist=5, debug=False):
 
     y = y.astype(np.float)
+    bin_width = np.diff(x)
+    bin_width = np.mean(bin_width)
 
     if (x != np.sort(x)).any():
 
         raise ValueError('x must be sorted !')
 
     peak_indices = peakutils.indexes(y, thres=thres, min_dist=min_dist)
+    peak_indices = peak_indices[:min(len(peak_indices), n_pe_peaks)]
 
     if len(peak_indices) <= 1:
 
@@ -115,15 +123,15 @@ def compute_init_fmpe(x, y, yerr, thres=0.08, min_dist=5):
         right = np.searchsorted(x, right)
         right = min(n_x - 1, right)
 
-        amplitudes[i] = np.sum(y[left:right])
+        amplitudes[i] = np.sum(y[left:right]) * np.sqrt(2 * np.pi)
         mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
 
         sigma[i] = np.average((x[left:right] - mean_peak_x[i])**2,
                               weights=y[left:right])
-        sigma[i] = np.sqrt(sigma[i])
+        sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
 
-    sigma_e = sigma[0]
-    sigma_s = (sigma[1:] ** 2 - sigma[0]**2) / np.arange(1, len(sigma), 1)
+    sigma_e = np.sqrt(sigma[0]**2 )
+    sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
     sigma_s = np.mean(sigma_s)
     sigma_s = np.sqrt(sigma_s)
 
@@ -133,6 +141,13 @@ def compute_init_fmpe(x, y, yerr, thres=0.08, min_dist=5):
     for i, amplitude in enumerate(amplitudes):
 
         params['a_{}'.format(i)] = amplitude
+
+    if debug:
+
+        plt.figure()
+        plt.plot(x, y)
+        plt.plot(mean_peak_x, amplitudes)
+        plt.show()
 
     return params
 
@@ -194,11 +209,11 @@ def entry():
 
     n_pixels = len(pixel_id)
 
-    if args['--compute']:
+    charge_histo_filename = 'charge_histo_fmpe.pk'
+    amplitude_histo_filename = 'amplitude_histo_fmpe.pk'
+    timing_histo_filename = 'timing_histo_fmpe.pk'
 
-        charge_histo_filename = 'charge_histo_fmpe.pk'
-        amplitude_histo_filename = 'amplitude_histo_fmpe.pk'
-        timing_histo_filename = 'timing_histo_fmpe.pk'
+    if args['--compute']:
 
         timing_histo = timing.compute(files, max_events, pixel_id,
                                       output_path,
@@ -218,7 +233,54 @@ def entry():
 
     if args['--fit']:
 
-        pass
+        charge_histo = Histogram1D.load(os.path.join(output_path, charge_histo_filename))
+        amplitude_histo = Histogram1D.load(os.path.join(output_path, amplitude_histo_filename))
+
+        gain = np.zeros(n_pixels) * np.nan
+        sigma_e = np.zeros(n_pixels) * np.nan
+        sigma_s = np.zeros(n_pixels) * np.nan
+        baseline = np.zeros(n_pixels) * np.nan
+
+        n_pe_peaks = 10
+        estimated_gain = 22
+
+        results_filename = os.path.join(output_path, 'fmpe_results.npz')
+
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels, desc='Pixel'):
+
+            x = charge_histo._bin_centers()
+            y = charge_histo.data[i]
+            y_err = charge_histo.errors()[i]
+            n_entries = np.sum(y)
+
+            mask = (y > 0) * (x < n_pe_peaks * estimated_gain)
+            x = x[mask]
+            y = y[mask]
+            y_err = y_err[mask]
+
+            try:
+
+                params_init = compute_init_fmpe(x, y, y_err, thres=0.05,
+                                                min_dist=5,
+                                                n_pe_peaks=n_pe_peaks)
+
+                params_limit = compute_limit_fmpe(params_init)
+
+                params, params_err = fit_fmpe(x, y, y_err, params_init,
+                                              params_limit, debug=debug)
+
+                gain[i] = params['gain']
+                sigma_e[i] = params['sigma_e']
+                sigma_s[i] = params['sigma_s']
+                baseline[i] = params['baseline']
+
+            except Exception as exception:
+
+                print('Could not fit FMPE in pixel {}'.format(pixel))
+                print(exception)
+
+        np.savez(results_filename, gain=gain, sigma_e=sigma_e, sigma_s=sigma_s,
+                 baseline=baseline, pixel_id=pixel_id)
 
     if args['--save_figures']:
 
