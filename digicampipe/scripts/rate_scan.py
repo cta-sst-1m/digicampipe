@@ -3,7 +3,7 @@ Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
 Usage:
-  rate_scane <file> <outfile>
+  rate_scan <file> <outfile>
 '''
 from docopt import docopt
 import numpy as np
