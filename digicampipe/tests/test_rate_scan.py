@@ -17,4 +17,4 @@ example_file_path = pkg_resources.resource_filename(
 
 def test_main_rate_scan():
 
-    rate_scan.main(example_file_path, '/null')
+    rate_scan.main(example_file_path, 'test')
