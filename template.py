@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-fromscipy.interpolate import BSpline
+from scipy.interpolate import BSpline
 
 
 def bspleval(x, knots, coeffs, order, debug=True):
@@ -40,15 +40,13 @@ def amplitude():
         pe = 10.**logpe
         x_template, y_template = estimated_template(pe, start=0, stop=500)
         pes += [pe]
-        gain += [np.max(y_template) / pe / 4.72]
-        meas += [np.max(y_template) / 4.72]
+        gain += [np.nanmax(y_template) / pe / 4.72]
+        meas += [np.nanmax(y_template) / 4.72]
     plt.figure()
-    plt.plot(pes, gain)
-    plt.xscale("log")
+    plt.semilogx(pes, gain)
     plt.show()
     plt.figure()
-    plt.xscale("log")
-    plt.plot(pes, meas)
+    plt.semilogx(pes, meas)
     plt.show()
 
 
