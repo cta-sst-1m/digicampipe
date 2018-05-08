@@ -127,7 +127,7 @@ def entry():
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
-    n_samples = int(args['--n_samples']) # TODO access this in a better way !
+    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
     ac_levels = convert_dac_level(args['--ac_levels'])
 
     n_pixels = len(pixel_id)

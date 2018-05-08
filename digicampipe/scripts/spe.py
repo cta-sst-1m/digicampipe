@@ -42,7 +42,8 @@ from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.docopt import convert_pixel_args, convert_max_events_args
+from digicampipe.utils.docopt import convert_pixel_args, \
+    convert_max_events_args
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
@@ -229,7 +230,7 @@ def fit_spe(x, y, y_err, sigma_e, snr=4, debug=False):
     ]
 
     values = [
-        (- 0.5 * params_init['gain'], 1.5 * params_init['gain'] ),
+        (- 0.5 * params_init['gain'], 1.5 * params_init['gain']),
         (0.5 * params_init['gain'], 1.5 * params_init['gain']),
         (0.5 * params_init['sigma_e'], 1.5 * params_init['sigma_e']),
         (0.5 * params_init['sigma_s'], 1.5 * params_init['sigma_s']),
@@ -326,7 +327,7 @@ def entry():
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
-    n_samples = int(args['--n_samples']) # TODO access this in a better way !
+    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
 
     if args['--compute']:
 

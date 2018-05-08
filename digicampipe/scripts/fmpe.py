@@ -122,7 +122,7 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks,
                               weights=y[left:right])
         sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
 
-    sigma_e = np.sqrt(sigma[0]**2 )
+    sigma_e = np.sqrt(sigma[0]**2)
     sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
     sigma_s = np.mean(sigma_s)
     sigma_s = np.sqrt(sigma_s)
