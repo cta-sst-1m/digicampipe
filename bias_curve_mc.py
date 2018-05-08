@@ -6,10 +6,12 @@ Usage:
   bias_curve_mc <hdf5_file> <outfile>
 '''
 from docopt import docopt
-from digicampipe.calib.camera import filter, r0, random_triggers
-from digicampipe.io.save_bias_curve import save_bias_curve
-from digicampipe.io.event_stream import event_stream
 import numpy as np
+import matplotlib.pyplot as plt
+
+from digicampipe.calib.camera import filter, r0, random_triggers
+from digicampipe.io.save_bias_curve import compute_bias_curve
+from digicampipe.io.event_stream import event_stream
 
 
 if __name__ == '__main__':
@@ -26,9 +28,23 @@ if __name__ == '__main__':
     data_stream = r0.fill_trigger_patch(data_stream)
     data_stream = r0.fill_trigger_input_7(data_stream)
     data_stream = r0.fill_trigger_input_19(data_stream)
-    data_stream = save_bias_curve(
+    output = compute_bias_curve(
         data_stream,
         thresholds=thresholds,
         blinding=blinding,
-        output_filename=args['<outfile>']
-    )
+        )
+
+    rate, rate_error, cluster_rate, cluster_rate_error, thresholds = output
+
+    np.savez(file=args['<outfile>'], rate=rate, rate_error=rate_error,
+             cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error,
+             thresholds=thresholds)
+
+    fig = plt.figure()
+    axes = fig.add_subplot(111)
+    axes.errorbar(thresholds, rate *1E9, yerr=rate_error * 1E9)
+    axes.set_yscale('log')
+    axes.set_xlabel('Threshold [LSB]')
+    axes.set_ylabel('Rate [Hz]')
+
+    plt.show()

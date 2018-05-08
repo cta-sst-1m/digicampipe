@@ -7,13 +7,11 @@ def init_cluster_rate(r0, n_thresholds):
     return cluster_rate
 
 
-def save_bias_curve(
+def compute_bias_curve(
     data_stream,
     thresholds,
-    output_filename,
     blinding=True,
     by_cluster=True,
-    unwanted_cluster=None
 ):
     '''
     thresholds: 1d array
@@ -24,7 +22,9 @@ def save_bias_curve(
     # cluster rate can only be initialized when the first event was read.
     cluster_rate = None
     for event_id, event in enumerate(data_stream):
-        for r0 in event.r0.tel.values:
+
+        for tel_id, r0 in event.r0.tel.items():
+
             if cluster_rate is None:
                 cluster_rate = init_cluster_rate(r0, n_thresholds)
 
@@ -58,15 +58,13 @@ def save_bias_curve(
 
                     rate[- threshold_id - 1] += n_triggers
 
-        yield event
-
     time = ((event_id + 1) * 4. * r0.trigger_input_7.shape[-1])
     rate_error = np.sqrt(rate) / time
     cluster_rate_error = np.sqrt(cluster_rate) / time
     rate = rate / time
     cluster_rate = cluster_rate / time
 
-    np.savez(rate=rate, rate_error=rate_error, cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error, threshold=thresholds)
+    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
 
 
 class TriggerrateThresholdAnalysis:
