@@ -62,7 +62,7 @@ def fmpe_pdf(x, **params):
             amplitudes[id] = val
 
     N = np.arange(0, amplitudes.shape[0], 1)
-    sigma = sigma_e**2 + N * sigma_s**2 # + bin_width**2 / 12
+    sigma = sigma_e**2 + N * sigma_s**2  # + bin_width**2 / 12
 
     value = x - (N * gain + baseline)[..., np.newaxis]
     value = value**2
