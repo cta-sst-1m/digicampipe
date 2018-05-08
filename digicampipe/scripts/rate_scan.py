@@ -14,7 +14,8 @@ from digicampipe.io.save_bias_curve import compute_bias_curve
 from digicampipe.io.event_stream import event_stream
 
 
-if __name__ == '__main__':
+def entry():
+
     args = docopt(__doc__)
 
     n_bins = 1024
@@ -32,7 +33,7 @@ if __name__ == '__main__':
         data_stream,
         thresholds=thresholds,
         blinding=blinding,
-        )
+    )
 
     rate, rate_error, cluster_rate, cluster_rate_error, thresholds = output
 
@@ -42,9 +43,14 @@ if __name__ == '__main__':
 
     fig = plt.figure()
     axes = fig.add_subplot(111)
-    axes.errorbar(thresholds, rate *1E9, yerr=rate_error * 1E9)
+    axes.errorbar(thresholds, rate * 1E9, yerr=rate_error * 1E9)
     axes.set_yscale('log')
     axes.set_xlabel('Threshold [LSB]')
     axes.set_ylabel('Rate [Hz]')
 
     plt.show()
+
+
+if __name__ == '__main__':
+
+    entry()
