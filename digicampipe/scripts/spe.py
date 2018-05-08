@@ -40,14 +40,15 @@ from probfit import Chi2Regression
 
 from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf, log_spe
+from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.docopt import convert_pixel_args, convert_max_events_args
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
-from digicampipe.calib.camera.baseline import fill_baseline, compute_baseline_with_min, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_wavelets, find_pulse_fast, find_pulse_correlate
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
+from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
+from digicampipe.calib.camera.peak import find_pulse_with_max,\
+    find_pulse_correlate
+from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
@@ -221,8 +222,6 @@ def fit_spe(x, y, y_err, sigma_e, snr=4, debug=False):
     x = x[mask]
     y = y[mask]
     y_err = y_err[mask]
-
-    n_entries = np.sum(y)
 
     keys = [
         'limit_baseline', 'limit_gain', 'limit_sigma_e', 'limit_sigma_s',
@@ -497,8 +496,6 @@ def entry():
                     n_entries += params['a_3']
                     n_entries += params['a_4']
                     crosstalk[pixel] = (n_entries - params['a_1']) / n_entries
-                    print(crosstalk[pixel])
-                    print(params['sigma_e'])
 
                 except Exception as e:
 
