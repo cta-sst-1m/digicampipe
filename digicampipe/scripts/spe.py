@@ -46,7 +46,7 @@ from digicampipe.utils.docopt import convert_pixel_args, convert_max_events_args
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 from digicampipe.calib.camera.baseline import fill_baseline, compute_baseline_with_min, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_2, find_pulse_3, find_pulse_4
+from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_wavelets, find_pulse_fast, find_pulse_correlate
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
 
 
@@ -379,7 +379,7 @@ def entry():
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
         # events = find_pulse_3(events, threshold=pulse_finder_threshold)
-        events = find_pulse_4(events, threshold=pulse_finder_threshold)
+        events = find_pulse_correlate(events, threshold=pulse_finder_threshold)
         # events = find_pulse_gaussian_filter(events,
         #                                    threshold=pulse_finder_threshold)
 

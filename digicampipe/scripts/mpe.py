@@ -39,7 +39,7 @@ from histogram.histogram import Histogram1D
 from .spe import compute_gaussian_parameters_first_peak
 from digicampipe.calib.camera.baseline import fill_baseline, \
     fill_digicam_baseline, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_2, find_pulse_3, find_pulse_4, fill_pulse_indices
+from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_wavelets, find_pulse_fast, find_pulse_correlate, fill_pulse_indices
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
