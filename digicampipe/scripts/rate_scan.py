@@ -3,7 +3,10 @@ Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
 Usage:
-  rate_scan <file> <outfile>
+  rate_scan [options] <file> <outfile>
+
+Options:
+  --display   Display the plots
 '''
 from docopt import docopt
 import numpy as np
@@ -17,10 +20,10 @@ from digicampipe.io.event_stream import event_stream
 def entry():
 
     args = docopt(__doc__)
-    main(args['<file>'], args['<outfile>'])
+    main(args['<file>'], args['<outfile>'], args['--display'])
 
 
-def main(files, output_filename):
+def main(files, output_filename, display=False):
 
     n_bins = 1024
     thresholds = np.arange(0, 400, 10)
@@ -45,14 +48,16 @@ def main(files, output_filename):
              cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error,
              thresholds=thresholds)
 
-    fig = plt.figure()
-    axes = fig.add_subplot(111)
-    axes.errorbar(thresholds, rate * 1E9, yerr=rate_error * 1E9)
-    axes.set_yscale('log')
-    axes.set_xlabel('Threshold [LSB]')
-    axes.set_ylabel('Rate [Hz]')
+    if display:
 
-    plt.show()
+        fig = plt.figure()
+        axes = fig.add_subplot(111)
+        axes.errorbar(thresholds, rate * 1E9, yerr=rate_error * 1E9)
+        axes.set_yscale('log')
+        axes.set_xlabel('Threshold [LSB]')
+        axes.set_ylabel('Rate [Hz]')
+
+        plt.show()
 
 
 if __name__ == '__main__':
