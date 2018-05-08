@@ -47,9 +47,10 @@ from digicampipe.utils.docopt import convert_pixel_args, \
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max,\
-    find_pulse_correlate
+from digicampipe.calib.camera.peak import find_pulse_with_max, \
+    find_pulse_correlate, find_pulse_fast
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
+from digicampipe.scripts import raw
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
@@ -314,7 +315,7 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
 
-    raw_histo_filename = output_path + 'raw_histo.pk'
+    raw_histo_filename = 'raw_histo.pk'
     amplitude_histo_filename = output_path + 'amplitude_histo.pk'
     charge_histo_filename = output_path + 'charge_histo.pk'
     max_histo_filename = output_path + 'max_histo.pk'
@@ -331,21 +332,10 @@ def entry():
 
     if args['--compute']:
 
-        events = calibration_event_stream(files, pixel_id=pixel_id,
-                                          max_events=max_events)
+        raw_histo = raw.compute(files, max_events=max_events,
+                                pixel_id=pixel_id, output_path=output_path,
+                                filename=raw_histo_filename)
 
-        raw_histo = Histogram1D(
-                            data_shape=(n_pixels,),
-                            bin_edges=np.arange(0, 4096, 1),
-                            axis_name='[LSB]'
-                        )
-
-        for i, event in tqdm(enumerate(events), total=max_events):
-
-            raw_histo.fill(event.data.adc_samples)
-
-        raw_histo.save(raw_histo_filename)
-        raw_histo = Histogram1D.load(raw_histo_filename)
         baseline = raw_histo.mode()
 
         events = calibration_event_stream(files, pixel_id=pixel_id,
@@ -359,12 +349,12 @@ def entry():
 
         max_histo = Histogram1D(
                             data_shape=(n_pixels,),
-                            bin_edges=np.arange(-4096 * integral_width,
-                                                4096 * integral_width),
+                            bin_edges=np.arange(-4095 * integral_width,
+                                                4095 * integral_width),
                             axis_name='[LSB]'
                         )
 
-        for event in tqdm(events, total=max_events):
+        for event in events:
 
             max_histo.fill(event.data.reconstructed_charge)
 
@@ -378,8 +368,8 @@ def entry():
         events = subtract_baseline(events)
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        # events = find_pulse_3(events, threshold=pulse_finder_threshold)
-        events = find_pulse_correlate(events, threshold=pulse_finder_threshold)
+        events = find_pulse_fast(events, threshold=pulse_finder_threshold)
+        # events = find_pulse_correlate(events, threshold=pulse_finder_threshold)
         # events = find_pulse_gaussian_filter(events,
         #                                    threshold=pulse_finder_threshold)
 
@@ -396,14 +386,14 @@ def entry():
 
         spe_charge = Histogram1D(
             data_shape=(n_pixels,),
-            bin_edges=np.arange(-4096 * integral_width, 4096 * integral_width)
+            bin_edges=np.arange(-4095 * integral_width, 4095 * integral_width)
         )
         spe_amplitude = Histogram1D(data_shape=(n_pixels,),
-                                    bin_edges=np.arange(-4096,
-                                                        4096,
+                                    bin_edges=np.arange(-4095,
+                                                        4095,
                                                         1))
 
-        for i, event in tqdm(enumerate(events), total=max_events):
+        for event in events:
 
             spe_charge.fill(event.data.reconstructed_charge)
             spe_amplitude.fill(event.data.reconstructed_amplitude)
@@ -420,7 +410,8 @@ def entry():
         dark_count_rate = np.zeros(n_pixels) * np.nan
         electronic_noise = np.zeros(n_pixels) * np.nan
 
-        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels
+                , desc='Pixel'):
 
             x = max_histo._bin_centers()
             y = max_histo.data[i]
@@ -465,7 +456,8 @@ def entry():
 
         with HDF5TableWriter(results_filename, table_name, mode='w') as h5:
 
-            for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels):
+            for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
+                                 desc='Pixel'):
 
                 try:
 

@@ -46,7 +46,7 @@ def compute(files, max_events, pixel_id, output_path, filename='raw_histo.pk'):
         axis_name='[LSB]'
     )
 
-    for i, event in tqdm(enumerate(events), total=max_events):
+    for event in events:
         raw_histo.fill(event.data.adc_samples)
 
     raw_histo.save(filename)
