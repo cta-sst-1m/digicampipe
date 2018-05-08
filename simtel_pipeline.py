@@ -47,6 +47,7 @@ import mc_shower
 from docopt import docopt
 from digicampipe.visualization import EventViewer
 
+
 def main(
     files,
     outfile_path,
@@ -202,7 +203,6 @@ def main(
                          )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
-
 
     if args['--display']:
 
