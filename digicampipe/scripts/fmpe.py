@@ -34,17 +34,9 @@ import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
-from ctapipe.io import HDF5TableWriter
-from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
-from .spe import compute_gaussian_parameters_first_peak
-from digicampipe.calib.camera.baseline import fill_baseline, \
-    fill_digicam_baseline, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_wavelets, find_pulse_fast, find_pulse_correlate, fill_pulse_indices
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
 from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args, convert_dac_level
+    convert_pixel_args
 from digicampipe.scripts import timing
 from digicampipe.scripts import mpe
 from digicampipe.utils.exception import PeakNotFound
@@ -233,8 +225,10 @@ def entry():
 
     if args['--fit']:
 
-        charge_histo = Histogram1D.load(os.path.join(output_path, charge_histo_filename))
-        amplitude_histo = Histogram1D.load(os.path.join(output_path, amplitude_histo_filename))
+        charge_histo = Histogram1D.load(
+            os.path.join(output_path, charge_histo_filename))
+        amplitude_histo = Histogram1D.load(
+            os.path.join(output_path, amplitude_histo_filename))
 
         gain = np.zeros(n_pixels) * np.nan
         sigma_e = np.zeros(n_pixels) * np.nan
@@ -246,7 +240,8 @@ def entry():
 
         results_filename = os.path.join(output_path, 'fmpe_results.npz')
 
-        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels, desc='Pixel'):
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
+                             desc='Pixel'):
 
             x = charge_histo._bin_centers()
             y = charge_histo.data[i]
@@ -309,12 +304,18 @@ def entry():
 
             try:
 
-                charge_histo.draw(index=(i,), axis=axis_1, log=True, legend=False)
-                amplitude_histo.draw(index=(i,), axis=axis_2, log=True, legend=False)
-                timing_histo.draw(index=(i,), axis=axis_3, log=True, legend=False)
-                figure_1.savefig(figure_path + 'charge_fmpe_pixel_{}'.format(pixel))
-                figure_2.savefig(figure_path + 'amplitude_fmpe_pixel_{}'.format(pixel))
-                figure_3.savefig(figure_path + 'timing_fmpe_pixel_{}'.format(pixel))
+                charge_histo.draw(index=(i,), axis=axis_1, log=True,
+                                  legend=False)
+                amplitude_histo.draw(index=(i,), axis=axis_2, log=True,
+                                     legend=False)
+                timing_histo.draw(index=(i,), axis=axis_3, log=True,
+                                  legend=False)
+                figure_1.savefig(figure_path +
+                                 'charge_fmpe_pixel_{}'.format(pixel))
+                figure_2.savefig(figure_path +
+                                 'amplitude_fmpe_pixel_{}'.format(pixel))
+                figure_3.savefig(figure_path +
+                                 'timing_fmpe_pixel_{}'.format(pixel))
 
             except Exception as e:
 
@@ -328,9 +329,12 @@ def entry():
 
     if args['--display']:
 
-        amplitude_histo_path = os.path.join(output_path, 'amplitude_histo_fmpe.pk')
-        charge_histo_path = os.path.join(output_path, 'charge_histo_fmpe.pk')
-        timing_histo_path = os.path.join(output_path, 'timing_histo_fmpe.pk')
+        amplitude_histo_path = os.path.join(output_path,
+                                            'amplitude_histo_fmpe.pk')
+        charge_histo_path = os.path.join(output_path,
+                                         'charge_histo_fmpe.pk')
+        timing_histo_path = os.path.join(output_path,
+                                         'timing_histo_fmpe.pk')
 
         charge_histo = Histogram1D.load(charge_histo_path)
         charge_histo.draw(index=(0,), log=False, legend=False)
