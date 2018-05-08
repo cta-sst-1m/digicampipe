@@ -3,7 +3,7 @@ Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
 Usage:
-  bias_curve_mc <hdf5_file> <outfile>
+  rate_scane <file> <outfile>
 '''
 from docopt import docopt
 import numpy as np
@@ -17,7 +17,7 @@ from digicampipe.io.event_stream import event_stream
 def entry():
 
     args = docopt(__doc__)
-    main(args['<hdf5_file>'], args['<outfile>'])
+    main(args['<file>'], args['<outfile>'])
 
 
 def main(files, output_filename):
