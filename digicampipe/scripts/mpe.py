@@ -32,15 +32,12 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
-from .spe import compute_gaussian_parameters_first_peak
-from digicampipe.calib.camera.baseline import fill_baseline, \
-    fill_digicam_baseline, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, find_pulse_gaussian_filter, find_pulse_1, find_pulse_wavelets, find_pulse_fast, find_pulse_correlate, fill_pulse_indices
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude, fit_template
+from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
+    subtract_baseline
+from digicampipe.calib.camera.peak import fill_pulse_indices
+from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
 from digicampipe.scripts import timing
@@ -151,9 +148,12 @@ def entry():
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            timing_histo_filename = 'timing_histo_ac_level_{}.pk'.format(ac_level)
-            charge_histo_filename = 'charge_histo_ac_level_{}.pk'.format(ac_level)
-            amplitude_histo_filename = 'amplitude_histo_ac_level_{}.pk'.format(ac_level)
+            timing_histo_filename = 'timing_histo_ac_level_{}.pk' \
+                                    ''.format(ac_level)
+            charge_histo_filename = 'charge_histo_ac_level_{}.pk' \
+                                    ''.format(ac_level)
+            amplitude_histo_filename = 'amplitude_histo_ac_level_{}.pk' \
+                                       ''.format(ac_level)
 
             timing_histo = timing.compute(file, max_events, pixel_id,
                                           output_path,
