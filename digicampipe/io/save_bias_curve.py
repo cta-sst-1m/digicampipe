@@ -96,7 +96,8 @@ class TriggerrateThresholdAnalysis:
                 if cluster_rate is None:
                     cluster_rate = init_cluster_rate(r0, n_thresholds)
 
-                for threshold_id, threshold in enumerate(reversed(self.thresholds)):
+                for threshold_id, threshold in enumerate(
+                        reversed(self.thresholds)):
 
                     comp = r0.trigger_input_7 > threshold
 
