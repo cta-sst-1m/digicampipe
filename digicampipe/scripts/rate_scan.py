@@ -17,12 +17,16 @@ from digicampipe.io.event_stream import event_stream
 def entry():
 
     args = docopt(__doc__)
+    main(args['<hdf5_file>'], args['<outfile>'])
+
+
+def main(files, output_filename):
 
     n_bins = 1024
     thresholds = np.arange(0, 400, 10)
     blinding = True
 
-    data_stream = event_stream(args['<hdf5_file>'])
+    data_stream = event_stream(files)
     data_stream = r0.fill_event_type(data_stream, flag=8)
     data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
     data_stream = filter.filter_missing_baseline(data_stream)
@@ -37,7 +41,7 @@ def entry():
 
     rate, rate_error, cluster_rate, cluster_rate_error, thresholds = output
 
-    np.savez(file=args['<outfile>'], rate=rate, rate_error=rate_error,
+    np.savez(file=output_filename, rate=rate, rate_error=rate_error,
              cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error,
              thresholds=thresholds)
 
