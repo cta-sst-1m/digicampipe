@@ -63,9 +63,12 @@ def zfits_event_source(
             FutureWarning
         )
 
-        patch_matrix = utils.geometry.compute_patch_matrix(camera=camera)
-        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(camera=camera)
-        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(camera=camera)
+        patch_matrix = utils.geometry.compute_patch_matrix(
+            camera=camera)
+        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(
+            camera=camera)
+        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(
+            camera=camera)
     else:
         patch_matrix = camera.patch_matrix
         cluster_7_matrix = camera.cluster_7_matrix
@@ -137,7 +140,9 @@ def count_number_events(file_list):
     :return: n_events: int
     """
     n_events = 0
+
     for filename in file_list:
+
         zfits = ZFile(filename)
         n_events += zfits.numrows
 
