@@ -27,8 +27,6 @@ def convert_dac_level(text):
     return dac_level
 
 
-
-
 def convert_max_events_args(text):
 
     if text is not None:
