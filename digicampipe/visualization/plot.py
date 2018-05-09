@@ -1,5 +1,10 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+from digicampipe.visualization.mpl import CameraDisplay
+from digicampipe.utils.geometry import generate_geometry_from_camera
+from cts_core.camera import Camera
 
 
 def plot_hillas(hillas_dict, title='', **kwargs):
@@ -44,3 +49,34 @@ def plot_parameter(parameter, name, units, axis=None, **kwargs):
         #axis.set_xlabel(name + units)
         #axis.set_ylabel('count')
         axis.legend(loc='best')
+
+
+def plot_array_camera(data, label='', limits=None, **kwargs):
+
+        plt.figure()
+        mask = np.isfinite(data)
+        data = np.ma.masked_array(data, mask=~mask)
+        cam = Camera('digicampipe/tests/resources/camera_config.cfg')
+        geom = generate_geometry_from_camera(cam)
+        cam_display = CameraDisplay(geom, **kwargs)
+        cam_display.image = data
+        cam_display.axes.set_title('')
+        cam_display.axes.set_xticks([])
+        cam_display.axes.set_yticks([])
+        cam_display.axes.set_xlabel('')
+        cam_display.axes.set_ylabel('')
+
+        cam_display.axes.axis('off')
+        cam_display.add_colorbar(label=label)
+        cam_display.axes.get_figure().set_size_inches((10, 10))
+        plt.axis('equal')
+        if limits is not None:
+
+            if not isinstance(limits, tuple):
+                raise TypeError('Limits must be a tuple()')
+
+            cam_display.colorbar.set_clim(vmin=limits[0], vmax=limits[1])
+
+        cam_display.update()
+
+        return cam_display
