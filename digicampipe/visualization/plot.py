@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 
 
 from digicampipe.visualization.mpl import CameraDisplay
-from digicampipe.utils.geometry import generate_geometry_from_camera
-from cts_core.camera import Camera
+import digicampipe.utils as utils
 
 
 def plot_hillas(hillas_dict, title='', **kwargs):
@@ -53,11 +52,10 @@ def plot_parameter(parameter, name, units, axis=None, **kwargs):
 
 def plot_array_camera(data, label='', limits=None, **kwargs):
 
-        plt.figure()
         mask = np.isfinite(data)
         data = np.ma.masked_array(data, mask=~mask)
-        cam = Camera('digicampipe/tests/resources/camera_config.cfg')
-        geom = generate_geometry_from_camera(cam)
+        cam = utils.Camera()
+        geom = cam.geometry
         cam_display = CameraDisplay(geom, **kwargs)
         cam_display.image = data
         cam_display.axes.set_title('')
