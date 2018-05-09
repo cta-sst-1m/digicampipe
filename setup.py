@@ -48,6 +48,7 @@ setup(
             'digicam-spe=digicampipe.scripts.spe:entry',
             'digicam-fmpe=digicampipe.scripts.fmpe:entry',
             'digicam-rate-scan=digicampipe.scripts.rate_scan:entry',
+            'digicam-temperature=digicampipe.scripts.temperature:entry',
         ],
     }
 )
