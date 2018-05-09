@@ -68,6 +68,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
         cam = utils.Camera()
         geom = cam.geometry
         cam_display = CameraDisplay(geom, **kwargs)
+        cam_display.cmap.set_bad(color='k')
         cam_display.image = data
         cam_display.axes.set_title('')
         cam_display.axes.set_xticks([])
