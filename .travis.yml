@@ -1,6 +1,10 @@
 language: python
 python:
 - '3.5'
+before_install:
+  - export MPLBACKEND='Agg'
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
 install:
 - sudo apt-get update
 - sudo apt-get install libcairo2-dev libnetpbm10-dev netpbm libpng12-dev libjpeg-dev
@@ -12,12 +16,16 @@ install:
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
 - conda info -a
-- conda env create -f environment.yml --quiet
+- conda env create -f environment.yml
 - source activate digicampipe
 - pip install .
 script:
 - pytest digicampipe
 - make -C docs/ html
+- |
+  if [ "${TRAVIS_EVENT_TYPE}" == "cron" ]; then
+    travis_wait 30 pytest -c all_tests.ini digicampipe
+  fi
 env:
   global:
   - GITHUB_REPO: github.com/cta-sst-1m/digicampipe.git

@@ -14,6 +14,8 @@ def gaussian(x, mean, sigma, amplitude):
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, a_0=0, a_1=0, a_2=0,
                 a_3=0, a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
 
+    # sigma_e = np.sqrt(sigma_e**2 - 2**2 / 12)
+
     params = {'baseline': baseline,
               'gain': gain,
               'sigma_e': sigma_e,
@@ -60,7 +62,7 @@ def fmpe_pdf(x, **params):
             amplitudes[id] = val
 
     N = np.arange(0, amplitudes.shape[0], 1)
-    sigma = sigma_e**2 + N * sigma_s**2
+    sigma = sigma_e**2 + N * sigma_s**2  # + bin_width**2 / 12
 
     value = x - (N * gain + baseline)[..., np.newaxis]
     value = value**2
@@ -88,3 +90,17 @@ def single_photoelectron_pdf(x, baseline, gain,
     pdf /= np.sqrt(2 * np.pi)
 
     return pdf
+
+
+def log_spe(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
+
+    return np.log(single_photoelectron_pdf(x,
+                                           baseline,
+                                           gain,
+                                           sigma_e,
+                                           sigma_s,
+                                           a_1,
+                                           a_2,
+                                           a_3,
+                                           a_4
+                                           ))
