@@ -30,7 +30,6 @@ from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
-import peakutils
 from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
@@ -41,6 +40,41 @@ from digicampipe.scripts import timing
 from digicampipe.scripts import mpe
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.pdf import fmpe_pdf_10
+
+
+def compute_data_bounds(x, y, y_err, estimated_gain, n_peaks=10,
+                        params=None):
+
+    mask = (y > 0) * (x < n_peaks * estimated_gain)
+
+    if params is not None:
+
+        gain = params['gain']
+        baseline = params['baseline']
+
+        amplitudes = []
+
+        for key, val in params.items():
+
+            if key[:2] == 'a_':
+
+                amplitudes.append(val)
+
+        amplitudes = np.array(amplitudes)
+        amplitudes = amplitudes[amplitudes > 0]
+        n_peaks = len(amplitudes)
+
+        min_bin = baseline - gain / 2
+        max_bin = baseline + gain * (n_peaks - 1)
+        max_bin += gain / 2
+
+        mask *= (x <= max_bin) * (x >= min_bin)
+
+    x = x[mask]
+    y = y[mask]
+    y_err = y_err[mask]
+
+    return x, y, y_err
 
 
 def compute_limit_fmpe(init_params):
@@ -61,17 +95,16 @@ def compute_limit_fmpe(init_params):
 
         if key[:2] == 'a_':
 
-            limit_params['limit_{}'.format(key)] = (0.5 * val,
-                                                    val * 1.5)
+            limit_params['limit_{}'.format(key)] = (0.5 * val, val * 1.5)
 
     return limit_params
 
 
-def compute_init_fmpe(x, y, yerr, n_pe_peaks, snr=3, min_dist=5, debug=False):
+def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
 
     y = y.astype(np.float)
     cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
-    cleaned_yerr = np.convolve(yerr, np.ones(min_dist), mode='same')
+    cleaned_y_err = np.convolve(y_err, np.ones(min_dist), mode='same')
     bin_width = np.diff(x)
     bin_width = np.mean(bin_width)
 
@@ -79,13 +112,11 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks, snr=3, min_dist=5, debug=False):
 
         raise ValueError('x must be sorted !')
 
-    # peak_indices = peakutils.indexes(y, thres=thres, min_dist=min_dist)
-
     d_y = np.diff(cleaned_y)
     indices = np.arange(len(y))
     peak_mask = np.zeros(y.shape, dtype=bool)
     peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] < 0)
-    peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_yerr[1:-1]) > snr
+    peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
     peak_indices = indices[peak_mask]
     peak_indices = peak_indices[:min(len(peak_indices), n_pe_peaks)]
 
@@ -149,9 +180,9 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks, snr=3, min_dist=5, debug=False):
 
         plt.figure()
         plt.step(x, y, where='mid', color='k', label='data')
-        plt.errorbar(x, y, yerr, linestyle='None', color='k')
+        plt.errorbar(x, y, y_err, linestyle='None', color='k')
         plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
-                 marker='o', color='r')
+                 marker='o', color='r', label='Peak positions')
         plt.plot(x_fit, fmpe_pdf_10(x_fit, **params), label='init', color='g')
         plt.legend(loc='best')
         plt.show()
@@ -159,10 +190,12 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks, snr=3, min_dist=5, debug=False):
     return params
 
 
-def fit_fmpe(x, y, yerr, init_params, limit_params, debug=False):
+def fit_fmpe(x, y, y_err, init_params, limit_params):
 
-    chi2 = Chi2Regression(fmpe_pdf_10, x=x, y=y, error=yerr)
+    chi2 = Chi2Regression(fmpe_pdf_10, x=x, y=y, error=y_err)
 
+    bin_width = np.diff(x)
+    bin_width = np.mean(bin_width)
     params = describe(fmpe_pdf_10, verbose=False)[1:]
     fixed_params = {}
 
@@ -177,6 +210,7 @@ def fit_fmpe(x, y, yerr, init_params, limit_params, debug=False):
         **init_params,
         **limit_params,
         **fixed_params,
+        bin_width=bin_width,
         print_level=0,
         pedantic=False,
     )
@@ -185,7 +219,7 @@ def fit_fmpe(x, y, yerr, init_params, limit_params, debug=False):
     return m
 
 
-def plot_fmpe_fit(x, y, yerr, fitter, pixel_id=None):
+def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
 
     if pixel_id is None:
 
@@ -199,39 +233,40 @@ def plot_fmpe_fit(x, y, yerr, fitter, pixel_id=None):
     n_free_parameters = len(m.list_of_vary_param())
     n_dof = len(x) - n_free_parameters
 
+    n_events = int(np.sum(y))
     # m.draw_contour('sigma_e', 'sigma_s', show_sigma=True, bound=5)
 
     x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
     y_fit = fmpe_pdf_10(x_fit, **m.values)
 
-    text = '$\chi^2 / ndof = $ {:.01f} / {} \n'.format(m.fval, n_dof)
-    text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(
+    text = '$\chi^2 / ndof : $ {:.01f} / {}\n'.format(m.fval, n_dof)
+    text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['baseline'], m.errors['baseline'])
-    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(m.values['gain'],
+    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(m.values['gain'],
                                                             m.errors['gain'])
-    text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(
+    text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['sigma_e'], m.errors['sigma_e'])
-    text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(
+    text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB]'.format(
         m.values['sigma_s'], m.errors['sigma_s'])
+
+    data_text = r'$N_{events}$' + ' : {}\nPixel : {}'.format(n_events,
+                                                             pixel_id)
 
     fig = plt.figure()
     axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
     axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2])
-    axes.step(x, y, where='mid', color='k', label='Pixel : {}'.format(pixel_id))
-    axes.errorbar(x, y, yerr, linestyle='None', color='k')
-    axes.plot(x_fit, y_fit,
-             label=text, color='r')
+    axes.step(x, y, where='mid', color='k', label=data_text)
+    axes.errorbar(x, y, y_err, linestyle='None', color='k')
+    axes.plot(x_fit, y_fit, label=text, color='r')
 
     y_fit = fmpe_pdf_10(x, **m.values)
-    axes_residual.errorbar(x, ((y - y_fit) / yerr), marker='o', ls='None',
+    axes_residual.errorbar(x, ((y - y_fit) / y_err), marker='o', ls='None',
                            color='k')
     axes_residual.set_xlabel('[LSB]')
     axes.set_ylabel('count')
     axes_residual.set_ylabel('pull')
     # axes_residual.set_yscale('log')
     axes.legend(loc='best')
-
-    plt.show()
 
     return fig
 
@@ -308,12 +343,9 @@ def entry():
             x = charge_histo._bin_centers()
             y = charge_histo.data[i]
             y_err = charge_histo.errors()[i]
-            n_entries = np.sum(y)
 
-            mask = (y > 0) * (x < n_pe_peaks * estimated_gain)
-            x = x[mask]
-            y = y[mask]
-            y_err = y_err[mask]
+            x, y, y_err = compute_data_bounds(x, y, y_err,
+                                              estimated_gain, n_pe_peaks)
 
             try:
 
@@ -321,6 +353,10 @@ def entry():
                                                 min_dist=5,
                                                 n_pe_peaks=n_pe_peaks,
                                                 debug=debug)
+
+                x, y, y_err = compute_data_bounds(x, y, y_err,
+                                                  estimated_gain, n_pe_peaks,
+                                                  params=params_init)
 
                 params_limit = compute_limit_fmpe(params_init)
 
@@ -339,9 +375,16 @@ def entry():
                 chi_2[i] = m.fval
                 ndf[i] = len(x) - len(m.list_of_vary_param())
 
+                fig = plot_fmpe_fit(x, y, y_err, m, pixel)
+
+                fig.savefig(os.path.join(output_path, 'figures/') +
+                            'fmpe_pixel_{}'.format(pixel))
+
                 if debug:
 
-                    plot_fmpe_fit(x, y, y_err, m, pixel)
+                    plt.show()
+
+                plt.close()
 
             except Exception as exception:
 
