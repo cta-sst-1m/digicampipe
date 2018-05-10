@@ -67,10 +67,11 @@ def compute_limit_fmpe(init_params):
     return limit_params
 
 
-def compute_init_fmpe(x, y, yerr, n_pe_peaks,
-                      thres=0.08, min_dist=5, debug=False):
+def compute_init_fmpe(x, y, yerr, n_pe_peaks, snr=3, min_dist=5, debug=False):
 
     y = y.astype(np.float)
+    cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
+    cleaned_yerr = np.convolve(yerr, np.ones(min_dist), mode='same')
     bin_width = np.diff(x)
     bin_width = np.mean(bin_width)
 
@@ -78,16 +79,23 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks,
 
         raise ValueError('x must be sorted !')
 
-    peak_indices = peakutils.indexes(y, thres=thres, min_dist=min_dist)
+    # peak_indices = peakutils.indexes(y, thres=thres, min_dist=min_dist)
+
+    d_y = np.diff(cleaned_y)
+    indices = np.arange(len(y))
+    peak_mask = np.zeros(y.shape, dtype=bool)
+    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] < 0)
+    peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_yerr[1:-1]) > snr
+    peak_indices = indices[peak_mask]
     peak_indices = peak_indices[:min(len(peak_indices), n_pe_peaks)]
 
     if len(peak_indices) <= 1:
 
         raise PeakNotFound('Not enough peak found for : \n'
-                           ' threshold : {} \t '
-                           'min distance : {} \n '
+                           'SNR : {} \t '
+                           'Min distance : {} \n '
                            'Need a least 2 peaks, found {}!!'.
-                           format(thres, min_dist, len(peak_indices)))
+                           format(snr, min_dist, len(peak_indices)))
 
     x_peak = x[peak_indices]
     y_peak = y[peak_indices]
@@ -100,9 +108,10 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks,
 
     distance = int(gain / 2)
 
-    if distance < 1:
+    if distance < bin_width:
 
-        raise ValueError('Distance between peaks must be >= 1 bin')
+        raise ValueError('Distance between peaks must be >= {} the bin width'
+                         ''.format(bin_width))
 
     n_x = len(x)
 
@@ -111,11 +120,11 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks,
         left = x[peak_index] - distance
         left = np.searchsorted(x, left)
         left = max(0, left)
-        right = x[peak_index] + distance + 1
+        right = x[peak_index] + distance
         right = np.searchsorted(x, right)
         right = min(n_x - 1, right)
 
-        amplitudes[i] = np.sum(y[left:right]) * np.sqrt(2 * np.pi)
+        amplitudes[i] = np.sum(y[left:right]) * bin_width
         mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
 
         sigma[i] = np.average((x[left:right] - mean_peak_x[i])**2,
@@ -136,9 +145,15 @@ def compute_init_fmpe(x, y, yerr, n_pe_peaks,
 
     if debug:
 
+        x_fit = np.linspace(np.min(x), np.max(x), num=len(x)*10)
+
         plt.figure()
-        plt.plot(x, y)
-        plt.plot(mean_peak_x, amplitudes)
+        plt.step(x, y, where='mid', color='k', label='data')
+        plt.errorbar(x, y, yerr, linestyle='None', color='k')
+        plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
+                 marker='o', color='r')
+        plt.plot(x_fit, fmpe_pdf_10(x_fit, **params), label='init', color='g')
+        plt.legend(loc='best')
         plt.show()
 
     return params
@@ -163,21 +178,62 @@ def fit_fmpe(x, y, yerr, init_params, limit_params, debug=False):
         **limit_params,
         **fixed_params,
         print_level=0,
-        pedantic=False
+        pedantic=False,
     )
     m.migrad()
 
-    if debug:
+    return m
 
-        print(m.values)
-        plt.figure()
-        plt.plot(x, y)
-        plt.plot(x, fmpe_pdf_10(x, **init_params), label='init')
-        plt.plot(x, fmpe_pdf_10(x, **m.values), label='fit')
-        plt.legend()
-        plt.show()
 
-    return m.values, m.errors
+def plot_fmpe_fit(x, y, yerr, fitter, pixel_id=None):
+
+    if pixel_id is None:
+
+        pixel_id = ''
+
+    else:
+
+        pixel_id = str(pixel_id)
+
+    m = fitter
+    n_free_parameters = len(m.list_of_vary_param())
+    n_dof = len(x) - n_free_parameters
+
+    # m.draw_contour('sigma_e', 'sigma_s', show_sigma=True, bound=5)
+
+    x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
+    y_fit = fmpe_pdf_10(x_fit, **m.values)
+
+    text = '$\chi^2 / ndof = $ {:.01f} / {} \n'.format(m.fval, n_dof)
+    text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(
+        m.values['baseline'], m.errors['baseline'])
+    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(m.values['gain'],
+                                                            m.errors['gain'])
+    text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(
+        m.values['sigma_e'], m.errors['sigma_e'])
+    text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB] \n'.format(
+        m.values['sigma_s'], m.errors['sigma_s'])
+
+    fig = plt.figure()
+    axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
+    axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2])
+    axes.step(x, y, where='mid', color='k', label='Pixel : {}'.format(pixel_id))
+    axes.errorbar(x, y, yerr, linestyle='None', color='k')
+    axes.plot(x_fit, y_fit,
+             label=text, color='r')
+
+    y_fit = fmpe_pdf_10(x, **m.values)
+    axes_residual.errorbar(x, ((y - y_fit) / yerr), marker='o', ls='None',
+                           color='k')
+    axes_residual.set_xlabel('[LSB]')
+    axes.set_ylabel('count')
+    axes_residual.set_ylabel('pull')
+    # axes_residual.set_yscale('log')
+    axes.legend(loc='best')
+
+    plt.show()
+
+    return fig
 
 
 def entry():
@@ -234,6 +290,12 @@ def entry():
         sigma_e = np.zeros(n_pixels) * np.nan
         sigma_s = np.zeros(n_pixels) * np.nan
         baseline = np.zeros(n_pixels) * np.nan
+        gain_error = np.zeros(n_pixels) * np.nan
+        sigma_e_error = np.zeros(n_pixels) * np.nan
+        sigma_s_error = np.zeros(n_pixels) * np.nan
+        baseline_error = np.zeros(n_pixels) * np.nan
+        chi_2 = np.zeros(n_pixels) * np.nan
+        ndf = np.zeros(n_pixels) * np.nan
 
         n_pe_peaks = 10
         estimated_gain = 22
@@ -255,27 +317,45 @@ def entry():
 
             try:
 
-                params_init = compute_init_fmpe(x, y, y_err, thres=0.05,
+                params_init = compute_init_fmpe(x, y, y_err, snr=3,
                                                 min_dist=5,
-                                                n_pe_peaks=n_pe_peaks)
+                                                n_pe_peaks=n_pe_peaks,
+                                                debug=debug)
 
                 params_limit = compute_limit_fmpe(params_init)
 
-                params, params_err = fit_fmpe(x, y, y_err, params_init,
-                                              params_limit, debug=debug)
+                m = fit_fmpe(x, y, y_err,
+                             params_init,
+                             params_limit)
 
-                gain[i] = params['gain']
-                sigma_e[i] = params['sigma_e']
-                sigma_s[i] = params['sigma_s']
-                baseline[i] = params['baseline']
+                gain[i] = m.values['gain']
+                gain_error[i] = m.errors['gain']
+                sigma_e[i] = m.values['sigma_e']
+                sigma_e_error[i] = m.errors['sigma_e']
+                sigma_s[i] = m.values['sigma_s']
+                sigma_s_error[i] = m.errors['sigma_s']
+                baseline[i] = m.values['baseline']
+                baseline_error[i] = m.errors['baseline']
+                chi_2[i] = m.fval
+                ndf[i] = len(x) - len(m.list_of_vary_param())
+
+                if debug:
+
+                    plot_fmpe_fit(x, y, y_err, m, pixel)
 
             except Exception as exception:
 
                 print('Could not fit FMPE in pixel {}'.format(pixel))
                 print(exception)
 
-        np.savez(results_filename, gain=gain, sigma_e=sigma_e, sigma_s=sigma_s,
-                 baseline=baseline, pixel_id=pixel_id)
+        np.savez(results_filename,
+                 gain=gain, sigma_e=sigma_e,
+                 sigma_s=sigma_s, baseline=baseline,
+                 gain_error=gain_error, sigma_e_error=sigma_e_error,
+                 sigma_s_error=sigma_s_error, baseline_error=baseline_error,
+                 chi_2=chi_2, ndf=ndf,
+                 pixel_id=pixel_id,
+                 )
 
     if args['--save_figures']:
 
