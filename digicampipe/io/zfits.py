@@ -8,7 +8,7 @@ import warnings
 from tqdm import tqdm
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
-from protozfits import ZFile
+from protozfits.digicam import File
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +77,7 @@ def zfits_event_source(
 
     loaded_telescopes = []
 
-    event_stream = ZFile(url)
+    event_stream = File(url)
 
     if max_events is None:
 
@@ -143,7 +143,7 @@ def count_number_events(file_list):
 
     for filename in file_list:
 
-        zfits = ZFile(filename)
+        zfits = File(filename)
         n_events += zfits.numrows
 
     return n_events
