@@ -1,14 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """
 Components to read ZFITS data.
-This requires the protozfitsreader python library to be installed
+This requires the protozfits python library to be installed
 """
 import logging
 import warnings
 from tqdm import tqdm
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
-from protozfitsreader import ZFile
+from protozfits import ZFile
 logger = logging.getLogger(__name__)
 
 
