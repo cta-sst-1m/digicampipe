@@ -17,11 +17,9 @@ __all__ = ['zfits_event_source']
 
 def zfits_event_source(
     url,
-    camera=None,
-    camera_geometry=None,
+    camera=utils.DigiCam,
     max_events=None,
     allowed_tels=None,
-    expert_mode=None,
 ):
     """A generator that streams data from an ZFITs data file
     Parameters
@@ -35,48 +33,10 @@ def zfits_event_source(
         be used for example emulate the final CTA data format, where there
         would be 1 telescope per file (whereas in current monte-carlo,
         they are all interleaved into one file)
-    camera : utils.Camera() or None, for DigiCam
-    expert_mode : deprecated
-    camera_geometry: soon to be deprecated
+    camera : utils.Camera(), default DigiCam
     """
-    if camera is None:
-        camera = utils.DigiCam
-
-    if expert_mode is not None:
-        warnings.warn(
-            "expert_mode is deprecated, it is now always True.",
-            FutureWarning
-        )
-
-    if camera_geometry is not None:
-        warnings.warn(
-            "camera_geometry will soon be deprecated, use utils.Camera",
-            FutureWarning
-        )
-        geometry = camera_geometry
-    else:
-        geometry = camera.geometry
-
-    if not isinstance(camera, utils.Camera):
-        warnings.warn(
-            "camera should be utils.Camera not cts_core.camera.Camera",
-            FutureWarning
-        )
-
-        patch_matrix = utils.geometry.compute_patch_matrix(
-            camera=camera)
-        cluster_7_matrix = utils.geometry.compute_cluster_matrix_7(
-            camera=camera)
-        cluster_19_matrix = utils.geometry.compute_cluster_matrix_19(
-            camera=camera)
-    else:
-        patch_matrix = camera.patch_matrix
-        cluster_7_matrix = camera.cluster_7_matrix
-        cluster_19_matrix = camera.cluster_19_matrix
     data = DataContainer()
-
     loaded_telescopes = []
-
     event_stream = ZFile(url)
 
     if max_events is None:
@@ -106,10 +66,10 @@ def zfits_event_source(
             if tel_id not in loaded_telescopes:
                 data.inst.num_channels[tel_id] = event.num_channels
                 data.inst.num_pixels[tel_id] = event.n_pixels
-                data.inst.geom[tel_id] = geometry
-                data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix
-                data.inst.cluster_matrix_19[tel_id] = cluster_19_matrix
-                data.inst.patch_matrix[tel_id] = patch_matrix
+                data.inst.geom[tel_id] = camera.geometry
+                data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = camera.patch_matrix
                 data.inst.num_samples[tel_id] = event.num_samples
                 loaded_telescopes.append(tel_id)
 
