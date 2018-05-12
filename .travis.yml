@@ -31,10 +31,6 @@ before_install:
   - export MPLBACKEND='Agg'
 
 install:
-- sudo apt-get update
-- sudo apt-get install libcairo2-dev libnetpbm10-dev netpbm libpng12-dev libjpeg-dev
-  zlib1g-dev libbz2-dev swig cfitsio-dev
-
 - wget $MINICONDA_URL -O miniconda.sh
 - bash miniconda.sh -b -p $HOME/miniconda
 - export PATH="$HOME/miniconda/bin:$PATH"
