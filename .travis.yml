@@ -15,8 +15,7 @@ matrix:
         - DYLD_LIBRARY_PATH=$HOME/miniconda/envs/pz/lib/python3.5/site-packages/protozfits
 
 language: python
-python:
-- '3.5'
+
 install:
 - sudo apt-get update
 - sudo apt-get install libcairo2-dev libnetpbm10-dev netpbm libpng12-dev libjpeg-dev
