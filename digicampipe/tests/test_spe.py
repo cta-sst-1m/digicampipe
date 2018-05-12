@@ -14,7 +14,7 @@ def test_compute_gaussian_parameters_highest_peak():
 
     with pytest.raises(PeakNotFound):
 
-        spe.compute_gaussian_parameters_highest_peak(bins, count, snr)
+        spe.compute_gaussian_parameters_first_peak(bins, count, snr)
 
 
 @pytest.mark.xfail
@@ -55,7 +55,8 @@ def test_compute_amplitude():
 
 @pytest.mark.xfail
 def test_spe_fit_function():
-    # test: spe.spe_fit_function(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4)
+    # test: spe.spe_fit_function(x, baseline, gain,
+    # sigma_e, sigma_s, a_1, a_2, a_3, a_4)
     assert False
 
 
