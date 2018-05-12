@@ -1,5 +1,6 @@
 language: generic
 
+
 matrix:
   include:
     - os: linux
@@ -25,7 +26,12 @@ matrix:
         - MINICONDA_URL=https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
         - DYLD_LIBRARY_PATH=$HOME/miniconda/envs/pz/lib/python3.6/site-packages/protozfits
 
-language: python
+
+before_install:
+  - export MPLBACKEND='Agg'
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+
 
 install:
 - sudo apt-get update

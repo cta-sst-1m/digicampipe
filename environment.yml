@@ -2,6 +2,7 @@ name: digicampipe
 channels:
 - defaults
 - astropy
+- anaconda
 - cta-observatory
 - anaconda
 dependencies:
