@@ -5,7 +5,6 @@ channels:
 - cta-observatory
 - anaconda
 dependencies:
-- python=3.5.4
 - astropy
 - astroquery
 - h5py
@@ -19,6 +18,8 @@ dependencies:
 - pytest
 - scipy
 - traitlets
+- ctapipe-extra=0.2.*
+- pyhessio
 - pip:
   - pytest-benchmark==3.1.1
   - pytest-runner==3.0
@@ -27,9 +28,7 @@ dependencies:
   - peakutils==1.0.3
   - sphinx-automodapi
   - https://github.com/cta-sst-1m/protozfitsreader/archive/v0.44.1b0.tar.gz
-  - git+https://github.com/cta-observatory/pyhessio.git#egg=pyhessio
   - git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
-  - git+https://github.com/cta-observatory/ctapipe-extra.git#egg=ctapipe-extra
   - git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
   - git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
   - https://github.com/calispac/histogram/archive/0.1.1.tar.gz
