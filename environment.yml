@@ -20,6 +20,7 @@ dependencies:
 - traitlets
 - ctapipe-extra=0.2.*
 - pyhessio
+- yaml
 - pip:
   - pytest-benchmark==3.1.1
   - pytest-runner==3.0
