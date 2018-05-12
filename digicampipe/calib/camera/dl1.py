@@ -10,7 +10,6 @@ def calibrate_to_dl1(
     boundary_threshold=4,
     additional_mask=None
 ):
-
     for i, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
@@ -26,7 +25,8 @@ def calibrate_to_dl1(
             adc_samples = r1_camera.adc_samples
 
             mask_for_cleaning = (
-                adc_samples > 3 * r0_camera.standard_deviation[:, np.newaxis]
+                adc_samples >
+                3 * r0_camera.standard_deviation[:, np.newaxis]
             )
             dl1_camera.cleaning_mask = np.any(mask_for_cleaning, axis=-1)
 
@@ -37,21 +37,25 @@ def calibrate_to_dl1(
 
             # Integrate the data
             adc_integrated = utils.integrate(
-                adc_samples, time_integration_options['window_width']
+                adc_samples,
+                time_integration_options['window_width']
             )
 
             pe_samples_trace = adc_integrated / gain[:, np.newaxis]
             n_samples = adc_samples.shape[-1]
             dl1_camera.pe_samples_trace = np.pad(
-                pe_samples_trace, (
+                array=pe_samples_trace,
+                pad_width=(
                     (0, 0),
                     (0, n_samples - pe_samples_trace.shape[-1] % n_samples)
-                ), 'constant'
+                ),
+                mode='constant'
             )
 
             # Compute the charge
             dl1_camera.pe_samples, dl1_camera.time_bin = utils.extract_charge(
-                adc_integrated, time_integration_options['mask'],
+                adc_integrated,
+                time_integration_options['mask'],
                 time_integration_options['mask_edges'],
                 time_integration_options['peak'],
                 time_integration_options['window_start'],
@@ -70,17 +74,22 @@ def calibrate_to_dl1(
             )
 
             # recursive selection of neighboring pixels
-            # threshold is 2*boundary_threshold, maybe we should introduce
-            # yet a 3rd threshold in the args of the function
+            # threshold is 2*boundary_threshold,
+            # maybe we should introduce yet a 3rd threshold
+            # in the args of the function
             image = dl1_camera.pe_samples
-            """
             recursion = True
             border = False
             while recursion:
                 recursion = False
                 for i in pixel_id[dl1_camera.cleaning_mask]:
                     num_neighbors = 0
-                    for j in pixel_id[geom.neighbor_matrix[i] & ~dl1_camera.cleaning_mask]:
+                    for j in (
+                        pixel_id[
+                            geom.neighbor_matrix[i] &
+                            (~dl1_camera.cleaning_mask)
+                        ]
+                    ):
                         num_neighbors = num_neighbors + 1
                         if image[j] > boundary_threshold:
                             dl1_camera.cleaning_mask[j] = True
@@ -90,7 +99,6 @@ def calibrate_to_dl1(
 
             dl1_camera.on_border = border
 
-            """
             # repaired piece of code from Cyril. The commented version above leads to border_flag = 1 in almost all events.
             recursion = True
             while recursion:
@@ -112,12 +120,15 @@ def calibrate_to_dl1(
 
             weight = dl1_camera.pe_samples
             dl1_camera.time_spread = np.average(
-                dl1_camera.time_bin[1] * 4, weights=weight
-            )
+
+                dl1_camera.time_bin[1] * 4,
+                weights=weight)
+
             dl1_camera.time_spread = np.average(
                 (dl1_camera.time_bin[1] * 4 - dl1_camera.time_spread)**2,
                 weights=weight
             )
+
             dl1_camera.time_spread = np.sqrt(dl1_camera.time_spread)
 
         yield event

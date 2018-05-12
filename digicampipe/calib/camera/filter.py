@@ -54,7 +54,8 @@ def filter_shower(event_stream, min_photon):
 
         for telescope_id in event.r0.tels_with_data:
             dl1_camera = event.dl1.tel[telescope_id]
-            if np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask]) >= min_photon:
+            photons = np.sum(dl1_camera.pe_samples[dl1_camera.cleaning_mask])
+            if photons >= min_photon:
 
                 yield event
 
@@ -114,7 +115,8 @@ def filter_period(event_stream, period):
 
         for telescope_id in event.r0.tels_with_data:
 
-            t_new = event.r0.tel[telescope_id].local_camera_clock * u.nanosecond
+            t_new = (
+                event.r0.tel[telescope_id].local_camera_clock * u.nanosecond)
 
             if (t_new - t_last) > period:
 

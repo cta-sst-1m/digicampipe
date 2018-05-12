@@ -52,76 +52,118 @@ def fill_baseline_r0(event_stream, n_bins=10000):
 
 def extract_baseline(event_stream, calib_container):
     """
-    Extract the baseline from event flagged as random trigger (trigger_flag = 1)
+    Extract the baseline from events flagged as random trigger
+        (trigger_flag = 1)
     :param event_stream: the event stream
     :param calib_container: the calibration container
     :return:
     """
-
-    pixel_list = list(range(1296))
+    cc = calib_container  # use short form, for shorter lines
 
     for event in event_stream:
-
-        # Check that the event is random trigger
-        if event.trig.trigger_flag != 1:
+        if not is_random_trigger(event):
             yield event
 
         for telid in event.r0.tels_with_data:
-            # Get the adcs
             adcs = event.r0.tel[telid].adc_samples
-            # When the first event comes, add adcs.shape[-1] length to the number of samples
-            if calib_container.sample_to_consider == calib_container.samples_for_baseline.shape[-1]:
-                calib_container.samples_for_baseline = np.append(calib_container.samples_for_baseline,
-                                                                 np.zeros((1296, adcs.shape[-1]), dtype=int),axis=-1)
+            n_pixels, n_samples = adcs.shape
+            samples = cc.samples_for_baseline
+            # When the first event comes, add adcs.shape[-1] length
+            # to the number of samples
+            if cc.sample_to_consider == samples.shape[-1]:
+                samples = np.append(
+                    samples,
+                    np.zeros_like(adcs),
+                    axis=-1
+                )
 
-            #print(calib_container.samples_for_baseline.shape)
+            # print(samples.shape)
             # Was the container filled up to n_samples_for_baseline?
             compute_full_baseline = True
-            if calib_container.counter < calib_container.samples_for_baseline.shape[-1] - 1:
+            if cc.counter < samples.shape[-1] - 1:
                 compute_full_baseline = False
 
-            # Check the meaningfulness of previous event for baseline calculation and set to nan noisy pixels
-            if calib_container.counter - 2 * adcs.shape[-1] > 0 :
-                #print(calib_container.samples_for_baseline.shape,calib_container.counter, calib_container.counter + adcs.shape[-1])
-                prev_mean = np.mean(
-                    calib_container.samples_for_baseline[:,
-                    calib_container.counter - adcs.shape[-1]:calib_container.counter],
-                    axis=-1)
-                prevprev_mean = np.mean(calib_container.samples_for_baseline[:,
-                                        calib_container.counter - 2 * adcs.shape[-1]:calib_container.counter] -
-                                        adcs.shape[
-                                            -1],
-                                        axis=-1)
-                present_mean = np.mean(adcs, axis=-1)
-                calib_container.samples_for_baseline[prev_mean - np.minimum(present_mean, prevprev_mean) > 50][
-                calib_container.counter - adcs.shape[-1]:calib_container.counter] = np.nan
+            if cc.counter > 2 * n_samples:
+                mask_noisy_pixels(cc, adcs)
             else:
                 yield event
 
             # Insert new event
             if compute_full_baseline:
-                # shift all adcs by one event
-                calib_container.samples_for_baseline[:, :-adcs.shape[-1]] = calib_container.samples_for_baseline[:,
-                                                                            adcs.shape[-1]:]
-                # Add the new event
-                calib_container.samples_for_baseline[:, -adcs.shape[-1]:] = adcs
-                # Compute the baseline and standard deviations
-                calib_container.baseline_ready = True
-                calib_container.baseline = np.nanmean(calib_container.samples_for_baseline[:, :-adcs.shape[-1]],
-                                                      axis=-1)
-                calib_container.std_dev = np.nanstd(calib_container.samples_for_baseline[:, :-adcs.shape[-1]], axis=-1)
-                yield event
-
+                if_case()
             else:
-                # Fill it in the proper place
-                calib_container.samples_for_baseline[:,
-                calib_container.counter: calib_container.counter + adcs.shape[-1]] = adcs
-                # and increment the counter
-                calib_container.counter += adcs.shape[-1]
-                # Compute the baseline and standard deviations
-                if calib_container.counter>0.1*calib_container.sample_to_consider :
-                    calib_container.baseline_ready = True
-                    calib_container.baseline = np.nanmean(calib_container.samples_for_baseline[:, :calib_container.counter-adcs.shape[-1]],
-                                                          axis=-1)
-                    calib_container.std_dev = np.nanstd(calib_container.samples_for_baseline[:, :calib_container.counter-adcs.shape[-1]], axis=-1)
-                yield event
+                else_case()
+            yield event
+
+
+def mask_noisy_pixels(cc, adcs):
+    # Check the meaningfulness of previous event for baseline
+    # calculation and set to nan noisy pixels
+    # print(
+    #     samples.shape,
+    #     cc.counter,
+    #     cc.counter + adcs.shape[-1]
+    # )
+    n_pixels, n_samples = adcs.shape
+    samples = cc.samples_for_baseline
+
+    slice_1 = slice(
+        cc.counter - 1 * n_samples,
+        cc.counter - 0 * n_samples)
+    slice_2 = slice(
+        cc.counter - 2 * n_samples,
+        cc.counter - 1 * n_samples)
+    prev_mean = samples[:, slice_1].mean(axis=-1)
+    prevprev_mean = samples[:, slice_2].mean(axis=-1)
+    present_mean = np.mean(adcs, axis=-1)
+
+    some_unexplained_noise_limit = 50
+    left_right_minimum = np.minimum(present_mean, prevprev_mean)
+
+    noisy_pixels = (
+        prev_mean - left_right_minimum >
+        some_unexplained_noise_limit
+    )
+    samples[noisy_pixels, slice_1] = np.nan
+
+
+def if_case(cc, adcs):
+    n_pixels, n_samples = adcs.shape
+    samples = cc.samples_for_baseline
+
+    # shift all adcs by one event
+    samples[:, :-n_samples] = (
+        samples[:, n_samples:])
+    # Add the new event
+    samples[:, -n_samples:] = adcs
+    # Compute the baseline and standard deviations
+    cc.baseline_ready = True
+    cc.baseline = np.nanmean(
+        samples[:, :-n_samples],
+        axis=-1)
+    cc.std_dev = np.nanstd(
+        samples[:, :-n_samples], axis=-1)
+
+
+def else_case(cc, adcs):
+    samples = cc.samples_for_baseline
+    # Fill it in the proper place
+    samples[
+        :,
+        cc.counter: cc.counter + adcs.shape[-1]
+    ] = adcs
+    # and increment the counter
+    cc.counter += adcs.shape[-1]
+    # Compute the baseline and standard deviations
+    if cc.counter > 0.1*cc.sample_to_consider:
+        cc.baseline_ready = True
+        cc.baseline = np.nanmean(
+            samples[:, :cc.counter-adcs.shape[-1]],
+            axis=-1)
+        cc.std_dev = np.nanstd(
+            samples[:, :cc.counter-adcs.shape[-1]],
+            axis=-1)
+
+
+def is_random_trigger(event):
+    event.trig.trigger_flag == 1
