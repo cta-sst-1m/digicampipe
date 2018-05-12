@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-from digicampipe.visualization.mpl import CameraDisplay
+from ctapipe.visualization import CameraDisplay
 import digicampipe.utils as utils
 
 
