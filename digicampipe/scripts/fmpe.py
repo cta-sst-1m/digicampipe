@@ -151,7 +151,7 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
         left = x[peak_index] - distance
         left = np.searchsorted(x, left)
         left = max(0, left)
-        right = x[peak_index] + distance
+        right = x[peak_index] + distance + 1
         right = np.searchsorted(x, right)
         right = min(n_x - 1, right)
 
@@ -162,6 +162,8 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
                               weights=y[left:right])
         sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
 
+    gain = np.diff(mean_peak_x)
+    gain = np.average(gain)
     sigma_e = np.sqrt(sigma[0]**2)
     sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
     sigma_s = np.mean(sigma_s)
@@ -183,7 +185,7 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
         plt.errorbar(x, y, y_err, linestyle='None', color='k')
         plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
                  marker='o', color='r', label='Peak positions')
-        plt.plot(x_fit, fmpe_pdf_10(x_fit, **params), label='init', color='g')
+        plt.plot(x_fit, fmpe_pdf_10(x_fit, bin_width=bin_width, **params), label='init', color='g')
         plt.legend(loc='best')
         plt.show()
 
@@ -317,9 +319,9 @@ def entry():
     if args['--fit']:
 
         charge_histo = Histogram1D.load(
-            os.path.join(output_path, charge_histo_filename))
-        amplitude_histo = Histogram1D.load(
-            os.path.join(output_path, amplitude_histo_filename))
+             os.path.join(output_path, charge_histo_filename))
+        # charge_histo = Histogram1D.load(
+        #   os.path.join(output_path, amplitude_histo_filename))
 
         gain = np.zeros(n_pixels) * np.nan
         sigma_e = np.zeros(n_pixels) * np.nan
@@ -333,7 +335,8 @@ def entry():
         ndf = np.zeros(n_pixels) * np.nan
 
         n_pe_peaks = 10
-        estimated_gain = 22
+        estimated_gain = 20
+        min_dist = 5 # int(estimated_gain)
 
         results_filename = os.path.join(output_path, 'fmpe_results.npz')
 
@@ -350,7 +353,7 @@ def entry():
             try:
 
                 params_init = compute_init_fmpe(x, y, y_err, snr=3,
-                                                min_dist=5,
+                                                min_dist=min_dist,
                                                 n_pe_peaks=n_pe_peaks,
                                                 debug=debug)
 
@@ -377,8 +380,8 @@ def entry():
 
                 fig = plot_fmpe_fit(x, y, y_err, m, pixel)
 
-                fig.savefig(os.path.join(output_path, 'figures/') +
-                            'fmpe_pixel_{}'.format(pixel))
+                # fig.savefig(os.path.join(output_path, 'figures/') +
+                #             'fmpe_pixel_{}'.format(pixel))
 
                 if debug:
 
