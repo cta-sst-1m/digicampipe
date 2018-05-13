@@ -5,7 +5,7 @@ from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 from matplotlib.widgets import Button, RadioButtons, CheckButtons
 import matplotlib
 
-from . import mpl as visualization
+from ctapipe.visualization import CameraDisplay
 from ..utils import DigiCam
 
 
@@ -87,7 +87,7 @@ class EventViewer():
             color='k',
             linestyle='--'
         )
-        self.camera_visu = visualization.CameraDisplay(
+        self.camera_visu = CameraDisplay(
             self.camera.geometry,
             ax=self.axis_camera,
             title='',
