@@ -21,6 +21,7 @@ dependencies:
 - traitlets
 - ctapipe-extra=0.2.*
 - pyhessio
+- sphinx_rtd_theme
 - pip:
   - pytest-benchmark==3.1.1
   - pytest-runner==3.0
