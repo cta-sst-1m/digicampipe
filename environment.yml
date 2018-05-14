@@ -1,33 +1,36 @@
 name: digicampipe
 channels:
-- defaults
 - astropy
-- cta-observatory
 - anaconda
+- cta-observatory
+- defaults
 dependencies:
-- PyYAML
 - astropy
 - astroquery
-- h5py
-- hdf5
+- ctapipe-extra=0.2.*
 - cython
 - docopt
+- h5py
+- hdf5
 - matplotlib
 - numpy
 - opencv
+- pip
 - protobuf
-- pytest
-- scipy
-- traitlets
-- ctapipe-extra=0.2.*
 - pyhessio
+- pytest
+- PyYAML
+- scipy
 - sphinx_rtd_theme
+- traitlets
 - pip:
   - pytest-benchmark==3.1.1
   - pytest-runner==3.0
   - recommonmark==0.4.0
   - travis-sphinx
+  - msgpack
   - peakutils==1.0.3
+  - secretstorage
   - sphinx-automodapi
   - https://github.com/cta-sst-1m/protozfitsreader/archive/v1.0.1.tar.gz
   - git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
