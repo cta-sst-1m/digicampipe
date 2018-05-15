@@ -29,7 +29,7 @@ def test_event_source_speed_100_events(benchmark):
         assert i == 99
 
 
-def check_speed_of_protozfits_again(benchmark):
+def test_check_speed_of_protozfits_again(benchmark):
     from protozfits import File
 
     @benchmark
@@ -41,7 +41,7 @@ def check_speed_of_protozfits_again(benchmark):
         assert i == 99
 
 
-def check_speed_of_protozfits_pure_again(benchmark):
+def test_check_speed_of_protozfits_pure_again(benchmark):
     from protozfits import File
 
     @benchmark
