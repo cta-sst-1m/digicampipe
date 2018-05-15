@@ -12,6 +12,7 @@ dependencies:
 - docopt
 - h5py
 - hdf5
+- iminuit
 - matplotlib
 - numpy
 - opencv
