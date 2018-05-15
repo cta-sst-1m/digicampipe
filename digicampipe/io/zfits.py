@@ -100,12 +100,34 @@ def zfits_event_source(
                 r0.array_event_type = event.eventType
                 r0.adc_samples = samples[_sort_ids]
 
-                r0.trigger_input_traces = _prepare_trigger_input(
-                    event.trigger_input_traces)
-                r0.trigger_output_patch7 = _prepare_trigger_output(
-                    event.trigger_output_patch7)
-                r0.trigger_output_patch19 = _prepare_trigger_output(
-                    event.trigger_output_patch19)
+                if len(event.trigger_input_traces) > 0:
+                    r0.trigger_input_traces = _prepare_trigger_input(
+                        event.trigger_input_traces
+                    )
+                else:
+                    warnings.warn(
+                        'trigger_input_traces does not exist: --> nan')
+                    r0.trigger_input_traces = np.zeros(
+                        (432, data.inst.num_samples[tel_id])) * np.nan
+
+                if len(event.trigger_output_patch7) > 0:
+                    r0.trigger_output_patch7 = _prepare_trigger_output(
+                        event.trigger_output_patch7)
+                else:
+                    warnings.warn(
+                        'trigger_output_patch7 does not exist: --> nan')
+                    r0.trigger_output_patch7 = np.zeros(
+                        (432, data.inst.num_samples[tel_id])) * np.nan
+
+                if len(event.trigger_output_patch19) > 0:
+                    r0.trigger_output_patch19 = _prepare_trigger_output(
+                        event.trigger_output_patch19)
+                else:
+                    warnings.warn(
+                        'trigger_output_patch19 does not exist: --> nan')
+                    r0.trigger_output_patch19 = np.zeros(
+                        (432, data.inst.num_samples[tel_id])) * np.nan
+
                 r0.digicam_baseline = unsorted_baseline[_sort_ids]
 
             yield data
