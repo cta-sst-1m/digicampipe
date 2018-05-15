@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """
 Components to read ZFITS data.
-This requires the protozfitsreader python library to be installed
+This requires the protozfits python library to be installed
 """
 import logging
 from tqdm import tqdm
@@ -9,7 +9,7 @@ import numpy as np
 import warnings
 from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
-from protozfits import SimpleFile
+from protozfits import File
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +37,7 @@ def zfits_event_source(
     camera : utils.Camera(), default DigiCam
     """
     data = DataContainer()
-    with SimpleFile(url) as file:
+    with File(url) as file:
 
         for event_counter, event in tqdm(
             enumerate(file.Events),
@@ -113,7 +113,7 @@ def zfits_event_source(
 
 def count_number_events(file_list):
     return sum(
-        len(SimpleFile(filename).Events)
+        len(File(filename).Events)
         for filename in file_list
     )
 
