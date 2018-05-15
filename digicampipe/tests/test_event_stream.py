@@ -27,3 +27,30 @@ def test_event_source_speed_100_events(benchmark):
             pass
 
         assert i == 99
+
+
+def check_speed_of_protozfits_again(benchmark):
+    from protozfits import File
+
+    @benchmark
+    def func():
+        for _, i in zip(File(example_file_path).Events, range(100)):
+
+            pass
+
+        assert i == 99
+
+
+def check_speed_of_protozfits_pure_again(benchmark):
+    from protozfits import File
+
+    @benchmark
+    def func():
+        for _, i in zip(
+            File(example_file_path, pure_protobuf=True).Events,
+            range(100)
+        ):
+
+            pass
+
+        assert i == 99
