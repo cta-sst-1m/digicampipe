@@ -48,7 +48,7 @@ from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
 from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
 from digicampipe.calib.camera.peak import find_pulse_with_max, \
-    find_pulse_correlate, find_pulse_fast
+    find_pulse_wavelets, find_pulse_correlate, find_pulse_fast
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.scripts import raw
 
@@ -368,10 +368,13 @@ def entry():
         events = subtract_baseline(events)
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        events = find_pulse_fast(events, threshold=pulse_finder_threshold)
+        # events = find_pulse_fast(events, threshold=pulse_finder_threshold)
         # events = find_pulse_correlate(events, threshold=pulse_finder_threshold)
         # events = find_pulse_gaussian_filter(events,
         #                                    threshold=pulse_finder_threshold)
+
+        events = find_pulse_wavelets(events, widths=[4, 5, 6],
+                                     threshold_sigma=2)
 
         events = compute_charge(
             events,
@@ -410,8 +413,8 @@ def entry():
         dark_count_rate = np.zeros(n_pixels) * np.nan
         electronic_noise = np.zeros(n_pixels) * np.nan
 
-        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels
-                , desc='Pixel'):
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
+                             desc='Pixel'):
 
             x = max_histo._bin_centers()
             y = max_histo.data[i]
@@ -501,7 +504,8 @@ def entry():
 
         spe_charge = Histogram1D.load(charge_histo_filename)
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
-        raw_histo = Histogram1D.load(raw_histo_filename)
+        raw_histo = Histogram1D.load(os.path.join(output_path,
+                                                  raw_histo_filename))
         max_histo = Histogram1D.load(max_histo_filename)
 
         figure_directory = output_path + 'figures/'
@@ -543,7 +547,8 @@ def entry():
 
         spe_charge = Histogram1D.load(charge_histo_filename)
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
-        raw_histo = Histogram1D.load(raw_histo_filename)
+        raw_histo = Histogram1D.load(os.path.join(output_path,
+                                                  raw_histo_filename))
         max_histo = Histogram1D.load(max_histo_filename)
 
         spe_charge.draw(index=(0, ), log=True, legend=False)
@@ -558,7 +563,7 @@ def entry():
 
             dark_count_rate = np.load(dark_count_rate_filename)['dcr']
             crosstalk = np.load(crosstalk_filename)['arr_0']
-        except FileNotFoundError as e:
+        except IOError as e:
 
             print(e)
             print('Could not find the analysis files !')
