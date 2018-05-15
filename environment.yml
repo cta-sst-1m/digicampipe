@@ -1,104 +1,40 @@
 name: digicampipe
 channels:
-- defaults
 - astropy
+- anaconda
 - cta-observatory
+- defaults
 dependencies:
-- python=3.5.4
-- astropy=2.0.2
-- astroquery=0.3.6.post2
-- attrs=17.3.0
-- ca-certificates=2017.08.26
-- certifi=2017.11.5
-- coverage=4.4.2
-- cycler=0.10.0
+- astropy
+- astroquery
+- ctapipe-extra=0.2.*
 - cython
-- dbus=1.10.22
-- decorator=4.1.2
-- docopt=0.6.2
-- expat=2.2.5
-- fontconfig=2.12.4
-- freetype=2.8
-- glib=2.53.6
-- gst-plugins-base=1.12.2
-- gstreamer=1.12.2
-- h5py=2.7.1
-- hdf5=1.10.1
-- hypothesis=3.38.5
-- icu=58.2
-- intel-openmp=2018.0.0
-- ipython=6.2.1
-- ipython_genutils=0.2.0
-- jedi=0.11.0
-- jpeg=9b
-- libedit=3.1
-- libffi=3.2.1
-- libgcc-ng=7.2.0
-- libgfortran-ng=7.2.0
-- libpng=1.6.32
-- libprotobuf=3.0.0
-- libstdcxx-ng=7.2.0
-- libxcb=1.12
-- libxml2=2.9.4
-- llvmlite=0.21.0
-- matplotlib=2.1.0
-- mkl=2018.0.1
-- ncurses=6.0
-- numpy=1.13.3
-- opencv=3.3.1
-- openssl=1.0.2n
-- parso=0.1.1
-- pcre=8.41
-- pexpect=4.3.0
-- photutils=0.4
-- pickleshare=0.7.4
-- pip=9.0.1
-- pluggy=0.6.0
-- prompt_toolkit=1.0.15
-- protobuf=3.0.0
-- ptyprocess=0.5.2
-- py=1.5.2
-- pygments=2.2.0
-- pympler=0.5
-- pyparsing=2.2.0
-- pyqt=5.6.0
-- pytest=3.3.0
-- python-dateutil=2.6.1
-- pytz=2017.3
-- qt=5.6.2
-- readline=7.0
-- scikit-image=0.13.0
-- scipy=1.0.0
-- setuptools=36.5.0
-- Sphinx=1.6.2
-- sphinx_rtd_theme=0.2.4
-- sphinxcontrib-websupport=1.0.1
-- simplegeneric=0.8.1
-- sip=4.18.1
-- six=1.11.0
-- sqlite=3.20.1
-- tk=8.6.7
-- tornado=4.5.2
-- traitlets=4.3.2
-- wcwidth=0.1.7
-- wheel=0.30.0
-- xz=5.2.3
-- zlib=1.2.11
-- zope=1.0
-- zope.interface=4.4.3
+- docopt
+- h5py
+- hdf5
+- matplotlib
+- numpy
+- opencv
+- pip
+- protobuf
+- pyhessio
+- pytest
+- PyYAML
+- scipy
+- sphinx_rtd_theme
+- traitlets
 - pip:
+  - msgpack
+  - peakutils==1.0.3
   - pytest-benchmark==3.1.1
   - pytest-runner==3.0
   - recommonmark==0.4.0
-  - travis-sphinx
-  - peakutils==1.0.3
+  - secretstorage
   - sphinx-automodapi
-  - https://github.com/cta-sst-1m/protozfitsreader/archive/v0.44.1b0.tar.gz
-  - -e git+https://github.com/cta-observatory/pyhessio.git#egg=pyhessio
-  - -e git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
-  - -e git+https://github.com/cta-observatory/ctapipe-extra.git#egg=ctapipe-extra
-  - -e git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
-  - -e git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
+  - https://github.com/cta-sst-1m/protozfitsreader/archive/v1.0.1a0.tar.gz
+  - git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
+  - git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
+  - git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
   - https://github.com/calispac/histogram/archive/0.1.1.tar.gz
-  - -e git+https://github.com/iminuit/probfit.git#egg=probfit
-  - -e git+https://github.com/uvemas/ViTables.git#egg=vitables
+  - git+https://github.com/iminuit/probfit.git#egg=probfit
+  - git+https://github.com/uvemas/ViTables.git#egg=vitables
