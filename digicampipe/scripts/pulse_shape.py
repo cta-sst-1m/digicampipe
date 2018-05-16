@@ -52,6 +52,8 @@ class Histogram2D:
             self._fill_histo_from_buffer()
 
     def _fill_histo_from_buffer(self):
+        if self._buffer is None:
+            return
         buffer = self._buffer[:self.buffer_index]
 
         n_pixel = self.histo.shape[0]
@@ -68,8 +70,7 @@ class Histogram2D:
         self.buffer_index = 0
 
     def contents(self):
-        if self._buffer is not None:
-            self._fill_histo_from_buffer()
+        self._fill_histo_from_buffer()
         return self.histo
 
     def calc_stuff(self):
