@@ -67,6 +67,11 @@ class Histogram2D:
         self._buffer = None
         self.buffer_index = 0
 
+    def contents(self):
+        if self._buffer is not None:
+            self._fill_histo_from_buffer()
+        return self.histo
+
     def calc_stuff(self):
         self._fill_histo_from_buffer()
         self._mean = np.zeros(
@@ -162,7 +167,7 @@ def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
     outfile = h5py.File(outfile_path)
     outfile.create_dataset(
         name='adc_count_histo',
-        data=histo.histo,
+        data=histo.contents(),
         compression="gzip",
         chunks=(4, histo.shape[1], 128)
     )
