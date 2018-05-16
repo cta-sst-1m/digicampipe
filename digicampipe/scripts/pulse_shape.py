@@ -3,15 +3,12 @@
 Reconstruct the pulse template
 
 Usage:
-  digicam-template [options] <outfile_path> <input_files>...
+  digicam-template [options] <input_files>...
 
 Options:
   -h --help               Show this screen.
-  --plots=PATH            path where to save a pdf full of interesting images.
-  --chunk_size INT        how many events to read before histogramming.
-                          This uses about 1GB memory, if you have less mem,
-                          reduce this number (will make the program slower).
-                          [default: 10000]
+  --output=PATH           outfile path, if not given, we just append ".h5" to
+                          the input file path
 '''
 import numpy as np
 import h5py
@@ -19,91 +16,8 @@ from digicampipe.io.event_stream import calibration_event_stream
 
 from tqdm import tqdm
 from docopt import docopt
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
-from ctapipe.visualization import CameraDisplay
-from digicampipe.utils import DigiCam
 import numba
-
-
-class Histogram2D:
-
-    def __init__(self, shape, dtype, chunk_size=10000):
-        self.shape = shape
-        self.histo = np.zeros(shape, dtype=dtype)
-        self._buffer = None
-        self.chunk_size = chunk_size
-        self.buffer_index = 0
-        self._mean = None
-        self._std = None
-
-    def fill(self, data):
-        if self._buffer is None:
-            self._buffer = np.zeros(
-                (self.chunk_size, *data.shape),
-                dtype=data.dtype
-            )
-
-        self._buffer[self.buffer_index] = data[...]
-        self.buffer_index += 1
-
-        if self.buffer_index == self.chunk_size:
-            self._fill_histo_from_buffer()
-
-    def _fill_histo_from_buffer(self):
-        if self._buffer is None:
-            return
-        buffer = self._buffer[:self.buffer_index]
-
-        n_pixel = self.histo.shape[0]
-        n_samples = self.histo.shape[1]
-        histo_height = self.histo.shape[2]
-        for pixel_id in range(n_pixel):
-            for sample_id in range(n_samples):
-                self.histo[pixel_id, sample_id] += np.bincount(
-                    buffer[:, pixel_id, sample_id],
-                    minlength=histo_height
-                ).astype(self.histo.dtype)
-
-        self._buffer = None
-        self.buffer_index = 0
-
-    def contents(self):
-        self._fill_histo_from_buffer()
-        return self.histo
-
-    def calc_stuff(self):
-        self._fill_histo_from_buffer()
-        self._mean = np.zeros(
-            self.histo.shape[:-1],
-            dtype='f4'
-        )
-        self._std = np.zeros(
-            self.histo.shape[:-1],
-            dtype='f4'
-        )
-
-        for pid in range(self.histo.shape[0]):
-            D = self.histo[pid]
-            y = np.arange(4096)[np.newaxis, :]
-            M = (D * y).sum(axis=1) / D.sum(axis=1)
-            self._mean[pid] = M
-
-            self._std[pid] = np.sqrt(
-                (D * (y - M[:, np.newaxis])**2).sum(axis=1) /
-                D.sum(axis=1)
-            )
-
-    def mean(self):
-        if self._mean is None:
-            self.calc_stuff()
-        return self._mean
-
-    def std(self):
-        if self._std is None:
-            self.calc_stuff()
-        return self._std
 
 
 @numba.jit
@@ -147,162 +61,63 @@ def estimate_arrival_time(adc, thr=0.5):
     return arrival_times
 
 
-def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
+@numba.jit
+def fill_hist2d(adc, t0, t, histo):
+    _range = [[-10, 40], [-0.2, 1.5]]
+    _extent = _range[0] + _range[1]
+    for pid in range(adc.shape[0]):
+        H, xedges, yedges = np.histogram2d(
+            t-t0[pid],
+            adc[pid],
+            bins=(101, 101),
+            range=_range
+        )
+        histo[pid] += H.astype('u2')
+    return _extent
+
+
+def main(outfile_path, input_files=[]):
     events = calibration_event_stream(input_files)
-
     histo = None
+    Rough_factor_between_single_pe_amplitude_and_integral = 21 / 5.8
 
-    for e in tqdm(events):
+    for event_counter, e in tqdm(enumerate(events)):
+        if event_counter > 100:
+            break
         adc = e.data.adc_samples
+        adc = adc - e.data.digicam_baseline[:, None]
 
+        # I just integrate between sample 10 and 30 to normalize a bit
+        # normalizing to maximum_amplitude = 1 is too "sharp"
+        integral = adc[:, 10:30].sum(axis=1)
+        adc = (
+            adc / integral[:, None]
+        ) * Rough_factor_between_single_pe_amplitude_and_integral
+
+        t0 = estimate_arrival_time(adc) * 4
+        t = np.arange(adc.shape[1]) * 4
         if histo is None:
-            histo = Histogram2D(
-                shape=(*adc.shape, 4096),
-                dtype='u2',
-                chunk_size=chunk_size
+            histo = np.zeros(
+                (adc.shape[0], 101, 101),
+                dtype='u2'
             )
+        _extent = fill_hist2d(adc, t0, t, histo)
 
-        histo.fill(adc)
-
-    # store buffer zipped to a h5 file
     outfile = h5py.File(outfile_path)
-    outfile.create_dataset(
+    dset = outfile.create_dataset(
         name='adc_count_histo',
-        data=histo.contents(),
-        compression="gzip",
-        chunks=(4, histo.shape[1], 128)
+        data=histo,
     )
-
-    outfile.create_dataset(
-        name='adc_count_mean',
-        data=histo.mean(),
-    )
-
-    outfile.create_dataset(
-        name='adc_count_std',
-        data=histo.std(),
-    )
-
-    if plots_path is not None:
-        make_plots(outfile, plots_path)
-
-
-def make_plots(outfile, plots_path, pixel_per_page=(3, 2), plots_per_ax=9):
-    f = outfile
-    print('making plots into:', plots_path)
-    with PdfPages(plots_path) as pdf:
-
-        M = f['adc_count_mean'][...]
-        d = M - M[:, 0][:, None]
-        trigger = d[:, :-4] - d[:, 4:]
-        slope_over_five = trigger[:, :-5] - trigger[:, 5:]
-
-        fig, axes = plt.subplots(2, 2, figsize=(8, 11))
-        d = CameraDisplay(
-            geometry=DigiCam.geometry,
-            image=M.max(axis=1),
-            ax=axes[0, 0]
-        )
-        plt.colorbar(d.pixels, ax=axes[0, 0])
-        axes[0, 0].set_title('Maximum heigth of avera pulse shape')
-        axes[0, 1].hist(M.max(axis=1), bins='auto', histtype='step', lw=3)
-
-        d = CameraDisplay(
-            geometry=DigiCam.geometry,
-            image=M.argmax(axis=1),
-            ax=axes[1, 0]
-        )
-        plt.colorbar(d.pixels, ax=axes[1, 0])
-        axes[1, 0].set_title('Time of Maximum of average pulse shape')
-        axes[1, 1].hist(
-            M.argmax(axis=1),
-            bins=50,
-            histtype='step',
-            lw=3
-        )
-        pdf.savefig()
-        plt.close('all')
-
-        fig, axes = plt.subplots(2, 2, figsize=(8, 11))
-        d = CameraDisplay(
-            geometry=DigiCam.geometry,
-            image=slope_over_five.argmax(axis=1) + 5,
-            ax=axes[0, 0]
-        )
-        plt.colorbar(d.pixels, ax=axes[0, 0])
-        axes[0, 0].set_title('Time of highest slope')
-        axes[0, 1].hist(
-            slope_over_five.argmax(axis=1) + 5,
-            bins=50,
-            histtype='step',
-            lw=3
-        )
-
-        d = CameraDisplay(
-            geometry=DigiCam.geometry,
-            image=(M - M[0]).sum(axis=1),
-            ax=axes[1, 0]
-        )
-        plt.colorbar(d.pixels, ax=axes[1, 0])
-        axes[1, 0].set_title('area under average pulse shape')
-        axes[1, 1].hist(
-            (M - M[0]).sum(axis=1),
-            bins='auto',
-            histtype='step',
-            lw=3
-        )
-
-        pdf.savefig()
-        plt.close('all')
-
-        fig, axes = None, None
-
-        plots_per_page = np.prod(pixel_per_page)
-        print('plots_per_page', plots_per_page)
-        for pixel_id in tqdm(range(f['adc_count_mean'].shape[0])):
-            if pixel_id % (plots_per_page * plots_per_ax) == 0:
-                if fig is not None:
-                    pdf.savefig()
-                    plt.close('all')
-                fig, axes = plt.subplots(
-                    *pixel_per_page,
-                    figsize=(8, 11),
-                    squeeze=False,
-                    sharex=True,
-                    sharey=True,
-                )
-                ax = axes.flat
-
-            A = ax[(pixel_id//plots_per_ax) % plots_per_page]
-
-            mean = f['adc_count_mean'][pixel_id]
-            std = f['adc_count_std'][pixel_id]
-            x = np.arange(len(mean))
-
-            A.errorbar(
-                x=x,
-                y=mean,
-                yerr=std,
-                fmt='.:',
-                label='pixel_id:{}'.format(pixel_id)
-            )
-            A.set_xlim(0, 50)
-            A.set_ylim(100, 1300)
-
-            A.grid()
-            A.legend(loc='upper right')
-        pdf.savefig()
-        plt.close('all')
+    dset.attrs['extent'] = _extent
 
 
 def entry():
     args = docopt(__doc__)
-
+    if '--output' not in args:
+        args['--output'] = args['<input_files>'] + '.h5'
     main(
-        outfile_path=args['<outfile_path>'],
+        outfile_path=args['--output'],
         input_files=args['<input_files>'],
-        chunk_size=int(args['--chunk_size']),
-        plots_path=args['--plots']
     )
 
 if __name__ == '__main__':
