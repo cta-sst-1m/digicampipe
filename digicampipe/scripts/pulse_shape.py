@@ -22,7 +22,7 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from ctapipe.visualization.mpl import CameraDisplay
+from ctapipe.visualization import CameraDisplay
 from digicampipe.utils import DigiCam
 
 
