@@ -67,7 +67,7 @@ def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
     mean = np.zeros(adc.shape, dtype='f4')
     std = np.zeros(adc.shape, dtype='f4')
 
-    for pid in range(1296):
+    for pid in range(len(adc)):
         D = histo[pid]
         y = np.arange(4096)[np.newaxis, :]
         M = (D * y).sum(axis=1) / D.sum(axis=1)
