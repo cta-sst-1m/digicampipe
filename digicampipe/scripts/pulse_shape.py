@@ -30,6 +30,7 @@ import numba
 class Histogram2D:
 
     def __init__(self, shape, dtype, chunk_size=10000):
+        self.shape = shape
         self.histo = np.zeros(shape, dtype=dtype)
         self._buffer = None
         self.chunk_size = chunk_size
@@ -59,7 +60,8 @@ class Histogram2D:
         for pixel_id in range(n_pixel):
             for sample_id in range(n_samples):
                 self.histo[pixel_id, sample_id] += np.bincount(
-                    buffer[:, pixel_id, sample_id], minlength=histo_height
+                    buffer[:, pixel_id, sample_id],
+                    minlength=histo_height
                 ).astype(self.histo.dtype)
 
         self._buffer = None
@@ -149,7 +151,10 @@ def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
 
         if histo is None:
             histo = Histogram2D(
-                (*adc.shape, 4096), dtype='u2', chunk_size=chunk_size)
+                shape=(*adc.shape, 4096),
+                dtype='u2',
+                chunk_size=chunk_size
+            )
 
         histo.fill(adc)
 
@@ -157,7 +162,7 @@ def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
     outfile = h5py.File(outfile_path)
     outfile.create_dataset(
         name='adc_count_histo',
-        data=histo,
+        data=histo.histo,
         compression="gzip",
         chunks=(4, histo.shape[1], 128)
     )
