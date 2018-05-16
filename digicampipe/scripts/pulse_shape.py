@@ -77,13 +77,11 @@ def fill_hist2d(adc, t0, t, histo):
 
 
 def main(outfile_path, input_files=[]):
-    events = calibration_event_stream(input_files)
-    histo = None
+    events = calibration_event_stream(input_files, max_events=100)
     Rough_factor_between_single_pe_amplitude_and_integral = 21 / 5.8
+    histo = None
 
-    for event_counter, e in tqdm(enumerate(events)):
-        if event_counter > 100:
-            break
+    for e in tqdm(events):
         adc = e.data.adc_samples
         adc = adc - e.data.digicam_baseline[:, None]
 
