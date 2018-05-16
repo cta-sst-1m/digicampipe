@@ -24,13 +24,58 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from ctapipe.visualization import CameraDisplay
 from digicampipe.utils import DigiCam
+import numba
+
+
+@numba.jit
+def estimate_arrival_time(adc, thr=0.5):
+    '''
+    estimate the pulse arrival time, defined as the time the leading edge
+    crossed 50% of the maximal height,
+    estimated using a simple linear interpolation.
+
+    *Note*
+    This method breaks down for very small pulses where noise affects the
+    leading edge significantly.
+    Typical pixels have a ~2LSB electronics noise level.
+    Assuming a leading edge length of 4 samples
+    then for a typical pixel, pulses of 40LSB (roughly 7 p.e.)
+    should be fine.
+
+    adc: (1296, 50) dtype=uint16 or so
+    thr: threshold, 50% by default ... can be played with.
+
+    return:
+        arrival_time (1296) in units of time_slices
+    '''
+    n_pixel = adc.shape[0]
+    arrival_times = np.zeros(n_pixel, dtype='f4')
+
+    for pixel_id in range(n_pixel):
+        y = adc[pixel_id]
+        am = y.argmax()
+        y_ = y[:am+1]
+        lim = y_[-1] * thr
+        foo = np.where(y_ < lim)[0]
+        if len(foo):
+            start = foo[-1]
+            stop = start + 1
+            arrival_times[pixel_id] = start + (
+                (lim-y_[start]) / (y_[stop]-y_[start])
+            )
+        else:
+            arrival_times[pixel_id] = np.nan
+    return arrival_times
 
 
 def fill_histo_from_buffer(histo, buffer):
-    for pid in tqdm(range(histo.shape[0])):
-        for sid in range(histo.shape[1]):
-            histo[pid, sid] += np.bincount(
-                buffer[:, pid, sid], minlength=histo.shape[2]
+    n_pixel = histo.shape[0]
+    n_samples = histo.shape[1]
+    histo_height = histo.shape[2]
+    for pixel_id in tqdm(range(n_pixel)):
+        for sample_id in range(n_samples):
+            histo[pixel_id, sample_id] += np.bincount(
+                buffer[:, pixel_id, sample_id], minlength=histo_height
             ).astype(histo.dtype)
 
 
