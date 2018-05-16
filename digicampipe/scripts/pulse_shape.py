@@ -208,7 +208,7 @@ def make_plots(outfile, plots_path, pixel_per_page=(3, 2), plots_per_ax=9):
 
         plots_per_page = np.prod(pixel_per_page)
         print('plots_per_page', plots_per_page)
-        for pixel_id in tqdm(range(1296)):
+        for pixel_id in tqdm(range(f['adc_count_mean'].shape[0])):
             if pixel_id % (plots_per_page * plots_per_ax) == 0:
                 if fig is not None:
                     pdf.savefig()
