@@ -27,6 +27,77 @@ from digicampipe.utils import DigiCam
 import numba
 
 
+class Histogram2D:
+
+    def __init__(self, shape, dtype, chunk_size=10000):
+        self.histo = np.zeros(shape, dtype=dtype)
+        self._buffer = None
+        self.chunk_size = chunk_size
+        self.buffer_index = 0
+        self._mean = None
+        self._std = None
+
+    def fill(self, data):
+        if self._buffer is None:
+            self._buffer = np.zeros(
+                (self.chunk_size, *data.shape),
+                dtype=data.dtype
+            )
+
+        self._buffer[self.buffer_index] = data[...]
+        self.buffer_index += 1
+
+        if self.buffer_index == self.chunk_size:
+            self._fill_histo_from_buffer()
+
+    def _fill_histo_from_buffer(self):
+        buffer = self._buffer[:self.buffer_index]
+
+        n_pixel = self.histo.shape[0]
+        n_samples = self.histo.shape[1]
+        histo_height = self.histo.shape[2]
+        for pixel_id in range(n_pixel):
+            for sample_id in range(n_samples):
+                self.histo[pixel_id, sample_id] += np.bincount(
+                    buffer[:, pixel_id, sample_id], minlength=histo_height
+                ).astype(self.histo.dtype)
+
+        self._buffer = None
+        self.buffer_index = 0
+
+    def calc_stuff(self):
+        self._fill_histo_from_buffer()
+        self._mean = np.zeros(
+            self.histo.shape[:-1],
+            dtype='f4'
+        )
+        self._std = np.zeros(
+            self.histo.shape[:-1],
+            dtype='f4'
+        )
+
+        for pid in range(self.histo.shape[0]):
+            D = self.histo[pid]
+            y = np.arange(4096)[np.newaxis, :]
+            M = (D * y).sum(axis=1) / D.sum(axis=1)
+            self._mean[pid] = M
+
+            self._std[pid] = np.sqrt(
+                (D * (y - M[:, np.newaxis])**2).sum(axis=1) /
+                D.sum(axis=1)
+            )
+
+    def mean(self):
+        if self._mean is None:
+            self.calc_stuff()
+        return self._mean
+
+    def std(self):
+        if self._std is None:
+            self.calc_stuff()
+        return self._std
+
+
 @numba.jit
 def estimate_arrival_time(adc, thr=0.5):
     '''
@@ -68,37 +139,19 @@ def estimate_arrival_time(adc, thr=0.5):
     return arrival_times
 
 
-def fill_histo_from_buffer(histo, buffer):
-    n_pixel = histo.shape[0]
-    n_samples = histo.shape[1]
-    histo_height = histo.shape[2]
-    for pixel_id in tqdm(range(n_pixel)):
-        for sample_id in range(n_samples):
-            histo[pixel_id, sample_id] += np.bincount(
-                buffer[:, pixel_id, sample_id], minlength=histo_height
-            ).astype(histo.dtype)
-
-
 def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
     events = calibration_event_stream(input_files)
 
     histo = None
-    buffer = None
 
-    for i, e in enumerate(tqdm(events)):
-        j = i % chunk_size
+    for e in tqdm(events):
         adc = e.data.adc_samples
 
         if histo is None:
-            histo = np.zeros((*adc.shape, 4096), dtype='u2')
+            histo = Histogram2D(
+                (*adc.shape, 4096), dtype='u2', chunk_size=chunk_size)
 
-        if j == 0:
-            if buffer is not None:
-                fill_histo_from_buffer(histo, buffer)
-            buffer = np.zeros((chunk_size, *adc.shape), dtype=adc.dtype)
-        buffer[j] = adc[...]
-    buffer = buffer[:j]
-    fill_histo_from_buffer(histo, buffer)
+        histo.fill(adc)
 
     # store buffer zipped to a h5 file
     outfile = h5py.File(outfile_path)
@@ -109,27 +162,14 @@ def main(outfile_path, input_files=[], chunk_size=10000, plots_path=None):
         chunks=(4, histo.shape[1], 128)
     )
 
-    mean = np.zeros(adc.shape, dtype='f4')
-    std = np.zeros(adc.shape, dtype='f4')
-
-    for pid in range(len(adc)):
-        D = histo[pid]
-        y = np.arange(4096)[np.newaxis, :]
-        M = (D * y).sum(axis=1) / D.sum(axis=1)
-        mean[pid] = M
-        std[pid] = np.sqrt(
-            (D * (y - M[:, np.newaxis])**2).sum(axis=1) /
-            D.sum(axis=1)
-        )
-
     outfile.create_dataset(
         name='adc_count_mean',
-        data=mean,
+        data=histo.mean(),
     )
 
     outfile.create_dataset(
         name='adc_count_std',
-        data=std,
+        data=histo.std(),
     )
 
     if plots_path is not None:
