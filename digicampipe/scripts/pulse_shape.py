@@ -186,7 +186,7 @@ def main(outfile_path, input_files=[]):
 
 def entry():
     args = docopt(__doc__)
-    if '--output' not in args:
+    if args['--output'] is None:
         args['--output'] = args['<input_files>'] + '.h5'
     main(
         outfile_path=args['--output'],
