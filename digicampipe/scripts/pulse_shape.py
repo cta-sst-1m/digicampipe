@@ -61,25 +61,13 @@ def estimate_arrival_time(adc, thr=0.5):
     return arrival_times
 
 
-@numba.jit
-def fill_hist2d(adc, t0, t, histo):
-    _range = [[-10, 40], [-0.2, 1.5]]
-    _extent = _range[0] + _range[1]
-    for pid in range(adc.shape[0]):
-        H, xedges, yedges = np.histogram2d(
-            t-t0[pid],
-            adc[pid],
-            bins=(101, 101),
-            range=_range
-        )
-        histo[pid] += H.astype('u2')
-    return _extent
-
-
 def main(outfile_path, input_files=[]):
     events = calibration_event_stream(input_files, max_events=100)
     Rough_factor_between_single_pe_amplitude_and_integral = 21 / 5.8
     histo = None
+
+    _range = [[-10, 40], [-0.2, 1.5]]
+    _extent = _range[0] + _range[1]
 
     for e in tqdm(events):
         adc = e.data.adc_samples
@@ -99,7 +87,15 @@ def main(outfile_path, input_files=[]):
                 (adc.shape[0], 101, 101),
                 dtype='u2'
             )
-        _extent = fill_hist2d(adc, t0, t, histo)
+
+        for pid in range(adc.shape[0]):
+            H, xedges, yedges = np.histogram2d(
+                t-t0[pid],
+                adc[pid],
+                bins=(101, 101),
+                range=_range
+            )
+            histo[pid] += H.astype('u2')
 
     outfile = h5py.File(outfile_path)
     dset = outfile.create_dataset(
