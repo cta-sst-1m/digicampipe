@@ -90,14 +90,14 @@ def main(outfile_path, input_files=[]):
                 dtype='u2'
             )
 
-        for pid in range(adc.shape[0]):
+        for pixel_id in range(adc.shape[0]):
             H, xedges, yedges = np.histogram2d(
-                time_in_ns - arrival_time_in_ns[pid],
-                adc[pid],
+                time_in_ns - arrival_time_in_ns[pixel_id],
+                adc[pixel_id],
                 bins=histo.shape[1:],
                 range=_range
             )
-            histo[pid] += H.astype('u2')
+            histo[pixel_id] += H.astype('u2')
 
     outfile = h5py.File(outfile_path)
     dset = outfile.create_dataset(
