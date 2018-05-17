@@ -84,7 +84,7 @@ class Histogram2d:
 
 class Histogram2dChunked:
 
-    def __init__(self, shape, range, buffer_size=3000):
+    def __init__(self, shape, range, buffer_size=1000):
         self.histo = np.zeros(shape, dtype='u2')
         self.range = range
         self.extent = self.range[0] + self.range[1]
