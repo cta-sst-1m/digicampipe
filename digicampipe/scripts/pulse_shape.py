@@ -61,13 +61,97 @@ def estimate_arrival_time(adc, thr=0.5):
     return arrival_times
 
 
+class Histogram2d:
+
+    def __init__(self, shape, range):
+        self.histo = np.zeros(shape, dtype='u2')
+        self.range = range
+        self.extent = self.range[0] + self.range[1]
+
+    def fill(self, time_in_ns, arrival_time_in_ns, data):
+        for pixel_id in range(data.shape[0]):
+            H, xedges, yedges = np.histogram2d(
+                time_in_ns - arrival_time_in_ns[pixel_id],
+                data[pixel_id],
+                bins=self.histo.shape[1:],
+                range=self.range
+            )
+            self.histo[pixel_id] += H.astype('u2')
+
+    def contents(self):
+        return self.histo
+
+
+class Histogram2dChunked:
+
+    def __init__(self, shape, range, buffer_size=1000):
+        self.histo = np.zeros(shape, dtype='u2')
+        self.range = range
+        self.extent = self.range[0] + self.range[1]
+
+        self.buffer_size = buffer_size
+        self.buffer_x = None
+        self.buffer_y = None
+        self.buffer_counter = 0
+
+    def __reset_buffer(self, x, y):
+        self.buffer_x = np.zeros(
+            (self.buffer_size, *x.shape),
+            dtype=x.dtype
+        )
+        self.buffer_y = np.zeros(
+            (self.buffer_size, *y.shape),
+            dtype=y.dtype
+        )
+        self.buffer_counter = 0
+
+    def fill(self, time_in_ns, arrival_time_in_ns, data):
+        '''
+        data: (n_pixel, n_samples)
+        time_in_ns: (n_samples)
+        arrival_time_in_ns: (n_pixel)
+        '''
+        x = time_in_ns[:, None] - arrival_time_in_ns[None, :]
+        y = data
+        if self.buffer_counter == self.buffer_size:
+            self.__fill_histo_from_buffer()
+
+        if self.buffer_x is None:
+            self.__reset_buffer(x, y)
+
+        self.buffer_x[self.buffer_counter] = x
+        self.buffer_y[self.buffer_counter] = y
+        self.buffer_counter += 1
+
+    def __fill_histo_from_buffer(self):
+        if self.buffer_x is None:
+            return
+
+        self.buffer_x = self.buffer_x[:self.buffer_counter+1]
+        self.buffer_y = self.buffer_y[:self.buffer_counter+1]
+        for pixel_id in range(self.buffer_x.shape[1]):
+            H, xedges, yedges = np.histogram2d(
+                self.buffer_x[:, pixel_id].flat,
+                self.buffer_y[:, pixel_id].flat,
+                bins=self.histo.shape[1:],
+                range=self.range
+            )
+            self.histo[pixel_id] += H.astype('u2')
+        self.buffer_x = None
+        self.buffer_y = None
+        self.buffer_counter = 0
+
+    def contents(self):
+        self.__fill_histo_from_buffer()
+        return self.histo
+
+
 def main(outfile_path, input_files=[]):
     events = calibration_event_stream(input_files, max_events=100)
     Rough_factor_between_single_pe_amplitude_and_integral = 21 / 5.8
     histo = None
 
     _range = [[-10, 40], [-0.2, 1.5]]
-    extent = _range[0] + _range[1]
 
     for e in tqdm(events):
         adc = e.data.adc_samples
@@ -85,26 +169,19 @@ def main(outfile_path, input_files=[]):
 
         # TODO: Would be nice to move this out of the loop
         if histo is None:
-            histo = np.zeros(
-                (adc.shape[0], 101, 101),
-                dtype='u2'
-            )
-
-        for pixel_id in range(adc.shape[0]):
-            H, xedges, yedges = np.histogram2d(
-                time_in_ns - arrival_time_in_ns[pixel_id],
-                adc[pixel_id],
-                bins=histo.shape[1:],
+            histo = Histogram2d(
+                shape=(adc.shape[0], 101, 101),
                 range=_range
             )
-            histo[pixel_id] += H.astype('u2')
+
+        histo.fill(time_in_ns, arrival_time_in_ns, adc)
 
     outfile = h5py.File(outfile_path)
     dset = outfile.create_dataset(
         name='adc_count_histo',
-        data=histo,
+        data=histo.contents,
     )
-    dset.attrs['extent'] = extent
+    dset.attrs['extent'] = histo.extent
 
 
 def entry():
