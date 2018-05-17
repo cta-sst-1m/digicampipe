@@ -80,8 +80,10 @@ def main(outfile_path, input_files=[]):
             adc / integral[:, None]
         ) * Rough_factor_between_single_pe_amplitude_and_integral
 
-        t0 = estimate_arrival_time(adc) * 4
-        t = np.arange(adc.shape[1]) * 4
+        arrival_time_in_ns = estimate_arrival_time(adc) * 4
+        time_in_ns = np.arange(adc.shape[1]) * 4
+
+        # TODO: Would be nice to move this out of the loop
         if histo is None:
             histo = np.zeros(
                 (adc.shape[0], 101, 101),
@@ -90,7 +92,7 @@ def main(outfile_path, input_files=[]):
 
         for pid in range(adc.shape[0]):
             H, xedges, yedges = np.histogram2d(
-                t-t0[pid],
+                time_in_ns - arrival_time_in_ns[pid],
                 adc[pid],
                 bins=histo.shape[1:],
                 range=_range
