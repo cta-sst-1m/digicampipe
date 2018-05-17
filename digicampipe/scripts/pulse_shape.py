@@ -188,6 +188,7 @@ def main(outfile_path, input_files=[]):
     dset = outfile.create_dataset(
         name='adc_count_histo',
         data=histo.contents(),
+        compression='gzip'
     )
     dset.attrs['extent'] = histo.extent
 
