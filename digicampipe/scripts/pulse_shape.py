@@ -84,7 +84,7 @@ class Histogram2d:
 
 class Histogram2dChunked:
 
-    def __init__(self, shape, range, buffer_size=1000):
+    def __init__(self, shape, range, buffer_size=3000):
         self.histo = np.zeros(shape, dtype='u2')
         self.range = range
         self.extent = self.range[0] + self.range[1]
@@ -111,7 +111,7 @@ class Histogram2dChunked:
         time_in_ns: (n_samples)
         arrival_time_in_ns: (n_pixel)
         '''
-        x = time_in_ns[:, None] - arrival_time_in_ns[None, :]
+        x = time_in_ns[None, :] - arrival_time_in_ns[:, None]
         y = data
         if self.buffer_counter == self.buffer_size:
             self.__fill_histo_from_buffer()
@@ -130,9 +130,11 @@ class Histogram2dChunked:
         self.buffer_x = self.buffer_x[:self.buffer_counter+1]
         self.buffer_y = self.buffer_y[:self.buffer_counter+1]
         for pixel_id in range(self.buffer_x.shape[1]):
+            foo = self.buffer_x[:, pixel_id].flatten()
+            bar = self.buffer_y[:, pixel_id].flatten()
             H, xedges, yedges = np.histogram2d(
-                self.buffer_x[:, pixel_id].flat,
-                self.buffer_y[:, pixel_id].flat,
+                foo,
+                bar,
                 bins=self.histo.shape[1:],
                 range=self.range
             )
@@ -147,7 +149,7 @@ class Histogram2dChunked:
 
 
 def main(outfile_path, input_files=[]):
-    events = calibration_event_stream(input_files, max_events=100)
+    events = calibration_event_stream(input_files)
     Rough_factor_between_single_pe_amplitude_and_integral = 21 / 5.8
     histo = None
 
@@ -175,7 +177,7 @@ def main(outfile_path, input_files=[]):
 
         # TODO: Would be nice to move this out of the loop
         if histo is None:
-            histo = Histogram2d(
+            histo = Histogram2dChunked(
                 shape=(adc.shape[0], 101, 101),
                 range=_range
             )
