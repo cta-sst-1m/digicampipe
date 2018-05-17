@@ -160,6 +160,12 @@ def main(outfile_path, input_files=[]):
         # I just integrate between sample 10 and 30 to normalize a bit
         # normalizing to maximum_amplitude = 1 is too "sharp"
         integral = adc[:, 10:30].sum(axis=1)
+
+        # handling special case .. we say negative integrals make no sense
+        # and zero integral simply means there was no pulse at all.
+        # so we clip at 1
+        integral = integral.clip(1)
+
         adc = (
             adc / integral[:, None]
         ) * Rough_factor_between_single_pe_amplitude_and_integral
@@ -179,7 +185,7 @@ def main(outfile_path, input_files=[]):
     outfile = h5py.File(outfile_path)
     dset = outfile.create_dataset(
         name='adc_count_histo',
-        data=histo.contents,
+        data=histo.contents(),
     )
     dset.attrs['extent'] = histo.extent
 
@@ -187,7 +193,7 @@ def main(outfile_path, input_files=[]):
 def entry():
     args = docopt(__doc__)
     if args['--output'] is None:
-        args['--output'] = args['<input_files>'] + '.h5'
+        args['--output'] = args['<input_files>'][0] + '.h5'
     main(
         outfile_path=args['--output'],
         input_files=args['<input_files>'],
