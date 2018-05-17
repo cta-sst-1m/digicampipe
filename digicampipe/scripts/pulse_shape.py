@@ -67,7 +67,7 @@ def main(outfile_path, input_files=[]):
     histo = None
 
     _range = [[-10, 40], [-0.2, 1.5]]
-    _extent = _range[0] + _range[1]
+    extent = _range[0] + _range[1]
 
     for e in tqdm(events):
         adc = e.data.adc_samples
@@ -92,7 +92,7 @@ def main(outfile_path, input_files=[]):
             H, xedges, yedges = np.histogram2d(
                 t-t0[pid],
                 adc[pid],
-                bins=(101, 101),
+                bins=histo.shape[1:],
                 range=_range
             )
             histo[pid] += H.astype('u2')
@@ -102,7 +102,7 @@ def main(outfile_path, input_files=[]):
         name='adc_count_histo',
         data=histo,
     )
-    dset.attrs['extent'] = _extent
+    dset.attrs['extent'] = extent
 
 
 def entry():
