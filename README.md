@@ -141,3 +141,18 @@ Then add the folowing line to /etc/astrmetry.cfg:
     add_path ~/astrometry-data
 
 That's it, you are ready to go.
+
+
+### template scan analysis
+
+The purpose of the template scan analysis is to find the shape of the typical non-saturating pulse.
+To perform this analysis download the needed raw data files from somewhere and put
+them into someplace you like, then modify `template_scan_analysis.sh` so it finds the files.
+Afterwards call:
+
+    ./template_scan_analysis.sh
+
+... and wait. Once the analysis is done, you can look at the results and perform
+the higher level anlysis with:
+
+    jupyter-notebook template_scan_analysis.ipynb

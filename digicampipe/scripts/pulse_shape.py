@@ -46,6 +46,7 @@ def estimate_arrival_time(adc, thr=0.5):
 
     for pixel_id in range(n_pixel):
         y = adc[pixel_id]
+        y -= y.min()
         am = y.argmax()
         y_ = y[:am+1]
         lim = y_[-1] * thr
