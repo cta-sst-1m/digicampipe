@@ -21,6 +21,7 @@ dependencies:
 - pyhessio
 - pytest
 - PyYAML
+- scikit-learn
 - scipy
 - sphinx_rtd_theme
 - traitlets
