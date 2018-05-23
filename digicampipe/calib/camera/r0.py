@@ -8,13 +8,16 @@ def fill_trigger_patch(event_stream):
         for telescope_id in event.r0.tels_with_data:
 
             matrix_patch = event.inst.patch_matrix[telescope_id]
+
             baseline = event.r0.tel[telescope_id].baseline[:, np.newaxis]
             baseline = np.floor(baseline)
             baseline = baseline.astype(int)
 
             data = event.r0.tel[telescope_id].adc_samples
             data = data - baseline
+            data = np.clip(data, 0, 4095)
             data = matrix_patch.dot(data)
+            data = np.clip(data, 0, 255)
             event.r0.tel[telescope_id].trigger_input_traces = data
 
         yield event
@@ -30,6 +33,7 @@ def fill_trigger_input_7(event_stream):
 
             trigger_in = event.r0.tel[telescope_id].trigger_input_traces
             trigger_input_7 = matrix_patch_7.dot(trigger_in)
+            trigger_input_7 = np.clip(trigger_input_7, 0, 255)
             event.r0.tel[telescope_id].trigger_input_7 = trigger_input_7
 
         yield event
@@ -45,6 +49,7 @@ def fill_trigger_input_19(event_stream):
 
             trigger_in = event.r0.tel[telescope_id].trigger_input_traces
             trigger_input_19 = matrix_19.dot(trigger_in)
+            trigger_input_19 = np.clip(trigger_input_19, 0, 255)
             event.r0.tel[telescope_id].trigger_input_19 = trigger_input_19
 
         yield event
