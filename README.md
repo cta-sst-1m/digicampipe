@@ -152,7 +152,8 @@ Afterwards call:
 
     ./template_scan_analysis.sh
 
-... and wait. Once the analysis is done, you can look at the results and perform
+... and wait. This analysis needs 3 cores, ~6GB memory and takes on my machine ~25minutes.
+Once the analysis is done, you can look at the results and perform
 the higher level anlysis with:
 
     jupyter-notebook template_scan_analysis.ipynb
