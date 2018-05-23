@@ -7,6 +7,37 @@ def init_cluster_rate(r0, n_thresholds):
     return cluster_rate
 
 
+def compute_bias_curve_v2(data_stream, thresholds):
+
+    n_thresholds = len(thresholds)
+    n_clusters = 432
+    cluster_rate = np.zeros((n_clusters, n_thresholds))
+    rate = np.zeros(n_thresholds)
+
+    for count, event in enumerate(data_stream):
+
+        for tel_id, r0 in event.r0.tel.items():
+
+            trigger_input = r0.trigger_input_7
+
+            comp = trigger_input[..., np.newaxis] > thresholds
+            temp_cluster_rate = np.sum(comp, axis=1)
+            temp_cluster_rate[temp_cluster_rate > 0] = 1
+            cluster_rate += temp_cluster_rate
+
+            temp_rate = np.sum(temp_cluster_rate, axis=0)
+            temp_rate[temp_rate > 0] = 1
+            rate += temp_rate
+
+    time = ((count + 1) * 4. * trigger_input.shape[-1])
+    rate_error = np.sqrt(rate) / time
+    cluster_rate_error = np.sqrt(cluster_rate) / time
+    rate = rate / time
+    cluster_rate = cluster_rate / time
+
+    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
+
+
 def compute_bias_curve(
     data_stream,
     thresholds,

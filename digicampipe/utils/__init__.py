@@ -1,5 +1,6 @@
 import pkg_resources
 from os import path
+from scipy.sparse import csr_matrix
 
 from cts_core import camera
 from digicampipe.utils import geometry
@@ -47,9 +48,12 @@ class Camera(camera.Camera):
             **geometry_kwargs
         )
         self.patch_matrix = geometry.compute_patch_matrix(camera=self)
+        self.patch_matrix = csr_matrix(self.patch_matrix)
         self.cluster_7_matrix = geometry.compute_cluster_matrix_7(camera=self)
+        self.cluster_7_matrix = csr_matrix(self.cluster_7_matrix)
         self.cluster_19_matrix = geometry.compute_cluster_matrix_19(
             camera=self)
+        self.cluster_19_matrix = csr_matrix(self.cluster_19_matrix)
 
 
 DigiCam = Camera()

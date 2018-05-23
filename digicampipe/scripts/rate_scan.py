@@ -15,7 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from digicampipe.calib.camera import filter, r0, random_triggers
-from digicampipe.io.save_bias_curve import compute_bias_curve
+from digicampipe.io.save_bias_curve import compute_bias_curve, \
+    compute_bias_curve_v2
 from digicampipe.io.event_stream import event_stream
 
 
@@ -29,7 +30,7 @@ def entry():
 def main(files, output_filename, display=False):
 
     n_bins = 1024
-    thresholds = np.arange(0, 400, 10)
+    thresholds = np.arange(0, 100, 2)
     blinding = True
 
     data_stream = event_stream(files)
@@ -39,10 +40,9 @@ def main(files, output_filename, display=False):
     data_stream = r0.fill_trigger_patch(data_stream)
     data_stream = r0.fill_trigger_input_7(data_stream)
     data_stream = r0.fill_trigger_input_19(data_stream)
-    output = compute_bias_curve(
+    output = compute_bias_curve_v2(
         data_stream,
         thresholds=thresholds,
-        blinding=blinding,
     )
 
     rate, rate_error, cluster_rate, cluster_rate_error, thresholds = output
