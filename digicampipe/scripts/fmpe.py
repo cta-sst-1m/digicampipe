@@ -290,7 +290,7 @@ def entry():
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
-    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
+    n_samples = int(args['--n_samples'])  # TODO access this in a better way
 
     n_pixels = len(pixel_id)
 
@@ -300,11 +300,8 @@ def entry():
 
     if args['--compute']:
 
-        timing_histo = timing.compute(files, max_events, pixel_id,
-                                      output_path,
-                                      n_samples,
-                                      filename=timing_histo_filename,
-                                      save=True)
+        timing_histo = Histogram1D.load(os.path.join(output_path,
+                                                     timing_histo_filename))
 
         pulse_indices = timing_histo.mode() // 4
 
