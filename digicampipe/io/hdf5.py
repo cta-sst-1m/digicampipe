@@ -35,7 +35,7 @@ def digicamtoy_event_source(
 
     max_events = min(max_events, n_events)
 
-    for event_id in tqdm(range(max_events), desc='Event'):
+    for event_id in tqdm(range(max_events), desc='Events'):
 
         data.r0.event_id = event_id
         data.r0.tels_with_data = [1, ]
