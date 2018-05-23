@@ -69,11 +69,11 @@ class Histogram2d:
         self.range = range
         self.extent = self.range[0] + self.range[1]
 
-    def fill(self, time_in_ns, arrival_time_in_ns, data):
-        for pixel_id in range(data.shape[0]):
+    def fill(self, x, y):
+        for pixel_id in range(len(x)):
             H, xedges, yedges = np.histogram2d(
-                time_in_ns - arrival_time_in_ns[pixel_id],
-                data[pixel_id],
+                x[pixel_id],
+                y[pixel_id],
                 bins=self.histo.shape[1:],
                 range=self.range
             )
@@ -106,14 +106,7 @@ class Histogram2dChunked:
         )
         self.buffer_counter = 0
 
-    def fill(self, time_in_ns, arrival_time_in_ns, data):
-        '''
-        data: (n_pixel, n_samples)
-        time_in_ns: (n_samples)
-        arrival_time_in_ns: (n_pixel)
-        '''
-        x = time_in_ns[None, :] - arrival_time_in_ns[:, None]
-        y = data
+    def fill(self, x, y):
         if self.buffer_counter == self.buffer_size:
             self.__fill_histo_from_buffer()
 
@@ -183,7 +176,10 @@ def main(outfile_path, input_files=[]):
                 range=_range
             )
 
-        histo.fill(time_in_ns, arrival_time_in_ns, adc)
+        histo.fill(
+            x=time_in_ns[None, :] - arrival_time_in_ns[:, None],
+            y=adc
+        )
 
     outfile = h5py.File(outfile_path)
     dset = outfile.create_dataset(
