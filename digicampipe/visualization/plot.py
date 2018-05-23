@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import norm
 
 
 from ctapipe.visualization import CameraDisplay
@@ -63,30 +64,95 @@ def plot_parameter(parameter, name, units, axis=None, **kwargs):
 
 def plot_array_camera(data, label='', limits=None, **kwargs):
 
-        mask = np.isfinite(data)
-        data = np.ma.masked_array(data, mask=~mask)
-        cam = utils.Camera()
-        geom = cam.geometry
-        cam_display = CameraDisplay(geom, **kwargs)
-        cam_display.cmap.set_bad(color='k')
-        cam_display.image = data
-        cam_display.axes.set_title('')
-        cam_display.axes.set_xticks([])
-        cam_display.axes.set_yticks([])
-        cam_display.axes.set_xlabel('')
-        cam_display.axes.set_ylabel('')
+    mask = np.isfinite(data)
+    data = np.ma.masked_array(data, mask=~mask)
+    cam = utils.Camera()
+    geom = cam.geometry
+    cam_display = CameraDisplay(geom, **kwargs)
+    cam_display.cmap.set_bad(color='k')
+    cam_display.image = data
+    cam_display.axes.set_title('')
+    cam_display.axes.set_xticks([])
+    cam_display.axes.set_yticks([])
+    cam_display.axes.set_xlabel('')
+    cam_display.axes.set_ylabel('')
 
-        cam_display.axes.axis('off')
-        cam_display.add_colorbar(label=label)
-        cam_display.axes.get_figure().set_size_inches((10, 10))
-        plt.axis('equal')
-        if limits is not None:
+    cam_display.axes.axis('off')
+    cam_display.add_colorbar(label=label)
+    cam_display.axes.get_figure().set_size_inches((10, 10))
+    plt.axis('equal')
+    if limits is not None:
 
-            if not isinstance(limits, tuple):
-                raise TypeError('Limits must be a tuple()')
+        if not isinstance(limits, tuple):
+            raise TypeError('Limits must be a tuple()')
 
-            cam_display.colorbar.set_clim(vmin=limits[0], vmax=limits[1])
+        cam_display.colorbar.set_clim(vmin=limits[0], vmax=limits[1])
 
-        cam_display.update()
+    cam_display.update()
 
-        return cam_display
+    return cam_display
+
+
+def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
+                     **kwargs):
+
+    mask = np.isfinite(x) * np.isfinite(y)
+
+    x = x[mask]
+    y = y[mask]
+
+    if c is not None:
+        c = c[mask]
+    pearson_corr = np.corrcoef(x, y)[0, 1]
+
+    plt.figure(figsize=(10, 10))
+    plt.scatter(x, y, c=c, label='Correlation {:.02f}'.format(pearson_corr),
+                **kwargs)
+
+    if c is not None:
+        plt.colorbar(label=label_c)
+    plt.xlabel(label_x)
+    plt.legend(loc='best')
+    plt.ylabel(label_y)
+
+
+def plot_histo(data, x_label, show_fit=True, limits=None, **kwargs):
+    mask = np.isfinite(data)
+
+    if limits is not None:
+        mask *= (data <= limits[1]) * (data >= limits[0])
+
+    data = data[mask]
+    mean = np.mean(data)
+    std = np.std(data)
+
+    try:
+
+        data = data[~data.mask]
+
+    except Exception:
+
+        pass
+
+    n_entries = len(data)
+
+    label = '$N_{pixels}$ = ' + '{}\n'.format(n_entries)
+    label_fit = 'Mean : {:.2f}\n'.format(mean) + 'Std : {:.2f}'.format(std)
+
+    if not show_fit:
+        label += label_fit
+
+    plt.figure(figsize=(10, 10))
+    hist = plt.hist(data, **kwargs, label=label)
+
+    if show_fit:
+        bins = hist[1]
+
+        bin_width = bins[1] - bins[0]
+        x = np.linspace(np.min(data), np.max(data), num=len(data) * 10)
+        y = n_entries * norm.pdf(x, loc=mean, scale=std) * bin_width
+        plt.plot(x, y, color='r', label=label_fit)
+
+    plt.xlabel(x_label)
+    plt.ylabel('count')
+    plt.legend(loc='best')
