@@ -44,9 +44,13 @@ def compute_bias_curve(
     blinding=True,
     by_cluster=True,
 ):
-    '''
-    thresholds: 1d array
-    '''
+    """
+    :param data_stream:
+    :param thresholds:
+    :param blinding:
+    :param by_cluster:
+    :return:
+    """
     n_thresholds = len(thresholds)
     rate = np.zeros(n_thresholds)
 
