@@ -185,7 +185,8 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
         plt.errorbar(x, y, y_err, linestyle='None', color='k')
         plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
                  marker='o', color='r', label='Peak positions')
-        plt.plot(x_fit, fmpe_pdf_10(x_fit, bin_width=bin_width, **params), label='init', color='g')
+        plt.plot(x_fit, fmpe_pdf_10(x_fit, bin_width=bin_width, **params),
+                 label='init', color='g')
         plt.legend(loc='best')
         plt.show()
 
@@ -245,7 +246,7 @@ def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
     text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['baseline'], m.errors['baseline'])
     text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(m.values['gain'],
-                                                            m.errors['gain'])
+                                                          m.errors['gain'])
     text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['sigma_e'], m.errors['sigma_e'])
     text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB]'.format(
@@ -333,7 +334,7 @@ def entry():
 
         n_pe_peaks = 10
         estimated_gain = 20
-        min_dist = 5 # int(estimated_gain)
+        min_dist = 5  # int(estimated_gain)
 
         results_filename = os.path.join(output_path, 'fmpe_results.npz')
 
