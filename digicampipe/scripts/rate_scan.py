@@ -3,10 +3,12 @@ Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
 Usage:
-  rate_scan [options] <file> <outfile>
+  rate_scan [options] [OUTPUT] [INPUT ...]
 
 Options:
   --display   Display the plots
+  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+  -i INPUT --input=INPUT.     Input files.
 '''
 from docopt import docopt
 import numpy as np
@@ -20,7 +22,8 @@ from digicampipe.io.event_stream import event_stream
 def entry():
 
     args = docopt(__doc__)
-    main(args['<file>'], args['<outfile>'], args['--display'])
+    print(args['INPUT'])
+    main(args['INPUT'], args['OUTPUT'], args['--display'])
 
 
 def main(files, output_filename, display=False):

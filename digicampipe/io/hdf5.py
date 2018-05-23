@@ -2,6 +2,7 @@ from digicampipe.io.containers import DataContainer
 import digicampipe.utils as utils
 import h5py
 import numpy as np
+from tqdm import tqdm
 
 __all__ = ['digicamtoy_event_source']
 
@@ -34,7 +35,7 @@ def digicamtoy_event_source(
 
     max_events = min(max_events, n_events)
 
-    for event_id in range(max_events):
+    for event_id in tqdm(range(max_events), desc='Event'):
 
         data.r0.event_id = event_id
         data.r0.tels_with_data = [1, ]
