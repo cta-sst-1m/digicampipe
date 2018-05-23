@@ -100,7 +100,9 @@ def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
 
     x = x[mask]
     y = y[mask]
-    c = c[mask]
+
+    if c is not None:
+        c = c[mask]
     pearson_corr = np.corrcoef(x, y)[0, 1]
 
     plt.figure(figsize=(10, 10))
