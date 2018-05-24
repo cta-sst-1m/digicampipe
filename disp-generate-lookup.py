@@ -175,15 +175,15 @@ def main(all_offsets, path, equation, outpath):
 
                 out = minimize(disp_minimize, method='leastsq', params=params,
                                args=(
-                               width, length, cog_x, cog_y, x_offset,
-                               y_offset, psi, skewness, size, leakage2,
-                               equation))
+                                 width, length, cog_x, cog_y, x_offset,
+                                 y_offset, psi, skewness, size, leakage2,
+                                 equation))
                 (disp_comp, x_source_comp,
                  y_source_comp, residuals) = disp_eval(out.params, width,
                                                        length, cog_x, cog_y,
                                                        x_offset, y_offset, psi,
-                                                       skewness, size, leakage2,
-                                                       equation)
+                                                       skewness, size,
+                                                       leakage2, equation)
                 report_fit(out, min_correl=0.1)
 
                 if equation == 1:
@@ -229,8 +229,9 @@ def main(all_offsets, path, equation, outpath):
         np.savetxt(outpath + 'disp_lookup_method1.txt', lookup,
                    fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  A0  A0_ERR')
         np.savez(options.outpath + 'disp_lookup_method1',
-             azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
-             A0=lookup[:, 3], A0_ERR=lookup[:, 4])
+                 azimuth=lookup[:, 0], zenith=lookup[:, 1],
+                 offset=lookup[:, 2], A0=lookup[:, 3],
+                 A0_ERR=lookup[:, 4])
 
     elif equation == 2:
 
@@ -238,7 +239,8 @@ def main(all_offsets, path, equation, outpath):
                    fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  A0  A0_ERR  \
                    A1  A1_ERR  A2  A2_ERR  A3  A3_ERR  A4  A4_ERR  \
                    A5  A5_ERR  A6  A6_ERR  A7  A7_ERR  A8  A8_ERR')
-        np.savez(options.outpath + 'disp_lookup_method5',
+        np.savez(
+             options.outpath + 'disp_lookup_method5',
              azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
              A0=lookup[:, 3], A0_ERR=lookup[:, 4],
              A1=lookup[:, 5], A1_ERR=lookup[:, 6],
@@ -255,7 +257,8 @@ def main(all_offsets, path, equation, outpath):
         np.savetxt(outpath + 'disp_lookup_method4.txt', lookup,
                    fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  \
                    A0  A0_ERR  A1  A1_ERR')
-        np.savez(outpath + 'disp_lookup_method'+str(equation),
+        np.savez(
+             outpath + 'disp_lookup_method'+str(equation),
              azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
              A0=lookup[:, 3], A0_ERR=lookup[:, 4],
              A1=lookup[:, 5], A1_ERR=lookup[:, 6])
@@ -265,7 +268,8 @@ def main(all_offsets, path, equation, outpath):
         np.savetxt(outpath + 'disp_lookup_method5.txt', lookup,
                    fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  A0  \
                    A0_ERR  A1  A1_ERR  A2  A2_ERR')
-        np.savez(outpath + 'disp_lookup_method5',
+        np.savez(
+             outpath + 'disp_lookup_method5',
              azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
              A0=lookup[:, 3], A0_ERR=lookup[:, 4],
              A1=lookup[:, 5], A1_ERR=lookup[:, 6],
