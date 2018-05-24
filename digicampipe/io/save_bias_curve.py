@@ -37,7 +37,7 @@ def compute_bias_curve_v2(data_stream, thresholds):
 
     return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
 
-
+oskofkaof
 def compute_bias_curve(
     data_stream,
     thresholds,
