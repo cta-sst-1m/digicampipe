@@ -5,24 +5,24 @@ import matplotlib as mpl
 
 def disp_eval(A, width, length, cog_x, cog_y,
               x_offset, y_offset, psi, skewness,
-              size, leakage2, method): 
+              size, leakage2, method):
 
     parvals = A.valuesdict()
-    
+
     # (Lessard et al., 2001)
-    if method == 1:         
+    if method == 1:
         disp_comp = parvals['A0']*(1 - width/length)
 
     # eq 2.10 in Lopez Coto, VHE gamma-ray observations of pulsar
     # wind nebuale ..., but better reference is: (Domingo-Santamaria+, 2005)
     elif method == 2:
-        A = (parvals['A0'] + parvals['A1']*np.log10(size)
-            + parvals['A2']*np.log10(size)**2)
-        B = (parvals['A3'] + parvals['A4']*np.log10(size)
-            + parvals['A5']*np.log10(size)**2)
-        eta = (parvals['A6'] + parvals['A7']*np.log10(size)
-              + parvals['A8']*np.log10(size)**2)
-        disp_comp = A + B * (width/ (length + eta*leakage2))
+        A = (parvals['A0'] + parvals['A1'] * np.log10(size)
+             + parvals['A2'] * np.log10(size)**2)
+        B = (parvals['A3'] + parvals['A4'] * np.log10(size)
+             + parvals['A5'] * np.log10(size)**2)
+        eta = (parvals['A6'] + parvals['A7'] * np.log10(size)
+               + parvals['A8'] * np.log10(size)**2)
+        disp_comp = A + B * (width/ (length + eta * leakage2))
 
     # just some test
     elif method == 3:
@@ -31,14 +31,14 @@ def disp_eval(A, width, length, cog_x, cog_y,
     # Kranich and Stark, ICRC 2003
     elif method == 4:
         disp_comp = (parvals['A0']
-                    * (1 - width / (length * (1 + parvals['A1'] * leakage2))))
+                     * (1 - width / (length * (1 + parvals['A1'] * leakage2))))
     # (Luke Riley St Marie 2014) <-- simplified Domingo-Santamaria
     elif method == 5:
         fraction = width / (length + parvals['A2']
                             * leakage2 * np.log10(size))
         disp_comp = (np.log10(size)
-                    * (parvals['A0'] + parvals['A1'] * (1 - fraction)))
-    
+                     * (parvals['A0'] + parvals['A1'] * (1 - fraction)))
+
     x_source_comp0 = cog_x + disp_comp*np.cos(psi)  # Two possible solutions
     y_source_comp0 = cog_y + disp_comp*np.sin(psi)  #
     x_source_comp1 = cog_x - disp_comp*np.cos(psi)  #
@@ -72,7 +72,7 @@ def leak_pixels(pix_x, pix_y, image):
         if x < -412 or x > 398:
             y_sel = pix_y[pix_x == x]
             for y in y_sel:
-                pix_bound.append([x,y])
+                pix_bound.append([x, y])
         else:
             min_y = min(pix_y[pix_x == x])
             max_y = max(pix_y[pix_x == x])
@@ -84,7 +84,7 @@ def leak_pixels(pix_x, pix_y, image):
     image_mask = np.zeros(len(pix_x), dtype=bool)
     for i in range(len(pix_x)):
         for j in range(len(pix_bound)):
-            if pix_x[i] == pix_bound[j,0] and pix_y[i] == pix_bound[j,1]:
+            if pix_x[i] == pix_bound[j, 0] and pix_y[i] == pix_bound[j, 1]:
                 image_mask[i] = True
 
     # Signal in outermost pixels
@@ -100,7 +100,7 @@ def leak_pixels(pix_x, pix_y, image):
     # camera pixel rings and the total light content of the recorded shower
     # image
     leakage2 = signal_border/signal_full
-    
+
     return leakage2, pix_bound, image_mask, signal_full, signal_border
 
 
@@ -109,10 +109,10 @@ def arrival_distribution(disp_comp, x_source_comp, y_source_comp, n_triples,
                          ):
 
     # For each event a set of possible arrival directions is calculated
-    # as an intersection with another two events, chosen from 
+    # as an intersection with another two events, chosen from
     # all events in the dataset. The arrival direction for given set of
     # events is stored if sum of theta^2 for given triplet is less than
-    # theta_squared_cut. 
+    # theta_squared_cut.
 
     x_intersect = []
     y_intersect = []
@@ -122,13 +122,13 @@ def arrival_distribution(disp_comp, x_source_comp, y_source_comp, n_triples,
     for i in range(len(disp_comp)):
 
         print(i)
-        events1 = np.random.randint(0,len(disp_comp),n_triples)
-        events2 = np.random.randint(0,len(disp_comp),n_triples)
+        events1 = np.random.randint(0, len(disp_comp), n_triples)
+        events2 = np.random.randint(0, len(disp_comp), n_triples)
 
         for j, k in zip(events1, events2):
 
             if j != i and k != j:
-                
+
                 x_triple = [x_source_comp[i],
                             x_source_comp[j],
                             x_source_comp[k]]
@@ -139,7 +139,7 @@ def arrival_distribution(disp_comp, x_source_comp, y_source_comp, n_triples,
                 y_mean = np.mean(y_triple)
 
                 # Mean arrival direction of the triplet is taken into account
-                # only if its 'spread' is not too large. It means that 
+                # only if its 'spread' is not too large. It means that
                 # the direction is well defined. As a measure of the spread,
                 # sum of theta^2 is taken. Theta means in this case the
                 # distance between triplet mean and computed position for each
@@ -178,8 +178,8 @@ def res_gaussian(xy, x0, y0, sigma, H, bkg):     # 2D Gaussian model
 
     x, y = xy
     theta_squared = (x0-x)**2.0 + (y0-y)**2.0
-    I = H * np.exp(-theta_squared/(2*sigma**2.0)) + bkg
-    return I
+    G = H * np.exp(-theta_squared/(2*sigma**2.0)) + bkg
+    return G
 
 
 # R68 resolution (if the distribution is gaussian, R68 = sigma)
@@ -195,7 +195,7 @@ def r68(x, y, offset_x, offset_y):
     r99 = 0.05
     r68_full = 0.05
     N_in = 0
-    
+
     while N_in < 0.99*N_full:
         N_in = len(x[(x**2.0 + y**2.0 < r99**2.0)])
         r99 = r99+0.001
@@ -209,7 +209,7 @@ def r68(x, y, offset_x, offset_y):
     r68 = 0.05
     N_in = 0
     N_full = len(x[(x**2.0 + y**2.0 < cut**2.0)])
-    
+
     while N_in < 0.682*N_full:
         N_in = len(x[(x**2.0 + y**2.0 < r68**2.0)])
         r68 = r68+0.001
@@ -242,7 +242,7 @@ def r68mod(x, y, n_bin_values, offset_x, offset_y):
     r68 = 0.05
     N_in = 0
     N_full = sum(n_bin_values[(x**2.0 + y**2.0 < cut**2.0)])
-    
+
     while N_in < 0.682*N_full:
         N_in = sum(n_bin_values[(x**2.0 + y**2.0 < r68**2.0)])
         r68 = r68+0.001
@@ -252,20 +252,20 @@ def r68mod(x, y, n_bin_values, offset_x, offset_y):
 
 # PLOTTING
 
-def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):  
+def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):
 
     rms2 = data[:,2].reshape(
-                             (len(np.unique(data[:,0])),
-                             len(np.unique(data[:,1])))
-                             )
-    x, y = np.meshgrid(np.unique(data[:,1]), np.unique(data[:,0]))
+                             (len(np.unique(data[:, 0])),
+                              len(np.unique(data[:, 1]))
+                              ))
+    x, y = np.meshgrid(np.unique(data[:, 1]), np.unique(data[:, 0]))
     fig = plt.figure(figsize=(9, 8))
     ax1 = fig.add_subplot(111)
     plt.imshow(rms2, vmin=vmin, vmax=vmax)
     cbar = plt.colorbar()
     cbar.set_label(cbarlabel)
-    plt.xticks(range(len(x[0])),x[0])
-    plt.yticks(range(len(y[:,0])), y[:,0])
+    plt.xticks(range(len(x[0])), x[0])
+    plt.yticks(range(len(y[:, 0])), y[:, 0])
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
 
@@ -273,18 +273,18 @@ def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):
 def plot_event(pix_x, pix_y, image):
 
     fig = plt.figure(figsize=(9, 9))
-    plt.scatter(pix_x[image == 0],pix_y[image == 0],color=[0.9, 0.9, 0.9])
+    plt.scatter(pix_x[image == 0], pix_y[image == 0], color=[0.9, 0.9, 0.9])
     pix_x_event = pix_x[image > 0]
     pix_y_event = pix_y[image > 0]
     image_event = image[image > 0]
     plt.scatter(pix_x_event, pix_y_event, c=image_event)
     plt.ylabel('FOV Y [mm]')
     plt.xlabel('FOV X [mm]')
-    plt.tight_layout()  
+    plt.tight_layout()
 
 
-# function for adding correct ticks corresponding with x,y coordinates to 
+# function for adding correct ticks corresponding with x,y coordinates to
 # the plot instead of indexes of plotted matrix
 def extents(f):
-      delta = f[1] - f[0]
-      return [f[0] - delta/2, f[-1] + delta/2]
+    delta = f[1] - f[0]
+    return [f[0] - delta/2, f[-1] + delta/2]
