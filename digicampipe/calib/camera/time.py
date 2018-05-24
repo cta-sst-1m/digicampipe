@@ -1,4 +1,5 @@
 import numpy as np
+import numba
 
 
 def compute_time_from_max(events):
@@ -15,3 +16,45 @@ def compute_time_from_max(events):
         event.data.reconstructed_time = reconstructed_time
 
         yield event
+
+
+@numba.jit
+def estimate_arrival_time(adc, thr=0.5):
+    '''
+    estimate the pulse arrival time, defined as the time the leading edge
+    crossed 50% of the maximal height,
+    estimated using a simple linear interpolation.
+
+    *Note*
+    This method breaks down for very small pulses where noise affects the
+    leading edge significantly.
+    Typical pixels have a ~2LSB electronics noise level.
+    Assuming a leading edge length of 4 samples
+    then for a typical pixel, pulses of 40LSB (roughly 7 p.e.)
+    should be fine.
+
+    adc: (1296, 50) dtype=uint16 or so
+    thr: threshold, 50% by default ... can be played with.
+
+    return:
+        arrival_time (1296) in units of time_slices
+    '''
+    n_pixel = adc.shape[0]
+    arrival_times = np.zeros(n_pixel, dtype='f4')
+
+    for pixel_id in range(n_pixel):
+        y = adc[pixel_id]
+        y -= y.min()
+        am = y.argmax()
+        y_ = y[:am+1]
+        lim = y_[-1] * thr
+        foo = np.where(y_ < lim)[0]
+        if len(foo):
+            start = foo[-1]
+            stop = start + 1
+            arrival_times[pixel_id] = start + (
+                (lim-y_[start]) / (y_[stop]-y_[start])
+            )
+        else:
+            arrival_times[pixel_id] = np.nan
+    return arrival_times
