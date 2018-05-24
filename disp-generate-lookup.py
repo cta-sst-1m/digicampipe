@@ -174,7 +174,8 @@ def main(all_offsets, path, equation, outpath):
                     params.add_many(('A0', 1.0), ('A1', 1.0), ('A2', 1.0))
 
                 out = minimize(disp_minimize, method='leastsq', params=params,
-                               args=(width, length, cog_x, cog_y, x_offset,
+                               args=(
+                               width, length, cog_x, cog_y, x_offset,
                                y_offset, psi, skewness, size, leakage2,
                                equation))
                 (disp_comp, x_source_comp,
@@ -192,7 +193,8 @@ def main(all_offsets, path, equation, outpath):
                          out.params['A0'].value, out.params['A0'].stderr
                          ])
                 elif equation == 2:
-                    lookup.append([float(azimuth), float(zenith),
+                    lookup.append(
+                       [float(azimuth), float(zenith),
                         float(offset),
                         out.params['A0'].value, out.params['A0'].stderr,
                         out.params['A1'].value, out.params['A1'].stderr,
@@ -205,13 +207,15 @@ def main(all_offsets, path, equation, outpath):
                         out.params['A8'].value, out.params['A8'].stderr]
                         )
                 elif equation == 3 or equation == 4:
-                    lookup.append([float(azimuth), float(zenith),
+                    lookup.append(
+                       [float(azimuth), float(zenith),
                         float(offset),
                         out.params['A0'].value, out.params['A0'].stderr,
                         out.params['A1'].value, out.params['A1'].stderr]
                         )
                 elif equation == 5:
-                    lookup.append([float(azimuth), float(zenith),
+                    lookup.append(
+                       [float(azimuth), float(zenith),
                         float(offset),
                         out.params['A0'].value, out.params['A0'].stderr,
                         out.params['A1'].value, out.params['A1'].stderr,

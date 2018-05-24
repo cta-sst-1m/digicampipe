@@ -142,8 +142,9 @@ def main(hillas_file, lookup_file, pixel_file,
         x_minmax = x_offset[0] + [-1.0, 1.0]
         y_minmax = y_offset[0] + [-1.0, 1.0]
         (n_bin_values, n_bin,
-         theta_squared_sum_hist) = arrival_distribution(disp_comp,
-                                    x_source_comp, y_source_comp, n_triples,
+         theta_squared_sum_hist) = arrival_distribution(
+                                    disp_comp, x_source_comp,
+                                    y_source_comp, n_triples,
                                     theta_squared_cut, bins,
                                     x_minmax, y_minmax)
 
