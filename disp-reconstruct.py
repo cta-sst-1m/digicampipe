@@ -52,7 +52,7 @@ def main(hillas_file, lookup_file, pixel_file,
     data_azimuth = 0
 
     min_size = 200
-    
+
     mask1 = [x > 0.001 for x in hillas['width']/hillas['length']]
     mask2 = [x > min_size for x in hillas['size']]
 
@@ -62,10 +62,11 @@ def main(hillas_file, lookup_file, pixel_file,
     if equation == 1 or equation == 3:
         mask0 = [x == 0 for x in hillas['border']]
         mask = (~np.isnan(hillas['width'])
-                *~np.isnan(hillas['cen_x'])*mask0*mask1*mask2)
-    else: mask = (~np.isnan(hillas['width'])
-                 *~np.isnan(hillas['cen_x'])*mask1*mask2)
-    
+                * ~np.isnan(hillas['cen_x']) * mask0 * mask1 * mask2)
+    else:
+        mask = (~np.isnan(hillas['width'])
+                * ~np.isnan(hillas['cen_x']) * mask1 * mask2)
+
     # hillas
     size = hillas['size'][mask]
     width = hillas['width'][mask]
@@ -74,7 +75,7 @@ def main(hillas_file, lookup_file, pixel_file,
     cog_x = hillas['cen_x'][mask]  # in mm
     cog_y = hillas['cen_y'][mask]  #
     skewness = hillas['skewness'][mask]
-    
+
     # image
     # there is event number in the first column, the rest
     # are dl1_camera.pe_samples values that survived cleaning
@@ -113,7 +114,7 @@ def main(hillas_file, lookup_file, pixel_file,
         a0 = f1(data_zenith, data_offset)
         a1 = f2(data_zenith, data_offset)
         A.add_many(('A0', a0), ('A1', a1))
-        
+
     elif equation == 5:
         f1 = interp2d(lookup['zenith'],
                       lookup['offset'], lookup['A0'], kind='linear')
@@ -128,9 +129,9 @@ def main(hillas_file, lookup_file, pixel_file,
 
     print(A)
     (disp_comp, x_source_comp,
-    y_source_comp, residuals) = disp_eval(A, width, length, cog_x, cog_y,
-                                          x_offset, y_offset, psi, skewness,
-                                          size, leakage2, equation)
+     y_source_comp, residuals) = disp_eval(A, width, length, cog_x, cog_y,
+                                           x_offset, y_offset, psi, skewness,
+                                           size, leakage2, equation)
 
     # ARRIVAL DIRECTION DISTRIBUTION
     bins = 100
@@ -146,7 +147,7 @@ def main(hillas_file, lookup_file, pixel_file,
                                     theta_squared_cut, bins,
                                     x_minmax, y_minmax)
 
-    else: # needed for 2D gaussian fit
+    else:  # needed for 2D gaussian fit
         x_minmax = x_offset[0] + [-1.0, 1.0]
         y_minmax = y_offset[0] + [-1.0, 1.0]
         n_bin = np.histogram2d(x_source_comp, y_source_comp,
@@ -155,7 +156,7 @@ def main(hillas_file, lookup_file, pixel_file,
 
     # RESOLUTION
 
-    # 2D Gaussian fit 
+    # 2D Gaussian fit
     # - creation of a matrix
 
     # - coordinates of middle of each interval
@@ -178,7 +179,7 @@ def main(hillas_file, lookup_file, pixel_file,
     print('R[deg] contains 68% of all events: ', res68[0])
     print('R[deg] contains 68% of events up to R99: ', res68[1])
     print('R[deg] contains 99% (R99): ', res68[2])
-    
+
     if args['--modification']:
 
         res68_mod = r68mod(xx.ravel(), yy.ravel(),
@@ -191,7 +192,7 @@ def main(hillas_file, lookup_file, pixel_file,
     # PLOT RECONSTRUCTED IMAGE
 
     if args['--modification']:
-        fig, ax = plt.subplots(1, 1,figsize=(10,7))
+        fig, ax = plt.subplots(1, 1, figsize=(10, 7))
         ax.imshow(n_bin_values, interpolation='none',
                   extent=extents(x) + extents(y))
         ax.autoscale(False)
@@ -208,7 +209,7 @@ def main(hillas_file, lookup_file, pixel_file,
         plt.tight_layout()
 
     else:
-        fig, ax = plt.subplots(1, 1,figsize=(10,8))
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 
         ax.hist2d(x_source_comp, y_source_comp, bins=bins,
                   range=np.array([x_minmax, y_minmax]))
@@ -245,4 +246,3 @@ if __name__ == '__main__':
         modification=args['--modification'],
         equation=int(args['--equation'])
     )
-

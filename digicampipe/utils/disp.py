@@ -22,7 +22,7 @@ def disp_eval(A, width, length, cog_x, cog_y,
              + parvals['A5'] * np.log10(size)**2)
         eta = (parvals['A6'] + parvals['A7'] * np.log10(size)
                + parvals['A8'] * np.log10(size)**2)
-        disp_comp = A + B * (width/ (length + eta * leakage2))
+        disp_comp = A + B * (width / (length + eta * leakage2))
 
     # just some test
     elif method == 3:
@@ -254,10 +254,10 @@ def r68mod(x, y, n_bin_values, offset_x, offset_y):
 
 def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):
 
-    rms2 = data[:,2].reshape(
-                             (len(np.unique(data[:, 0])),
-                              len(np.unique(data[:, 1]))
-                              ))
+    rms2 = data[:, 2].reshape(
+                              (len(np.unique(data[:, 0])),
+                               len(np.unique(data[:, 1]))
+                               ))
     x, y = np.meshgrid(np.unique(data[:, 1]), np.unique(data[:, 0]))
     fig = plt.figure(figsize=(9, 8))
     ax1 = fig.add_subplot(111)

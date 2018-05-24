@@ -37,9 +37,9 @@ def disp_minimize(A, width, length, cog_x, cog_y, x_offset, y_offset,
 
     (disp_comp, x_source_comp,
      y_source_comp, residuals) = disp_eval(A, width, length, cog_x,
-                                         cog_y, x_offset, y_offset,
-                                         psi, skewness, size, leakage2,
-                                         method)
+                                           cog_y, x_offset, y_offset,
+                                           psi, skewness, size, leakage2,
+                                           method)
     return residuals
 
 
@@ -64,9 +64,8 @@ def main(all_offsets, path, equation, outpath):
                                          'pipedmc_param_gamma' in x]
         pixel_file = full_path + 'pixels.txt'
 
-
     # Make lists of zeniths, offsets, azimuths based on hillas files
-    offsets = [x for x in all_offsets] 
+    offsets = [x for x in all_offsets]
     zeniths = []
     azimuths = []
     for filename in hillas_files:
@@ -82,12 +81,12 @@ def main(all_offsets, path, equation, outpath):
 
     # Minimize DISP parameters for all input combinations of
     # zenith, azimuth and offset
-    
+
     lookup = []
     for zenith in zeniths:
         for azimuth in azimuths:
             for offset in offsets:
-                
+
                 print(zenith, azimuth, offset)
                 hillas = np.load([x for x in hillas_files if 'ze'
                                  + zenith in x and 'az' + azimuth
@@ -95,7 +94,8 @@ def main(all_offsets, path, equation, outpath):
                 mc0 = np.loadtxt([x for x in pipedmc_files if 'ze'
                                  + zenith in x and 'az' + azimuth
                                  in x and offset + 'deg' in x][0])
-                pixels, image = events_image.load_image(pixel_file,
+                pixels, image = events_image.load_image(
+                                    pixel_file,
                                     [x for x in events_image_files if 'ze'
                                      + zenith in x and 'az'
                                      + azimuth in x and offset
@@ -114,9 +114,10 @@ def main(all_offsets, path, equation, outpath):
                 if equation == 1 or equation == 3:
                     mask0 = [x == 0 for x in hillas['border']]
                     mask = (~np.isnan(hillas['width'])
-                           *~np.isnan(hillas['cen_x'])*mask0*mask1*mask2)
-                else: mask = (~np.isnan(hillas['width'])
-                             *~np.isnan(hillas['cen_x'])*mask1*mask2)
+                            * ~np.isnan(hillas['cen_x']) * mask0 * mask1 * mask2)
+                else:
+                    mask = (~np.isnan(hillas['width'])
+                            * ~np.isnan(hillas['cen_x']) * mask1 * mask2)
 
                 # hillas
                 size = hillas['size'][mask]
@@ -128,10 +129,10 @@ def main(all_offsets, path, equation, outpath):
                 skewness = hillas['skewness'][mask]
 
                 # mc
-                mc = mc0[mask,:]
+                mc = mc0[mask, :]
 
                 # image
-                # there is event number in the first column, 
+                # there is event number in the first column,
                 # the rest are dl1_camera.pe_samples values after cleaning
                 image = image[mask, 1:]
 
@@ -140,7 +141,7 @@ def main(all_offsets, path, equation, outpath):
 
                 # True MC params
                 energy = mc[:, 3]
-                x_offset = 0*np.ones(len(mc[:, 8])) # source position in deg
+                x_offset = 0*np.ones(len(mc[:, 8]))  # source position in deg
                 y_offset = -float(offset)*np.ones(len(mc[:, 8]))
                 thetap = mc[:, 4]
                 phi = mc[:, 5]
@@ -156,7 +157,7 @@ def main(all_offsets, path, equation, outpath):
 
                 # Outermost pixels
                 (leakage2, pix_bound, image_mask,
-                signal_full, signal_border) = leak_pixels(pix_x, pix_y, image)
+                 signal_full, signal_border) = leak_pixels(pix_x, pix_y, image)
 
                 # MINIMIZATION OF DISP
                 params = Parameters()
@@ -175,21 +176,21 @@ def main(all_offsets, path, equation, outpath):
                 out = minimize(disp_minimize, method='leastsq', params=params,
                                args=(width, length, cog_x, cog_y, x_offset,
                                y_offset, psi, skewness, size, leakage2,
-                               equation)
-                               )
+                               equation))
                 (disp_comp, x_source_comp,
-                y_source_comp, residuals) = disp_eval(out.params, width,
-                                                      length, cog_x, cog_y,
-                                                      x_offset, y_offset, psi,
-                                                      skewness, size, leakage2,
-                                                      equation)
+                 y_source_comp, residuals) = disp_eval(out.params, width,
+                                                       length, cog_x, cog_y,
+                                                       x_offset, y_offset, psi,
+                                                       skewness, size, leakage2,
+                                                       equation)
                 report_fit(out, min_correl=0.1)
-                
+
                 if equation == 1:
-                    lookup.append([float(azimuth), float(zenith),
-                        float(offset),
-                        out.params['A0'].value, out.params['A0'].stderr]
-                        )
+                    lookup.append(
+                        [float(azimuth), float(zenith),
+                         float(offset),
+                         out.params['A0'].value, out.params['A0'].stderr
+                         ])
                 elif equation == 2:
                     lookup.append([float(azimuth), float(zenith),
                         float(offset),
