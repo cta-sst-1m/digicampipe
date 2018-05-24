@@ -3,16 +3,16 @@
 '''
 
 Example:
-  ./disp-generate-lookup.py \
+  ./disp_generate_lookup.py \
   --path=/home/jakub/science/fzu/sst-1m_simulace/data_test/ryzen_test2018/ \
-  --equation=4 \
+  --equation=5 \
   --outpath=./digicampipe/tests/resources/disp_lookup/ \
   -o 0.0 \
   -o 1.0 \
   -o 3.0
 
 Usage:
-  disp-generate-lookup.py (-o <args>)... -u <path> -e <int> -p <path>
+  disp_generate_lookup.py (-o <args>)... -u <path> -e <int> -p <path>
 
 Options:
 
@@ -27,7 +27,7 @@ Options:
 import numpy as np
 from docopt import docopt
 import os
-import events_image
+import digicampipe.utils.events_image
 from lmfit import minimize, Parameters, report_fit
 from digicampipe.utils.disp import disp_eval, leak_pixels
 
@@ -89,17 +89,17 @@ def main(all_offsets, path, equation, outpath):
 
                 print(zenith, azimuth, offset)
                 hillas = np.load([x for x in hillas_files if 'ze'
-                                 + zenith in x and 'az' + azimuth
-                                 in x and offset + 'deg' in x][0])
+                                  + zenith in x and 'az' + azimuth
+                                  in x and offset + 'deg' in x][0])
                 mc0 = np.loadtxt([x for x in pipedmc_files if 'ze'
-                                 + zenith in x and 'az' + azimuth
-                                 in x and offset + 'deg' in x][0])
+                                  + zenith in x and 'az' + azimuth
+                                  in x and offset + 'deg' in x][0])
                 pixels, image = events_image.load_image(
-                                    pixel_file,
-                                    [x for x in events_image_files if 'ze'
-                                     + zenith in x and 'az'
-                                     + azimuth in x and offset
-                                     + 'deg' in x][0])
+                    pixel_file,
+                    [x for x in events_image_files if 'ze'
+                     + zenith in x and 'az'
+                     + azimuth in x and offset
+                     + 'deg' in x][0])
                 pix_x = pixels[0, :]
                 pix_y = pixels[1, :]
 
@@ -165,9 +165,9 @@ def main(all_offsets, path, equation, outpath):
                     params.add('A0', value=1.0)
                 elif equation == 2:
                     params.add_many(
-                                    ('A0', 1.0), ('A1', 1.0), ('A2', 1.0),
-                                    ('A3', 1.0), ('A4', 1.0), ('A5', 1.0),
-                                    ('A6', 1.0), ('A7', 1.0), ('A8', 1.0))
+                        ('A0', 1.0), ('A1', 1.0), ('A2', 1.0),
+                        ('A3', 1.0), ('A4', 1.0), ('A5', 1.0),
+                        ('A6', 1.0), ('A7', 1.0), ('A8', 1.0))
                 elif equation == 3 or equation == 4:
                     params.add_many(('A0', 1.0), ('A1', 1.0))
                 elif equation == 5:
@@ -175,9 +175,9 @@ def main(all_offsets, path, equation, outpath):
 
                 out = minimize(disp_minimize, method='leastsq', params=params,
                                args=(
-                                 width, length, cog_x, cog_y, x_offset,
-                                 y_offset, psi, skewness, size, leakage2,
-                                 equation))
+                                   width, length, cog_x, cog_y, x_offset,
+                                   y_offset, psi, skewness, size, leakage2,
+                                   equation))
                 (disp_comp, x_source_comp,
                  y_source_comp, residuals) = disp_eval(out.params, width,
                                                        length, cog_x, cog_y,
@@ -186,41 +186,17 @@ def main(all_offsets, path, equation, outpath):
                                                        leakage2, equation)
                 report_fit(out, min_correl=0.1)
 
-                if equation == 1:
+                if len(params) > 1:
+
+                    vec = [float(azimuth), float(zenith), float(offset)]
+                    for i in range(len(params)):
+                        vec += [out.params['A'+str(i)].value,
+                                out.params['A'+str(i)].stderr]
+                    lookup.append(vec)
+                else:
                     lookup.append(
-                        [float(azimuth), float(zenith),
-                         float(offset),
-                         out.params['A0'].value, out.params['A0'].stderr
-                         ])
-                elif equation == 2:
-                    lookup.append(
-                       [float(azimuth), float(zenith),
-                        float(offset),
-                        out.params['A0'].value, out.params['A0'].stderr,
-                        out.params['A1'].value, out.params['A1'].stderr,
-                        out.params['A2'].value, out.params['A2'].stderr,
-                        out.params['A3'].value, out.params['A3'].stderr,
-                        out.params['A4'].value, out.params['A4'].stderr,
-                        out.params['A5'].value, out.params['A5'].stderr,
-                        out.params['A6'].value, out.params['A6'].stderr,
-                        out.params['A7'].value, out.params['A7'].stderr,
-                        out.params['A8'].value, out.params['A8'].stderr]
-                        )
-                elif equation == 3 or equation == 4:
-                    lookup.append(
-                       [float(azimuth), float(zenith),
-                        float(offset),
-                        out.params['A0'].value, out.params['A0'].stderr,
-                        out.params['A1'].value, out.params['A1'].stderr]
-                        )
-                elif equation == 5:
-                    lookup.append(
-                       [float(azimuth), float(zenith),
-                        float(offset),
-                        out.params['A0'].value, out.params['A0'].stderr,
-                        out.params['A1'].value, out.params['A1'].stderr,
-                        out.params['A2'].value, out.params['A2'].stderr]
-                        )
+                        [float(azimuth), float(zenith), float(offset),
+                         out.params['A0'].value, out.params['A0'].stderr])
 
     lookup = np.array(lookup)
 
@@ -228,52 +204,53 @@ def main(all_offsets, path, equation, outpath):
 
         np.savetxt(outpath + 'disp_lookup_method1.txt', lookup,
                    fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  A0  A0_ERR')
-        np.savez(options.outpath + 'disp_lookup_method1',
+        np.savez(outpath + 'disp_lookup_method1',
                  azimuth=lookup[:, 0], zenith=lookup[:, 1],
                  offset=lookup[:, 2], A0=lookup[:, 3],
                  A0_ERR=lookup[:, 4])
 
     elif equation == 2:
 
-        np.savetxt(outpath + 'disp_lookup_method5.txt', lookup,
-                   fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  A0  A0_ERR  \
-                   A1  A1_ERR  A2  A2_ERR  A3  A3_ERR  A4  A4_ERR  \
-                   A5  A5_ERR  A6  A6_ERR  A7  A7_ERR  A8  A8_ERR')
+        np.savetxt(outpath + 'disp_lookup_method2.txt', lookup,
+                   fmt='%.6f', header=('AZIMUTH  ZENITH  OFFSET  A0  A0_ERR '
+                                       'A1  A1_ERR  A2  A2_ERR  A3  A3_ERR '
+                                       'A4  A4_ERR A5  A5_ERR  A6  A6_ERR '
+                                       'A7  A7_ERR  A8  A8_ERR'))
         np.savez(
-             options.outpath + 'disp_lookup_method5',
-             azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
-             A0=lookup[:, 3], A0_ERR=lookup[:, 4],
-             A1=lookup[:, 5], A1_ERR=lookup[:, 6],
-             A2=lookup[:, 7], A2_ERR=lookup[:, 8],
-             A3=lookup[:, 9], A3_ERR=lookup[:, 10],
-             A4=lookup[:, 11], A4_ERR=lookup[:, 12],
-             A5=lookup[:, 13], A5_ERR=lookup[:, 14],
-             A6=lookup[:, 15], A6_ERR=lookup[:, 16],
-             A7=lookup[:, 17], A7_ERR=lookup[:, 18],
-             A8=lookup[:, 19], A8_ERR=lookup[:, 20])
+            outpath + 'disp_lookup_method5',
+            azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
+            A0=lookup[:, 3], A0_ERR=lookup[:, 4],
+            A1=lookup[:, 5], A1_ERR=lookup[:, 6],
+            A2=lookup[:, 7], A2_ERR=lookup[:, 8],
+            A3=lookup[:, 9], A3_ERR=lookup[:, 10],
+            A4=lookup[:, 11], A4_ERR=lookup[:, 12],
+            A5=lookup[:, 13], A5_ERR=lookup[:, 14],
+            A6=lookup[:, 15], A6_ERR=lookup[:, 16],
+            A7=lookup[:, 17], A7_ERR=lookup[:, 18],
+            A8=lookup[:, 19], A8_ERR=lookup[:, 20])
 
     elif equation == 3 or equation == 4:
 
-        np.savetxt(outpath + 'disp_lookup_method4.txt', lookup,
-                   fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  \
-                   A0  A0_ERR  A1  A1_ERR')
+        np.savetxt(outpath + 'disp_lookup_method'+str(equation)+'.txt', lookup,
+                   fmt='%.6f', header=('AZIMUTH  ZENITH  OFFSET '
+                                       'A0  A0_ERR  A1  A1_ERR'))
         np.savez(
-             outpath + 'disp_lookup_method'+str(equation),
-             azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
-             A0=lookup[:, 3], A0_ERR=lookup[:, 4],
-             A1=lookup[:, 5], A1_ERR=lookup[:, 6])
+            outpath + 'disp_lookup_method'+str(equation),
+            azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
+            A0=lookup[:, 3], A0_ERR=lookup[:, 4],
+            A1=lookup[:, 5], A1_ERR=lookup[:, 6])
 
     elif equation == 5:
 
         np.savetxt(outpath + 'disp_lookup_method5.txt', lookup,
-                   fmt='%.6f', header='AZIMUTH  ZENITH  OFFSET  A0  \
-                   A0_ERR  A1  A1_ERR  A2  A2_ERR')
+                   fmt='%.6f', header=('AZIMUTH  ZENITH  OFFSET  A0 '
+                                       'A0_ERR  A1  A1_ERR  A2  A2_ERR'))
         np.savez(
-             outpath + 'disp_lookup_method5',
-             azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
-             A0=lookup[:, 3], A0_ERR=lookup[:, 4],
-             A1=lookup[:, 5], A1_ERR=lookup[:, 6],
-             A2=lookup[:, 7], A2_ERR=lookup[:, 8])
+            outpath + 'disp_lookup_method5',
+            azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
+            A0=lookup[:, 3], A0_ERR=lookup[:, 4],
+            A1=lookup[:, 5], A1_ERR=lookup[:, 6],
+            A2=lookup[:, 7], A2_ERR=lookup[:, 8])
 
 
 if __name__ == '__main__':

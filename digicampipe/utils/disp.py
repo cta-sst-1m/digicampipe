@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from tqdm import trange
 
 
 def disp_eval(A, width, length, cog_x, cog_y,
@@ -119,9 +120,8 @@ def arrival_distribution(disp_comp, x_source_comp, y_source_comp, n_triples,
     n_bin_values_all = np.zeros((bins, bins))
     theta_squared_sum_hist = []
 
-    for i in range(len(disp_comp)):
+    for i in trange(len(disp_comp)):
 
-        print(i)
         events1 = np.random.randint(0, len(disp_comp), n_triples)
         events2 = np.random.randint(0, len(disp_comp), n_triples)
 
@@ -145,9 +145,9 @@ def arrival_distribution(disp_comp, x_source_comp, y_source_comp, n_triples,
                 # distance between triplet mean and computed position for each
                 # event in the triplet.
                 theta_squared_sum = sum(
-                                        (x_mean-x_triple)**2.0 +
-                                        (y_mean-y_triple)**2.0
-                                        )
+                    (x_mean-x_triple)**2.0 +
+                    (y_mean-y_triple)**2.0
+                )
 
                 if theta_squared_sum < theta_squared_cut:
                     x_intersect.append(x_mean)
@@ -255,9 +255,9 @@ def r68mod(x, y, n_bin_values, offset_x, offset_y):
 def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):
 
     rms2 = data[:, 2].reshape(
-                              (len(np.unique(data[:, 0])),
-                               len(np.unique(data[:, 1]))
-                               ))
+        (len(np.unique(data[:, 0])),
+         len(np.unique(data[:, 1]))
+         ))
     x, y = np.meshgrid(np.unique(data[:, 1]), np.unique(data[:, 0]))
     fig = plt.figure(figsize=(9, 8))
     ax1 = fig.add_subplot(111)

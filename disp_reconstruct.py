@@ -3,7 +3,7 @@
 '''
 
 Example:
-  ./disp-reconstruct.py \
+  ./disp_reconstruct.py \
   --equation=4 \
   --lookup=./digicampipe/tests/resources/disp_lookup/disp_lookup_method4.npz \
   --pixels=/home/jakub/science/fzu/sst-1m_simulace/data_test/ryzen_test2018/0.0deg/Data/processed/pixels.txt \
@@ -12,15 +12,16 @@ Example:
   /home/jakub/science/fzu/sst-1m_simulace/data_test/ryzen_test2018/0.0deg/Data/processed/hillas_gamma_ze00_az000.npz
 
 Usage:
-  disp-reconstruct.py [options] <file>...
+  disp_reconstruct.py -e <int> -l <path> -p <path> -a <path> [--modification] <file>...
 
 Options:
 
   -h --help     Show this screen.
   -e <int>, --equation=<int>  Equation for the DISP parameter fit. [default: 5]
-  -l <path>, --lookup=<path>  File with lookup table for selected equation.
-  -p <path>, --pixels=<path>  File with pixel coordinates.
-  -a <path>, --images=<path>  File with event images.
+  -l <path>, --lookup=<path>  File with saved lookup \
+table for selected equation.
+  -p <path>, --pixels=<path>  File with saved pixel coordinates.
+  -a <path>, --images=<path>  File with saved event images.
   --modification    Turn on modified DISP method.
 '''
 
@@ -29,12 +30,12 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Circle
-import events_image
+import digicampipe.utils.events_image
 from lmfit import Parameters
 from scipy.interpolate import interp2d
 from scipy.optimize import curve_fit
 from digicampipe.utils.disp import disp_eval, leak_pixels, plot_2d, extents, \
-                 arrival_distribution, res_gaussian, r68, r68mod
+    arrival_distribution, res_gaussian, r68, r68mod
 
 
 def main(hillas_file, lookup_file, pixel_file,
@@ -136,17 +137,17 @@ def main(hillas_file, lookup_file, pixel_file,
     # ARRIVAL DIRECTION DISTRIBUTION
     bins = 100
 
-    if args['--modification']:
+    if modification:
         n_triples = 100  # number of randomly chosen triplets for each event
         theta_squared_cut = 0.03    # 3*(maximal_distance)**2
         x_minmax = x_offset[0] + [-1.0, 1.0]
         y_minmax = y_offset[0] + [-1.0, 1.0]
         (n_bin_values, n_bin,
          theta_squared_sum_hist) = arrival_distribution(
-                                    disp_comp, x_source_comp,
-                                    y_source_comp, n_triples,
-                                    theta_squared_cut, bins,
-                                    x_minmax, y_minmax)
+            disp_comp, x_source_comp,
+            y_source_comp, n_triples,
+            theta_squared_cut, bins,
+            x_minmax, y_minmax)
 
     else:  # needed for 2D gaussian fit
         x_minmax = x_offset[0] + [-1.0, 1.0]
@@ -181,7 +182,7 @@ def main(hillas_file, lookup_file, pixel_file,
     print('R[deg] contains 68% of events up to R99: ', res68[1])
     print('R[deg] contains 99% (R99): ', res68[2])
 
-    if args['--modification']:
+    if modification:
 
         res68_mod = r68mod(xx.ravel(), yy.ravel(),
                            n_bin_values.ravel(), x_offset[0], y_offset[0])
@@ -192,7 +193,7 @@ def main(hillas_file, lookup_file, pixel_file,
 
     # PLOT RECONSTRUCTED IMAGE
 
-    if args['--modification']:
+    if modification:
         fig, ax = plt.subplots(1, 1, figsize=(10, 7))
         ax.imshow(n_bin_values, interpolation='none',
                   extent=extents(x) + extents(y))
