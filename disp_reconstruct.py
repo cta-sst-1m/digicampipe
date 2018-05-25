@@ -34,6 +34,7 @@ import digicampipe.utils.events_image
 from lmfit import Parameters
 from scipy.interpolate import interp2d
 from scipy.optimize import curve_fit
+import pandas as pd
 from digicampipe.utils.disp import disp_eval, leak_pixels, plot_2d, extents, \
     arrival_distribution, res_gaussian, r68, r68mod
 
@@ -47,6 +48,11 @@ def main(hillas_file, lookup_file, pixel_file,
     pix_x = pixels[0, :]
     pix_y = pixels[1, :]
 
+    # convert hillas into pandas dataframe
+    keys = {'size', 'width', 'length', 'psi', 'cen_x', 'cen_y', 'skewness'}
+    hillas = dict(zip(keys, (hillas[k] for k in keys)))
+    hillas = pd.DataFrame(hillas)
+
     # just for test purposes, to be readed somehow from real data
     data_offset = 0.0
     data_zenith = 0
@@ -54,14 +60,14 @@ def main(hillas_file, lookup_file, pixel_file,
 
     min_size = 200
 
-    mask1 = [x > 0.001 for x in hillas['width']/hillas['length']]
-    mask2 = [x > min_size for x in hillas['size']]
+    mask1 = hillas['length']/hillas['width'] > 1e-3
+    mask2 = hillas['size'] > min_size
 
     # Border flaged events are masked for method 1 and 3 only.
     # These events are kept for all others methods, because
     # in these cases DISP = f(...,leakage2)
     if equation == 1 or equation == 3:
-        mask0 = [x == 0 for x in hillas['border']]
+        mask0 = hillas['border'] == 0
         mask = (~np.isnan(hillas['width'])
                 * ~np.isnan(hillas['cen_x']) * mask0 * mask1 * mask2)
     else:
@@ -69,13 +75,17 @@ def main(hillas_file, lookup_file, pixel_file,
                 * ~np.isnan(hillas['cen_x']) * mask1 * mask2)
 
     # hillas
-    size = hillas['size'][mask]
-    width = hillas['width'][mask]
-    length = hillas['length'][mask]
-    psi = hillas['psi'][mask]
-    cog_x = hillas['cen_x'][mask]  # in mm
-    cog_y = hillas['cen_y'][mask]  #
-    skewness = hillas['skewness'][mask]
+    print('N of events before cuts:, ', hillas.shape[0])
+    hillas = hillas[mask]
+    print('N of events after cuts: ', hillas.shape[0])
+
+    size = hillas['size'].values
+    width = hillas['width'].values
+    length = hillas['length'].values
+    psi = hillas['psi'].values
+    cog_x = hillas['cen_x'].values  # in mm
+    cog_y = hillas['cen_y'].values  #
+    skewness = hillas['skewness'].values
 
     # image
     # there is event number in the first column, the rest
@@ -84,9 +94,6 @@ def main(hillas_file, lookup_file, pixel_file,
 
     x_offset = 0*np.ones(len(cog_x))    # MC event source position in deg
     y_offset = -float(data_offset)*np.ones(len(cog_x))
-
-    print('N of events before cuts:, ', len(hillas['size']))
-    print('N of events after cuts: ', len(hillas['size'][mask]))
 
     # conversion of coordinates in mm to deg.
     # Digicam: 0.24 deg/px, one SiPM is 24.3 mm wide

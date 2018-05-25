@@ -30,6 +30,7 @@ import os
 import digicampipe.utils.events_image
 from lmfit import minimize, Parameters, report_fit
 from digicampipe.utils.disp import disp_eval, leak_pixels
+import pandas as pd
 
 
 def disp_minimize(A, width, length, cog_x, cog_y, x_offset, y_offset,
@@ -66,17 +67,15 @@ def main(all_offsets, path, equation, outpath):
 
     # Make lists of zeniths, offsets, azimuths based on hillas files
     offsets = [x for x in all_offsets]
-    zeniths = []
-    azimuths = []
+    zeniths = set()
+    azimuths = set()
     for filename in hillas_files:
 
         zenith_file = filename.split('_')[-2][2:]
         azimuth_file = filename.split('_')[-1].split('.')[0][2:]
 
-        if zenith_file not in zeniths:
-            zeniths.append(zenith_file)
-        if azimuth_file not in azimuths:
-            azimuths.append(azimuth_file)
+        zeniths.add(zenith_file)
+        azimuths.add(azimuth_file)
     print(zeniths, azimuths, offsets)
 
     # Minimize DISP parameters for all input combinations of
@@ -103,16 +102,22 @@ def main(all_offsets, path, equation, outpath):
                 pix_x = pixels[0, :]
                 pix_y = pixels[1, :]
 
+                # convert hillas into pandas dataframe
+                keys = {'size', 'width', 'length',
+                        'psi', 'cen_x', 'cen_y', 'skewness'}
+                hillas = dict(zip(keys, (hillas[k] for k in keys)))
+                hillas = pd.DataFrame(hillas)
+
                 min_size = 200
 
-                mask1 = [x > 0.001 for x in hillas['width']/hillas['length']]
-                mask2 = [x > min_size for x in hillas['size']]
+                mask1 = hillas['length']/hillas['width'] > 1e-3
+                mask2 = hillas['size'] > min_size
 
                 # Border flaged events are masked for method 1 and 3 only.
                 # These events are kept for all others methods, because
                 # in these cases DISP = f(...,leakage2)
                 if equation == 1 or equation == 3:
-                    mask0 = [x == 0 for x in hillas['border']]
+                    mask0 = hillas['border'] == 0
                     mask = (~np.isnan(hillas['width'])
                             * ~np.isnan(hillas['cen_x']) * mask0 * mask1 * mask2)
                 else:
@@ -120,13 +125,17 @@ def main(all_offsets, path, equation, outpath):
                             * ~np.isnan(hillas['cen_x']) * mask1 * mask2)
 
                 # hillas
-                size = hillas['size'][mask]
-                width = hillas['width'][mask]
-                length = hillas['length'][mask]
-                psi = hillas['psi'][mask]
-                cog_x = hillas['cen_x'][mask]  # in mm
-                cog_y = hillas['cen_y'][mask]  #
-                skewness = hillas['skewness'][mask]
+                print('N of events before cuts:, ', hillas.shape[0])
+                hillas = hillas[mask]
+                print('N of events after cuts: ', hillas.shape[0])
+
+                size = hillas['size'].values
+                width = hillas['width'].values
+                length = hillas['length'].values
+                psi = hillas['psi'].values
+                cog_x = hillas['cen_x'].values  # in mm
+                cog_y = hillas['cen_y'].values  #
+                skewness = hillas['skewness'].values
 
                 # mc
                 mc = mc0[mask, :]
@@ -135,9 +144,6 @@ def main(all_offsets, path, equation, outpath):
                 # there is event number in the first column,
                 # the rest are dl1_camera.pe_samples values after cleaning
                 image = image[mask, 1:]
-
-                print('N of events before cuts:, ', len(hillas['size']))
-                print('N of events after cuts: ', len(hillas['size'][mask]))
 
                 # True MC params
                 energy = mc[:, 3]
