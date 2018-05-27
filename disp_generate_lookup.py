@@ -27,7 +27,7 @@ Options:
 import numpy as np
 from docopt import docopt
 import os
-import digicampipe.utils.events_image
+from digicampipe.utils.events_image import load_image
 from lmfit import minimize, Parameters, report_fit
 from digicampipe.utils.disp import disp_eval, leak_pixels
 import pandas as pd
@@ -87,18 +87,40 @@ def main(all_offsets, path, equation, outpath):
             for offset in offsets:
 
                 print(zenith, azimuth, offset)
-                hillas = np.load([x for x in hillas_files if 'ze'
-                                  + zenith in x and 'az' + azimuth
-                                  in x and offset + 'deg' in x][0])
-                mc0 = np.loadtxt([x for x in pipedmc_files if 'ze'
-                                  + zenith in x and 'az' + azimuth
-                                  in x and offset + 'deg' in x][0])
-                pixels, image = events_image.load_image(
-                    pixel_file,
-                    [x for x in events_image_files if 'ze'
-                     + zenith in x and 'az'
-                     + azimuth in x and offset
-                     + 'deg' in x][0])
+                try:
+                    hillas_file = [x for x in hillas_files if 'ze'
+                                   + zenith in x and 'az' + azimuth
+                                   in x and offset + 'deg' in x][0]
+                    hillas = np.load(hillas_file)
+                except:
+                    print('WARNING: There are no input files in the path: '
+                          + full_path + ' for the following zenith, azimuth, '
+                          'offset combination: ' + str(zenith) + ' '
+                          + str(azimuth) + ' ' + str(offset))
+                    continue
+                try:
+                    mc_file = [x for x in pipedmc_files if 'ze'
+                               + zenith in x and 'az' + azimuth
+                               in x and offset + 'deg' in x][0]
+                    mc0 = np.loadtxt(mc_file)
+                except:
+                    print('ERROR: MC file for hillas file '
+                          + hillas_file + ' wasn\'t found in the same path. '
+                          'Run simtel_pipeline again and make sure that MC '
+                          'files are successfuly saved.')
+                    continue
+                try:
+                    image_file = [x for x in events_image_files if 'ze'
+                                  + zenith in x and 'az'
+                                  + azimuth in x and offset
+                                  + 'deg' in x][0]
+                    pixels, image = load_image(pixel_file, image_file)
+                except:
+                    print('ERROR: Events_image file for hillas file '
+                          + hillas_file + ' wasn\'t found in the same path. '
+                          'Run simtel_pipeline again and make sure that image '
+                          'files are successfuly saved.')
+                    continue
                 pix_x = pixels[0, :]
                 pix_y = pixels[1, :]
 
@@ -110,7 +132,7 @@ def main(all_offsets, path, equation, outpath):
 
                 min_size = 200
 
-                mask1 = hillas['length']/hillas['width'] > 1e-3
+                mask1 = hillas['length'] / hillas['width'] > 1e-3
                 mask2 = hillas['size'] > min_size
 
                 # Border flaged events are masked for method 1 and 3 only.
@@ -147,8 +169,8 @@ def main(all_offsets, path, equation, outpath):
 
                 # True MC params
                 energy = mc[:, 3]
-                x_offset = 0*np.ones(len(mc[:, 8]))  # source position in deg
-                y_offset = -float(offset)*np.ones(len(mc[:, 8]))
+                x_offset = 0 * np.ones(len(mc[:, 8]))  # source position in deg
+                y_offset = -float(offset) * np.ones(len(mc[:, 8]))
                 thetap = mc[:, 4]
                 phi = mc[:, 5]
 
@@ -196,8 +218,8 @@ def main(all_offsets, path, equation, outpath):
 
                     vec = [float(azimuth), float(zenith), float(offset)]
                     for i in range(len(params)):
-                        vec += [out.params['A'+str(i)].value,
-                                out.params['A'+str(i)].stderr]
+                        vec += [out.params['A' + str(i)].value,
+                                out.params['A' + str(i)].stderr]
                     lookup.append(vec)
                 else:
                     lookup.append(
@@ -237,11 +259,12 @@ def main(all_offsets, path, equation, outpath):
 
     elif equation == 3 or equation == 4:
 
-        np.savetxt(outpath + 'disp_lookup_method'+str(equation)+'.txt', lookup,
+        np.savetxt(
+            outpath + 'disp_lookup_method' + str(equation) + '.txt', lookup,
                    fmt='%.6f', header=('AZIMUTH  ZENITH  OFFSET '
                                        'A0  A0_ERR  A1  A1_ERR'))
         np.savez(
-            outpath + 'disp_lookup_method'+str(equation),
+            outpath + 'disp_lookup_method' + str(equation),
             azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],
             A0=lookup[:, 3], A0_ERR=lookup[:, 4],
             A1=lookup[:, 5], A1_ERR=lookup[:, 6])

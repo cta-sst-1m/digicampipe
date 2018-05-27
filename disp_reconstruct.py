@@ -30,7 +30,7 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Circle
-import digicampipe.utils.events_image
+from digicampipe.utils.events_image import load_image
 from lmfit import Parameters
 from scipy.interpolate import interp2d
 from scipy.optimize import curve_fit
@@ -44,7 +44,7 @@ def main(hillas_file, lookup_file, pixel_file,
 
     hillas = np.load(hillas_file[0])
     lookup = np.load(lookup_file)
-    pixels, image = events_image.load_image(pixel_file, event_image_file)
+    pixels, image = load_image(pixel_file, event_image_file)
     pix_x = pixels[0, :]
     pix_y = pixels[1, :]
 
