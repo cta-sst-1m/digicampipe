@@ -92,7 +92,7 @@ def main(all_offsets, path, equation, outpath):
                                    + zenith in x and 'az' + azimuth
                                    in x and offset + 'deg' in x][0]
                     hillas = np.load(hillas_file)
-                except:
+                except Exception:
                     print('WARNING: There are no input files in the path: '
                           + full_path + ' for the following zenith, azimuth, '
                           'offset combination: ' + str(zenith) + ' '
@@ -103,7 +103,7 @@ def main(all_offsets, path, equation, outpath):
                                + zenith in x and 'az' + azimuth
                                in x and offset + 'deg' in x][0]
                     mc0 = np.loadtxt(mc_file)
-                except:
+                except Exception:
                     print('ERROR: MC file for hillas file '
                           + hillas_file + ' wasn\'t found in the same path. '
                           'Run simtel_pipeline again and make sure that MC '
@@ -115,7 +115,7 @@ def main(all_offsets, path, equation, outpath):
                                   + azimuth in x and offset
                                   + 'deg' in x][0]
                     pixels, image = load_image(pixel_file, image_file)
-                except:
+                except Exception:
                     print('ERROR: Events_image file for hillas file '
                           + hillas_file + ' wasn\'t found in the same path. '
                           'Run simtel_pipeline again and make sure that image '
@@ -261,8 +261,8 @@ def main(all_offsets, path, equation, outpath):
 
         np.savetxt(
             outpath + 'disp_lookup_method' + str(equation) + '.txt', lookup,
-                   fmt='%.6f', header=('AZIMUTH  ZENITH  OFFSET '
-                                       'A0  A0_ERR  A1  A1_ERR'))
+            fmt='%.6f', header=('AZIMUTH  ZENITH  OFFSET '
+                                'A0  A0_ERR  A1  A1_ERR'))
         np.savez(
             outpath + 'disp_lookup_method' + str(equation),
             azimuth=lookup[:, 0], zenith=lookup[:, 1], offset=lookup[:, 2],

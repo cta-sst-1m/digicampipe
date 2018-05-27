@@ -80,7 +80,7 @@ def leak_pixels(pix_x, pix_y, image):
     # second pixel ring
     n_neighbor_inner = np.sum(
             np.array(np.multiply(neighbor_matrix,
-            camera_border_mask), dtype=int), axis=1)
+                                 camera_border_mask), dtype=int), axis=1)
     camera_second_ring_mask = n_neighbor_inner >= 3
 
     # two pixel rings mask
