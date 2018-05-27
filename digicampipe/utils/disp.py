@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from tqdm import trange
+from digicampipe.utils import Camera
 
 
 def disp_eval(parameters, width, length, cog_x, cog_y,
@@ -68,29 +69,25 @@ def disp_eval(parameters, width, length, cog_x, cog_y,
 
 def leak_pixels(pix_x, pix_y, image):
 
-    x_rows = np.unique(pix_x)
-    pix_bound = []
-    for x in x_rows:
-        if x < -412 or x > 398:
-            y_sel = pix_y[pix_x == x]
-            for y in y_sel:
-                pix_bound.append([x, y])
-        else:
-            min_y = min(pix_y[pix_x == x])
-            max_y = max(pix_y[pix_x == x])
-            pix_bound.append([x, min_y])
-            pix_bound.append([x, max_y])
-    pix_bound = np.array(pix_bound)
+    cam = Camera()
+    geom = cam.geometry
+    neighbor_matrix = geom.neighbor_matrix
+    n_neighbors = np.sum(np.array(neighbor_matrix, dtype=int), axis=0)
 
-    # Mask
-    image_mask = np.zeros(len(pix_x), dtype=bool)
-    for i in range(len(pix_x)):
-        for j in range(len(pix_bound)):
-            if pix_x[i] == pix_bound[j, 0] and pix_y[i] == pix_bound[j, 1]:
-                image_mask[i] = True
+    # border pixels
+    camera_border_mask = n_neighbors < 6
 
-    # Signal in outermost pixels
-    signal_border = np.sum(image[:, image_mask], axis=1)
+    # second pixel ring
+    n_neighbor_inner = np.sum(
+            np.array(np.multiply(neighbor_matrix,
+            camera_border_mask), dtype=int), axis=1)
+    camera_second_ring_mask = n_neighbor_inner >= 3
+
+    # two pixel rings mask
+    camera_two_rings_mask = camera_border_mask + camera_second_ring_mask
+
+    # Signal in two outermost pixel rings
+    signal_border = np.sum(image[:, camera_two_rings_mask], axis=1)
 
     # Signal in full image
     signal_full = np.sum(image, axis=1)
@@ -100,7 +97,7 @@ def leak_pixels(pix_x, pix_y, image):
     # image
     leakage2 = signal_border/signal_full
 
-    return leakage2, pix_bound, image_mask, signal_full, signal_border
+    return leakage2, camera_two_rings_mask, signal_full, signal_border
 
 
 def arrival_distribution(disp_comp, x_source_comp, y_source_comp, n_triples,

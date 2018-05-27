@@ -162,7 +162,7 @@ def main(all_offsets, path, equation, outpath):
                                + (y_offset - cog_y)**2.0)
 
                 # Outermost pixels
-                (leakage2, pix_bound, image_mask,
+                (leakage2, image_mask,
                  signal_full, signal_border) = leak_pixels(pix_x, pix_y, image)
 
                 # MINIMIZATION OF DISP

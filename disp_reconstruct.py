@@ -102,7 +102,7 @@ def main(hillas_file, lookup_file, pixel_file,
     cog_y = cog_y * mm_to_deg   # conversion to degrees
 
     # Outermost pixels
-    (leakage2, pix_bound, image_mask,
+    (leakage2, image_mask,
      signal_full, signal_border) = leak_pixels(pix_x, pix_y, image)
 
     # Interpolation in lookup table (need to be done for each
