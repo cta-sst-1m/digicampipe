@@ -131,7 +131,7 @@ def zfits_event_source(
 
             if baseline_new:
 
-                r0.digicam_baseline /= 16.
+                r0.digicam_baseline = r0.digicam_baseline / 16.
 
         yield data
 
