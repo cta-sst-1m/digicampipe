@@ -22,6 +22,7 @@ def zfits_event_source(
     max_events=None,
     allowed_tels=None,
     expert_mode=None,
+    baseline_new=False,
 ):
     """A generator that streams data from an ZFITs data file
     Parameters
@@ -125,7 +126,12 @@ def zfits_event_source(
             r0.trigger_input_traces = event.trigger_input_traces
             r0.trigger_output_patch7 = event.trigger_output_patch7
             r0.trigger_output_patch19 = event.trigger_output_patch19
+
             r0.digicam_baseline = event.baseline
+
+            if baseline_new:
+
+                r0.digicam_baseline /= 16.
 
         yield data
 
