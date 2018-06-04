@@ -1,5 +1,5 @@
 import numpy as np
-
+from digicampipe.utils import DigiCam
 
 def fill_digicam_baseline(event_stream):
 
@@ -13,6 +13,23 @@ def fill_digicam_baseline(event_stream):
         yield event
 
 
+def compute_trigger_patch(adc_samples, baseline,
+                          patch_matrix=DigiCam.patch_matrix):
+
+    baseline = np.floor(baseline)
+    baseline = np.clip(baseline, 0, 4095)
+    baseline = baseline.astype(np.uint16)
+
+    adc_samples = adc_samples - baseline[:, np.newaxis]
+    adc_samples = np.clip(adc_samples, 0, 4095)
+
+    trigger_patch = patch_matrix.dot(adc_samples)
+    trigger_patch = np.clip(trigger_patch, 0, 255)
+    trigger_patch = trigger_patch.astype(np.uint16)
+
+    return trigger_patch
+
+
 def fill_trigger_patch(event_stream):
 
     for count, event in enumerate(event_stream):
@@ -20,16 +37,9 @@ def fill_trigger_patch(event_stream):
         for telescope_id in event.r0.tels_with_data:
 
             matrix_patch = event.inst.patch_matrix[telescope_id]
-
-            baseline = event.r0.tel[telescope_id].baseline[:, np.newaxis]
-            baseline = np.floor(baseline)
-            baseline = baseline.astype(int)
-
             data = event.r0.tel[telescope_id].adc_samples
-            data = data - baseline
-            data = np.clip(data, 0, 4095)
-            data = matrix_patch.dot(data)
-            data = np.clip(data, 0, 255)
+            baseline = event.r0.tel[telescope_id].baseline
+            data = compute_trigger_patch(data, baseline, matrix_patch)
             event.r0.tel[telescope_id].trigger_input_traces = data
 
         yield event
