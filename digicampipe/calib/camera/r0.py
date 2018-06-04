@@ -67,6 +67,28 @@ def fill_trigger_input_19(event_stream):
         yield event
 
 
+def fill_trigger_output_patch_19(event_stream, threshold):
+
+    for event in event_stream:
+
+        for tel_id, r0_container in event.r0.tel.items():
+
+            trigger_input_19 = r0_container.trigger_input_19
+            r0_container.trigger_output_patch_19 = trigger_input_19 > threshold
+
+        yield event
+
+
+def fill_trigger_output_patch_7(event_stream, threshold):
+    for event in event_stream:
+
+        for tel_id, r0_container in event.r0.tel.items():
+            trigger_input_7 = r0_container.trigger_input_7
+            r0_container.trigger_output_patch_7 = trigger_input_7 > threshold
+
+        yield event
+
+
 def fill_event_type(event_stream, flag):
 
     for event in event_stream:
