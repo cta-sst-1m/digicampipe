@@ -1,6 +1,18 @@
 import numpy as np
 
 
+def fill_digicam_baseline(event_stream):
+
+    for count, event in enumerate(event_stream):
+
+        for telescope_id in event.r0.tels_with_data:
+
+            baseline = event.r0.tel[telescope_id].digicam_baseline
+            event.r0.tel[telescope_id].baseline = baseline
+
+        yield event
+
+
 def fill_trigger_patch(event_stream):
 
     for count, event in enumerate(event_stream):
