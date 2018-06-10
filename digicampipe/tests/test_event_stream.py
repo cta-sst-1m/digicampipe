@@ -39,18 +39,3 @@ def test_check_speed_of_protozfits_again(benchmark):
             pass
 
         assert i == 99
-
-
-def test_check_speed_of_protozfits_pure_again(benchmark):
-    from protozfits import File
-
-    @benchmark
-    def func():
-        for _, i in zip(
-            File(example_file_path, pure_protobuf=True).Events,
-            range(100)
-        ):
-
-            pass
-
-        assert i == 99
