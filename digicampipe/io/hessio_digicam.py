@@ -98,8 +98,7 @@ def hessio_event_source(url, camera_geometry,camera, max_events=None, allowed_te
         If True ,'requested_event' now seeks for a particular event id instead
         of index
     """
-    
-    
+
     with open_hessio(url) as pyhessio:
         # the container is initialized once, and data is replaced within
         # it after each yield

@@ -11,7 +11,7 @@ import re
 
 from digicampipe.image.camera_data import CameraData
 
-__all__ = ["Classifier", 'train']
+__all__ = ["Classifier", 'train', 'load_classifier']
 
 
 class Classifier(object):

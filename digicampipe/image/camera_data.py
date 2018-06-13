@@ -144,8 +144,8 @@ class CameraData(object):
         if self.unwanted_pixels:
             additional_mask[self.unwanted_pixels] = 0
             additional_mask = additional_mask > 0
-        picture_threshold = 13
-        boundary_threshold = 7
+        picture_threshold = 15
+        boundary_threshold = 5
         shower_distance = 200 * u.mm
         events_stream = event_stream(
             file_list=datafiles_list,
@@ -166,7 +166,7 @@ class CameraData(object):
             )
         else:
             events_stream = random_triggers.fill_baseline_r0(
-                events_stream, n_bins=100
+                events_stream, n_bins=10000
             )
             if self.flags is not None:
                 events_stream = filter.filter_event_types(
@@ -175,6 +175,8 @@ class CameraData(object):
                 )
             events_stream = filter.filter_missing_baseline(events_stream)
         events_stream = r1.calibrate_to_r1(events_stream, None)
+        events_stream = filter.filter_shower_adc(events_stream, self.min_adc,
+                                                 mode='max')
         # Run the dl0 calibration (data reduction, does nothing)
         events_stream = dl0.calibrate_to_dl0(events_stream)
         # Run the dl1 calibration (compute charge in photons + cleaning)
@@ -216,6 +218,9 @@ class CameraData(object):
                     print('WARNING: no baseline available ! event skipped')
                     continue
             hillas = event.dl2.shower
+            if np.isnan(hillas.width.to(u.mm).value):
+                print('NaN gotten for width')
+                continue
             psi = hillas.psi.rad
             rot_angle = psi + np.pi / 2
             cen_x = u.Quantity(hillas.cen_x).value
@@ -227,8 +232,12 @@ class CameraData(object):
                 continue
             if self.min_adc is None:  # No min value of ADC to keep an event
                 yield event
-            elif np.any(adc_samples - baseline > self.min_adc):
+            elif np.max(adc_samples - baseline) > self.min_adc:
+                print('PASSED: sum_adc=', np.sum(np.max(adc_samples - baseline, axis=-1)), 'max_adc=', np.max(adc_samples - baseline))
                 yield event
+            else:
+                print('not enough charge (', np.max(adc_samples - baseline), '), skiping event, sum_adc=',np.sum(np.max(adc_samples - baseline, axis=-1)))
+                continue
 
     def create_fits_file(self, filename, datafiles_list,
                          print_every=500):
@@ -496,7 +505,7 @@ class CameraData(object):
         if len(np.shape(events)) == 0:
             events = [events]
         for event in events:
-            plt.cla()
+            ax.clear()
             geo_event = self.get_geometry_event(event)
             camera = CameraDisplay(geo_event, ax=ax)
             camera.image = np.sum(self._fits[event].data, axis=2).flatten()
@@ -530,8 +539,9 @@ class CameraData(object):
             camera.update()
                 #camera.add_colorbar()
 
+
 def create_file(camera_data, datafiles_list=None, max_events=None, mc=False,
-                print_every=100):
+                print_every=100, flags=None):
     # create fits file
     datafile_crab = [
         '/sst1m/raw/2017/10/30/SST1M01/SST1M01_20171030.%03d.fits.fz'
@@ -551,7 +561,7 @@ def create_file(camera_data, datafiles_list=None, max_events=None, mc=False,
         camera_data, datafiles_list=datafiles_list,
         digicam_config_file=digicam_config_file_default,
         unwanted_pixels=pixel_not_wanted,
-        flags=[1],
+        flags=flags,
         min_adc=100,
         print_every=print_every,
         max_events=max_events,
@@ -604,7 +614,7 @@ def main():
     #             print_every=10)
     proton_datafile = os.path.join('/home/yves/ctasoft/digicampipe/data',
                                    'proton_data_mc_test.fits')
-
+    """
     proton_data = CameraData(
         proton_datafile,
         # datafiles_list=[mc_proton_files[0]],
@@ -614,7 +624,7 @@ def main():
         max_events=10000,
         mc=True
     )
-    """
+
     show_file(proton_datafile, batch_size=10)
     del proton_data
     """
@@ -631,31 +641,39 @@ def main():
         mc=True
     )
     plot_hists(gamma_datafile, mc=True)
-
+    """
     digicam = Camera(_config_file=digicam_config_file_default)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-    proton_stream_orig = event_stream(
-        file_list=mc_proton_files,
-        camera_geometry=digicam_geometry,
-        camera=digicam,
-        mc=True
+
+    datafile = os.path.join('/home/yves/ctasoft/digicampipe/data',
+                                  'camera_data_test2.fits')
+    camera_datafiles = [os.path.join('/home/yves/ctasoft/digicampipe/data',
+                                  'SST1M01_20171030.091.fits.fz')]
+    pixel_not_wanted = [
+        1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896,
+        1085, 1117, 1118, 1119, 1120, 1146, 1147, 1148, 1149, 1150, 1151,
+        1152, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1180, 1181,
+        1196, 1197, 1198, 1199, 1200, 1201, 1202, 1203, 1204, 1205, 1206,
+        1219, 1220, 1221, 1222, 1223, 1224, 1225, 1226, 1239, 1240, 1241,
+        1242, 1243, 1256, 1257
+    ]
+    data = CameraData(
+        datafile,
+        datafiles_list=camera_datafiles,
+        digicam_config_file=digicam_config_file_default,
+        unwanted_pixels=pixel_not_wanted,
+        flags=[1],
+        min_adc=100,
+        print_every=50,
+        max_events=2000,
+        mc=False
     )
-    with plt.style.context('ggplot'):
-        display = EventViewer(
-            proton_stream_orig,
-            n_samples=50,
-            camera_config_file=digicam_config_file_default,
-            scale='lin',
-        )
-        display.draw()
-        pass
     """
     proton_enc_dec_datafile = os.path.join(
         '/home/yves/ctasoft/digicampipe/data',
-        'proton_data_mc_test_enc_dec.fits'
+        'camera_data_mc_test2_enc_dec.fits'
     )
-
-    proton_data_enc_dec = CameraData(
+    data_enc_dec = CameraData(
         proton_enc_dec_datafile,
         digicam_config_file=digicam_config_file_default,
         min_adc=50,
@@ -663,39 +681,32 @@ def main():
         max_events=10000,
         mc=True
     )
+    """
     fig1 = plt.figure()
-    ax1, ax2, ax3, ax4 = fig1.subplots(2, 2)
-    proton_stream = proton_data._new_event_stream([mc_proton_files[0]])
-    camera1 = CameraDisplay(proton_data.geo, ax=ax1)
-    camera2 = CameraDisplay(proton_data.geo, ax=ax2)
-    for i, event in enumerate(proton_stream):
-        camera1.image = np.sum(event.r0.tel[1].adc_samples, axis=1)
+    (ax1, ax2), (ax3, ax4) = fig1.subplots(2, 2)
+    data_stream = data._new_event_stream([camera_datafiles[0]])
+    camera1 = CameraDisplay(data.geo, ax=ax1)
+    camera2 = CameraDisplay(data.geo, ax=ax2)
+    for i, event in enumerate(data_stream):
+        tel = event.r0.tels_with_data[0]
+        camera1.image = np.sum(event.r1.tel[tel].adc_samples, axis=1)
         camera1.update()
         ax1.set_xlim([-500, 500])
         ax1.set_ylim([-500, 500])
-        camera2.image = event.dl1.tel[1].pe_samples
-        camera2.overlay_moments(event.dl2.shower)
+        ax1.set_title('event at R1')
+        camera2.image = event.dl1.tel[tel].pe_samples
+        camera2.overlay_moments(event.dl2.shower, with_label=False)
         camera2.update()
         ax2.set_xlim([-500, 500])
         ax2.set_ylim([-500, 500])
-        proton_data.display_event(i, hillas="original", ax=ax3)
+        data.display_event(i, hillas="original", ax=ax3)
         ax3.set_xlim([-500, 500])
         ax3.set_ylim([-500, 500])
-        proton_data_enc_dec.display_event(i, hillas="original", ax=ax4)
-        plt.pause(3)
+        #data_enc_dec.display_event(i, hillas="data", ax=ax4)
+        #ax4.set_xlim([-500, 500])
+        #ax4.set_ylim([-500, 500])
+        plt.pause(10)
 
-    """
-    proton_stream = proton_data.create_data_stream()
-    with plt.style.context('ggplot'):
-        display = EventViewer(
-            proton_stream,
-            n_samples=50,
-            camera_config_file=digicam_config_file_default,
-            scale='lin',
-        )
-        display.draw()
-        pass
-"""
 
 
 if __name__ == '__main__':

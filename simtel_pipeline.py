@@ -75,7 +75,7 @@ if __name__ == '__main__':
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam, source_x=source_x, source_y=source_y)
 
     # Noisy pixels not taken into account in Hillas
-    pixel_not_wanted = [1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896]
+    pixel_not_wanted = []
     additional_mask = np.ones(1296)
     additional_mask[pixel_not_wanted] = 0
     additional_mask = additional_mask > 0
@@ -111,6 +111,7 @@ if __name__ == '__main__':
     n_showers = 100
     reclean = True
 
+    print('file_list=', file_list)
 
     # Define the event stream
     data_stream = event_stream(file_list=file_list, camera_geometry=digicam_geometry, camera=digicam, mc=True)

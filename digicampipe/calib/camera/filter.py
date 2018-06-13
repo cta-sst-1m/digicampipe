@@ -59,7 +59,7 @@ def filter_shower(event_stream, min_photon):
                 yield event
 
 
-def filter_shower_adc(event_stream, min_adc):
+def filter_shower_adc(event_stream, min_adc, mode='sum'):
     """
     Filter events as a function of the processing level
     :param event_stream:
@@ -67,10 +67,15 @@ def filter_shower_adc(event_stream, min_adc):
     :return:
     """
     for event in event_stream:
-
         for telescope_id in event.r0.tels_with_data:
             r1_camera = event.r1.tel[telescope_id]
-            if np.sum(np.max(r1_camera.adc_samples, axis=-1)) >= min_adc:
+            if mode == 'sum':
+                count = np.sum(np.max(r1_camera.adc_samples, axis=-1))
+            elif mode == 'max':
+                count = np.max(r1_camera.adc_samples)
+            else:
+                raise ValueError('mode must be either "sum" or "max"')
+            if count >= min_adc:
                 yield event
 
 
