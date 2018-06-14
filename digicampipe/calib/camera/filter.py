@@ -75,17 +75,9 @@ def filter_shower_adc(event_stream, min_adc):
 
 
 def filter_missing_baseline(event_stream):
-
     for event in event_stream:
-
         for telescope_id in event.r0.tels_with_data:
-
-            r0_camera = event.r0.tel[telescope_id]
-
-            condition = np.all(np.isnan(r0_camera.baseline))
-
-            if not condition:
-
+            if event.r0.tel[telescope_id].baseline is not None:
                 yield event
 
 
