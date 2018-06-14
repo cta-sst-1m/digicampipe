@@ -3,6 +3,8 @@ import peakutils
 from scipy.signal import find_peaks_cwt
 from scipy.ndimage.filters import convolve1d, gaussian_filter1d
 from scipy.signal import correlate
+from tqdm import tqdm
+
 from digicampipe.utils.utils import get_pulse_shape
 
 
@@ -26,15 +28,12 @@ def find_pulse_wavelets(events, threshold_sigma, widths, **kwargs):
 
     for count, event in enumerate(events):
 
-        if count == 0:
-
-            threshold = threshold_sigma * event.histo[0].std
-
         adc_samples = event.data.adc_samples
         pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
 
-        for pixel_id, adc_sample in enumerate(adc_samples):
+        for pixel_id, adc_sample in tqdm(enumerate(adc_samples), desc='Pixel'):
 
+            threshold = np.std(adc_sample) * threshold_sigma
             peak_index = find_peaks_cwt(adc_sample, widths, **kwargs)
             peak_index = peak_index[
                 adc_sample[peak_index] > threshold[pixel_id]
