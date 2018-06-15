@@ -1,7 +1,18 @@
+from os import path
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from scipy.interpolate import BSpline
+import pkg_resources
+
+templates_file_path = pkg_resources.resource_filename(
+        'digicampipe',
+        path.join(
+            'tests',
+            'resources',
+            'templates_bspline.p'
+        )
+    )
 
 
 def bspleval(x, knots, coeffs, order, debug=True):
@@ -9,7 +20,7 @@ def bspleval(x, knots, coeffs, order, debug=True):
 
 
 def estimated_template(pe, start=0, stop=500, step=0.2):
-    pkl_file = open('templates_bspline.p', 'rb')
+    pkl_file = open(templates_file_path, 'rb')
     dict_template = pickle.load(pkl_file)
     xs = np.linspace(start, stop, (stop - start) * 1. / step)
     coeffs = []
@@ -17,7 +28,12 @@ def estimated_template(pe, start=0, stop=500, step=0.2):
         coeffs.append(dict_template['spline_coeff_func_pe'][coef](float(pe)))
 
     return xs, bspleval(
-        xs, dict_template['knots_sample'], np.array(coeffs), 5, debug=False)
+        x=xs,
+        knots=dict_template['knots_sample'],
+        coeffs=np.array(coeffs),
+        order=5,
+        debug=False
+    )
 
 
 def plot_pes_template(list_pe):
