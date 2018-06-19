@@ -125,11 +125,11 @@ def entry():
         pulse_time = timing_histo.mode()
 
         plt.figure()
-        plot_array_camera(pulse_time, label='most probable time of max [ns]',
+        plot_array_camera(pulse_time, label='most probable time [ns]',
                           allow_pick=True)
 
         plt.figure()
-        plot_parameter(pulse_time, 'most probable time of max', '[ns]',
+        plot_parameter(pulse_time, 'most probable time', '[ns]',
                        bins=20)
 
         plt.show()
