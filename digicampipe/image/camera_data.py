@@ -588,6 +588,7 @@ class CameraData(object):
 
 
 
+
 def create_file(camera_data, datafiles_list=None, max_events=None, mc=False,
                 print_every=100, flags=None):
     # create fits file
@@ -702,6 +703,7 @@ def main():
     #    % i for i in range(11, 92)
     #]
     datafiles_crab = ['/sst1m/raw/2017/10/30/SST1M01/SST1M01_20171030.091.fits.fz']
+
     pixel_not_wanted = [
         1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896,
         1085, 1117, 1118, 1119, 1120, 1146, 1147, 1148, 1149, 1150, 1151,
