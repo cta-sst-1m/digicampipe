@@ -24,12 +24,9 @@ def compute_trigger_patch(adc_samples, baseline,
     # trigger_patch = np.clip(trigger_patch, 0, 255)
     # trigger_patch = trigger_patch.astype(np.uint16)
 
+    # This allows to have negative integers and flooring of the baseline
     baseline = baseline.astype(int)
     adc_samples = adc_samples.astype(int)
-    # baseline = (baseline * 16) / 1024
-
-    # print(baseline)
-    baseline = np.floor(baseline)
 
     adc_samples = adc_samples - baseline[:, np.newaxis]
     trigger_patch = patch_matrix.dot(adc_samples)

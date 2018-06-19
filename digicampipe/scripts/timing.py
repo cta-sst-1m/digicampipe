@@ -28,6 +28,7 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
 from digicampipe.calib.camera.time import compute_time_from_max
+from digicampipe.visualization.plot import plot_array_camera, plot_parameter
 
 
 def compute(files, max_events, pixel_id, output_path, n_samples,
@@ -115,8 +116,18 @@ def entry():
     if args['--display']:
 
         path = os.path.join(output_path, timing_histo_filename)
-        raw_histo = Histogram1D.load(path)
-        raw_histo.draw(index=(0, ), log=True, legend=False)
+        timing_histo = Histogram1D.load(path)
+        timing_histo.draw(index=(0, ), log=True, legend=False)
+
+        pulse_time = timing_histo.mode()
+
+        plt.figure()
+        plot_array_camera(pulse_time, label='most probable time of max [ns]',
+                          allow_pick=True)
+
+        plt.figure()
+        plot_parameter(pulse_time, 'most probable time of max', '[ns]',
+                       bins=20)
 
         plt.show()
 

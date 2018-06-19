@@ -40,7 +40,6 @@ from digicampipe.calib.camera.peak import fill_pulse_indices
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
-from digicampipe.scripts import timing
 
 
 def plot_event(events, pixel_id):
@@ -84,7 +83,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
 
     charge_histo = Histogram1D(
         data_shape=(n_pixels,),
-        bin_edges=np.arange(-4095 * integral_width,
+        bin_edges=np.arange(-40 * integral_width,
                             4096 * integral_width,
                             bin_width),
         axis_name='reconstructed charge '
@@ -93,7 +92,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
 
     amplitude_histo = Histogram1D(
         data_shape=(n_pixels,),
-        bin_edges=np.arange(-4095, 4096, 1),
+        bin_edges=np.arange(-40, 4096, 1),
         axis_name='reconstructed amplitude '
                   '[LSB]'
     )
@@ -129,6 +128,10 @@ def entry():
     bin_width = int(args['--bin_width'])
     n_samples = int(args['--n_samples'])  # TODO access this in a better way !
     ac_levels = convert_dac_level(args['--ac_levels'])
+    timing_histo_filename = 'timing_histo.pk'
+    timing_histo_filename = os.path.join(output_path, timing_histo_filename)
+
+    timing_histo = Histogram1D.load(timing_histo_filename)
 
     n_pixels = len(pixel_id)
     n_ac_levels = len(ac_levels)
@@ -148,19 +151,12 @@ def entry():
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            timing_histo_filename = 'timing_histo_ac_level_{}.pk' \
-                                    ''.format(ac_level)
             charge_histo_filename = 'charge_histo_ac_level_{}.pk' \
                                     ''.format(ac_level)
             amplitude_histo_filename = 'amplitude_histo_ac_level_{}.pk' \
                                        ''.format(ac_level)
 
-            timing_histo = timing.compute(file, max_events, pixel_id,
-                                          output_path,
-                                          n_samples,
-                                          filename=timing_histo_filename,
-                                          save=False)
-            time[:, i] = timing_histo.mean()
+            time[:, i] = timing_histo.mode()
             pulse_indices = time[:, i] // 4
 
             amplitude_histo, charge_histo = compute(
@@ -169,7 +165,7 @@ def entry():
                     shift, bin_width, output_path,
                     charge_histo_filename=charge_histo_filename,
                     amplitude_histo_filename=amplitude_histo_filename,
-                    save=False)
+                    save=True)
 
             amplitude[:, i] = amplitude_histo.mean()
             charge[:, i] = charge_histo.mean()
@@ -192,8 +188,8 @@ def entry():
 
     if args['--display']:
 
-        amplitude_histo_path = os.path.join(output_path, 'amplitude_histo.pk')
-        charge_histo_path = os.path.join(output_path, 'charge_histo.pk')
+        amplitude_histo_path = os.path.join(output_path, 'amplitude_histo_ac_level_200.pk')
+        charge_histo_path = os.path.join(output_path, 'charge_histo_ac_level_200.pk')
 
         charge_histo = Histogram1D.load(charge_histo_path)
         charge_histo.draw(index=(0,), log=False, legend=False)
