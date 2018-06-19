@@ -26,6 +26,7 @@ class AutoEncoder(object):
         self.data = camera_data
         tf.reset_default_graph()
         self.sess = tf.Session()
+        print('event_shape:', self.data.event_shape)
         self.h_size, self.v_size, t_size = self.data.event_shape
         if n_sample is None:
             self.t_size = t_size
@@ -261,20 +262,40 @@ class AutoEncoder(object):
         assert(x_encoded.shape == (batch_size, self.n_out))
         return x_decoded, loss, weights
 
-    def encode_decode_to_fits(self, output_fits_name, input_fits=None):
+    def encode_decode_to_fits(self, output_fits_name, input_fits=None, 
+                              write_every=100, print_every=50):
         if input_fits is None:
             input_fits = self.data._fits
         n_events = len(input_fits)
         if os.path.isfile(output_fits_name):
             os.remove(output_fits_name)
-        for i in range(n_events):
-            event = input_fits[i]
-            data_enc_dec = self.encode_decode(
-                event.data[:, :, :self.t_size].reshape(
-                    (1,self.h_size, self.v_size, self.t_size)
+        t0 = time.perf_counter()
+        with fits.open(output_fits_name, mode='ostream', memmap=True) as hdul:
+            for i in range(n_events):
+                event = input_fits[i]
+                data_enc_dec, _, _ = self.encode_decode(
+                    event.data[:, :, :self.t_size].reshape(
+                        (1,self.h_size, self.v_size, self.t_size)
+                    )
                 )
-            )
-            fits.append(output_fits_name, data_enc_dec, event.header)
+                data_enc_dec = data_enc_dec.reshape(
+                    (self.h_size, self.v_size, self.t_size)
+                )
+                hdr = event.header
+                hdr['NAXIS1'] = (self.t_size, 'number of samples per event')
+                hdu = fits.PrimaryHDU(data=data_enc_dec, header=hdr)
+                hdul.append(hdu)
+                if i  % write_every == 0:
+                    hdul.flush()
+                if i % print_every == 0:
+                    t1 = time.perf_counter()
+                    dt = t1 - t0
+                    print(
+                        i, "events saved in", output_fits_name, ',', print_every,
+                        'evt in {:.1f} s ({:.2f} evt/s)'.format(dt, print_every/dt)
+                    )
+                    t0 = time.perf_counter()
+            hdul.flush()
 
 
 def train(kernel_size=(3, 3, 3), n_out=512, learning_rate=1e-2, 

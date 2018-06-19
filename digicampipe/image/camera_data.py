@@ -75,6 +75,12 @@ def animate(data, n_event_max=np.inf):
     plt.ioff()
 
 
+def get_camera_geo(digicam_config_file=digicam_config_file_default):
+    digicam_config_file = digicam_config_file
+    digicam = Camera(_config_file=digicam_config_file)
+    return geometry.generate_geometry_from_camera(camera=digicam)
+
+
 class CameraData(object):
     _fits = None
 
@@ -104,7 +110,10 @@ class CameraData(object):
         if datafiles_list is not None:
             self.create_fits_file(filename, datafiles_list,
                                   print_every=print_every)
+        if filename is None:
+            return
         self._fits = fits.open(filename, memmap=True)
+        self._fits = None
         self.n_event = len(self._fits)
         # print('shape of data from file', self._fits[0].data.shape)
         self.event_shape = self._fits[0].data.shape
@@ -141,11 +150,11 @@ class CameraData(object):
             peak_position
         )
         additional_mask = np.ones(1296, dtype=bool)
-        if self.unwanted_pixels:
+        if self.unwanted_pixels is not None:
             additional_mask[self.unwanted_pixels] = 0
             additional_mask = additional_mask > 0
-        picture_threshold = 13
-        boundary_threshold = 7
+        picture_threshold = 15
+        boundary_threshold = 5
         shower_distance = 200 * u.mm
         events_stream = event_stream(
             file_list=datafiles_list,
@@ -166,7 +175,7 @@ class CameraData(object):
             )
         else:
             events_stream = random_triggers.fill_baseline_r0(
-                events_stream, n_bins=100
+                events_stream, n_bins=10000
             )
             if self.flags is not None:
                 events_stream = filter.filter_event_types(
@@ -175,6 +184,8 @@ class CameraData(object):
                 )
             events_stream = filter.filter_missing_baseline(events_stream)
         events_stream = r1.calibrate_to_r1(events_stream, None)
+        events_stream = filter.filter_shower_adc(events_stream, self.min_adc,
+                                                 mode='max')
         # Run the dl0 calibration (data reduction, does nothing)
         events_stream = dl0.calibrate_to_dl0(events_stream)
         # Run the dl1 calibration (compute charge in photons + cleaning)
@@ -216,6 +227,9 @@ class CameraData(object):
                     print('WARNING: no baseline available ! event skipped')
                     continue
             hillas = event.dl2.shower
+            if np.isnan(hillas.width.to(u.mm).value):
+                print('NaN gotten for width')
+                continue
             psi = hillas.psi.rad
             rot_angle = psi + np.pi / 2
             cen_x = u.Quantity(hillas.cen_x).value
@@ -227,14 +241,17 @@ class CameraData(object):
                 continue
             if self.min_adc is None:  # No min value of ADC to keep an event
                 yield event
-            elif np.any(adc_samples - baseline > self.min_adc):
+            elif np.max(adc_samples - baseline) > self.min_adc:
+                print('PASSED: sum_adc=', np.sum(np.max(adc_samples - baseline, axis=-1)), 'max_adc=', np.max(adc_samples - baseline))
                 yield event
+            else:
+                print('not enough charge (', np.max(adc_samples - baseline), '), skiping event, sum_adc=',np.sum(np.max(adc_samples - baseline, axis=-1)))
+                continue
 
     def create_fits_file(self, filename, datafiles_list,
-                         print_every=500):
-        nvs = CameraData.get_pixels_pos_in_skew_base(
-            self.digicam_config_file
-        )
+                         print_every=500, write_every=100):
+        if filename is None:
+            return
         n_pixel_u, n_pixel_v = (48, 48)
         pix_pos = np.array([self.geo.pix_x, self.geo.pix_y]).transpose()
         image_x, image_y = np.meshgrid(np.linspace(-504, 504, n_pixel_u),
@@ -251,94 +268,101 @@ class CameraData(object):
                 if i not in self.unwanted_pixels:
                     wanted_pixels.append(i)
         else:
-            wanted_pixels = range(len(nvs))
+            wanted_pixels = range(pix_pos.shape[0])
         hdr = fits.Header()
         event_loaded = 0
         t0 = time.perf_counter()
-        for i, event in enumerate(events_stream):
-            tel = event.r0.tels_with_data[0]
-            r0 = event.r0.tel[tel]
-            adc_samples = np.array(r0.adc_samples)
-            if i == 0:
-                n_sample = adc_samples.shape[-1]
-                hdr['SIMPLE'] = (True, 'conforms to FITS standard')
-                hdr['BITPIX'] = (16, 'array data type')  # dtype=int16
-                hdr['NAXIS'] = (3, 'number of array dimensions')
-                hdr['NAXIS1'] = (n_sample, 'number of samples per event')
-                hdr['NAXIS2'] = (n_pixel_u,
-                                 'number of horizontal pixels in image')
-                hdr['NAXIS3'] = (n_pixel_v,
-                                 'number of vertical pixels in image')
-                hdr['EXTEND'] = True
-            hillas = event.dl2.shower
-            psi = hillas.psi.rad
-            rot_angle = - psi
-            offset_x = hillas.cen_x.to(u.mm).value
-            offset_y = hillas.cen_y.to(u.mm).value
-            hdr['rotation'] = (rot_angle, 'rotation applied in rad')
-            hdr['offset_x'] = (offset_x, 'horizontal offset applied in mm')
-            hdr['offset_y'] = (offset_y, 'vertical offset applied in mm')
-            hdr['Hillas_cen_x'] = (hillas.cen_x.to(u.mm).value,
-                                   'Hillas cen_x in mm')
-            hdr['Hillas_cen_y'] = (hillas.cen_y.to(u.mm).value,
-                                   'Hillas cen_y in mm')
-            hdr['Hillas_length'] = (hillas.length.to(u.mm).value,
-                                   'Hillas length in mm')
-            hdr['Hillas_width'] = (hillas.width.to(u.mm).value,
-                                   'Hillas width in mm')
-            hdr['Hillas_r'] = (hillas.r.to(u.mm).value,
-                               'Hillas r in mm')
-            hdr['Hillas_phi'] = (hillas.phi.rad,
-                                 'Hillas phi in rad')
-            hdr['Hillas_psi'] = (hillas.psi.rad,
-                                 'Hillas psi in rad')
-            hdr['Hillas_miss'] = (hillas.miss.to(u.m).value,
-                                 'Hillas miss in m')
-            hdr['Hillas_skewness'] = hillas.skewness
-            hdr['Hillas_kurtosis'] = hillas.kurtosis
-            baseline = r0.digicam_baseline
-            if self.mc:
-                hdr['energy'] = (event.mc.energy.to(u.TeV).value,
-                                 'energy in TeV')
-                hdr['alt'] = (event.mc.alt.rad, 'source altitude in rad')
-                hdr['az'] = (event.mc.az.rad, 'source azimuth in rad')
-                hdr['core_x'] = (event.mc.core_x.to(u.m).value,
-                                 'X position of core in m')
-                hdr['core_y'] = (event.mc.core_y.to(u.m).value,
-                                 'Y position of core in m')
-                hdr['HFstInt'] = (event.mc.h_first_int.to(u.km).value,
-                                  'Height of first interaction in km')
-            data_event = np.zeros([n_pixel_u, n_pixel_v, n_sample],
-                                  dtype=np.int16)
-            image_pos_rotate = image_pos.dot(
-                np.array([[np.cos(rot_angle), np.sin(-rot_angle)],
-                          [np.sin(rot_angle), np.cos(rot_angle)]])
-            )
-            image_pos_transform = image_pos_rotate + np.array([offset_x, offset_y])
-            for t in range(n_sample):
-                f_2d_interp = LinearNDInterpolator(
-                    np.vstack((pix_pos[wanted_pixels, :],
-                               pix_pos[self.unwanted_pixels, :])),
-                    np.hstack((
-                        adc_samples[wanted_pixels, t] -
-                        baseline[wanted_pixels].reshape(-1),
-                        np.zeros((n_unwanted_pixel,))
-                    )),
-                    fill_value=0)
-                data_t = f_2d_interp(
-                    image_pos_transform[:, 0],
-                    image_pos_transform[:, 1]).reshape(n_pixel_u, n_pixel_v)
-                data_event[:, :, t] = data_t
-            event_loaded += 1
-            fits.append(filename, data_event, hdr, verify=False)
-            if event_loaded % print_every == 0:
-                t1 = time.perf_counter()
-                dt = t1 - t0
-                print(
-                    event_loaded, "events saved in", filename, print_every,
-                    'evt in {:.1f} s ({:.2f} evt/s)'.format(dt, print_every/dt)
+        hdus = []
+        with fits.open(filename, mode='ostream', memmap=True) as hdul:
+            for i, event in enumerate(events_stream):
+                tel = event.r0.tels_with_data[0]
+                r0 = event.r0.tel[tel]
+                adc_samples = np.array(r0.adc_samples)
+                if i == 0:
+                    n_sample = adc_samples.shape[-1]
+                    hdr['SIMPLE'] = (True, 'conforms to FITS standard')
+                    hdr['BITPIX'] = (16, 'array data type')  # dtype=int16
+                    hdr['NAXIS'] = (3, 'number of array dimensions')
+                    hdr['NAXIS1'] = (n_sample, 'number of samples per event')
+                    hdr['NAXIS2'] = (n_pixel_u,
+                                     'number of horizontal pixels in image')
+                    hdr['NAXIS3'] = (n_pixel_v,
+                                     'number of vertical pixels in image')
+                    hdr['EXTEND'] = True
+                hillas = event.dl2.shower
+                psi = hillas.psi.rad
+                rot_angle = - psi
+                offset_x = hillas.cen_x.to(u.mm).value
+                offset_y = hillas.cen_y.to(u.mm).value
+                hdr['rotation'] = (rot_angle, 'rotation applied in rad')
+                hdr['offset_x'] = (offset_x, 'horizontal offset applied in mm')
+                hdr['offset_y'] = (offset_y, 'vertical offset applied in mm')
+                hdr['Hillas_cen_x'] = (hillas.cen_x.to(u.mm).value,
+                                       'Hillas cen_x in mm')
+                hdr['Hillas_cen_y'] = (hillas.cen_y.to(u.mm).value,
+                                       'Hillas cen_y in mm')
+                hdr['Hillas_length'] = (hillas.length.to(u.mm).value,
+                                       'Hillas length in mm')
+                hdr['Hillas_width'] = (hillas.width.to(u.mm).value,
+                                       'Hillas width in mm')
+                hdr['Hillas_r'] = (hillas.r.to(u.mm).value,
+                                   'Hillas r in mm')
+                hdr['Hillas_phi'] = (hillas.phi.rad,
+                                     'Hillas phi in rad')
+                hdr['Hillas_psi'] = (hillas.psi.rad,
+                                     'Hillas psi in rad')
+                hdr['Hillas_miss'] = (hillas.miss.to(u.m).value,
+                                     'Hillas miss in m')
+                hdr['Hillas_skewness'] = hillas.skewness
+                hdr['Hillas_kurtosis'] = hillas.kurtosis
+                baseline = r0.digicam_baseline
+                if self.mc:
+                    hdr['energy'] = (event.mc.energy.to(u.TeV).value,
+                                     'energy in TeV')
+                    hdr['alt'] = (event.mc.alt.rad, 'source altitude in rad')
+                    hdr['az'] = (event.mc.az.rad, 'source azimuth in rad')
+                    hdr['core_x'] = (event.mc.core_x.to(u.m).value,
+                                     'X position of core in m')
+                    hdr['core_y'] = (event.mc.core_y.to(u.m).value,
+                                     'Y position of core in m')
+                    hdr['HFstInt'] = (event.mc.h_first_int.to(u.km).value,
+                                      'Height of first interaction in km')
+                data_event = np.zeros([n_pixel_u, n_pixel_v, n_sample],
+                                      dtype=np.int16)
+                image_pos_rotate = image_pos.dot(
+                    np.array([[np.cos(rot_angle), np.sin(-rot_angle)],
+                              [np.sin(rot_angle), np.cos(rot_angle)]])
                 )
-                t0 = time.perf_counter()
+                image_pos_transform = image_pos_rotate + np.array([offset_x, offset_y])
+                for t in range(n_sample):
+                    f_2d_interp = LinearNDInterpolator(
+                        np.vstack((pix_pos[wanted_pixels, :],
+                                   pix_pos[self.unwanted_pixels, :])),
+                        np.hstack((
+                            adc_samples[wanted_pixels, t] -
+                            baseline[wanted_pixels].reshape(-1),
+                            np.zeros((n_unwanted_pixel,))
+                        )),
+                        fill_value=0)
+                    data_t = f_2d_interp(
+                        image_pos_transform[:, 0],
+                        image_pos_transform[:, 1]).reshape(n_pixel_u, n_pixel_v)
+                    data_event[:, :, t] = data_t
+                event_loaded += 1
+                hdu = fits.PrimaryHDU(data=data_event, header=hdr)
+                hdul.append(hdu)
+                #fits.append(filename, data_event, hdr, verify=False)
+                if event_loaded % print_every == 0:
+                    t1 = time.perf_counter()
+                    dt = t1 - t0
+                    print(
+                        event_loaded, "events saved in", filename, print_every,
+                        'evt in {:.1f} s ({:.2f} evt/s)'.format(dt, print_every/dt)
+                    )
+                    t0 = time.perf_counter()
+                if event_loaded  % write_every == 0:
+                    hdul.flush()
+            hdul.flush()
         print('closing stream after', event_loaded, "events saved in", filename)
         events_stream.close()
 
@@ -490,17 +514,19 @@ class CameraData(object):
         plt.ylabel('counts')
         plt.show()
 
-    def display_event(self, events, hillas=None, ax=None):
+    def display_event(self, events, ax=None, mode='data', edgecolor='k', min_adc=0):
         if ax is None:
             ax = plt.gca()
         if len(np.shape(events)) == 0:
             events = [events]
+        camera_display = None
         for event in events:
-            plt.cla()
+            ax.clear()
             geo_event = self.get_geometry_event(event)
-            camera = CameraDisplay(geo_event, ax=ax)
-            camera.image = np.sum(self._fits[event].data, axis=2).flatten()
-            if hillas == 'original':
+            camera_display = CameraDisplay(geo_event, ax=ax)
+            camera_display.image = np.sum(self._fits[event].data, axis=2).flatten()
+            # camera_display.add_colorbar()
+            if mode == 'original':
                 hillas_params = self.get_original_hillas_event(event)
                 cen_x = hillas_params['cen_x']
                 cen_y = hillas_params['cen_y']
@@ -509,29 +535,61 @@ class CameraData(object):
                 width = hillas_params['width']
                 angle = hillas_params['psi']
                 asymmetry = 0  # hillas_params['???']
-                print(pos, length, width, angle, asymmetry)
-                camera.add_ellipse(pos, length*2, width*2, angle, asymmetry)
-            elif hillas == 'data':
+            elif mode == 'data':
+                image = camera_display.image
+                image[image<min_adc]=0
                 hillas_params = hillas_parameters(
                     self.get_geometry_event(event),
-                    camera.image
+                    image
                 )
                 cen_x = hillas_params.cen_x.to(u.mm).value
                 cen_y = hillas_params.cen_y.to(u.mm).value
+                pos = np.array([cen_x, cen_y])
                 length = hillas_params.length.to(u.mm).value
                 width = hillas_params.width.to(u.mm).value
                 angle = hillas_params.psi.rad
                 asymmetry = 0  # hillas_params['???']
-                camera.add_ellipse([cen_x, cen_y], length, width, angle, asymmetry)
-            elif hillas is None:
-                pass
             else:
-                raise SyntaxError('hillas must be "original", "data" or None')
-            camera.update()
-                #camera.add_colorbar()
+                raise SyntaxError('mode must be "original" or "data"')
+            print(pos, length, width, angle, asymmetry)
+            camera_display.add_ellipse(pos, length*2, width*2, angle, asymmetry, 
+                                       edgecolor=edgecolor)
+            camera_display.update()
+
+    def aprox_adc_samples_to_fits(self, output_file, write_every=100):
+        fig, ax = plt.subplots()
+#        camera = CameraDisplay(self.geo, ax=ax)
+        n_pixel = len(self.geo.pix_x)
+        n_sample = self.event_shape[-1]
+        with fits.open(output_file, mode='ostream', memmap=True) as hdul:
+            for i, event_hdu in enumerate(self._fits):
+                geo = self.get_geometry_event(i)
+                geo_enc = np.array((geo.pix_x, geo.pix_y)).transpose()
+                adc_event = np.zeros([n_pixel, n_sample])
+                for t in range(n_sample):
+                    f_2d_interp = LinearNDInterpolator(
+                        geo_enc,
+                        event_hdu.data[:, :, t].flatten(),
+                        fill_value=0
+                    )
+                    data_t = f_2d_interp(self.geo.pix_x, self.geo.pix_y)
+                    adc_event[:, t] = data_t
+                hdu = fits.PrimaryHDU(data=adc_event)
+                hdul.append(hdu)
+                if i  % write_every == 0:
+                    print('event', i + 1, '/', self.n_event)
+                    hdul.flush()
+            hdul.flush()
+        print(output_file, 'created')
+#                camera.image = np.sum(adc_event, axis=1)
+#                camera.update()
+#                fig.savefig('adcsamples_encdec_' + str(i) + '.png')
+
+
+
 
 def create_file(camera_data, datafiles_list=None, max_events=None, mc=False,
-                print_every=100):
+                print_every=100, flags=None):
     # create fits file
     datafile_crab = [
         '/sst1m/raw/2017/10/30/SST1M01/SST1M01_20171030.%03d.fits.fz'
@@ -551,7 +609,7 @@ def create_file(camera_data, datafiles_list=None, max_events=None, mc=False,
         camera_data, datafiles_list=datafiles_list,
         digicam_config_file=digicam_config_file_default,
         unwanted_pixels=pixel_not_wanted,
-        flags=[1],
+        flags=flags,
         min_adc=100,
         print_every=print_every,
         max_events=max_events,
@@ -585,12 +643,13 @@ def plot_hists(camera_data, batch_size=None, type_set='train', mc=False):
             plt.xlabel(prop)
         plt.ylabel('counts')
     plt.show()
-
+        
 
 def main():
     # MC files from
     # http://pc048b.fzu.cz/sst-simulations/cta-prod3-sst-dc/
-    mc_dir = '/home/yves/ctasoft/digicampipe/data/mc_simtel'
+    """
+    mc_dir = '/home/reniery/prog/digicampipe/autoencoder/mc_simtel'
     all_file_list = os.listdir(mc_dir)
     mc_proton_files = []
     mc_gamma_files = []
@@ -600,9 +659,9 @@ def main():
                 mc_proton_files.append(os.path.join(mc_dir, file))
             if file.startswith('gamma'):
                 mc_gamma_files.append(os.path.join(mc_dir, file))
-    # create_file(camera_data,
-    #             print_every=10)
-    proton_datafile = os.path.join('/home/yves/ctasoft/digicampipe/data',
+    """
+    """
+    proton_datafile = os.path.join('/home/reniery/prog/digicampipe/autoencoder/',
                                    'proton_data_mc_test.fits')
 
     proton_data = CameraData(
@@ -614,13 +673,14 @@ def main():
         max_events=10000,
         mc=True
     )
-    """
+
     show_file(proton_datafile, batch_size=10)
     del proton_data
     """
-    gamma_datafile = os.path.join('/home/yves/ctasoft/digicampipe/data',
-                                  'gamma_data_mc.fits')
     """
+    gamma_datafile = os.path.join('/home/reniery/prog/digicampipe/autoencoder/',
+                                  'gamma_data_mc.fits')
+    
     gamma_data = CameraData(
         gamma_datafile,
         datafiles_list=mc_gamma_files,
@@ -631,73 +691,84 @@ def main():
         mc=True
     )
     plot_hists(gamma_datafile, mc=True)
-
+    """
     digicam = Camera(_config_file=digicam_config_file_default)
     digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-    proton_stream_orig = event_stream(
-        file_list=mc_proton_files,
-        camera_geometry=digicam_geometry,
-        camera=digicam,
-        mc=True
-    )
-    with plt.style.context('ggplot'):
-        display = EventViewer(
-            proton_stream_orig,
-            n_samples=50,
-            camera_config_file=digicam_config_file_default,
-            scale='lin',
-        )
-        display.draw()
-        pass
-    """
-    proton_enc_dec_datafile = os.path.join(
-        '/home/yves/ctasoft/digicampipe/data',
-        'proton_data_mc_test_enc_dec.fits'
-    )
 
-    proton_data_enc_dec = CameraData(
-        proton_enc_dec_datafile,
+    datafile = os.path.join('/home/reniery/prog/digicampipe/autoencoder/',
+                                  'camera_data_test3.fits')
+    #datafiles_crab = [
+    #    '/sst1m/raw/2017/10/30/SST1M01/SST1M01_20171030.%03d.fits.fz'
+    #    % i for i in range(11, 92)
+    #]
+    datafiles_crab = ['/sst1m/raw/2017/10/30/SST1M01/SST1M01_20171030.091.fits.fz']
+    pixel_not_wanted = [
+        1038, 1039, 1002, 1003, 1004, 966, 967, 968, 930, 931, 932, 896,
+        1085, 1117, 1118, 1119, 1120, 1146, 1147, 1148, 1149, 1150, 1151,
+        1152, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1180, 1181,
+        1196, 1197, 1198, 1199, 1200, 1201, 1202, 1203, 1204, 1205, 1206,
+        1219, 1220, 1221, 1222, 1223, 1224, 1225, 1226, 1239, 1240, 1241,
+        1242, 1243, 1256, 1257
+    ]
+    data = CameraData(
+        datafile,
+        #datafiles_list=datafiles_crab,
         digicam_config_file=digicam_config_file_default,
-        min_adc=50,
+        unwanted_pixels=pixel_not_wanted,
+        flags=[1],
+        min_adc=100,
+        print_every=50,
+        max_events=None,
+        mc=False
+    )
+    enc_dec_datafile = os.path.join(
+        '/home/reniery/prog/digicampipe/autoencoder/',
+        'camera_data_test3_enc_dec.fits'
+    )
+    data_enc_dec = CameraData(
+        enc_dec_datafile,
+        digicam_config_file=digicam_config_file_default,
+        min_adc=100,
         print_every=50,
         max_events=10000,
         mc=True
     )
+    
     fig1 = plt.figure()
-    ax1, ax2, ax3, ax4 = fig1.subplots(2, 2)
-    proton_stream = proton_data._new_event_stream([mc_proton_files[0]])
-    camera1 = CameraDisplay(proton_data.geo, ax=ax1)
-    camera2 = CameraDisplay(proton_data.geo, ax=ax2)
-    for i, event in enumerate(proton_stream):
-        camera1.image = np.sum(event.r0.tel[1].adc_samples, axis=1)
+    (ax1, ax2), (ax3, ax4) = fig1.subplots(2, 2)
+    data_stream = data._new_event_stream(datafiles_crab)
+    camera1 = CameraDisplay(data.geo, ax=ax1)
+    camera2 = CameraDisplay(data.geo, ax=ax2)
+    for i, event in enumerate(data_stream):
+        tel = event.r0.tels_with_data[0]
+        camera1.image = np.sum(event.r1.tel[tel].adc_samples, axis=1)
         camera1.update()
         ax1.set_xlim([-500, 500])
         ax1.set_ylim([-500, 500])
-        camera2.image = event.dl1.tel[1].pe_samples
-        camera2.overlay_moments(event.dl2.shower)
+        ax1.set_title('event at R1')
+        camera2.image = event.dl1.tel[tel].pe_samples
+        camera2.overlay_moments(event.dl2.shower, with_label=False)
         camera2.update()
         ax2.set_xlim([-500, 500])
         ax2.set_ylim([-500, 500])
-        proton_data.display_event(i, hillas="original", ax=ax3)
+        ax2.set_title('event at DL2')
+        data.display_event(i, ax=ax3, mode='original', edgecolor='k')
         ax3.set_xlim([-500, 500])
         ax3.set_ylim([-500, 500])
-        proton_data_enc_dec.display_event(i, hillas="original", ax=ax4)
-        plt.pause(3)
-
-    """
-    proton_stream = proton_data.create_data_stream()
-    with plt.style.context('ggplot'):
-        display = EventViewer(
-            proton_stream,
-            n_samples=50,
-            camera_config_file=digicam_config_file_default,
-            scale='lin',
-        )
-        display.draw()
-        pass
-"""
+        ax3.set_title('autoencoder input')
+        data_enc_dec.display_event(i, ax=ax4, min_adc=70, mode='data', edgecolor='r')
+        ax4.set_xlim([-500, 500])
+        ax4.set_ylim([-500, 500])
+        ax4.set_title('autoencoder output')
+        plt.tight_layout()
+        output_image = 'hillas_example_' + str(i) + '.png'
+        plt.savefig(output_image, dpi=100)
+        print(output_image, 'saved')
+        if i >= 10:
+            break
 
 
 if __name__ == '__main__':
     main()
+
 
