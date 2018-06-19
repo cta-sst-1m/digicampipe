@@ -3,6 +3,7 @@ import numpy as np
 
 def gaussian(x, mean, sigma, amplitude):
 
+    x = np.atleast_1d(x)
     pdf = (x[:, np.newaxis] - mean)**2 / (2 * sigma**2)
     pdf = np.exp(-pdf)
     pdf /= np.sqrt(2 * np.pi) * sigma
@@ -46,17 +47,25 @@ def generalized_poisson(k, mu, mu_xt, amplitude=1):
 def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
                              mu, mu_xt, amplitude, n_peaks=30):
 
-    x = x - baseline
-    photoelectron_peak = np.arange(n_peaks)
-    sigma_n = sigma_e**2 + photoelectron_peak * sigma_s**2
-    sigma_n = sigma_n + bin_width**2 / 12
-    sigma_n = np.sqrt(sigma_n)
+    if n_peaks > 0:
 
-    pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
-    pdf = pdf * gaussian(x, photoelectron_peak * gain, sigma_n, amplitude=1)
-    pdf = np.sum(pdf, axis=-1)
+        x = x - baseline
+        photoelectron_peak = np.arange(n_peaks, dtype=np.int)
+        sigma_n = sigma_e**2 + photoelectron_peak * sigma_s**2
+        sigma_n = sigma_n + bin_width**2 / 12
+        sigma_n = np.sqrt(sigma_n)
 
-    return pdf * amplitude
+        pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
+
+        pdf = pdf * gaussian(x, photoelectron_peak * gain, sigma_n,
+                             amplitude=1)
+        pdf = np.sum(pdf, axis=-1)
+
+        return pdf * amplitude
+
+    else:
+
+        return 0
 
 
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,
@@ -167,7 +176,7 @@ if __name__ == '__main__':
     mu_xt = 0.5
     sigma_e = 1
     sigma_s = 1
-    baseline = 0
+    baseline = 100
     bin_width = 10
     amplitude = 50
 

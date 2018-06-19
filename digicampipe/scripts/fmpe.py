@@ -242,10 +242,11 @@ def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
     x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
     y_fit = fmpe_pdf_10(x_fit, **m.values)
 
-    text = '$\chi^2 / ndof : $ {:.01f} / {}\n'.format(m.fval, n_dof)
+    text = '$\chi^2 / ndof : $ {:.01f} / {}\n = {}'.format(m.fval, n_dof,
+                                                           m.fval/n_dof)
     text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['baseline'], m.errors['baseline'])
-    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(m.values['gain'],
+    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB / p.e.]\n'.format(m.values['gain'],
                                                           m.errors['gain'])
     text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['sigma_e'], m.errors['sigma_e'])
@@ -257,7 +258,7 @@ def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
 
     fig = plt.figure()
     axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
-    axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2])
+    axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
     axes.step(x, y, where='mid', color='k', label=data_text)
     axes.errorbar(x, y, y_err, linestyle='None', color='k')
     axes.plot(x_fit, y_fit, label=text, color='r')
@@ -265,6 +266,7 @@ def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
     y_fit = fmpe_pdf_10(x, **m.values)
     axes_residual.errorbar(x, ((y - y_fit) / y_err), marker='o', ls='None',
                            color='k')
+    axes_residual.axhline(1, linestyle='--', color='k')
     axes_residual.set_xlabel('[LSB]')
     axes.set_ylabel('count')
     axes_residual.set_ylabel('pull')

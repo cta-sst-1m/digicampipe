@@ -31,6 +31,8 @@ from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
+from probfit import Chi2Regression, describe
+from iminuit import Minuit
 
 from digicampipe.io.event_stream import calibration_event_stream
 from histogram.histogram import Histogram1D
@@ -40,6 +42,183 @@ from digicampipe.calib.camera.peak import fill_pulse_indices
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
+from digicampipe.utils.pdf import mpe_distribution_general
+from digicampipe.utils.exception import PeakNotFound
+
+
+def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
+
+    if pixel_id is None:
+
+        pixel_id = ''
+
+    else:
+
+        pixel_id = str(pixel_id)
+
+    m = fitter
+    n_free_parameters = len(m.list_of_vary_param())
+    n_dof = len(x) - n_free_parameters
+
+    n_events = int(np.sum(y))
+    # m.draw_contour('sigma_e', 'sigma_s', show_sigma=True, bound=5)
+
+    x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
+    y_fit = mpe_distribution_general(x_fit, **m.values)
+
+    text = '$\chi^2 / ndof : $ {:.01f} / {} = {:.02f} \n'.format(m.fval,
+                                                                n_dof,
+                                                                m.fval/n_dof)
+    text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
+        m.values['baseline'], m.errors['baseline'])
+    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB / p.e.]\n'.format(m.values['gain'],
+                                                          m.errors['gain'])
+    text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
+        m.values['sigma_e'], m.errors['sigma_e'])
+    text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
+        m.values['sigma_s'], m.errors['sigma_s'])
+    text += '$\mu$ : {:.02f} $\pm$ {:.02f} [p.e.]\n'.format(
+        m.values['mu'], m.errors['mu'])
+    text += '$\mu_{XT}$'+' : {:.02f} $\pm$ {:.02f} [p.e.]\n'.format(
+        m.values['mu_xt'], m.errors['mu_xt'])
+
+    data_text = r'$N_{events}$' + ' : {}\nPixel : {}'.format(n_events,
+                                                             pixel_id)
+
+    fig = plt.figure()
+    axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
+    axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
+    axes.step(x, y, where='mid', color='k', label=data_text)
+    axes.errorbar(x, y, y_err, linestyle='None', color='k')
+    axes.plot(x_fit, y_fit, label=text, color='r')
+
+    y_fit = mpe_distribution_general(x, **m.values)
+    axes_residual.errorbar(x, ((y - y_fit) / y_err), marker='o', ls='None',
+                           color='k')
+    axes_residual.axhline(1, linestyle='--', color='k')
+    axes_residual.set_xlabel('[LSB]')
+    axes.set_ylabel('count')
+    axes_residual.set_ylabel('pull')
+    # axes_residual.set_yscale('log')
+    axes.legend(loc='best')
+
+    return fig
+
+
+def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
+
+    y = y.astype(np.float)
+    cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
+    cleaned_y_err = np.convolve(y_err, np.ones(min_dist), mode='same')
+    bin_width = x[1] - x[0]
+
+    if (x != np.sort(x)).any():
+
+        raise ValueError('x must be sorted !')
+
+    d_y = np.diff(cleaned_y)
+    indices = np.arange(len(y))
+    peak_mask = np.zeros(y.shape, dtype=bool)
+    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] < 0)
+    peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
+    peak_indices = indices[peak_mask]
+    peak_indices = peak_indices[:max(len(peak_indices), 1)]
+
+    if len(peak_indices) <= 1:
+
+        raise PeakNotFound('Not enough peak found for : \n'
+                           'SNR : {} \t '
+                           'Min distance : {} \n '
+                           'Need a least 2 peaks, found {}!!'.
+                           format(snr, min_dist, len(peak_indices)))
+
+    x_peak = x[peak_indices]
+    y_peak = y[peak_indices]
+    gain = np.diff(x_peak)
+    gain = np.average(gain, weights=y_peak[:-1])
+
+    sigma = np.zeros(len(peak_indices))
+    mean_peak_x = np.zeros(len(peak_indices))
+    amplitudes = np.zeros(len(peak_indices))
+
+    distance = int(gain / 2)
+
+    if distance < bin_width:
+
+        raise ValueError('Distance between peaks must be >= {} the bin width'
+                         ''.format(bin_width))
+
+    n_x = len(x)
+
+    for i, peak_index in enumerate(peak_indices):
+
+        left = x[peak_index] - distance
+        left = np.searchsorted(x, left)
+        left = max(0, left)
+        right = x[peak_index] + distance + 1
+        right = np.searchsorted(x, right)
+        right = min(n_x - 1, right)
+
+        amplitudes[i] = np.sum(y[left:right]) * bin_width
+        mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
+
+        sigma[i] = np.average((x[left:right] - mean_peak_x[i])**2,
+                              weights=y[left:right])
+        sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
+
+    sigma_e = np.sqrt(sigma[0]**2)
+    sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
+    sigma_s = np.mean(sigma_s)
+    sigma_s = np.sqrt(sigma_s)
+
+    amplitude = np.sum(y) * bin_width
+    mu = - np.log(amplitudes[0] / amplitude)
+    mu_xt = 0.1
+    n_peaks = len(peak_indices) + 10
+    baseline = mean_peak_x[0]
+
+    params = {'baseline': baseline, 'sigma_e': sigma_e,
+              'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
+              'mu': mu, 'mu_xt': mu_xt, 'n_peaks': n_peaks,
+              'bin_width': bin_width}
+
+    if debug:
+
+        x_fit = np.linspace(np.min(x), np.max(x), num=len(x)*10)
+
+        plt.figure()
+        plt.step(x, y, where='mid', color='k', label='data')
+        plt.errorbar(x, y, y_err, linestyle='None', color='k')
+        plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
+                 marker='o', color='r', label='Peak positions')
+        plt.plot(x_fit, mpe_distribution_general(x_fit, **params),
+                 label='init', color='g')
+        plt.legend(loc='best')
+        plt.show()
+
+    return params
+
+
+def compute_limit_mpe(init_params):
+
+    limit_params = {}
+
+    baseline = init_params['baseline']
+    gain = init_params['gain']
+    sigma_e = init_params['sigma_e']
+    sigma_s = init_params['sigma_s']
+    mu = init_params['mu']
+    amplitude = init_params['amplitude']
+
+    limit_params['limit_baseline'] = (baseline - sigma_e, baseline + sigma_e)
+    limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
+    limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
+    limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
+    limit_params['limit_mu'] = (0.5 * mu, 1.5 * mu)
+    limit_params['limit_mu_xt'] = (0, 0.5)
+    limit_params['limit_amplitude'] = (0.5 * amplitude, 1.5 * amplitude)
+
+    return limit_params
 
 
 def plot_event(events, pixel_id):
@@ -180,6 +359,57 @@ def entry():
 
     if args['--fit']:
 
+        for i, ac_level in tqdm(enumerate(ac_levels),
+                                        total=n_ac_levels, desc='DAC level',
+                                        leave=False):
+
+            charge_histo_filename = 'charge_histo_ac_level_{}.pk' \
+                                    ''.format(ac_level)
+
+            charge_histo_filename = os.path.join(output_path,
+                                                 charge_histo_filename)
+
+            charge_histo = Histogram1D.load(charge_histo_filename)
+
+            n_pixels = len(charge_histo.data)
+            xx = charge_histo._bin_centers()
+
+            for pixel_id in tqdm(range(n_pixels), desc='Pixel',
+                                    leave=False):
+
+                y = charge_histo.data[pixel_id]
+                y_err = charge_histo.errors()[pixel_id]
+
+                mask = (y > 0)
+                x = xx[mask]
+                y = y[mask]
+                y_err = y_err[mask]
+
+                chi2 = Chi2Regression(mpe_distribution_general,
+                                      x=x, y=y, error=y_err)
+
+                init_params = compute_init_mpe(x, y, y_err, snr=4, debug=debug)
+                limit_params = compute_limit_mpe(init_params)
+
+                m = Minuit(chi2, **init_params, **limit_params, print_level=0,
+                           pedantic=False)
+                m.migrad(ncall=100)
+
+                plot_mpe_fit(x, y, y_err, m, pixel_id)
+                plt.show()
+
+            # np.savez(results_filename,
+            #         gain=gain, sigma_e=sigma_e,
+            #         sigma_s=sigma_s, baseline=baseline,
+            #         mu=mu, mu_xt=mu_xt,
+            #         gain_error=gain_error, sigma_e_error=sigma_e_error,
+            #         sigma_s_error=sigma_s_error,
+            #         baseline_error=baseline_error,
+            #         mu_error=mu_error, mu_xt_error=mu_xt_error,
+            #         chi_2=chi_2, ndf=ndf,
+            #         pixel_id=pixel_id,
+            #         )
+
         pass
 
     if args['--save_figures']:
@@ -188,8 +418,8 @@ def entry():
 
     if args['--display']:
 
-        amplitude_histo_path = os.path.join(output_path, 'amplitude_histo_ac_level_200.pk')
-        charge_histo_path = os.path.join(output_path, 'charge_histo_ac_level_200.pk')
+        amplitude_histo_path = os.path.join(output_path, 'amplitude_histo_ac_level_0.pk')
+        charge_histo_path = os.path.join(output_path, 'charge_histo_ac_level_0.pk')
 
         charge_histo = Histogram1D.load(charge_histo_path)
         charge_histo.draw(index=(0,), log=False, legend=False)
