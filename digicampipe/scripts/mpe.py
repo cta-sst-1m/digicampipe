@@ -221,27 +221,6 @@ def compute_limit_mpe(init_params):
     return limit_params
 
 
-def fit_mpe(x, y, y_err, debug=False, **kwargs):
-
-    chi2 = Chi2Regression(mpe_distribution_general,
-                          x=x, y=y, error=y_err)
-
-    init_params = compute_init_mpe(x, y, y_err, snr=4, debug=debug)
-    limit_params = compute_limit_mpe(init_params)
-
-    mu = init_params['mu']
-    baseline = init_params['baseline']
-    gain = init_params['gain']
-
-    m = Minuit(chi2, **init_params, **limit_params, print_level=0,
-               fix_bin_width=True,
-               fix_n_peaks=True,
-               pedantic=False)
-    m.migrad(**kwargs)
-
-    return m
-
-
 def plot_event(events, pixel_id):
 
     for event in events:
