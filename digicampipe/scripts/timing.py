@@ -85,7 +85,7 @@ def entry():
 
         compute(files, max_events, pixel_id, output_path, n_samples,
                 timing_histo_filename, save=True,
-                time_method=compute_time_from_leading_edge)
+                time_method=compute_time_from_max) # compute_time_from_leading_edge)
 
     if args['--save_figures']:
 

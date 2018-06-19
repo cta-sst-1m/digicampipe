@@ -3,12 +3,60 @@ import numpy as np
 
 def gaussian(x, mean, sigma, amplitude):
 
-    pdf = (x - mean)**2 / (2 * sigma**2)
+    pdf = (x[:, np.newaxis] - mean)**2 / (2 * sigma**2)
     pdf = np.exp(-pdf)
     pdf /= np.sqrt(2 * np.pi) * sigma
     pdf *= amplitude
 
     return pdf
+
+
+def generalized_poisson(k, mu, mu_xt, amplitude=1):
+
+    if mu_xt < 0 or mu < 0:
+
+        if isinstance(k, int):
+            return 0
+        else:
+            return np.zeros(len(k))
+
+    else:
+
+        log_amplitude = np.log(amplitude)
+        log_mu = np.log(mu)
+
+        temp = np.ones((len(k), k.max()))
+
+        temp[:] = np.arange(1, k.max() + 1)
+        mask = np.triu_indices(n=temp.shape[0], m=temp.shape[1])
+        temp[mask] = 1
+
+        temp = np.log(temp)
+        log_k = np.sum(temp, axis=-1)
+
+        pdf = log_amplitude + log_mu
+        pdf = pdf + np.log(mu + k * mu_xt)*(k - 1) + (-mu - k * mu_xt) - log_k
+        pdf = np.exp(pdf)
+
+        pdf[k < 0] = 0
+
+        return pdf
+
+
+def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
+                             mu, mu_xt, amplitude, n_peaks=30):
+
+    x = x - baseline
+    photoelectron_peak = np.arange(n_peaks)
+    sigma_n = sigma_e**2 + photoelectron_peak * sigma_s**2
+    sigma_n = sigma_n + bin_width**2 / 12
+    sigma_n = np.sqrt(sigma_n)
+
+    pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
+    pdf = pdf * gaussian(x, photoelectron_peak * gain, sigma_n, amplitude=1)
+    pdf = np.sum(pdf, axis=-1)
+
+    return pdf * amplitude
 
 
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,
@@ -104,3 +152,30 @@ def log_spe(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
                                            a_3,
                                            a_4
                                            ))
+
+
+if __name__ == '__main__':
+
+    import matplotlib.pyplot as plt
+
+    n = np.arange(10)
+    x = np.linspace(-1000, 1000, num=10000)
+
+    x_width = (x[-1] - x[0]) / len(x)
+    gain = 10
+    mu = 1
+    mu_xt = 0.5
+    sigma_e = 1
+    sigma_s = 1
+    baseline = 0
+    bin_width = 10
+    amplitude = 50
+
+    pdf = mpe_distribution_general(x, bin_width, baseline, gain, sigma_e,
+                                   sigma_s, mu, mu_xt, amplitude, n_peaks=50)
+
+    plt.figure()
+    plt.plot(x, pdf, label='area : {}'.format(np.sum(pdf) * x_width))
+    plt.legend()
+    plt.show()
+
