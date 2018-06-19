@@ -18,9 +18,26 @@ def compute_time_from_max(events):
         yield event
 
 
+def compute_time_from_leading_edge(events, threshold=0.5):
+
+    bin_time = 4 # 4 ns between samples
+
+    for event in events:
+
+        adc_samples = event.data.adc_samples
+
+        times = estimate_time_from_leading_edge(adc_samples, threshold)
+        times = times * bin_time
+        new_shape = times.shape + (1, )
+        times = times.reshape(new_shape)
+        event.data.reconstructed_time = times
+
+        yield event
+
+
 @numba.jit
-def estimate_arrival_time(adc, thr=0.5):
-    '''
+def estimate_time_from_leading_edge(adc, thr=0.5):
+    """
     estimate the pulse arrival time, defined as the time the leading edge
     crossed 50% of the maximal height,
     estimated using a simple linear interpolation.
@@ -38,7 +55,7 @@ def estimate_arrival_time(adc, thr=0.5):
 
     return:
         arrival_time (1296) in units of time_slices
-    '''
+    """
     n_pixel = adc.shape[0]
     arrival_times = np.zeros(n_pixel, dtype='f4')
 
