@@ -145,7 +145,7 @@ class R0CameraContainer(Container):
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
                      "(n_channels, x n_pixels)")
-    baseline = Field(ndarray, "number of time samples for telescope")
+    baseline = Field(None, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
     dark_baseline = Field(ndarray, 'dark baseline')
