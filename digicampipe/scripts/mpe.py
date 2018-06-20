@@ -21,7 +21,6 @@ Options:
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --save_figures              Save the plots to the OUTPUT folder
-  --n_samples=N               Number of samples per waveform
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
 '''
@@ -173,9 +172,13 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
 
     amplitude = np.sum(y) * bin_width
     mu = - np.log(amplitudes[0] / amplitude)
-    mu_xt = 0.1
     baseline = mean_peak_x[0]
     n_peaks = (np.max(x) - np.min(x)) // gain
+    mu_xt = np.average(x, weights=y) - baseline
+    mu_xt = mu_xt / gain
+    mu_xt = mu / mu_xt
+
+    print(mu_xt)
 
     params = {'baseline': baseline, 'sigma_e': sigma_e,
               'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
@@ -301,11 +304,10 @@ def entry():
 
         raise IOError('Path for output does not exists \n')
 
-    pixel_id = convert_pixel_args(args['--pixel'])
+    pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
-    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
     ac_levels = convert_dac_level(args['--ac_levels'])
     timing_histo_filename = 'timing_histo.pk'
     timing_histo_filename = os.path.join(output_path, timing_histo_filename)
@@ -315,7 +317,7 @@ def entry():
 
     timing_histo = Histogram1D.load(timing_histo_filename)
 
-    n_pixels = len(pixel_id)
+    n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
 
     if n_ac_levels != len(files):
@@ -343,7 +345,7 @@ def entry():
 
             amplitude_histo, charge_histo = compute(
                     file,
-                    pixel_id, max_events, pulse_indices, integral_width,
+                    pixel_ids, max_events, pulse_indices, integral_width,
                     shift, bin_width, output_path,
                     charge_histo_filename=charge_histo_filename,
                     amplitude_histo_filename=amplitude_histo_filename,
@@ -358,7 +360,7 @@ def entry():
 
         np.savez(os.path.join(output_path, 'mpe_results'),
                  amplitude=amplitude, charge=charge, time=time,
-                 pixel_id=pixel_id, ac_levels=ac_levels)
+                 pixel_ids=pixel_ids, ac_levels=ac_levels)
 
     if args['--fit']:
 
@@ -381,15 +383,6 @@ def entry():
 
         ac_limit = np.zeros(n_pixels) * np.inf
 
-        #         sigma_s=sigma_s, baseline=baseline,
-        #         mu=mu, mu_xt=mu_xt,
-        #         gain_error=gain_error, sigma_e_error=sigma_e_error,
-        #         sigma_s_error=sigma_s_error,
-        #         baseline_error=baseline_error,
-        #         mu_error=mu_error, mu_xt_error=mu_xt_error,
-        #         chi_2=chi_2, ndf=ndf,
-        #         pixel_id=pixel_id,
-
         for i, ac_level in tqdm(enumerate(ac_levels),
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
@@ -405,7 +398,7 @@ def entry():
             n_pixels = len(charge_histo.data)
             xx = charge_histo._bin_centers()
 
-            for j, pixel_id in tqdm(enumerate(pixel_id), total=n_pixels,
+            for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
                                     desc='Pixel',
                                     leave=False):
 
@@ -491,7 +484,7 @@ def entry():
                      baseline_error=baseline_error,
                      mu_error=mu_error, mu_xt_error=mu_xt_error,
                      chi_2=chi_2, ndf=ndf,
-                     pixel_id=pixel_id,
+                     pixel_ids=pixel_ids,
                      ac_levels=ac_levels
                      )
 
