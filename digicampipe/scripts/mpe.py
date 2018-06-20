@@ -81,6 +81,12 @@ def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
     text += '$\mu_{XT}$'+' : {:.02f} $\pm$ {:.02f} [p.e.]\n'.format(
         m.values['mu_xt'], m.errors['mu_xt'])
 
+    text += '$A$'+' : {:.02f} $\pm$ {:.02f} []\n'.format(
+        m.values['amplitude'], m.errors['amplitude'])
+
+    text += '$N_{peaks}$' + ' : {:.02f} $\pm$ {:.02f} []\n'.format(
+        m.values['n_peaks'], m.errors['n_peaks'])
+
     data_text = r'$N_{events}$' + ' : {}\nPixel : {}'.format(n_events,
                                                              pixel_id)
 
@@ -109,7 +115,7 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
     y = y.astype(np.float)
     cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
     cleaned_y_err = np.convolve(y_err, np.ones(min_dist), mode='same')
-    bin_width = x[1] - x[0]
+    bin_width = x[y.argmax()] - x[y.argmax() - 1]
 
     if (x != np.sort(x)).any():
 
@@ -174,11 +180,9 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
     mu = - np.log(amplitudes[0] / amplitude)
     baseline = mean_peak_x[0]
     n_peaks = (np.max(x) - np.min(x)) // gain
-    mu_xt = np.average(x, weights=y) - baseline
-    mu_xt = mu_xt / gain
-    mu_xt = mu / mu_xt
-
-    print(mu_xt)
+    mean_x = np.average(x, weights=y) - baseline
+    mu_xt = 1 - mu * gain / mean_x
+    mu_xt = max(0.02, mu_xt)
 
     params = {'baseline': baseline, 'sigma_e': sigma_e,
               'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
@@ -381,7 +385,7 @@ def entry():
         chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
         ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
-        ac_limit = np.zeros(n_pixels) * np.inf
+        ac_limit = [np.inf]*n_pixels
 
         for i, ac_level in tqdm(enumerate(ac_levels),
                                         total=n_ac_levels, desc='DAC level',
@@ -415,8 +419,8 @@ def entry():
                     chi2 = Chi2Regression(mpe_distribution_general,
                                           x=x, y=y, error=y_err)
 
-                    init_params = compute_init_mpe(x, y, y_err, snr=4,
-                                                   debug=debug)
+                    init_params = compute_init_mpe(x, y, y_err, snr=2,
+                                                   debug=debug, min_dist=10)
                     limit_params = compute_limit_mpe(init_params)
 
                     options = {}
@@ -424,6 +428,7 @@ def entry():
                     if init_params['baseline'] > init_params['gain'] / 2:
 
                         ac_limit[j] = min(i, ac_limit[j])
+                        ac_limit[j] = int(ac_limit[j])
 
                         options['fix_baseline'] = True
                         options['fix_gain'] = True
@@ -445,11 +450,15 @@ def entry():
                                pedantic=False)
 
                     m.migrad(ncall=1000)
+                    m.minos(maxcall=100)
 
                     if debug:
 
                         print(init_params)
                         print(limit_params)
+                        print(m.values)
+                        print(m.merrors)
+                        print(m.errors)
                         plot_mpe_fit(x, y, y_err, m, pixel_id)
                         plt.show()
 
