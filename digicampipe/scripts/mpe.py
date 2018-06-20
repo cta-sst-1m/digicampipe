@@ -133,7 +133,7 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
 
         raise PeakNotFound('Not enough peak found for : \n'
                            'SNR : {} \t '
-                           'Min distance : {} \n '
+                           'Min distance : {} \n'
                            'Need a least 2 peaks, found {}!!'.
                            format(snr, min_dist, len(peak_indices)))
 
@@ -427,21 +427,30 @@ def entry():
 
                     if init_params['baseline'] > init_params['gain'] / 2:
 
-                        ac_limit[j] = min(i, ac_limit[j])
-                        ac_limit[j] = int(ac_limit[j])
+                        if i > 0:
 
-                        options['fix_baseline'] = True
-                        options['fix_gain'] = True
-                        options['fix_sigma_e'] = True
-                        options['fix_sigma_s'] = True
+                            ac_limit[j] = min(i, ac_limit[j])
+                            ac_limit[j] = int(ac_limit[j])
 
-                        init_params['baseline'] = np.nanmean(
-                            baseline[:ac_limit[j], j])
-                        init_params['gain'] = np.nanmean(gain[:ac_limit[j], j])
-                        init_params['sigma_e'] = np.nanmean(
-                            sigma_e[:ac_limit[j], j])
-                        init_params['sigma_s'] = np.nanmean(
-                            sigma_s[:ac_limit[j], j])
+                            options['fix_baseline'] = True
+                            options['fix_gain'] = True
+                            options['fix_sigma_e'] = True
+                            options['fix_sigma_s'] = True
+
+                            init_params['baseline'] = np.nanmean(
+                                baseline[:ac_limit[j], j])
+                            init_params['gain'] = np.nanmean(gain[:ac_limit[j], j])
+                            init_params['sigma_e'] = np.nanmean(
+                                sigma_e[:ac_limit[j], j])
+                            init_params['sigma_s'] = np.nanmean(
+                                sigma_s[:ac_limit[j], j])
+
+                        else:
+
+                            raise ValueError('Could not initialize the fit'
+                                             'with : \n Baseline = {},'
+                                             ' Gain = {}'.format(
+                                init_params['baseline'], init_params['gain']))
 
                     m = Minuit(chi2, **init_params, **limit_params, **options,
                                print_level=0,
@@ -449,8 +458,8 @@ def entry():
                                fix_n_peaks=True,
                                pedantic=False)
 
-                    m.migrad(ncall=1000)
-                    m.minos(maxcall=100)
+                    m.migrad(ncall=100)
+                    # m.minos(maxcall=100)
 
                     if debug:
 
