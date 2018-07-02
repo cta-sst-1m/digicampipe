@@ -100,7 +100,7 @@ def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
     y_fit = mpe_distribution_general(x, **m.values)
     axes_residual.errorbar(x, ((y - y_fit) / y_err), marker='o', ls='None',
                            color='k')
-    axes_residual.axhline(1, linestyle='--', color='k')
+    # axes_residual.axhline(1, linestyle='--', color='k')
     axes_residual.set_xlabel('[LSB]')
     axes.set_ylabel('count')
     axes_residual.set_ylabel('pull')
@@ -113,6 +113,7 @@ def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
 def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
 
     y = y.astype(np.float)
+    min_dist = int(min_dist)
     cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
     cleaned_y_err = np.convolve(y_err, np.ones(min_dist), mode='same')
     bin_width = x[y.argmax()] - x[y.argmax() - 1]
@@ -124,8 +125,9 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
     d_y = np.diff(cleaned_y)
     indices = np.arange(len(y))
     peak_mask = np.zeros(y.shape, dtype=bool)
-    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] < 0)
+    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
     peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
+    peak_mask[min_dist:] = 0
     peak_indices = indices[peak_mask]
     peak_indices = peak_indices[:max(len(peak_indices), 1)]
 
@@ -258,7 +260,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
     n_pixels = len(pixel_id)
 
     events = calibration_event_stream(files, pixel_id=pixel_id,
-                                      max_events=max_events)
+                                  max_events=max_events, baseline_new=True)
     # events = compute_baseline_with_min(events)
     events = fill_digicam_baseline(events)
     events = subtract_baseline(events)

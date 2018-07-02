@@ -20,9 +20,10 @@ Options:
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --save_figures              Save the plots to the OUTPUT folder
-  --n_samples=N               Number of samples per waveform
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
+  --timing=PATH               Timing filename
+                              [default: time.npz]
 '''
 import os
 from docopt import docopt
@@ -103,8 +104,9 @@ def compute_limit_fmpe(init_params):
 def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
 
     y = y.astype(np.float)
+    min_dist = int(min_dist)
     cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
-    cleaned_y_err = np.convolve(y_err, np.ones(min_dist), mode='same')
+    cleaned_y_err = np.sqrt(cleaned_y)
     bin_width = np.diff(x)
     bin_width = np.mean(bin_width)
 
@@ -115,8 +117,9 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
     d_y = np.diff(cleaned_y)
     indices = np.arange(len(y))
     peak_mask = np.zeros(y.shape, dtype=bool)
-    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] < 0)
+    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
     peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
+    peak_mask[-min_dist:] = 0
     peak_indices = indices[peak_mask]
     peak_indices = peak_indices[:min(len(peak_indices), n_pe_peaks)]
 
@@ -131,7 +134,7 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
     x_peak = x[peak_indices]
     y_peak = y[peak_indices]
     gain = np.diff(x_peak)
-    gain = np.average(gain, weights=y_peak[:-1])
+    gain = np.average(gain, weights=y_peak[:-1]**2)
 
     sigma = np.zeros(len(peak_indices))
     mean_peak_x = np.zeros(len(peak_indices))
@@ -163,10 +166,16 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
         sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
 
     gain = np.diff(mean_peak_x)
-    gain = np.average(gain)
+    gain = np.average(gain, weights=amplitudes[:-1]**2)
+
     sigma_e = np.sqrt(sigma[0]**2)
     sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
     sigma_s = np.mean(sigma_s)
+
+    if sigma_s < 0:
+
+        sigma_s = sigma_e**2
+
     sigma_s = np.sqrt(sigma_s)
 
     params = {'baseline': mean_peak_x[0], 'sigma_e': sigma_e,
@@ -187,13 +196,15 @@ def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
                  marker='o', color='r', label='Peak positions')
         plt.plot(x_fit, fmpe_pdf_10(x_fit, bin_width=bin_width, **params),
                  label='init', color='g')
+        plt.plot(x, cleaned_y, label='cleaned')
+        plt.plot(x[:-1], d_y, label='diff')
         plt.legend(loc='best')
         plt.show()
 
     return params
 
 
-def fit_fmpe(x, y, y_err, init_params, limit_params):
+def fit_fmpe(x, y, y_err, init_params, limit_params, **kwargs):
 
     chi2 = Chi2Regression(fmpe_pdf_10, x=x, y=y, error=y_err)
 
@@ -217,7 +228,7 @@ def fit_fmpe(x, y, y_err, init_params, limit_params):
         print_level=0,
         pedantic=False,
     )
-    m.migrad()
+    m.migrad(**kwargs)
 
     return m
 
@@ -242,7 +253,7 @@ def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
     x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
     y_fit = fmpe_pdf_10(x_fit, **m.values)
 
-    text = '$\chi^2 / ndof : $ {:.01f} / {}\n = {}'.format(m.fval, n_dof,
+    text = '$\chi^2 / ndof : $ {:.01f} / {} = {:.01f}\n'.format(m.fval, n_dof,
                                                            m.fval/n_dof)
     text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
         m.values['baseline'], m.errors['baseline'])
@@ -293,20 +304,22 @@ def entry():
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
-    n_samples = int(args['--n_samples'])  # TODO access this in a better way
 
     n_pixels = len(pixel_id)
 
     charge_histo_filename = 'charge_histo_fmpe.pk'
     amplitude_histo_filename = 'amplitude_histo_fmpe.pk'
-    timing_histo_filename = 'timing_histo_fmpe.pk'
+    timing_filename = os.path.join(output_path, args['--timing'])
 
     if args['--compute']:
 
-        timing_histo = Histogram1D.load(os.path.join(output_path,
-                                                     timing_histo_filename))
+        # timing_histo = Histogram1D.load(os.path.join(output_path,
+        #                                             timing_histo_filename))
 
-        pulse_indices = timing_histo.mode() // 4
+        # pulse_indices = timing_histo.mode() // 4
+
+        pulse_indices = np.load(timing_filename)['time'] // 4
+        pulse_indices = pulse_indices.astype(int)
 
         mpe.compute(
                 files,
@@ -336,7 +349,10 @@ def entry():
 
         n_pe_peaks = 10
         estimated_gain = 20
-        min_dist = 5  # int(estimated_gain)
+        min_dist = 7  # int(estimated_gain)
+        snr = 4
+
+        ncall = 3000
 
         results_filename = os.path.join(output_path, 'fmpe_results.npz')
 
@@ -344,15 +360,15 @@ def entry():
                              desc='Pixel'):
 
             x = charge_histo._bin_centers()
-            y = charge_histo.data[i]
-            y_err = charge_histo.errors()[i]
+            y = charge_histo.data[pixel]
+            y_err = charge_histo.errors()[pixel]
 
             x, y, y_err = compute_data_bounds(x, y, y_err,
                                               estimated_gain, n_pe_peaks)
 
             try:
 
-                params_init = compute_init_fmpe(x, y, y_err, snr=3,
+                params_init = compute_init_fmpe(x, y, y_err, snr=snr,
                                                 min_dist=min_dist,
                                                 n_pe_peaks=n_pe_peaks,
                                                 debug=debug)
@@ -365,7 +381,7 @@ def entry():
 
                 m = fit_fmpe(x, y, y_err,
                              params_init,
-                             params_limit)
+                             params_limit, ncall=ncall)
 
                 gain[i] = m.values['gain']
                 gain_error[i] = m.errors['gain']
@@ -408,11 +424,9 @@ def entry():
         amplitude_histo_path = os.path.join(output_path,
                                             'amplitude_histo_fmpe.pk')
         charge_histo_path = os.path.join(output_path, 'charge_histo_fmpe.pk')
-        timing_histo_path = os.path.join(output_path, 'timing_histo_fmpe.pk')
 
         charge_histo = Histogram1D.load(charge_histo_path)
         amplitude_histo = Histogram1D.load(amplitude_histo_path)
-        timing_histo = Histogram1D.load(timing_histo_path)
 
         figure_path = os.path.join(output_path, 'figures/')
 
@@ -434,8 +448,6 @@ def entry():
                                   legend=False)
                 amplitude_histo.draw(index=(i,), axis=axis_2, log=True,
                                      legend=False)
-                timing_histo.draw(index=(i,), axis=axis_3, log=True,
-                                  legend=False)
                 figure_1.savefig(figure_path +
                                  'charge_fmpe_pixel_{}'.format(pixel))
                 figure_2.savefig(figure_path +
@@ -459,8 +471,6 @@ def entry():
                                             'amplitude_histo_fmpe.pk')
         charge_histo_path = os.path.join(output_path,
                                          'charge_histo_fmpe.pk')
-        timing_histo_path = os.path.join(output_path,
-                                         'timing_histo_fmpe.pk')
 
         charge_histo = Histogram1D.load(charge_histo_path)
         charge_histo.draw(index=(0,), log=False, legend=False)
@@ -468,8 +478,6 @@ def entry():
         amplitude_histo = Histogram1D.load(amplitude_histo_path)
         amplitude_histo.draw(index=(0,), log=False, legend=False)
 
-        timing_histo = Histogram1D.load(timing_histo_path)
-        timing_histo.draw(index=(0,), log=False, legend=False)
         plt.show()
 
         pass
