@@ -115,7 +115,7 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
     y = y.astype(np.float)
     min_dist = int(min_dist)
     cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
-    cleaned_y_err = np.convolve(y_err, np.ones(min_dist), mode='same')
+    cleaned_y_err = np.sqrt(cleaned_y)
     bin_width = x[y.argmax()] - x[y.argmax() - 1]
 
     if (x != np.sort(x)).any():
