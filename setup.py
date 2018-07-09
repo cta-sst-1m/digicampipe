@@ -47,6 +47,7 @@ setup(
             'digicam-view=digicampipe.scripts.digicamview:entry',
             'digicam-spe=digicampipe.scripts.spe:entry',
             'digicam-fmpe=digicampipe.scripts.fmpe:entry',
+            'digicam-template=digicampipe.scripts.pulse_shape:entry',
             'digicam-mpe=digicampipe.scripts.mpe:entry',
             'digicam-raw=digicampipe.scripts.raw:entry',
             'digicam-timing=digicampipe.scripts.timing:entry',

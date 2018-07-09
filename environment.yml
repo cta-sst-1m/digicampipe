@@ -13,6 +13,7 @@ dependencies:
 - h5py
 - hdf5
 - matplotlib
+- numba
 - numpy
 - opencv
 - pip

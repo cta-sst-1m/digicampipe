@@ -27,11 +27,13 @@ from histogram.histogram import Histogram1D
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
-from digicampipe.calib.camera.time import compute_time_from_max
+from digicampipe.calib.camera.time import compute_time_from_max, \
+    compute_time_from_leading_edge
 
 
 def compute(files, max_events, pixel_id, output_path, n_samples,
-            filename='timing_histo.pk', save=True):
+            filename='timing_histo.pk', save=True,
+            time_method=compute_time_from_max):
 
     filename = os.path.join(output_path, filename)
 
@@ -43,11 +45,11 @@ def compute(files, max_events, pixel_id, output_path, n_samples,
     events = calibration_event_stream(files, pixel_id=pixel_id,
                                       max_events=max_events)
 
-    events = compute_time_from_max(events)
+    events = time_method(events)
 
     timing_histo = Histogram1D(
         data_shape=(n_pixels, ),
-        bin_edges=np.arange(0, n_samples * 4, 4),
+        bin_edges=np.arange(0, n_samples * 4, 1),
         axis_name='reconstructed time [ns]'
     )
 
@@ -81,7 +83,8 @@ def entry():
     if args['--compute']:
 
         compute(files, max_events, pixel_id, output_path, n_samples,
-                timing_histo_filename, save=True)
+                timing_histo_filename, save=True,
+                time_method=compute_time_from_leading_edge)
 
     if args['--save_figures']:
 
