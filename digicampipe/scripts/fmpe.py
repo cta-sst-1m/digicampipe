@@ -410,14 +410,16 @@ def entry():
                 print('Could not fit FMPE in pixel {}'.format(pixel))
                 print(exception)
 
-        np.savez(results_filename,
-                 gain=gain, sigma_e=sigma_e,
-                 sigma_s=sigma_s, baseline=baseline,
-                 gain_error=gain_error, sigma_e_error=sigma_e_error,
-                 sigma_s_error=sigma_s_error, baseline_error=baseline_error,
-                 chi_2=chi_2, ndf=ndf,
-                 pixel_id=pixel_id,
-                 )
+        if not debug:
+
+            np.savez(results_filename,
+                     gain=gain, sigma_e=sigma_e,
+                     sigma_s=sigma_s, baseline=baseline,
+                     gain_error=gain_error, sigma_e_error=sigma_e_error,
+                     sigma_s_error=sigma_s_error, baseline_error=baseline_error,
+                     chi_2=chi_2, ndf=ndf,
+                     pixel_id=pixel_id,
+                     )
 
     if args['--save_figures']:
 

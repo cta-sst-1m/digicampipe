@@ -333,36 +333,68 @@ def entry():
 
     if args['--compute']:
 
-        amplitude = np.zeros((n_pixels, n_ac_levels))
-        charge = np.zeros((n_pixels, n_ac_levels))
-        time = np.zeros((n_pixels, n_ac_levels))
+        amplitude = np.zeros((n_ac_levels, n_pixels))
+        charge = np.zeros((n_ac_levels, n_pixels))
+        time = np.zeros((n_ac_levels, n_pixels))
+
+        charge_histo = Histogram1D(
+            bin_edges=np.arange(- 4095 * integral_width,
+                                4095 * integral_width + bin_width, bin_width),
+            data_shape=(n_ac_levels, n_pixels, ))
+
+        amplitude_histo = Histogram1D(
+            bin_edges=np.arange(- 4095 * integral_width,
+                                4095 * integral_width + bin_width, bin_width),
+            data_shape=(n_ac_levels, n_pixels,))
+
+        charge_histo_filename = 'charge_histo_ac_level.pk'
+        amplitude_histo_filename = 'amplitude_histo_ac_level.pk'
+        amplitude_histo_filename = os.path.join(output_path,
+                                                amplitude_histo_filename)
+        charge_histo_filename = os.path.join(output_path,
+                                             charge_histo_filename)
+
+        if os.path.exists(charge_histo_filename):
+            raise IOError(
+                'File {} already exists'.format(charge_histo_filename))
+
+        if os.path.exists(amplitude_histo_filename):
+            raise IOError(
+                'File {} already exists'.format(amplitude_histo_filename))
 
         for i, (file, ac_level) in tqdm(enumerate(zip(files, ac_levels)),
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            charge_histo_filename = 'charge_histo_ac_level_{}.pk' \
-                                    ''.format(ac_level)
-            amplitude_histo_filename = 'amplitude_histo_ac_level_{}.pk' \
-                                       ''.format(ac_level)
-
             time[:, i] = timing_histo.mode()
             pulse_indices = time[:, i] // 4
 
-            amplitude_histo, charge_histo = compute(
-                    file,
-                    pixel_ids, max_events, pulse_indices, integral_width,
-                    shift, bin_width, output_path,
-                    charge_histo_filename=charge_histo_filename,
-                    amplitude_histo_filename=amplitude_histo_filename,
-                    save=True)
+            events = calibration_event_stream(file, pixel_id=pixel_ids,
+                                              max_events=max_events,
+                                              baseline_new=True)
+            # events = compute_baseline_with_min(events)
+            events = fill_digicam_baseline(events)
+            events = subtract_baseline(events)
+            # events = find_pulse_with_max(events)
+            events = fill_pulse_indices(events, pulse_indices)
+            events = compute_charge(events, integral_width, shift)
+            events = compute_amplitude(events)
 
-            amplitude[:, i] = amplitude_histo.mean()
-            charge[:, i] = charge_histo.mean()
+            for event in events:
+                charge_histo.fill(event.data.reconstructed_charge,
+                                  indices=(i, ))
+                amplitude_histo.fill(event.data.reconstructed_amplitude,
+                                     indices=(i, ))
+
+            amplitude[i] = amplitude_histo.mean()
+            charge[i] = charge_histo.mean()
 
         plt.figure()
-        plt.plot(amplitude[0], charge[0])
+        plt.plot(amplitude[:, 0], charge[:, 0])
         plt.show()
+
+        charge_histo.save(charge_histo_filename)
+        amplitude_histo.save(amplitude_histo_filename)
 
         np.savez(os.path.join(output_path, 'mpe_results'),
                  amplitude=amplitude, charge=charge, time=time,
