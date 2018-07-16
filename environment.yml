@@ -22,6 +22,7 @@ dependencies:
 - pytest
 - PyYAML
 - scikit-learn
+- scikit-image
 - scipy
 - sphinx_rtd_theme
 - traitlets
