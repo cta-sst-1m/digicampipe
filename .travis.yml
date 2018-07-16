@@ -46,6 +46,7 @@ install:
 script:
 - pytest digicampipe
 - make -C docs/ html
+- travis_wait 30 pytest -c all_tests.ini digicampipe
 - |
   if [ "${TRAVIS_EVENT_TYPE}" == "cron" ]; then
     travis_wait 30 pytest -c all_tests.ini digicampipe
