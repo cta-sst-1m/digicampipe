@@ -420,7 +420,6 @@ def entry():
         charge_histo = Histogram1D.load(charge_histo_filename)
         amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
-        n_pixels = charge_histo.shape[1]
         xx = charge_histo.bin_centers
 
         for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
@@ -463,7 +462,8 @@ def entry():
 
                             init_params['baseline'] = np.nanmean(
                                 baseline[:ac_limit[j], j])
-                            init_params['gain'] = np.nanmean(gain[:ac_limit[j], j])
+                            init_params['gain'] = np.nanmean(
+                                gain[:ac_limit[j], j])
                             init_params['sigma_e'] = np.nanmean(
                                 sigma_e[:ac_limit[j], j])
                             init_params['sigma_s'] = np.nanmean(
