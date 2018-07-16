@@ -8,7 +8,7 @@ example_lid_CCD_image_file_paths = glob(
 
 
 @pytest.mark.deselect
-def test_find_stars(method='local'):
+def test_find_stars(method='nova'):
     from digicampipe.image.sky_image import LidCCDObservation
     from digicampipe.image.utils import Rectangle
     # find stars in lid CCD images:
