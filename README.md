@@ -61,6 +61,14 @@ your prompt should look similar to this this:
 
     pip install -e digicampipe
 
+**Note for MacOS users** at the moment the installation of the `protozfitsreader` package requires some manual work.
+Please type this command before running `pip`
+
+```
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:<PATH_TO_YOUR_ANANCODA_LIBRARY_PATH>/lib/python3.6/site-packages
+```
+
+```<PATH_TO_YOUR_ANANCODA_LIBRARY_PATH>``` is where your anaconda was installed.
 
 ### Execute the tests
 
