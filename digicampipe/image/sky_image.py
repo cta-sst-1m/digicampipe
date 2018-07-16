@@ -162,13 +162,13 @@ class SkyImage(object):
         # apiurl='http://nova.astrometry.net/api/'
         apiurl = 'http://supernova.astrometry.net/api/'
         c = Client(apiurl=apiurl)
-        # api_key = os.environ.get('NOVA_API_KEY', None)
-        api_key = os.environ.get('SUPERNOVA_API_KEY', None)
+        api_key = os.environ.get('NOVA_API_KEY', None)
+        #api_key = os.environ.get('SUPERNOVA_API_KEY', None)
         if api_key is None:
-            # raise EnvironmentError(
-            #   'NOVA_API_KEY environment variable must be set')
             raise EnvironmentError(
-                'SUPERNOVA_API_KEY environment variable must be set')
+                'NOVA_API_KEY environment variable must be set')
+            #raise EnvironmentError(
+            #    'SUPERNOVA_API_KEY environment variable must be set')
         c.login(api_key)
         mean, median, std = sigma_clipped_stats(
             self.image_stars, sigma=3.0, iters=5)

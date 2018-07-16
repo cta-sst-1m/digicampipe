@@ -135,6 +135,8 @@ class Client(object):
     def login(self, apikey):
         args = {'apikey': apikey}
         result = self.send_request('login', args)
+        if not result:
+            raise RequestError('login failed')
         sess = result.get('session')
         print('Got session:', sess)
         if not sess:
