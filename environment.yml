@@ -16,6 +16,7 @@ dependencies:
 - numba
 - numpy
 - opencv
+- photutils
 - pip
 - protobuf
 - pyhessio
