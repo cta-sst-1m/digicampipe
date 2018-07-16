@@ -414,8 +414,6 @@ def entry():
 
                 if i > 0:
 
-                    print(mu[i - 1, j])
-
                     if mu[i - 1, j] > 5:
                         ac_limit[j] = min(i, ac_limit[j])
                         ac_limit[j] = int(ac_limit[j])
@@ -430,8 +428,6 @@ def entry():
                         temp = temp / np.nansum(weights_fit)
                         fixed_params['mu_xt'] = temp
 
-                        print(fixed_params)
-
                 try:
 
                     chi2 = Chi2Regression(mpe_distribution_general,
@@ -445,7 +441,7 @@ def entry():
                     m = Minuit(chi2, **init_params, **limit_params, **options,
                                print_level=0, pedantic=False)
 
-                    m.migrad(ncall=10)
+                    m.migrad(ncall=1000)
                     # m.minos(maxcall=100)
 
                     if debug:
