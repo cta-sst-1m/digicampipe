@@ -107,7 +107,7 @@ def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
     # axes_residual.set_yscale('log')
     axes.legend(loc='best')
 
-    return fig
+    return fig, axes
 
 
 def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
@@ -122,12 +122,14 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
 
         raise ValueError('x must be sorted !')
 
+    d_x = np.diff(x)
     d_y = np.diff(cleaned_y)
     indices = np.arange(len(y))
-    peak_mask = np.zeros(y.shape, dtype=bool)
+    peak_mask = np.zeros(len(y), dtype=bool)
     peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
     peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
-    peak_mask[min_dist:] = 0
+    # peak_mask[1:-1] *= (d_y[:-1] / d_x[:-1]) > snr
+    peak_mask[:min_dist] = False
     peak_indices = indices[peak_mask]
     peak_indices = peak_indices[:max(len(peak_indices), 1)]
 
@@ -197,6 +199,8 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
 
         plt.figure()
         plt.step(x, y, where='mid', color='k', label='data')
+        plt.plot(x[1:], d_y, label='diff')
+        plt.errorbar(x, cleaned_y, yerr=cleaned_y_err, label='cleaned')
         plt.errorbar(x, y, y_err, linestyle='None', color='k')
         plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
                  marker='o', color='r', label='Peak positions')
@@ -317,11 +321,17 @@ def entry():
     ac_levels = convert_dac_level(args['--ac_levels'])
     timing_histo_filename = 'timing_histo.pk'
     timing_histo_filename = os.path.join(output_path, timing_histo_filename)
+    timing_histo = Histogram1D.load(timing_histo_filename)
 
     results_filename = 'mpe_fit_results.pk'
     results_filename = os.path.join(output_path, results_filename)
 
-    timing_histo = Histogram1D.load(timing_histo_filename)
+    charge_histo_filename = 'charge_histo_ac_level.pk'
+    amplitude_histo_filename = 'amplitude_histo_ac_level.pk'
+    amplitude_histo_filename = os.path.join(output_path,
+                                            amplitude_histo_filename)
+    charge_histo_filename = os.path.join(output_path,
+                                         charge_histo_filename)
 
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
@@ -338,21 +348,14 @@ def entry():
         time = np.zeros((n_ac_levels, n_pixels))
 
         charge_histo = Histogram1D(
-            bin_edges=np.arange(- 4095 * integral_width,
-                                4095 * integral_width + bin_width, bin_width),
+            bin_edges=np.arange(- 40 * integral_width,
+                                2000, bin_width),
             data_shape=(n_ac_levels, n_pixels, ))
 
         amplitude_histo = Histogram1D(
-            bin_edges=np.arange(- 4095 * integral_width,
-                                4095 * integral_width + bin_width, bin_width),
+            bin_edges=np.arange(- 40,
+                                500, bin_width),
             data_shape=(n_ac_levels, n_pixels,))
-
-        charge_histo_filename = 'charge_histo_ac_level.pk'
-        amplitude_histo_filename = 'amplitude_histo_ac_level.pk'
-        amplitude_histo_filename = os.path.join(output_path,
-                                                amplitude_histo_filename)
-        charge_histo_filename = os.path.join(output_path,
-                                             charge_histo_filename)
 
         if os.path.exists(charge_histo_filename):
             raise IOError(
@@ -366,8 +369,8 @@ def entry():
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            time[:, i] = timing_histo.mode()
-            pulse_indices = time[:, i] // 4
+            time[i] = timing_histo.mode()
+            pulse_indices = time[i] // 4
 
             events = calibration_event_stream(file, pixel_id=pixel_ids,
                                               max_events=max_events,
@@ -385,13 +388,6 @@ def entry():
                                   indices=(i, ))
                 amplitude_histo.fill(event.data.reconstructed_amplitude,
                                      indices=(i, ))
-
-            amplitude[i] = amplitude_histo.mean()
-            charge[i] = charge_histo.mean()
-
-        plt.figure()
-        plt.plot(amplitude[:, 0], charge[:, 0])
-        plt.show()
 
         charge_histo.save(charge_histo_filename)
         amplitude_histo.save(amplitude_histo_filename)
@@ -421,27 +417,21 @@ def entry():
 
         ac_limit = [np.inf]*n_pixels
 
-        for i, ac_level in tqdm(enumerate(ac_levels),
-                                        total=n_ac_levels, desc='DAC level',
-                                        leave=False):
+        charge_histo = Histogram1D.load(charge_histo_filename)
+        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
-            charge_histo_filename = 'charge_histo_ac_level_{}.pk' \
-                                    ''.format(ac_level)
+        n_pixels = charge_histo.shape[1]
+        xx = charge_histo.bin_centers
 
-            charge_histo_filename = os.path.join(output_path,
-                                                 charge_histo_filename)
-
-            charge_histo = Histogram1D.load(charge_histo_filename)
-
-            n_pixels = len(charge_histo.data)
-            xx = charge_histo._bin_centers()
+        for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
+                                desc='DAC level', leave=False):
 
             for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
                                     desc='Pixel',
                                     leave=False):
 
-                y = charge_histo.data[pixel_id]
-                y_err = charge_histo.errors()[pixel_id]
+                y = charge_histo.data[i, j]
+                y_err = charge_histo.errors()[i, j]
 
                 mask = (y > 0)
                 x = xx[mask]
@@ -453,7 +443,7 @@ def entry():
                     chi2 = Chi2Regression(mpe_distribution_general,
                                           x=x, y=y, error=y_err)
 
-                    init_params = compute_init_mpe(x, y, y_err, snr=2,
+                    init_params = compute_init_mpe(x, y, y_err, snr=5,
                                                    debug=debug, min_dist=10)
                     limit_params = compute_limit_mpe(init_params)
 
@@ -482,7 +472,7 @@ def entry():
                         else:
 
                             raise ValueError('Could not initialize the fit'
-                                             'with : \n Baseline = {},'
+                                             ' with : \n Baseline = {},'
                                              ' Gain = {}'.format(
                                 init_params['baseline'], init_params['gain']))
 
