@@ -23,10 +23,12 @@ Options:
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
+  --params=<YAML_FILE>        Calibration params to use in the fit
 '''
 import os
 from docopt import docopt
 from tqdm import tqdm
+import yaml
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -110,83 +112,40 @@ def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
     return fig, axes
 
 
-def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
+def compute_init_mpe(x, y, y_err, fixed_params, debug=False):
 
-    y = y.astype(np.float)
-    min_dist = int(min_dist)
-    cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
-    cleaned_y_err = np.sqrt(cleaned_y)
-    bin_width = x[y.argmax()] - x[y.argmax() - 1]
+    bin_width = fixed_params['bin_width']
+    gain = fixed_params['gain']
+    sigma_e = fixed_params['sigma_e']
+    sigma_s = fixed_params['sigma_s']
+    baseline = fixed_params['baseline']
 
-    if (x != np.sort(x)).any():
-
-        raise ValueError('x must be sorted !')
-
-    d_x = np.diff(x)
-    d_y = np.diff(cleaned_y)
-    indices = np.arange(len(y))
-    peak_mask = np.zeros(len(y), dtype=bool)
-    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
-    peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
-    # peak_mask[1:-1] *= (d_y[:-1] / d_x[:-1]) > snr
-    peak_mask[:min_dist] = False
-    peak_indices = indices[peak_mask]
-    peak_indices = peak_indices[:max(len(peak_indices), 1)]
-
-    if len(peak_indices) <= 1:
-
-        raise PeakNotFound('Not enough peak found for : \n'
-                           'SNR : {} \t '
-                           'Min distance : {} \n'
-                           'Need a least 2 peaks, found {}!!'.
-                           format(snr, min_dist, len(peak_indices)))
-
-    x_peak = x[peak_indices]
-    y_peak = y[peak_indices]
-    gain = np.diff(x_peak)
-    gain = np.average(gain, weights=y_peak[:-1])
-
-    sigma = np.zeros(len(peak_indices))
-    mean_peak_x = np.zeros(len(peak_indices))
-    amplitudes = np.zeros(len(peak_indices))
-
-    distance = int(gain / 2)
-
-    if distance < bin_width:
-
-        raise ValueError('Distance between peaks must be >= {} the bin width'
-                         ''.format(bin_width))
-
-    n_x = len(x)
-
-    for i, peak_index in enumerate(peak_indices):
-
-        left = x[peak_index] - distance
-        left = np.searchsorted(x, left)
-        left = max(0, left)
-        right = x[peak_index] + distance + 1
-        right = np.searchsorted(x, right)
-        right = min(n_x - 1, right)
-
-        amplitudes[i] = np.sum(y[left:right]) * bin_width
-        mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
-
-        sigma[i] = np.average((x[left:right] - mean_peak_x[i])**2,
-                              weights=y[left:right])
-        sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
-
-    sigma_e = np.sqrt(sigma[0]**2)
-    sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
-    sigma_s = np.mean(sigma_s)
-    sigma_s = np.sqrt(sigma_s)
-
-    amplitude = np.sum(y) * bin_width
-    mu = - np.log(amplitudes[0] / amplitude)
-    baseline = mean_peak_x[0]
-    n_peaks = (np.max(x) - np.min(x)) // gain
     mean_x = np.average(x, weights=y) - baseline
-    mu_xt = 1 - mu * gain / mean_x
-    mu_xt = max(0.02, mu_xt)
+
+    if 'mu_xt' in fixed_params.keys():
+
+        mu_xt = fixed_params['mu_xt']
+        mu = mean_x * (1 - mu_xt) / gain
+
+    else:
+
+        left = baseline - gain / 2
+        left = np.where(x > left)[0][0]
+
+        right = baseline + gain / 2
+        right = np.where(x < right)[0][-1]
+
+        probability_0_pe = np.sum(y[left:right])
+        probability_0_pe /= np.sum(y)
+        mu = - np.log(probability_0_pe)
+
+        mu_xt = 1 - gain * mu / mean_x
+        mu_xt = max(0.01, mu_xt)
+
+    n_peaks = np.max(x) - (baseline - gain / 2)
+    n_peaks = n_peaks / gain
+    n_peaks = int(n_peaks)
+    amplitude = np.sum(y) * bin_width
 
     params = {'baseline': baseline, 'sigma_e': sigma_e,
               'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
@@ -199,11 +158,7 @@ def compute_init_mpe(x, y, y_err, snr=3, min_dist=5, debug=False):
 
         plt.figure()
         plt.step(x, y, where='mid', color='k', label='data')
-        plt.plot(x[1:], d_y, label='diff')
-        plt.errorbar(x, cleaned_y, yerr=cleaned_y_err, label='cleaned')
         plt.errorbar(x, y, y_err, linestyle='None', color='k')
-        plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
-                 marker='o', color='r', label='Peak positions')
         plt.plot(x_fit, mpe_distribution_general(x_fit, **params),
                  label='init', color='g')
         plt.legend(loc='best')
@@ -323,7 +278,7 @@ def entry():
     timing_histo_filename = os.path.join(output_path, timing_histo_filename)
     timing_histo = Histogram1D.load(timing_histo_filename)
 
-    results_filename = 'mpe_fit_results.pk'
+    results_filename = 'mpe_fit_results'
     results_filename = os.path.join(output_path, results_filename)
 
     charge_histo_filename = 'charge_histo_ac_level.pk'
@@ -349,7 +304,7 @@ def entry():
 
         charge_histo = Histogram1D(
             bin_edges=np.arange(- 40 * integral_width,
-                                2000, bin_width),
+                                200, bin_width),
             data_shape=(n_ac_levels, n_pixels, ))
 
         amplitude_histo = Histogram1D(
@@ -369,7 +324,7 @@ def entry():
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            time[i] = timing_histo.mode()
+            time[i] = timing_histo.mode()[pixel_ids]
             pulse_indices = time[i] // 4
 
             events = calibration_event_stream(file, pixel_id=pixel_ids,
@@ -398,6 +353,8 @@ def entry():
 
     if args['--fit']:
 
+        input_parameters = yaml.load(open(args['--params'], 'r'))
+
         gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
         sigma_e = np.zeros((n_ac_levels, n_pixels)) * np.nan
         sigma_s = np.zeros((n_ac_levels, n_pixels)) * np.nan
@@ -421,6 +378,7 @@ def entry():
         amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
         xx = charge_histo.bin_centers
+        bin_width = charge_histo.bins[1] - charge_histo.bins[0]
 
         for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
                                 desc='DAC level', leave=False):
@@ -437,52 +395,57 @@ def entry():
                 y = y[mask]
                 y_err = y_err[mask]
 
+                if len(x) == 0:
+
+                    continue
+
+                fit_params_names = describe(mpe_distribution_general)
+                options = {'fix_bin_width': True, 'fix_n_peaks': True}
+                fixed_params = {'bin_width': bin_width}
+
+                for param in fit_params_names:
+
+                    if param in input_parameters.keys():
+
+                        name = 'fix_' + param
+
+                        options[name] = True
+                        fixed_params[param] = input_parameters[param][pixel_id]
+
+                if i > 0:
+
+                    print(mu[i - 1, j])
+
+                    if mu[i - 1, j] > 5:
+                        ac_limit[j] = min(i, ac_limit[j])
+                        ac_limit[j] = int(ac_limit[j])
+
+                        weights_fit = chi_2[:ac_limit[j], j]
+                        weights_fit = weights_fit / ndf[:ac_limit[j], j]
+
+                        options['fix_mu_xt'] = True
+
+                        temp = mu_xt[:ac_limit[j], j] * weights_fit
+                        temp = np.nansum(temp)
+                        temp = temp / np.nansum(weights_fit)
+                        fixed_params['mu_xt'] = temp
+
+                        print(fixed_params)
+
                 try:
 
                     chi2 = Chi2Regression(mpe_distribution_general,
                                           x=x, y=y, error=y_err)
 
-                    init_params = compute_init_mpe(x, y, y_err, snr=5,
-                                                   debug=debug, min_dist=10)
+                    init_params = compute_init_mpe(x, y, y_err,
+                                                   fixed_params=fixed_params,
+                                                   debug=debug)
                     limit_params = compute_limit_mpe(init_params)
 
-                    options = {}
-
-                    if init_params['baseline'] > init_params['gain'] / 2:
-
-                        if i > 0:
-
-                            ac_limit[j] = min(i, ac_limit[j])
-                            ac_limit[j] = int(ac_limit[j])
-
-                            options['fix_baseline'] = True
-                            options['fix_gain'] = True
-                            options['fix_sigma_e'] = True
-                            options['fix_sigma_s'] = True
-
-                            init_params['baseline'] = np.nanmean(
-                                baseline[:ac_limit[j], j])
-                            init_params['gain'] = np.nanmean(
-                                gain[:ac_limit[j], j])
-                            init_params['sigma_e'] = np.nanmean(
-                                sigma_e[:ac_limit[j], j])
-                            init_params['sigma_s'] = np.nanmean(
-                                sigma_s[:ac_limit[j], j])
-
-                        else:
-
-                            raise ValueError('Could not initialize the fit'
-                                             ' with : \n Baseline = {},'
-                                             ' Gain = {}'.format(
-                                init_params['baseline'], init_params['gain']))
-
                     m = Minuit(chi2, **init_params, **limit_params, **options,
-                               print_level=0,
-                               fix_bin_width=True,
-                               fix_n_peaks=True,
-                               pedantic=False)
+                               print_level=0, pedantic=False)
 
-                    m.migrad(ncall=100)
+                    m.migrad(ncall=10)
                     # m.minos(maxcall=100)
 
                     if debug:
@@ -515,20 +478,21 @@ def entry():
                 except Exception as e:
 
                     print(e)
-                    print('Could not fit pixel {}'.format(pixel_id))
+                    print('Could not fit pixel {} for DAC level'.format(
+                        pixel_id, ac_level))
 
-            np.savez(results_filename,
-                     gain=gain, sigma_e=sigma_e,
-                     sigma_s=sigma_s, baseline=baseline,
-                     mu=mu, mu_xt=mu_xt,
-                     gain_error=gain_error, sigma_e_error=sigma_e_error,
-                     sigma_s_error=sigma_s_error,
-                     baseline_error=baseline_error,
-                     mu_error=mu_error, mu_xt_error=mu_xt_error,
-                     chi_2=chi_2, ndf=ndf,
-                     pixel_ids=pixel_ids,
-                     ac_levels=ac_levels
-                     )
+        np.savez(results_filename,
+                 gain=gain, sigma_e=sigma_e,
+                 sigma_s=sigma_s, baseline=baseline,
+                 mu=mu, mu_xt=mu_xt,
+                 gain_error=gain_error, sigma_e_error=sigma_e_error,
+                 sigma_s_error=sigma_s_error,
+                 baseline_error=baseline_error,
+                 mu_error=mu_error, mu_xt_error=mu_xt_error,
+                 chi_2=chi_2, ndf=ndf,
+                 pixel_ids=pixel_ids,
+                 ac_levels=ac_levels
+                 )
 
     if args['--save_figures']:
 
@@ -536,16 +500,11 @@ def entry():
 
     if args['--display']:
 
-        amplitude_histo_path = os.path.join(output_path,
-                                            'amplitude_histo_ac_level_0.pk')
-        charge_histo_path = os.path.join(output_path,
-                                         'charge_histo_ac_level_0.pk')
+        charge_histo = Histogram1D.load(charge_histo_filename)
+        charge_histo.draw(index=(0, 0), log=False, legend=False)
 
-        charge_histo = Histogram1D.load(charge_histo_path)
-        charge_histo.draw(index=(0,), log=False, legend=False)
-
-        amplitude_histo = Histogram1D.load(amplitude_histo_path)
-        amplitude_histo.draw(index=(0,), log=False, legend=False)
+        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
+        amplitude_histo.draw(index=(0, 0), log=False, legend=False)
         plt.show()
 
         pass
