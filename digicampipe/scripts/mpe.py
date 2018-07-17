@@ -274,6 +274,9 @@ def entry():
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
     ac_levels = convert_dac_level(args['--ac_levels'])
+    n_pixels = len(pixel_ids)
+    n_ac_levels = len(ac_levels)
+
     timing_histo_filename = 'timing_histo.pk'
     timing_histo_filename = os.path.join(output_path, timing_histo_filename)
     timing_histo = Histogram1D.load(timing_histo_filename)
@@ -288,8 +291,14 @@ def entry():
     charge_histo_filename = os.path.join(output_path,
                                          charge_histo_filename)
 
-    n_pixels = len(pixel_ids)
-    n_ac_levels = len(ac_levels)
+    fit_results_filename = os.path.join(output_path, 'mpe_results{}.npz')
+
+    if n_pixels > 1:
+
+        fit_results_filename = fit_results_filename.format('')
+    else:
+
+        fit_results_filename = fit_results_filename.format(pixel_ids[0])
 
     if n_ac_levels != len(files):
 
@@ -347,7 +356,7 @@ def entry():
         charge_histo.save(charge_histo_filename)
         amplitude_histo.save(amplitude_histo_filename)
 
-        np.savez(os.path.join(output_path, 'mpe_results'),
+        np.savez(fit_results_filename,
                  amplitude=amplitude, charge=charge, time=time,
                  pixel_ids=pixel_ids, ac_levels=ac_levels)
 
