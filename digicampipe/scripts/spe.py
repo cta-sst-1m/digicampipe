@@ -316,13 +316,13 @@ def entry():
     n_pixels = len(pixel_id)
 
     raw_histo_filename = 'raw_histo.pk'
-    amplitude_histo_filename = output_path + 'amplitude_histo.pk'
-    charge_histo_filename = output_path + 'charge_histo.pk'
-    max_histo_filename = output_path + 'max_histo.pk'
-    results_filename = output_path + 'fit_results.h5'
-    dark_count_rate_filename = output_path + 'dark_count_rate.npz'
-    crosstalk_filename = output_path + 'crosstalk.npz'
-    electronic_noise_filename = output_path + 'electronic_noise.npz'
+    amplitude_histo_filename = os.path.join(output_path,'amplitude_histo.pk') # output_path + 'amplitude_histo.pk'
+    charge_histo_filename = os.path.join(output_path,'charge_histo.pk') # output_path + 'charge_histo.pk'
+    max_histo_filename = os.path.join(output_path,'max_histo.pk') # output_path + 'max_histo.pk'
+    results_filename = os.path.join(output_path,'fit_results.h5') # output_path + 'fit_results.h5'
+    dark_count_rate_filename = os.path.join(output_path,'dark_count_rate.npz') # output_path + 'dark_count_rate.npz'
+    crosstalk_filename = os.path.join(output_path,'crosstalk.npz') # output_path + 'crosstalk.npz'
+    electronic_noise_filename = os.path.join(output_path,'electronic_noise.npz') # output_path + 'electronic_noise.npz'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
@@ -397,6 +397,7 @@ def entry():
                                                         4095,
                                                         1))
 
+        print(events)
         for event in events:
 
             spe_charge.fill(event.data.reconstructed_charge)
