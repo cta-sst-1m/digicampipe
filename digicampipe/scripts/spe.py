@@ -397,7 +397,6 @@ def entry():
                                                         4095,
                                                         1))
 
-        print(events)
         for event in events:
 
             spe_charge.fill(event.data.reconstructed_charge)
