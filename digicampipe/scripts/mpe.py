@@ -406,6 +406,13 @@ def entry():
                 y = y[mask]
                 y_err = y_err[mask]
 
+                if np.max(x) == np.max(xx):
+
+                    # This is to stop the fitting if the values of histogram
+                    # reach the last bin
+
+                    continue
+
                 if len(x) == 0:
 
                     continue
