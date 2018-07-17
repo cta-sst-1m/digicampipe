@@ -19,6 +19,7 @@ dependencies:
 - pip
 - protobuf
 - pyhessio
+- pyqt
 - pytest
 - PyYAML
 - scikit-learn

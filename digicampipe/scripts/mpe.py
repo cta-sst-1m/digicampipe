@@ -35,8 +35,9 @@ import matplotlib.pyplot as plt
 from probfit import Chi2Regression, describe
 from iminuit import Minuit
 
-from digicampipe.io.event_stream import calibration_event_stream
 from histogram.histogram import Histogram1D
+
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
     subtract_baseline
 from digicampipe.calib.camera.peak import fill_pulse_indices
@@ -44,7 +45,6 @@ from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
 from digicampipe.utils.pdf import mpe_distribution_general
-from digicampipe.utils.exception import PeakNotFound
 
 
 def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
@@ -370,6 +370,7 @@ def entry():
         baseline = np.zeros((n_ac_levels, n_pixels)) * np.nan
         mu = np.zeros((n_ac_levels, n_pixels)) * np.nan
         mu_xt = np.zeros((n_ac_levels, n_pixels)) * np.nan
+        amplitude = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
         gain_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
         sigma_e_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
@@ -377,6 +378,7 @@ def entry():
         baseline_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
         mu_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
         mu_xt_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
+        amplitude_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
         chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
         ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
@@ -469,6 +471,7 @@ def entry():
                     baseline[i, j] = m.values['baseline']
                     mu[i, j] = m.values['mu']
                     mu_xt[i, j] = m.values['mu_xt']
+                    amplitude[i, j] = m.values['amplitude']
 
                     gain_error[i, j] = m.errors['gain']
                     sigma_e_error[i, j] = m.errors['sigma_e']
@@ -476,6 +479,7 @@ def entry():
                     baseline_error[i, j] = m.errors['baseline']
                     mu_error[i, j] = m.errors['mu']
                     mu_xt_error[i, j] = m.errors['mu_xt']
+                    amplitude_error[i, j] = m.errors['amplitude']
 
                     chi_2[i, j] = m.fval
                     ndf[i, j] = len(x) - len(m.list_of_vary_param())
