@@ -3,15 +3,15 @@
 Do the Multiple Photoelectron anaylsis
 
 Usage:
-  mpe.py [options] [OUTPUT] [INPUT ...]
+  digicam-mpe [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
-  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
-  -i INPUT --input=INPUT.     Input files.
+  -o OUTPUT --output=OUTPUT   Folder where to store the results.
   -c --compute                Compute the data.
-  -f --fit                    Fit.
+  -f --fit                    Fit
+  --ncall=N                   ncall for fit [default: 1000].
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
@@ -45,150 +45,116 @@ from digicampipe.calib.camera.peak import fill_pulse_indices
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
-from digicampipe.utils.pdf import mpe_distribution_general
+from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
+    generalized_poisson
 
 
-def plot_mpe_fit(x, y, y_err, fitter, pixel_id=None):
+class MPEFitter(HistogramFitter):
 
-    if pixel_id is None:
+    def __init__(self, histogram, fixed_params, **kwargs):
 
-        pixel_id = ''
+        super(MPEFitter, self).__init__(histogram, **kwargs)
+        self.initial_parameters = fixed_params
+        self.iminuit_options = {**self.iminuit_options, **fixed_params}
+        self.parameters_plot_name = {'mu': '$\mu$', 'mu_xt': '$\mu_{XT}$',
+                                     'n_peaks': '$N_{peaks}$', 'gain': '$G$',
+                                     'amplitude': '$A$', 'baseline': '$B$',
+                                     'sigma_e': '$\sigma_e$',
+                                     'sigma_s': '$\sigma_s$'
+                                     }
 
-    else:
+    def initialize_fit(self):
 
-        pixel_id = str(pixel_id)
+        fixed_params = self.initial_parameters
+        x = self.bin_centers
+        y = self.count
 
-    m = fitter
-    n_free_parameters = len(m.list_of_vary_param())
-    n_dof = len(x) - n_free_parameters
+        gain = fixed_params['gain']
+        sigma_e = fixed_params['sigma_e']
+        sigma_s = fixed_params['sigma_s']
+        baseline = fixed_params['baseline']
 
-    n_events = int(np.sum(y))
-    # m.draw_contour('sigma_e', 'sigma_s', show_sigma=True, bound=5)
+        mean_x = np.average(x, weights=y) - baseline
 
-    x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
-    y_fit = mpe_distribution_general(x_fit, **m.values)
+        if 'mu_xt' in fixed_params.keys():
 
-    text = '$\chi^2 / ndof : $ {:.01f} / {} = {:.02f} \n'.format(m.fval,
-                                                                n_dof,
-                                                                m.fval/n_dof)
-    text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
-        m.values['baseline'], m.errors['baseline'])
-    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB / p.e.]\n'.format(m.values['gain'],
-                                                          m.errors['gain'])
-    text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
-        m.values['sigma_e'], m.errors['sigma_e'])
-    text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
-        m.values['sigma_s'], m.errors['sigma_s'])
-    text += '$\mu$ : {:.02f} $\pm$ {:.02f} [p.e.]\n'.format(
-        m.values['mu'], m.errors['mu'])
-    text += '$\mu_{XT}$'+' : {:.02f} $\pm$ {:.02f} [p.e.]\n'.format(
-        m.values['mu_xt'], m.errors['mu_xt'])
+            mu_xt = fixed_params['mu_xt']
+            mu = mean_x * (1 - mu_xt) / gain
 
-    text += '$A$'+' : {:.02f} $\pm$ {:.02f} []\n'.format(
-        m.values['amplitude'], m.errors['amplitude'])
+        else:
 
-    text += '$N_{peaks}$' + ' : {:.02f} $\pm$ {:.02f} []\n'.format(
-        m.values['n_peaks'], m.errors['n_peaks'])
+            left = baseline - gain / 2
+            left = np.where(x > left)[0][0]
 
-    data_text = r'$N_{events}$' + ' : {}\nPixel : {}'.format(n_events,
-                                                             pixel_id)
+            right = baseline + gain / 2
+            right = np.where(x < right)[0][-1]
 
-    fig = plt.figure()
-    axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
-    axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
-    axes.step(x, y, where='mid', color='k', label=data_text)
-    axes.errorbar(x, y, y_err, linestyle='None', color='k')
-    axes.plot(x_fit, y_fit, label=text, color='r')
+            probability_0_pe = np.sum(y[left:right])
+            probability_0_pe /= np.sum(y)
+            mu = - np.log(probability_0_pe)
 
-    y_fit = mpe_distribution_general(x, **m.values)
-    axes_residual.errorbar(x, ((y - y_fit) / y_err), marker='o', ls='None',
-                           color='k')
-    # axes_residual.axhline(1, linestyle='--', color='k')
-    axes_residual.set_xlabel('[LSB]')
-    axes.set_ylabel('count')
-    axes_residual.set_ylabel('pull')
-    # axes_residual.set_yscale('log')
-    axes.legend(loc='best')
+            mu_xt = 1 - gain * mu / mean_x
+            mu_xt = max(0.01, mu_xt)
 
-    return fig, axes
+        n_peaks = np.max(x) - (baseline - gain / 2)
+        n_peaks = n_peaks / gain
+        n_peaks = np.round(n_peaks)
+        amplitude = np.sum(y)
 
+        params = {'baseline': baseline, 'sigma_e': sigma_e,
+                  'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
+                  'mu': mu, 'mu_xt': mu_xt, 'n_peaks': n_peaks}
 
-def compute_init_mpe(x, y, y_err, fixed_params, debug=False):
+        self.initial_parameters = params
 
-    bin_width = fixed_params['bin_width']
-    gain = fixed_params['gain']
-    sigma_e = fixed_params['sigma_e']
-    sigma_s = fixed_params['sigma_s']
-    baseline = fixed_params['baseline']
+    def compute_fit_boundaries(self):
 
-    mean_x = np.average(x, weights=y) - baseline
+        limit_params = {}
 
-    if 'mu_xt' in fixed_params.keys():
+        init_params = self.initial_parameters
 
-        mu_xt = fixed_params['mu_xt']
-        mu = mean_x * (1 - mu_xt) / gain
+        baseline = init_params['baseline']
+        gain = init_params['gain']
+        sigma_e = init_params['sigma_e']
+        sigma_s = init_params['sigma_s']
+        mu = init_params['mu']
+        amplitude = init_params['amplitude']
+        n_peaks = init_params['n_peaks']
 
-    else:
+        limit_params['limit_baseline'] = (
+        baseline - sigma_e, baseline + sigma_e)
+        limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
+        limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
+        limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
+        limit_params['limit_mu'] = (0.5 * mu, 1.5 * mu)
+        limit_params['limit_mu_xt'] = (0, 0.5)
+        limit_params['limit_amplitude'] = (0.5 * amplitude, 1.5 * amplitude)
+        limit_params['limit_n_peaks'] = (max(1., n_peaks - 1.), n_peaks + 1.)
 
-        left = baseline - gain / 2
-        left = np.where(x > left)[0][0]
+        self.boundary_parameter = limit_params
 
-        right = baseline + gain / 2
-        right = np.where(x < right)[0][-1]
+    def pdf(self, x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude,
+            n_peaks):
 
-        probability_0_pe = np.sum(y[left:right])
-        probability_0_pe /= np.sum(y)
-        mu = - np.log(probability_0_pe)
+        if n_peaks > 0:
 
-        mu_xt = 1 - gain * mu / mean_x
-        mu_xt = max(0.01, mu_xt)
+            x = x - baseline
+            photoelectron_peak = np.arange(n_peaks, dtype=np.int)
+            sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
+            sigma_n = sigma_n
+            sigma_n = np.sqrt(sigma_n)
 
-    n_peaks = np.max(x) - (baseline - gain / 2)
-    n_peaks = n_peaks / gain
-    n_peaks = int(n_peaks)
-    amplitude = np.sum(y) * bin_width
+            pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
 
-    params = {'baseline': baseline, 'sigma_e': sigma_e,
-              'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
-              'mu': mu, 'mu_xt': mu_xt, 'n_peaks': n_peaks,
-              'bin_width': bin_width}
+            pdf = pdf * gaussian(x, photoelectron_peak * gain, sigma_n,
+                                 amplitude=1)
+            pdf = np.sum(pdf, axis=-1)
 
-    if debug:
+            return pdf * amplitude
 
-        x_fit = np.linspace(np.min(x), np.max(x), num=len(x)*10)
+        else:
 
-        plt.figure()
-        plt.step(x, y, where='mid', color='k', label='data')
-        plt.errorbar(x, y, y_err, linestyle='None', color='k')
-        plt.plot(x_fit, mpe_distribution_general(x_fit, **params),
-                 label='init', color='g')
-        plt.legend(loc='best')
-        plt.show()
-
-    return params
-
-
-def compute_limit_mpe(init_params):
-
-    limit_params = {}
-
-    baseline = init_params['baseline']
-    gain = init_params['gain']
-    sigma_e = init_params['sigma_e']
-    sigma_s = init_params['sigma_s']
-    mu = init_params['mu']
-    amplitude = init_params['amplitude']
-
-    limit_params['limit_baseline'] = (baseline - sigma_e, baseline + sigma_e)
-    limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
-    limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
-    limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
-    limit_params['limit_mu'] = (0.5 * mu, 1.5 * mu)
-    limit_params['limit_mu_xt'] = (0, 0.5)
-    limit_params['limit_amplitude'] = (0.5 * amplitude, 1.5 * amplitude)
-
-    return limit_params
-
+            return np.zeros(x.shape)
 
 def plot_event(events, pixel_id):
 
@@ -260,11 +226,11 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
 def entry():
 
     args = docopt(__doc__)
-    files = args['INPUT']
+    files = args['<INPUT>']
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['OUTPUT']
+    output_path = args['--output']
 
     if not os.path.exists(output_path):
 
@@ -363,6 +329,8 @@ def entry():
 
     if args['--fit']:
 
+        ncall = int(args['--ncall'])
+
         input_parameters = yaml.load(open(args['--params'], 'r'))
 
         gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
@@ -389,9 +357,6 @@ def entry():
         charge_histo = Histogram1D.load(charge_histo_filename)
         amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
-        xx = charge_histo.bin_centers
-        bin_width = charge_histo.bins[1] - charge_histo.bins[0]
-
         for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
                                 desc='DAC level', leave=False):
 
@@ -399,33 +364,19 @@ def entry():
                                     desc='Pixel',
                                     leave=False):
 
-                y = charge_histo.data[i, j]
-                y_err = charge_histo.errors()[i, j]
+                histo = charge_histo[i, j]
 
-                mask = (y > 0)
-                x = xx[mask]
-                y = y[mask]
-                y_err = y_err[mask]
-
-                if np.max(x) == np.max(xx):
-
-                    # This is to stop the fitting if the values of histogram
-                    # reach the last bin
-
-                    continue
-
-                if len(x) == 0:
+                if histo.data[-1] > 0:
 
                     continue
 
                 fit_params_names = describe(mpe_distribution_general)
-                options = {'fix_bin_width': True, 'fix_n_peaks': True}
-                fixed_params = {'bin_width': bin_width}
+                options = {'fix_n_peaks': True}
+                fixed_params = {}
 
                 for param in fit_params_names:
 
                     if param in input_parameters.keys():
-
                         name = 'fix_' + param
 
                         options[name] = True
@@ -449,30 +400,17 @@ def entry():
 
                 try:
 
-                    chi2 = Chi2Regression(mpe_distribution_general,
-                                          x=x, y=y, error=y_err)
+                    fitter = MPEFitter(histogram=histo, cost='MLE',
+                                       pedantic=0, print_level=0,
+                                       fixed_params=fixed_params, **options)
 
-                    init_params = compute_init_mpe(x, y, y_err,
-                                                   fixed_params=fixed_params,
-                                                   debug=debug)
-                    limit_params = compute_limit_mpe(init_params)
-
-                    m = Minuit(chi2, **init_params, **limit_params, **options,
-                               print_level=0, pedantic=False)
-
-                    m.migrad(ncall=1000)
-                    # m.minos(maxcall=100)
+                    fitter.fit(ncall=ncall)
 
                     if debug:
-
-                        print(init_params)
-                        print(limit_params)
-                        print(m.values)
-                        print(m.merrors)
-                        print(m.errors)
-                        plot_mpe_fit(x, y, y_err, m, pixel_id)
+                        fitter.draw()
                         plt.show()
 
+                    m = fitter.fitter
                     gain[i, j] = m.values['gain']
                     sigma_e[i, j] = m.values['sigma_e']
                     sigma_s[i, j] = m.values['sigma_s']
@@ -489,13 +427,13 @@ def entry():
                     mu_xt_error[i, j] = m.errors['mu_xt']
                     amplitude_error[i, j] = m.errors['amplitude']
 
-                    chi_2[i, j] = m.fval
-                    ndf[i, j] = len(x) - len(m.list_of_vary_param())
+                    chi_2[i, j] = fitter.fit_test() * fitter.ndf
+                    ndf[i, j] = fitter.ndf
 
                 except Exception as e:
 
                     print(e)
-                    print('Could not fit pixel {} for DAC level'.format(
+                    print('Could not fit pixel {} for DAC level {}'.format(
                         pixel_id, ac_level))
 
         np.savez(results_filename,
