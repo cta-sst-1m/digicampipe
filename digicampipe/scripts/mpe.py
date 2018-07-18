@@ -36,6 +36,7 @@ from probfit import Chi2Regression, describe
 from iminuit import Minuit
 
 from histogram.histogram import Histogram1D
+from histogram.fit import HistogramFitter
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
@@ -313,7 +314,7 @@ def entry():
 
         charge_histo = Histogram1D(
             bin_edges=np.arange(- 40 * integral_width,
-                                200, bin_width),
+                                2000, bin_width),
             data_shape=(n_ac_levels, n_pixels, ))
 
         amplitude_histo = Histogram1D(
