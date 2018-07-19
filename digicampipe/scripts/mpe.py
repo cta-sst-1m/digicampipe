@@ -200,17 +200,11 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
         data_shape=(n_pixels,),
         bin_edges=np.arange(-40 * integral_width,
                             4096 * integral_width,
-                            bin_width),
-        axis_name='reconstructed charge '
-                  '[LSB $\cdot$ ns]'
-    )
+                            bin_width))
 
     amplitude_histo = Histogram1D(
         data_shape=(n_pixels,),
-        bin_edges=np.arange(-40, 4096, 1),
-        axis_name='reconstructed amplitude '
-                  '[LSB]'
-    )
+        bin_edges=np.arange(-40, 4096, 1))
 
     for event in events:
         charge_histo.fill(event.data.reconstructed_charge)

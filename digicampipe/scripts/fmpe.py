@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 '''
-Do the Multiple Photoelectron anaylsis
+Do Full Multiple Photoelectron anaylsis
 
 Usage:
-  mpe.py [options] [OUTPUT] [INPUT ...]
+  digicam-fmpe [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
-  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
-  -i INPUT --input=INPUT.     Input files.
+  -o OUTPUT --output=OUTPUT  Folder where to store the results.
   -c --compute                Compute the data.
   -f --fit                    Fit.
   -d --display                Display.
@@ -35,12 +34,174 @@ from iminuit import Minuit, describe
 from probfit import Chi2Regression
 
 from histogram.histogram import Histogram1D
+from histogram.fit import HistogramFitter
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.scripts import timing
 from digicampipe.scripts import mpe
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.pdf import fmpe_pdf_10
+
+
+class FMPEFitter(HistogramFitter):
+
+    def __init__(self, estimated_gain, initial_parameters=None, ):
+
+        super(FMPEFitter, self).__init__()
+        self.n_peaks = 10
+        self.estimated_gain = estimated_gain
+        self.initial_parameters = initial_parameters
+
+    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1, a_2,
+            a_3, a_4, a_5, a_6, a_7, a_8, a_9):
+
+        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
+                  'sigma_s': sigma_s, 'a_0': a_0, 'a_1': a_1, 'a_2': a_2,
+                  'a_3': a_3, 'a_4': a_4, 'a_5': a_5, 'a_6': a_6, 'a_7': a_7,
+                  'a_8': a_8, 'a_9': a_9, 'bin_width': 0}
+
+        return fmpe_pdf_10(x, **params)
+
+    def initialize_fit(self):
+
+        y = self.count
+        x = self.bin_centers
+        min_dist = self.estimated_gain / 3
+        n_peaks = self.n_peaks
+
+        y = y.astype(np.float)
+        min_dist = int(min_dist)
+        cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
+        bin_width = np.diff(x)
+        bin_width = np.mean(bin_width)
+
+        if (x != np.sort(x)).any():
+            raise ValueError('x must be sorted !')
+
+        d_y = np.diff(cleaned_y)
+        indices = np.arange(len(y))
+        peak_mask = np.zeros(y.shape, dtype=bool)
+        peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
+        peak_mask[-min_dist:] = 0
+        peak_indices = indices[peak_mask]
+        peak_indices = peak_indices[:min(len(peak_indices), n_peaks)]
+
+        if len(peak_indices) <= 1:
+            raise PeakNotFound('Not enough peak found for : \n'
+                               'Min distance : {} \n '
+                               'Need a least 2 peaks, found {}!!'.
+                               format(min_dist, len(peak_indices)))
+
+        x_peak = x[peak_indices]
+        y_peak = y[peak_indices]
+        gain = np.diff(x_peak)
+        gain = np.average(gain, weights=y_peak[:-1] ** 2)
+
+        sigma = np.zeros(len(peak_indices))
+        mean_peak_x = np.zeros(len(peak_indices))
+        amplitudes = np.zeros(len(peak_indices))
+
+        distance = int(gain / 2)
+
+        if distance < bin_width:
+            raise ValueError(
+                'Distance between peaks must be >= {} the bin width'
+                ''.format(bin_width))
+
+        n_x = len(x)
+
+        for i, peak_index in enumerate(peak_indices):
+            left = x[peak_index] - distance
+            left = np.searchsorted(x, left)
+            left = max(0, left)
+            right = x[peak_index] + distance + 1
+            right = np.searchsorted(x, right)
+            right = min(n_x - 1, right)
+
+            amplitudes[i] = np.sum(y[left:right]) * bin_width
+            mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
+
+            sigma[i] = np.average((x[left:right] - mean_peak_x[i]) ** 2,
+                                  weights=y[left:right])
+            sigma[i] = np.sqrt(sigma[i] - bin_width ** 2 / 12)
+
+        gain = np.diff(mean_peak_x)
+        gain = np.average(gain, weights=amplitudes[:-1] ** 2)
+
+        sigma_e = np.sqrt(sigma[0] ** 2)
+        sigma_s = (sigma[1:] ** 2 - sigma_e ** 2) / np.arange(1, len(sigma), 1)
+        sigma_s = np.mean(sigma_s)
+
+        if sigma_s < 0:
+            sigma_s = sigma_e ** 2
+
+        sigma_s = np.sqrt(sigma_s)
+
+        params = {'baseline': mean_peak_x[0], 'sigma_e': sigma_e,
+                  'sigma_s': sigma_s, 'gain': gain}
+
+        for i, amplitude in enumerate(amplitudes):
+            params['a_{}'.format(i)] = amplitude
+
+        self.initial_parameters = params
+
+    def compute_fit_boundaries(self):
+
+        limit_params = {}
+        init_params = self.initial_parameters
+
+        baseline = init_params['baseline']
+        gain = init_params['gain']
+        sigma_e = init_params['sigma_e']
+        sigma_s = init_params['sigma_s']
+
+        limit_params['limit_baseline'] = (baseline - sigma_e,
+                                          baseline + sigma_e)
+        limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
+        limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
+        limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
+
+        for key, val in init_params.items():
+
+            if key[:2] == 'a_':
+                limit_params['limit_{}'.format(key)] = (0.5 * val, val * 1.5)
+
+        self.boundary_parameter = limit_params
+
+    def compute_data_bounds(self):
+
+        x = self.histogram.bin_centers
+        bin_width = np.diff(self.histogram.bins)
+        y = self.histogram.data
+        params = self.initial_parameters
+        n_peaks = self.n_peaks
+
+        mask = (y > 0) * (x < n_peaks * self.estimated_gain)
+
+        if 'gain' in params.keys() and 'baseline' in params.keys():
+
+            gain = params['gain']
+            baseline = params['baseline']
+            amplitudes = []
+
+            for key, val in params.items():
+
+                if key[:2] == 'a_':
+                    amplitudes.append(val)
+
+            amplitudes = np.array(amplitudes)
+            amplitudes = amplitudes[amplitudes > 0]
+            n_peaks = len(amplitudes)
+
+            min_bin = baseline - gain / 2
+            max_bin = baseline + gain * (n_peaks - 1)
+            max_bin += gain / 2
+
+            mask *= (x <= max_bin) * (x >= min_bin)
+
+        self.count = y[mask]
+        self.bin_centers = x[mask]
+        self.bin_width = bin_width[mask]
 
 
 def compute_data_bounds(x, y, y_err, estimated_gain, n_peaks=10,
@@ -290,11 +451,11 @@ def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
 def entry():
 
     args = docopt(__doc__)
-    files = args['INPUT']
+    files = args['<INPUT>']
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['OUTPUT']
+    output_path = args['--output']
 
     if not os.path.exists(output_path):
 
@@ -347,11 +508,7 @@ def entry():
         chi_2 = np.zeros(n_pixels) * np.nan
         ndf = np.zeros(n_pixels) * np.nan
 
-        n_pe_peaks = 10
         estimated_gain = 20
-        min_dist = 7  # int(estimated_gain)
-        snr = 4
-
         ncall = 3000
 
         results_filename = os.path.join(output_path, 'fmpe_results.npz')
@@ -359,6 +516,14 @@ def entry():
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
 
+            histo = charge_histo[i]
+
+            fitter = FMPEFitter(histo, estimated_gain=estimated_gain)
+            fitter.fit(ncall=ncall)
+            fitter.draw()
+
+
+            """
             x = charge_histo._bin_centers()
             y = charge_histo.data[pixel]
             y_err = charge_histo.errors()[pixel]
@@ -409,7 +574,7 @@ def entry():
 
                 print('Could not fit FMPE in pixel {}'.format(pixel))
                 print(exception)
-
+        """
         if not debug:
 
             np.savez(results_filename,
