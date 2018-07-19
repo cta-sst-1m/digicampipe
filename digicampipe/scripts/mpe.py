@@ -156,6 +156,7 @@ class MPEFitter(HistogramFitter):
 
             return np.zeros(x.shape)
 
+
 def plot_event(events, pixel_id):
 
     for event in events:
@@ -267,12 +268,11 @@ def entry():
 
         fit_results_filename = fit_results_filename.format(pixel_ids[0])
 
-    if n_ac_levels != len(files):
-
-        raise ValueError('n_ac levels = {} != '
-                         'n_files = {}'.format(n_ac_levels, len(files)))
-
     if args['--compute']:
+
+        if n_ac_levels != len(files):
+            raise ValueError('n_ac levels = {} != '
+                             'n_files = {}'.format(n_ac_levels, len(files)))
 
         amplitude = np.zeros((n_ac_levels, n_pixels))
         charge = np.zeros((n_ac_levels, n_pixels))
@@ -366,7 +366,7 @@ def entry():
 
                 histo = charge_histo[i, j]
 
-                if histo.data[-1] > 0:
+                if histo.data[-1] > 0 or histo.data.sum() == 0:
 
                     continue
 
@@ -446,7 +446,9 @@ def entry():
                  mu_error=mu_error, mu_xt_error=mu_xt_error,
                  chi_2=chi_2, ndf=ndf,
                  pixel_ids=pixel_ids,
-                 ac_levels=ac_levels
+                 ac_levels=ac_levels,
+                 amplitude=amplitude,
+                 amplitude_error=amplitude_error,
                  )
 
     if args['--save_figures']:

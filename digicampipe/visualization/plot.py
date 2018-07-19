@@ -66,6 +66,8 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
 
     mask = np.isfinite(data)
     data = np.ma.masked_array(data, mask=~mask)
+
+    plt.figure()
     cam = utils.Camera()
     geom = cam.geometry
     cam_display = CameraDisplay(geom, **kwargs)
