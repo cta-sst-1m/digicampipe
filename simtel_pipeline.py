@@ -42,7 +42,7 @@ from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
 from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
 from digicampipe.utils import utils, calib
 import simtel_baseline
-import events_image
+from digicampipe.utils import events_image
 import mc_shower
 from docopt import docopt
 from digicampipe.visualization import EventViewer
@@ -145,13 +145,13 @@ def main(
     # That should be OK for all sim_telarray version from April
     # 2018, where an error for DC coupled simulations was corrected.
 
-    data_stream = simtel_baseline.baseline_data(
-            data_stream,
-            n_bins0=baseline0,
-            n_bins1=baseline1
-    )
+    # data_stream = simtel_baseline.baseline_data(
+    #         data_stream,
+    #         n_bins0=baseline0,
+    #         n_bins1=baseline1
+    # )
 
-    # data_stream = simtel_baseline.baseline_simtel(data_stream)
+    data_stream = simtel_baseline.baseline_simtel(data_stream)
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
@@ -213,13 +213,13 @@ def main(
     else:
         # Save Hillas
         hillas_filename = 'hillas_' + outfile_suffix
-        save_hillas_parameters(
-            data_stream=data_stream,
-            n_showers=n_showers,
-            output_filename=outfile_path + hillas_filename)
-        # save_hillas_parameters_in_text(
+        #save_hillas_parameters(
         #    data_stream=data_stream,
+        #    n_showers=n_showers,
         #    output_filename=outfile_path + hillas_filename)
+        save_hillas_parameters_in_text(
+            data_stream=data_stream,
+            output_filename=outfile_path + hillas_filename)
 
 
     """
