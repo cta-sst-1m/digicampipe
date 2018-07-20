@@ -213,14 +213,13 @@ def main(
     else:
         # Save Hillas
         hillas_filename = 'hillas_' + outfile_suffix
-        #save_hillas_parameters(
-        #    data_stream=data_stream,
-        #    n_showers=n_showers,
-        #    output_filename=outfile_path + hillas_filename)
-        save_hillas_parameters_in_text(
+        save_hillas_parameters(
             data_stream=data_stream,
+            n_showers=n_showers,
             output_filename=outfile_path + hillas_filename)
-
+        # save_hillas_parameters_in_text(
+        #    data_stream=data_stream,
+        #    output_filename=outfile_path + hillas_filename)
 
     """
     import matplotlib.pyplot as plt
