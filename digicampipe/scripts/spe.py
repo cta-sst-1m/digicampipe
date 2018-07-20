@@ -155,6 +155,7 @@ def compute_fit_init_param(x, y, snr=4, sigma_e=None, debug=False):
 
     init_params = compute_gaussian_parameters_first_peak(x, y, snr=snr,
                                                          debug=debug)[0]
+    init_params=dict(init_params)
     del init_params['mean'], init_params['amplitude']
     init_params['baseline'] = 0
 
@@ -301,51 +302,169 @@ def plot_event(events, pixel_id):
 
 def entry():
 
+    '''Example of args after docopt:
+                            {'--compute': False,
+                            '--debug': False,
+                            '--display': True,
+                            '--fit': False,
+                            '--help': False,
+                            '--input': None,
+                            '--integral_width': '7',
+                            '--max_events': None,
+                            '--n_samples': '92',
+                            '--output': None,
+                            '--pixel': None,
+                            '--pulse_finder_threshold': '2.0',
+                            '--save_figures': False,
+                            '--shift': '0',
+                            'INPUT': ['/home/sterody/Documents/ctasoft/digicamtoy/study_SPE_FMPE/files_for_SPE_FMPE/dark_digicamtoy_0.hdf5'],
+                            'OUTPUT': '/home/sterody/Documents/ctasoft/digicamtoy/study_SPE_FMPE/results_for_SPE_FMPE'}
+                            
+                            
+   
+  Example of event in container:
+    {'count': 0,
+    'dl0': {'event_id': -1, 'run_id': -1, 'tel': {}, 'tels_with_data': []},
+    'dl1': {'tel': {}},
+    'dl2': {'classification': {}, 'energy': {}, 'shower': {}},
+    'inst': {'cam': {},
+            'cluster_matrix_19': {1: array([[1, 1, 1, ..., 0, 0, 0],
+        [1, 1, 1, ..., 0, 0, 0],
+        [1, 1, 1, ..., 0, 0, 0],
+        ...,
+        [0, 0, 0, ..., 1, 1, 1],
+        [0, 0, 0, ..., 1, 1, 1],
+        [0, 0, 0, ..., 1, 1, 1]])},
+            'cluster_matrix_7': {1: array([[1, 1, 1, ..., 0, 0, 0],
+        [1, 1, 0, ..., 0, 0, 0],
+        [1, 0, 1, ..., 0, 0, 0],
+        ...,
+        [0, 0, 0, ..., 1, 0, 1],
+        [0, 0, 0, ..., 0, 1, 1],
+        [0, 0, 0, ..., 1, 1, 1]])},
+            'geom': {1: CameraGeometry(cam_id='0', pix_type='hexagonal', npix=1296, cam_rot=0.0 deg, pix_rot=0.0 deg)},
+            'mirror_dish_area': {},
+            'mirror_numtiles': {},
+            'num_channels': {1: 1},
+            'num_pixels': {1: 1296},
+            'num_samples': {1: 92},
+            'optical_foclen': {},
+            'optics': {},
+            'patch_matrix': {1: array([[1, 0, 1, ..., 0, 0, 0],
+        [0, 1, 0, ..., 0, 0, 0],
+        [0, 0, 0, ..., 0, 0, 0],
+        ...,
+        [0, 0, 0, ..., 0, 0, 0],
+        [0, 0, 0, ..., 1, 0, 0],
+        [0, 0, 0, ..., 0, 1, 1]])},
+            'pixel_pos': {},
+            'subarray': SubarrayDescription(name='MonteCarloArray', num_tels=0),
+            'tel_pos': {},
+            'telescope_ids': []},
+    'mc': {'alt': 0.0,
+        'az': 0.0,
+        'core_x': 0.0,
+        'core_y': 0.0,
+        'energy': 0.0,
+        'h_first_int': 0.0,
+        'mc_event_offset_fov': {},
+        'tel': {}},
+    'mcheader': {'run_array_direction': []},
+    'r0': {'event_id': 0,
+        'run_id': -1,
+        'tel': {1: {'adc_samples': array([[200, 201, 201, ..., 204, 205, 201],
+        [200, 201, 200, ..., 200, 199, 200],
+        [199, 200, 201, ..., 199, 201, 200],
+        ...,
+        [200, 200, 199, ..., 201, 202, 200],
+        [200, 200, 201, ..., 201, 200, 200],
+        [202, 200, 200, ..., 200, 200, 200]], dtype=uint16),
+        'adc_sums': <class 'numpy.ndarray'>,
+        'array_event_type': None,
+        'baseline': None,
+        'camera_event_id': <class 'int'>,
+        'camera_event_number': 0,
+        'camera_event_type': None,
+        'dark_baseline': <class 'numpy.ndarray'>,
+        'digicam_baseline': array([nan, nan, nan, ..., nan, nan, nan]),
+        'gps_time': 0,
+        'hv_off_baseline': <class 'numpy.ndarray'>,
+        'local_camera_clock': None,
+        'num_samples': <class 'int'>,
+        'pixel_flags': <class 'numpy.ndarray'>,
+        'standard_deviation': <class 'numpy.ndarray'>,
+        'trigger_input_19': <class 'numpy.ndarray'>,
+        'trigger_input_7': <class 'numpy.ndarray'>,
+        'trigger_input_offline': <class 'numpy.ndarray'>,
+        'trigger_input_traces': <class 'numpy.ndarray'>,
+        'trigger_output_patch19': <class 'numpy.ndarray'>,
+        'trigger_output_patch7': <class 'numpy.ndarray'>,
+        'white_rabbit_time': <class 'float'>}},
+        'tels_with_data': [1]},
+    'r1': {'event_id': -1, 'run_id': -1, 'tel': {}, 'tels_with_data': []},
+    'slow_data': None,
+    'trig': {'gps_time': <class 'astropy.time.core.Time'>,
+            'tels_with_trigger': []}}
+
+
+   '''
+    
     args = docopt(__doc__)
+    
     files = args['INPUT']
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
     output_path = args['OUTPUT']
+    
 
     if not os.path.exists(output_path):
 
         raise IOError('Path for output does not exists \n')
 
-    pixel_id = convert_pixel_args(args['--pixel'])
-    n_pixels = len(pixel_id)
+    pixel_id = convert_pixel_args(args['--pixel'])# args[--pixel] is none but convert_pixel_args give np.arange(1296)
+    n_pixels = len(pixel_id)  # ==1296
 
     raw_histo_filename = 'raw_histo.pk'
-    amplitude_histo_filename = output_path + 'amplitude_histo.pk'
-    charge_histo_filename = output_path + 'charge_histo.pk'
-    max_histo_filename = output_path + 'max_histo.pk'
-    results_filename = output_path + 'fit_results.h5'
-    dark_count_rate_filename = output_path + 'dark_count_rate.npz'
-    crosstalk_filename = output_path + 'crosstalk.npz'
-    electronic_noise_filename = output_path + 'electronic_noise.npz'
+    amplitude_histo_filename = os.path.join(output_path,'amplitude_histo.pk') # output_path + 'amplitude_histo.pk'
+    charge_histo_filename = os.path.join(output_path,'charge_histo.pk') # output_path + 'charge_histo.pk'
+    max_histo_filename = os.path.join(output_path,'max_histo.pk') # output_path + 'max_histo.pk'
+    results_filename = os.path.join(output_path,'fit_results.h5') # output_path + 'fit_results.h5'
+    dark_count_rate_filename = os.path.join(output_path,'dark_count_rate.npz') # output_path + 'dark_count_rate.npz'
+    crosstalk_filename = os.path.join(output_path,'crosstalk.npz') # output_path + 'crosstalk.npz'
+    electronic_noise_filename = os.path.join(output_path,'electronic_noise.npz') # output_path + 'electronic_noise.npz'
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
     n_samples = int(args['--n_samples'])  # TODO access this in a better way !
+    
+    #events = calibration_event_stream(files, pixel_id=pixel_id,
+                                          #max_events=max_events)
+    #for event in events:
+    #    print(events)
+    #    input()
 
     if args['--compute']:
 
+        
         raw_histo = raw.compute(files, max_events=max_events,
                                 pixel_id=pixel_id, output_path=output_path,
-                                filename=raw_histo_filename)
+                                filename=raw_histo_filename) #Create, fill and save an histo for pixel_ids for all events 
 
-        baseline = raw_histo.mode()
+        
+        baseline = raw_histo.mode() # Evaluate the baseline by calculating the most probable value
 
+        
         events = calibration_event_stream(files, pixel_id=pixel_id,
-                                          max_events=max_events)
+                                          max_events=max_events) #Event stream for the calibration of the camera based on the observation event_stream()
 
         # events = compute_baseline_with_min(events)
         events = fill_baseline(events, baseline)
         events = subtract_baseline(events)
         events = find_pulse_with_max(events)
-        events = compute_charge(events, integral_width, shift)
+        events = compute_charge(events, integral_width, shift) #Need to ameliorate this because integral_width is ==7. Some code to extract this???print
 
         max_histo = Histogram1D(
                             data_shape=(n_pixels,),
@@ -496,6 +615,7 @@ def entry():
 
                 except Exception as e:
 
+                    raise e
                     print('Could not fit for pixel_id : {}'.format(pixel))
                     print(e)
 
@@ -568,8 +688,6 @@ def entry():
 
             print(e)
             print('Could not find the analysis files !')
-            plt.show()
-            exit()
 
         label = 'mean : {:2f} \n std : {:2f}'
 

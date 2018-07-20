@@ -16,6 +16,7 @@ dependencies:
 - numba
 - numpy
 - opencv
+- photutils
 - pip
 - protobuf
 - pyhessio
@@ -23,6 +24,7 @@ dependencies:
 - pytest
 - PyYAML
 - scikit-learn
+- scikit-image
 - scipy
 - sphinx_rtd_theme
 - traitlets
