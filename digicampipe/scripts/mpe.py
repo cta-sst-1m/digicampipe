@@ -11,7 +11,7 @@ Options:
   -o OUTPUT --output=OUTPUT   Folder where to store the results.
   -c --compute                Compute the data.
   -f --fit                    Fit
-  --ncall=N                   ncall for fit [default: 1000].
+  --ncall=N                   ncall for fit [default: 10000].
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
@@ -396,7 +396,9 @@ def entry():
 
                     fitter = MPEFitter(histogram=histo, cost='MLE',
                                        pedantic=0, print_level=0,
-                                       fixed_params=fixed_params, **options)
+                                       throw_nan=True,
+                                       fixed_params=fixed_params,
+                                       **options)
 
                     fitter.fit(ncall=ncall)
 

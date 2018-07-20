@@ -21,6 +21,7 @@ Options:
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
+  --ncall=N                   Number of calls for the fit [default: 10000]
   --timing=PATH               Timing filename
                               [default: time.npz]
 '''
@@ -30,13 +31,13 @@ from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
-from iminuit import Minuit, describe
-from probfit import Chi2Regression
+
 
 from histogram.histogram import Histogram1D
 from histogram.fit import HistogramFitter
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
+
 from digicampipe.scripts import timing
 from digicampipe.scripts import mpe
 from digicampipe.utils.exception import PeakNotFound
@@ -45,12 +46,21 @@ from digicampipe.utils.pdf import fmpe_pdf_10
 
 class FMPEFitter(HistogramFitter):
 
-    def __init__(self, estimated_gain, initial_parameters=None, ):
+    n_peaks = 10
+    parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
+                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
+                            'a_0': None, 'a_1': None, 'a_2': None, 'a_3': None,
+                            'a_4': None, 'a_5': None, 'a_6': None,
+                            'a_7': None, 'a_8': None, 'a_9': None,
+                            'bin_width': None}
 
-        super(FMPEFitter, self).__init__()
-        self.n_peaks = 10
+    def __init__(self, histogram, estimated_gain, **kwargs):
+
         self.estimated_gain = estimated_gain
-        self.initial_parameters = initial_parameters
+        super(FMPEFitter, self).__init__(histogram,
+                                         parameters_plot_name=
+                                         type(self).parameters_plot_name,
+                                         **kwargs)
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1, a_2,
             a_3, a_4, a_5, a_6, a_7, a_8, a_9):
@@ -140,8 +150,17 @@ class FMPEFitter(HistogramFitter):
         params = {'baseline': mean_peak_x[0], 'sigma_e': sigma_e,
                   'sigma_s': sigma_s, 'gain': gain}
 
-        for i, amplitude in enumerate(amplitudes):
-            params['a_{}'.format(i)] = amplitude
+        for i in range(n_peaks):
+
+            if i < len(amplitudes):
+
+                value = amplitudes[i]
+
+            else:
+
+                value = amplitudes.min()
+
+            params['a_{}'.format(i)] = value
 
         self.initial_parameters = params
 
@@ -174,7 +193,7 @@ class FMPEFitter(HistogramFitter):
         bin_width = np.diff(self.histogram.bins)
         y = self.histogram.data
         params = self.initial_parameters
-        n_peaks = self.n_peaks
+        n_peaks = type(self).n_peaks
 
         mask = (y > 0) * (x < n_peaks * self.estimated_gain)
 
@@ -199,253 +218,7 @@ class FMPEFitter(HistogramFitter):
 
             mask *= (x <= max_bin) * (x >= min_bin)
 
-        self.count = y[mask]
-        self.bin_centers = x[mask]
-        self.bin_width = bin_width[mask]
-
-
-def compute_data_bounds(x, y, y_err, estimated_gain, n_peaks=10,
-                        params=None):
-
-    mask = (y > 0) * (x < n_peaks * estimated_gain)
-
-    if params is not None:
-
-        gain = params['gain']
-        baseline = params['baseline']
-
-        amplitudes = []
-
-        for key, val in params.items():
-
-            if key[:2] == 'a_':
-
-                amplitudes.append(val)
-
-        amplitudes = np.array(amplitudes)
-        amplitudes = amplitudes[amplitudes > 0]
-        n_peaks = len(amplitudes)
-
-        min_bin = baseline - gain / 2
-        max_bin = baseline + gain * (n_peaks - 1)
-        max_bin += gain / 2
-
-        mask *= (x <= max_bin) * (x >= min_bin)
-
-    x = x[mask]
-    y = y[mask]
-    y_err = y_err[mask]
-
-    return x, y, y_err
-
-
-def compute_limit_fmpe(init_params):
-
-    limit_params = {}
-
-    baseline = init_params['baseline']
-    gain = init_params['gain']
-    sigma_e = init_params['sigma_e']
-    sigma_s = init_params['sigma_s']
-
-    limit_params['limit_baseline'] = (baseline - sigma_e, baseline + sigma_e)
-    limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
-    limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
-    limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
-
-    for key, val in init_params.items():
-
-        if key[:2] == 'a_':
-
-            limit_params['limit_{}'.format(key)] = (0.5 * val, val * 1.5)
-
-    return limit_params
-
-
-def compute_init_fmpe(x, y, y_err, n_pe_peaks, snr=3, min_dist=5, debug=False):
-
-    y = y.astype(np.float)
-    min_dist = int(min_dist)
-    cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
-    cleaned_y_err = np.sqrt(cleaned_y)
-    bin_width = np.diff(x)
-    bin_width = np.mean(bin_width)
-
-    if (x != np.sort(x)).any():
-
-        raise ValueError('x must be sorted !')
-
-    d_y = np.diff(cleaned_y)
-    indices = np.arange(len(y))
-    peak_mask = np.zeros(y.shape, dtype=bool)
-    peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
-    peak_mask[1:-1] *= (cleaned_y[1:-1] / cleaned_y_err[1:-1]) > snr
-    peak_mask[-min_dist:] = 0
-    peak_indices = indices[peak_mask]
-    peak_indices = peak_indices[:min(len(peak_indices), n_pe_peaks)]
-
-    if len(peak_indices) <= 1:
-
-        raise PeakNotFound('Not enough peak found for : \n'
-                           'SNR : {} \t '
-                           'Min distance : {} \n '
-                           'Need a least 2 peaks, found {}!!'.
-                           format(snr, min_dist, len(peak_indices)))
-
-    x_peak = x[peak_indices]
-    y_peak = y[peak_indices]
-    gain = np.diff(x_peak)
-    gain = np.average(gain, weights=y_peak[:-1]**2)
-
-    sigma = np.zeros(len(peak_indices))
-    mean_peak_x = np.zeros(len(peak_indices))
-    amplitudes = np.zeros(len(peak_indices))
-
-    distance = int(gain / 2)
-
-    if distance < bin_width:
-
-        raise ValueError('Distance between peaks must be >= {} the bin width'
-                         ''.format(bin_width))
-
-    n_x = len(x)
-
-    for i, peak_index in enumerate(peak_indices):
-
-        left = x[peak_index] - distance
-        left = np.searchsorted(x, left)
-        left = max(0, left)
-        right = x[peak_index] + distance + 1
-        right = np.searchsorted(x, right)
-        right = min(n_x - 1, right)
-
-        amplitudes[i] = np.sum(y[left:right]) * bin_width
-        mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
-
-        sigma[i] = np.average((x[left:right] - mean_peak_x[i])**2,
-                              weights=y[left:right])
-        sigma[i] = np.sqrt(sigma[i] - bin_width**2 / 12)
-
-    gain = np.diff(mean_peak_x)
-    gain = np.average(gain, weights=amplitudes[:-1]**2)
-
-    sigma_e = np.sqrt(sigma[0]**2)
-    sigma_s = (sigma[1:] ** 2 - sigma_e**2) / np.arange(1, len(sigma), 1)
-    sigma_s = np.mean(sigma_s)
-
-    if sigma_s < 0:
-
-        sigma_s = sigma_e**2
-
-    sigma_s = np.sqrt(sigma_s)
-
-    params = {'baseline': mean_peak_x[0], 'sigma_e': sigma_e,
-              'sigma_s': sigma_s, 'gain': gain}
-
-    for i, amplitude in enumerate(amplitudes):
-
-        params['a_{}'.format(i)] = amplitude
-
-    if debug:
-
-        x_fit = np.linspace(np.min(x), np.max(x), num=len(x)*10)
-
-        plt.figure()
-        plt.step(x, y, where='mid', color='k', label='data')
-        plt.errorbar(x, y, y_err, linestyle='None', color='k')
-        plt.plot(x[peak_indices], y[peak_indices], linestyle='None',
-                 marker='o', color='r', label='Peak positions')
-        plt.plot(x_fit, fmpe_pdf_10(x_fit, bin_width=bin_width, **params),
-                 label='init', color='g')
-        plt.plot(x, cleaned_y, label='cleaned')
-        plt.plot(x[:-1], d_y, label='diff')
-        plt.legend(loc='best')
-        plt.show()
-
-    return params
-
-
-def fit_fmpe(x, y, y_err, init_params, limit_params, **kwargs):
-
-    chi2 = Chi2Regression(fmpe_pdf_10, x=x, y=y, error=y_err)
-
-    bin_width = np.diff(x)
-    bin_width = np.mean(bin_width)
-    params = describe(fmpe_pdf_10, verbose=False)[1:]
-    fixed_params = {}
-
-    for param in params:
-
-        if param not in init_params.keys():
-
-            fixed_params['fix_{}'.format(param)] = True
-
-    m = Minuit(
-        chi2,
-        **init_params,
-        **limit_params,
-        **fixed_params,
-        bin_width=bin_width,
-        print_level=0,
-        pedantic=False,
-    )
-    m.migrad(**kwargs)
-
-    return m
-
-
-def plot_fmpe_fit(x, y, y_err, fitter, pixel_id=None):
-
-    if pixel_id is None:
-
-        pixel_id = ''
-
-    else:
-
-        pixel_id = str(pixel_id)
-
-    m = fitter
-    n_free_parameters = len(m.list_of_vary_param())
-    n_dof = len(x) - n_free_parameters
-
-    n_events = int(np.sum(y))
-    # m.draw_contour('sigma_e', 'sigma_s', show_sigma=True, bound=5)
-
-    x_fit = np.linspace(np.min(x), np.max(x), num=len(x) * 10)
-    y_fit = fmpe_pdf_10(x_fit, **m.values)
-
-    text = '$\chi^2 / ndof : $ {:.01f} / {} = {:.01f}\n'.format(m.fval, n_dof,
-                                                           m.fval/n_dof)
-    text += 'Baseline : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
-        m.values['baseline'], m.errors['baseline'])
-    text += 'Gain : {:.02f} $\pm$ {:.02f} [LSB / p.e.]\n'.format(m.values['gain'],
-                                                          m.errors['gain'])
-    text += '$\sigma_e$ : {:.02f} $\pm$ {:.02f} [LSB]\n'.format(
-        m.values['sigma_e'], m.errors['sigma_e'])
-    text += '$\sigma_s$ : {:.02f} $\pm$ {:.02f} [LSB]'.format(
-        m.values['sigma_s'], m.errors['sigma_s'])
-
-    data_text = r'$N_{events}$' + ' : {}\nPixel : {}'.format(n_events,
-                                                             pixel_id)
-
-    fig = plt.figure()
-    axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
-    axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
-    axes.step(x, y, where='mid', color='k', label=data_text)
-    axes.errorbar(x, y, y_err, linestyle='None', color='k')
-    axes.plot(x_fit, y_fit, label=text, color='r')
-
-    y_fit = fmpe_pdf_10(x, **m.values)
-    axes_residual.errorbar(x, ((y - y_fit) / y_err), marker='o', ls='None',
-                           color='k')
-    axes_residual.axhline(1, linestyle='--', color='k')
-    axes_residual.set_xlabel('[LSB]')
-    axes.set_ylabel('count')
-    axes_residual.set_ylabel('pull')
-    # axes_residual.set_yscale('log')
-    axes.legend(loc='best')
-
-    return fig
+        return x[mask], y[mask], bin_width[mask]
 
 
 def entry():
@@ -494,8 +267,8 @@ def entry():
 
         charge_histo = Histogram1D.load(
              os.path.join(output_path, charge_histo_filename))
-        # charge_histo = Histogram1D.load(
-        #   os.path.join(output_path, amplitude_histo_filename))
+        amplitude_histo = Histogram1D.load(
+            os.path.join(output_path, amplitude_histo_filename))
 
         gain = np.zeros(n_pixels) * np.nan
         sigma_e = np.zeros(n_pixels) * np.nan
@@ -508,83 +281,74 @@ def entry():
         chi_2 = np.zeros(n_pixels) * np.nan
         ndf = np.zeros(n_pixels) * np.nan
 
-        estimated_gain = 20
-        ncall = 3000
+        estimated_gains = [5, 20]
+        ncall = int(args['--ncall'])
 
-        results_filename = os.path.join(output_path, 'fmpe_results.npz')
+        histo_filenames = [amplitude_histo_filename, charge_histo_filename]
 
-        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
-                             desc='Pixel'):
+        for x, histos in tqdm(enumerate([amplitude_histo, charge_histo]),
+                              total=2, desc='Histogram'):
 
-            histo = charge_histo[i]
+            if x == 0:
 
-            fitter = FMPEFitter(histo, estimated_gain=estimated_gain)
-            fitter.fit(ncall=ncall)
-            fitter.draw()
+                continue
 
+            results_filename = 'results_' + os.path.splitext(histo_filenames[x]
+                                                             )[0] + '.npz'
+            results_filename = os.path.join(output_path, results_filename)
 
-            """
-            x = charge_histo._bin_centers()
-            y = charge_histo.data[pixel]
-            y_err = charge_histo.errors()[pixel]
+            estimated_gain = estimated_gains[x]
 
-            x, y, y_err = compute_data_bounds(x, y, y_err,
-                                              estimated_gain, n_pe_peaks)
+            for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
+                                 desc='Pixel'):
+                histo = histos[i]
 
-            try:
+                try:
 
-                params_init = compute_init_fmpe(x, y, y_err, snr=snr,
-                                                min_dist=min_dist,
-                                                n_pe_peaks=n_pe_peaks,
-                                                debug=debug)
+                    fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
+                                        throw_nan=True)
+                    fitter.fit(ncall=ncall)
 
-                x, y, y_err = compute_data_bounds(x, y, y_err,
-                                                  estimated_gain, n_pe_peaks,
-                                                  params=params_init)
+                    fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
+                                        initial_parameters=fitter.parameters,
+                                        throw_nan=True)
+                    fitter.fit(ncall=ncall)
 
-                params_limit = compute_limit_fmpe(params_init)
+                    m = fitter.fitter
+                    gain[i] = m.values['gain']
+                    gain_error[i] = m.errors['gain']
+                    sigma_e[i] = m.values['sigma_e']
+                    sigma_e_error[i] = m.errors['sigma_e']
+                    sigma_s[i] = m.values['sigma_s']
+                    sigma_s_error[i] = m.errors['sigma_s']
+                    baseline[i] = m.values['baseline']
+                    baseline_error[i] = m.errors['baseline']
+                    chi_2[i] = m.fval
+                    ndf[i] = fitter.ndf
 
-                m = fit_fmpe(x, y, y_err,
-                             params_init,
-                             params_limit, ncall=ncall)
+                    if debug:
 
-                gain[i] = m.values['gain']
-                gain_error[i] = m.errors['gain']
-                sigma_e[i] = m.values['sigma_e']
-                sigma_e_error[i] = m.errors['sigma_e']
-                sigma_s[i] = m.values['sigma_s']
-                sigma_s_error[i] = m.errors['sigma_s']
-                baseline[i] = m.values['baseline']
-                baseline_error[i] = m.errors['baseline']
-                chi_2[i] = m.fval
-                ndf[i] = len(x) - len(m.list_of_vary_param())
+                        fitter.draw(x_label='LSB', legend=True)
+                        fitter.draw_fit(x_label='LSB', legend=False)
+                        fitter.draw_init(x_label='LSB', legend=False)
 
-                fig = plot_fmpe_fit(x, y, y_err, m, pixel)
+                        plt.show()
 
-                # fig.savefig(os.path.join(output_path, 'figures/') +
-                #             'fmpe_pixel_{}'.format(pixel))
+                except Exception as exception:
 
-                if debug:
+                    print('Could not fit FMPE in pixel {}'.format(pixel))
+                    print(exception)
 
-                    plt.show()
+            if not debug:
 
-                plt.close()
-
-            except Exception as exception:
-
-                print('Could not fit FMPE in pixel {}'.format(pixel))
-                print(exception)
-        """
-        if not debug:
-
-            np.savez(results_filename,
-                     gain=gain, sigma_e=sigma_e,
-                     sigma_s=sigma_s, baseline=baseline,
-                     gain_error=gain_error, sigma_e_error=sigma_e_error,
-                     sigma_s_error=sigma_s_error, baseline_error=baseline_error,
-                     chi_2=chi_2, ndf=ndf,
-                     pixel_id=pixel_id,
-                     )
+                np.savez(results_filename,
+                         gain=gain, sigma_e=sigma_e,
+                         sigma_s=sigma_s, baseline=baseline,
+                         gain_error=gain_error, sigma_e_error=sigma_e_error,
+                         sigma_s_error=sigma_s_error, baseline_error=baseline_error,
+                         chi_2=chi_2, ndf=ndf,
+                         pixel_id=pixel_id,
+                         )
 
     if args['--save_figures']:
 
@@ -627,6 +391,7 @@ def entry():
                 print('Could not save pixel {} to : {} \n'.
                       format(pixel, figure_path))
                 print(e)
+
 
             axis_1.clear()
             axis_2.clear()
