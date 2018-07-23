@@ -290,7 +290,7 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-            del fitter
+            del histo
         np.savez(results_filename, dcr=dark_count_rate,
                  sigma_e=electronic_noise, pixel_id=pixel_id)
 
@@ -298,10 +298,10 @@ def entry():
                              desc='Pixel'):
 
             histo = spe_histo[i]
+            fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
 
             try:
 
-                fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
                 fitter.fit(ncall=100)
                 fitter.fit(ncall=ncall)
 
@@ -325,7 +325,7 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-            del fitter
+            del fitter, histo
 
         data = dict(np.load(results_filename))
         data['crosstalk'] = crosstalk
