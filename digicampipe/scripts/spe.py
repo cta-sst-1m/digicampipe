@@ -290,7 +290,6 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-            del histo
         np.savez(results_filename, dcr=dark_count_rate,
                  sigma_e=electronic_noise, pixel_id=pixel_id)
 
@@ -324,8 +323,6 @@ def entry():
                 print('Could not compute gain and crosstalk'
                       ' in pixel {}'.format(pixel))
                 print(e)
-
-            del fitter, histo
 
         data = dict(np.load(results_filename))
         data['crosstalk'] = crosstalk
