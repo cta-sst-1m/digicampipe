@@ -1,7 +1,7 @@
 '''
 Look at events in the EventViewer
 Usage:
-  digicam-view [options] [--] <file>...
+  digicam-view [options] [--] <INPUT>...
 
 Options:
   --baseline_16bits
@@ -13,7 +13,7 @@ from digicampipe.visualization import EventViewer
 
 def entry():
     args = docopt(__doc__)
-    data_stream = event_stream.event_stream(args['<file>'],
+    data_stream = event_stream.event_stream(args['<INPUT>'],
                                             baseline_new=
                                             args['--baseline_16bits'])
     display = EventViewer(data_stream)
