@@ -3,13 +3,12 @@
 Do a raw data histogram
 
 Usage:
-  raw.py [options] [OUTPUT] [INPUT ...]
+  digicam-raw [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
-  -i INPUT --input=INPUT.     Input files.
   -c --compute                Compute the data.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
@@ -28,42 +27,43 @@ from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
 
 
-def compute(files, max_events, pixel_id, output_path, filename='raw_histo.pk'):
-
-    filename = os.path.join(output_path, filename)
+def compute(files, max_events, pixel_id, filename='raw_histo.pk'):
 
     if os.path.exists(filename):
-        raise IOError('The file {} already exists \n'.
-                      format(filename))
 
-    n_pixels = len(pixel_id)
-    events = calibration_event_stream(files, pixel_id=pixel_id,
-                                      max_events=max_events)
+        raw_histo = Histogram1D.load(filename)
 
-    raw_histo = Histogram1D(
-        data_shape=(n_pixels,),
-        bin_edges=np.arange(0, 4095, 1),
-        axis_name='[LSB]'
-    )
+        return raw_histo
 
-    for event in events:
-        raw_histo.fill(event.data.adc_samples)
+    else:
 
-    raw_histo.save(filename)
+        n_pixels = len(pixel_id)
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                          max_events=max_events)
 
-    return raw_histo
+        raw_histo = Histogram1D(
+            data_shape=(n_pixels,),
+            bin_edges=np.arange(0, 4095, 1),
+            )
+
+        for event in events:
+            raw_histo.fill(event.data.adc_samples)
+
+        raw_histo.save(filename)
+
+        return raw_histo
 
 
 def entry():
 
     args = docopt(__doc__)
-    files = args['INPUT']
+    files = args['<INPUT>']
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
-    output_path = args['OUTPUT']
-    raw_histo_filename = 'raw_histo.pk'
+    output_path = args['--output']
+    raw_histo_filename = os.path.join(output_path, 'raw_histo.pk')
 
     if not os.path.exists(output_path):
 
@@ -71,12 +71,11 @@ def entry():
 
     if args['--compute']:
 
-        compute(files, max_events, pixel_id, output_path, raw_histo_filename)
+        compute(files, max_events, pixel_id, raw_histo_filename)
 
     if args['--save_figures']:
 
-        histo_path = os.path.join(output_path, raw_histo_filename)
-        raw_histo = Histogram1D.load(histo_path)
+        raw_histo = Histogram1D.load(raw_histo_filename)
 
         path = os.path.join(output_path, 'figures/', 'raw_histo/')
 
@@ -87,7 +86,7 @@ def entry():
 
         for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
             axis = figure.add_subplot(111)
-            figure_path = path + 'pixel_{}.pdf'
+            figure_path = os.path.join(path, 'pixel_{}.pdf')
 
             try:
 
@@ -104,8 +103,7 @@ def entry():
 
     if args['--display']:
 
-        path = os.path.join(output_path, raw_histo_filename)
-        raw_histo = Histogram1D.load(path)
+        raw_histo = Histogram1D.load(raw_histo_filename)
         raw_histo.draw(index=(0, ), log=True, legend=False)
         plt.show()
 

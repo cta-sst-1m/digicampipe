@@ -30,15 +30,19 @@ def find_pulse_wavelets(events, threshold_sigma, widths, **kwargs):
 
         adc_samples = event.data.adc_samples
         pulse_mask = np.zeros(adc_samples.shape, dtype=np.bool)
+        threshold = threshold_sigma
 
-        for pixel_id, adc_sample in tqdm(enumerate(adc_samples), desc='Pixel'):
+        for pixel_id, adc_sample in tqdm(enumerate(adc_samples), desc='Pixel',
+                                         total=len(adc_samples)):
 
-            threshold = np.std(adc_sample) * threshold_sigma
             peak_index = find_peaks_cwt(adc_sample, widths, **kwargs)
-            peak_index = peak_index[
-                adc_sample[peak_index] > threshold[pixel_id]
-            ]
-            pulse_mask[pixel_id, peak_index] = True
+
+            if len(peak_index):
+
+                peak_index = peak_index[
+                    adc_sample[peak_index] > threshold
+                ]
+                pulse_mask[pixel_id, peak_index] = True
 
         event.data.pulse_mask = pulse_mask
 

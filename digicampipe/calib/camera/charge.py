@@ -52,6 +52,17 @@ def compute_amplitude(events):
         yield event
 
 
+def compute_full_waveform_charge(events):
+
+    for count, event in enumerate(events):
+
+        adc_samples = event.data.adc_samples
+        charges = np.sum(adc_samples, axis=-1)
+        event.data.reconstructed_charge = charges.reshape(-1, 1)
+
+        yield event
+
+
 def fit_template(events, pulse_width=(4, 5), rise_time=12):
 
     for event in events:

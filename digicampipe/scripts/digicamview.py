@@ -1,7 +1,7 @@
 '''
 Look at events in the EventViewer
 Usage:
-  digicam-view [options] <file>...
+  digicam-view [options] [--] <file>...
 
 Options:
   --baseline_16bits
