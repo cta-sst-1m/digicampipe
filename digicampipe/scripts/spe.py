@@ -31,22 +31,13 @@ from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks_cwt
-import scipy
-import pandas as pd
 
-from iminuit import Minuit, describe
-from probfit import Chi2Regression
-
-from ctapipe.io import HDF5TableWriter
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.docopt import convert_pixel_args, \
     convert_max_events_args
-from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
-from histogram.fit import HistogramFitter
 from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
 from digicampipe.calib.camera.peak import find_pulse_with_max, \
     find_pulse_wavelets, find_pulse_correlate, find_pulse_fast
@@ -173,6 +164,8 @@ def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
         events = find_pulse_fast(events, threshold=pulse_finder_threshold)
+        # events = find_pulse_fast_2(events, threshold=pulse_finder_threshold,
+        #                           min_dist=3)
         # events = find_pulse_correlate(events,
         #                               threshold=pulse_finder_threshold)
         # events = find_pulse_gaussian_filter(events,
