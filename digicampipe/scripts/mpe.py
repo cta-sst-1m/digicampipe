@@ -32,8 +32,7 @@ import yaml
 
 import numpy as np
 import matplotlib.pyplot as plt
-from probfit import Chi2Regression, describe
-from iminuit import Minuit
+from iminuit import describe
 
 from histogram.histogram import Histogram1D
 from histogram.fit import HistogramFitter
