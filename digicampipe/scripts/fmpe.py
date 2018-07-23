@@ -201,6 +201,7 @@ class FMPEFitter(HistogramFitter):
 
         else:
             params = self.parameters
+
         n_peaks = type(self).n_peaks
 
         mask = (y > 0) * (x < n_peaks * self.estimated_gain)
