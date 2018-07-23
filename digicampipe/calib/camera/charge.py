@@ -121,3 +121,16 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12):
         event.data.reconstructed_time = times
 
         yield event
+
+
+def compute_photo_electron(events, gains):
+
+    gains = gains
+
+    for event in events:
+
+        charge = event.data.reconstructed_charge
+        pe = charge / gains
+        event.data.reconstructed_number_of_pe = pe
+
+        yield event

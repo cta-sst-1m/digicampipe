@@ -1,4 +1,4 @@
-from digicampipe.calib.camera import r1, dl0, dl2, dl1
+from digicampipe.calib.camera import r1, dl2, dl1
 from digicampipe.io import containers
 from digicampipe.visualization import EventViewer
 from digicampipe.utils import utils
@@ -28,7 +28,6 @@ if __name__ == '__main__':
     # Define the event stream
     data_stream = containers.load_from_pickle_gz('test.pickle')
     data_stream = r1.calibrate_to_r1(data_stream, None)
-    data_stream = dl0.calibrate_to_dl0(data_stream)
     # Run the dl1 calibration (compute charge in photons)
     data_stream = dl1.calibrate_to_dl1(data_stream, time_integration_options)
 #    data_stream = filter.filter_shower(data_stream, min_photon=1000)
