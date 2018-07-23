@@ -58,6 +58,7 @@ def compute_full_waveform_charge(events):
 
         adc_samples = event.data.adc_samples
         charges = np.sum(adc_samples, axis=-1)
+        print(charges)
         event.data.reconstructed_charge = charges.reshape(-1, 1)
 
         yield event

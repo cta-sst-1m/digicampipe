@@ -300,74 +300,46 @@ def plot_event(events, pixel_id):
         yield event
 
 
-def entry():
+def compute_max_histo(files, histo_filename, pixel_id, max_events,
+                      integral_width, shift, baseline):
 
-    args = docopt(__doc__)
-    
-    files = args['<INPUT>']
-    debug = args['--debug']
-
-    max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['--output']
-
-    if not os.path.exists(output_path):
-
-        raise IOError('Path for output does not exists \n')
-
-    pixel_id = convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
 
-    raw_histo_filename = os.path.join(output_path, 'raw_histo.pk')
-    amplitude_histo_filename = os.path.join(output_path, 'amplitude_histo.pk')
-    charge_histo_filename = os.path.join(output_path, 'charge_histo.pk')
-    max_histo_filename = os.path.join(output_path, 'max_histo.pk')
-    results_filename = os.path.join(output_path, 'fit_results.h5')
-    dark_count_rate_filename = os.path.join(output_path, 'dark_count_rate.npz')
-    crosstalk_filename = os.path.join(output_path, 'crosstalk.npz')
-    electronic_noise_filename = os.path.join(output_path,
-                                             'electronic_noise.npz')
+    if not os.path.exists(histo_filename):
 
-    integral_width = int(args['--integral_width'])
-    shift = int(args['--shift'])
-    pulse_finder_threshold = float(args['--pulse_finder_threshold'])
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                          max_events=max_events)
+        # events = compute_baseline_with_min(events)
+        events = fill_baseline(events, baseline)
+        events = subtract_baseline(events)
+        events = find_pulse_with_max(events)
+        events = compute_charge(events, integral_width, shift)
+        max_histo = Histogram1D(
+            data_shape=(n_pixels,),
+            bin_edges=np.arange(-4095 * integral_width,
+                                4095 * integral_width),
+        )
 
-    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
-    
-    #events = calibration_event_stream(files, pixel_id=pixel_id,
-                                          #max_events=max_events)
-    #for event in events:
-    #    print(events)
-    #    input()
+        for event in events:
+            max_histo.fill(event.data.reconstructed_charge)
 
-    if args['--compute']:
+        max_histo.save(histo_filename)
 
-        raw_histo = raw.compute(files, max_events=max_events,
-                                pixel_id=pixel_id, filename=raw_histo_filename)
-        baseline = raw_histo.mode()
-        print('hello')
+        return max_histo
+
+    else:
+
+        max_histo = Histogram1D.load(histo_filename)
+
+        return max_histo
 
 
-        if not os.path.exists(max_histo_filename):
+def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
+                debug=False):
 
-            events = calibration_event_stream(files, pixel_id=pixel_id,
-                                              max_events=max_events)
-            # events = compute_baseline_with_min(events)
-            events = fill_baseline(events, baseline)
-            events = subtract_baseline(events)
-            events = find_pulse_with_max(events)
-            events = compute_charge(events, integral_width, shift)
-            max_histo = Histogram1D(
-                                data_shape=(n_pixels,),
-                                bin_edges=np.arange(-4095 * integral_width,
-                                                    4095 * integral_width),
-                            )
+    if not os.path.exists(histo_filename):
 
-            for event in events:
-
-                max_histo.fill(event.data.reconstructed_charge)
-
-            max_histo.save(max_histo_filename)
-
+        n_pixels = len(pixel_id)
         events = calibration_event_stream(files,
                                           max_events=max_events,
                                           pixel_id=pixel_id)
@@ -389,7 +361,7 @@ def entry():
         #    events,
         #    integral_width=integral_width,
         #    shift=shift
-        #)
+        # )
         # events = compute_amplitude(events)
         # events = fit_template(events)
 
@@ -398,21 +370,74 @@ def entry():
         if debug:
             events = plot_event(events, 0)
 
-        spe_charge = Histogram1D(
+        spe_histo = Histogram1D(
             data_shape=(n_pixels,),
             bin_edges=np.arange(-4095 * 50, 4095 * 50)
         )
 
         for event in events:
+            spe_histo.fill(event.data.reconstructed_charge)
 
-            spe_charge.fill(event.data.reconstructed_charge)
+        spe_histo.save(histo_filename)
 
-        spe_charge.save(charge_histo_filename)
+        return spe_histo
+
+    else:
+
+        spe_histo = Histogram1D.load(histo_filename)
+
+        return spe_histo
+
+
+def entry():
+
+    args = docopt(__doc__)
+    
+    files = args['<INPUT>']
+    debug = args['--debug']
+
+    max_events = convert_max_events_args(args['--max_events'])
+    output_path = args['--output']
+
+    if not os.path.exists(output_path):
+
+        raise IOError('Path for output does not exists \n')
+
+    pixel_id = convert_pixel_args(args['--pixel'])
+    n_pixels = len(pixel_id)
+
+    raw_histo_filename = os.path.join(output_path, 'raw_histo.pk')
+    charge_histo_filename = os.path.join(output_path, 'charge_histo.pk')
+    max_histo_filename = os.path.join(output_path, 'max_histo.pk')
+    results_filename = os.path.join(output_path, 'fit_results.h5')
+    dark_count_rate_filename = os.path.join(output_path, 'dark_count_rate.npz')
+    crosstalk_filename = os.path.join(output_path, 'crosstalk.npz')
+    electronic_noise_filename = os.path.join(output_path,
+                                             'electronic_noise.npz')
+
+    integral_width = int(args['--integral_width'])
+    shift = int(args['--shift'])
+    pulse_finder_threshold = float(args['--pulse_finder_threshold'])
+
+    n_samples = int(args['--n_samples'])  # TODO access this in a better way !
+
+    if args['--compute']:
+
+        raw_histo = raw.compute(files, max_events=max_events,
+                                pixel_id=pixel_id, filename=raw_histo_filename)
+        baseline = raw_histo.mode()
+        print('hello')
+
+        max_histo = compute_max_histo(files, max_histo_filename, pixel_id,
+                                      max_events, integral_width, shift,
+                                      baseline)
+
+        spe_histo = compute_spe(files, charge_histo_filename, pixel_id,
+                                 baseline, max_events, debug=debug)
 
     if args['--fit']:
 
-        spe_charge = Histogram1D.load(charge_histo_filename)
-        spe_amplitude = Histogram1D.load(amplitude_histo_filename)
+        spe_histo = Histogram1D.load(charge_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
         dark_count_rate = np.zeros(n_pixels) * np.nan
@@ -454,7 +479,7 @@ def entry():
         np.savez(dark_count_rate_filename, dcr=dark_count_rate)
         np.savez(electronic_noise_filename, electronic_noise)
 
-        spe = spe_charge
+        spe = spe_histo
         name = 'charge'
         crosstalk = np.zeros(n_pixels) * np.nan
 
@@ -508,7 +533,7 @@ def entry():
 
     if args['--save_figures']:
 
-        spe_charge = Histogram1D.load(charge_histo_filename)
+        spe_histo = Histogram1D.load(charge_histo_filename)
         spe_amplitude = Histogram1D.load(amplitude_histo_filename)
         raw_histo = Histogram1D.load(os.path.join(output_path,
                                                   raw_histo_filename))
@@ -519,7 +544,7 @@ def entry():
         if not os.path.exists(figure_directory):
             os.makedirs(figure_directory)
 
-        histograms = [spe_charge, spe_amplitude, raw_histo, max_histo]
+        histograms = [spe_histo, spe_amplitude, raw_histo, max_histo]
         names = ['histogram_charge/', 'histogram_amplitude/', 'histogram_raw/',
                  'histo_max/']
 
@@ -551,14 +576,12 @@ def entry():
 
     if args['--display']:
 
-        spe_charge = Histogram1D.load(charge_histo_filename)
-        spe_amplitude = Histogram1D.load(amplitude_histo_filename)
+        spe_histo = Histogram1D.load(charge_histo_filename)
         raw_histo = Histogram1D.load(os.path.join(output_path,
                                                   raw_histo_filename))
         max_histo = Histogram1D.load(max_histo_filename)
 
-        spe_charge.draw(index=(0, ), log=True, legend=False)
-        spe_amplitude.draw(index=(0, ), log=True, legend=False)
+        spe_histo.draw(index=(0, ), log=True, legend=False)
         raw_histo.draw(index=(0, ), log=True, legend=False)
         max_histo.draw(index=(0, ), log=True, legend=False)
 
@@ -573,6 +596,8 @@ def entry():
 
             print(e)
             print('Could not find the analysis files !')
+
+        plt.show()
 
         label = 'mean : {:2f} \n std : {:2f}'
 
