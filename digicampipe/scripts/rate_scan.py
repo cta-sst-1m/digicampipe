@@ -3,7 +3,7 @@ Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
 Usage:
-  digicam-rate-scan [options] [OUTPUT] [INPUT ...]
+  digicam-rate-scan [options] [--] <INPUT>...
 
 Options:
   --display   Display the plots
@@ -50,8 +50,8 @@ def compute(files, output_filename):
 def entry():
 
     args = docopt(__doc__)
-    input_files = args['INPUT']
-    output_file = args['OUTPUT']
+    input_files = args['<INPUT>']
+    output_file = args['--output']
 
     if args['--compute']:
 
