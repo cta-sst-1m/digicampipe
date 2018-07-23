@@ -59,15 +59,14 @@ from digicampipe.utils.pdf import fmpe_pdf_10
 
 class MaxHistoFitter(FMPEFitter):
 
-    n_peaks = 2
-    parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
-                            'a_0': None, 'a_1': None}
-
     def __init__(self, histogram, estimated_gain, **kwargs):
 
+        n_peaks = 2
         super(MaxHistoFitter, self).__init__(histogram, estimated_gain,
-                                             **kwargs)
+                                             n_peaks, **kwargs)
+        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
+                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
+                            'a_0': None, 'a_1': None}
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1):
 
@@ -79,15 +78,16 @@ class MaxHistoFitter(FMPEFitter):
 
 class SPEFitter(FMPEFitter):
 
-    n_peaks = 4
-    parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
-                            'a_1': None, 'a_2': None, 'a_3': None,
-                            'a_4': None}
-
     def __init__(self, histogram, estimated_gain, **kwargs):
 
-        super(SPEFitter, self).__init__(histogram, estimated_gain, **kwargs)
+        n_peaks = 4
+        super(SPEFitter, self).__init__(histogram, estimated_gain, n_peaks,
+                                        **kwargs)
+        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
+                                'sigma_e': '$\sigma_e$',
+                                'sigma_s': '$\sigma_s$',
+                                'a_1': None, 'a_2': None, 'a_3': None,
+                                'a_4': None}
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
 
@@ -290,6 +290,7 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
+            del fitter
         np.savez(results_filename, dcr=dark_count_rate,
                  sigma_e=electronic_noise, pixel_id=pixel_id)
 
@@ -323,6 +324,8 @@ def entry():
                 print('Could not compute gain and crosstalk'
                       ' in pixel {}'.format(pixel))
                 print(e)
+
+            del fitter
 
         data = dict(np.load(results_filename))
         data['crosstalk'] = crosstalk

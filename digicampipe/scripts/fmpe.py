@@ -46,21 +46,18 @@ from digicampipe.utils.pdf import fmpe_pdf_10
 
 class FMPEFitter(HistogramFitter):
 
-    n_peaks = 10
-    parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
+    def __init__(self, histogram, estimated_gain, n_peaks=10, **kwargs):
+
+        self.estimated_gain = estimated_gain
+        self.n_peaks = n_peaks
+        super(FMPEFitter, self).__init__(histogram, **kwargs)
+
+        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
                             'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
                             'a_0': None, 'a_1': None, 'a_2': None, 'a_3': None,
                             'a_4': None, 'a_5': None, 'a_6': None,
                             'a_7': None, 'a_8': None, 'a_9': None,
                             'bin_width': None}
-
-    def __init__(self, histogram, estimated_gain, **kwargs):
-
-        self.estimated_gain = estimated_gain
-        super(FMPEFitter, self).__init__(histogram,
-                                         parameters_plot_name=
-                                         type(self).parameters_plot_name,
-                                         **kwargs)
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1, a_2,
             a_3, a_4, a_5, a_6, a_7, a_8, a_9):
@@ -202,7 +199,7 @@ class FMPEFitter(HistogramFitter):
         else:
             params = self.parameters
 
-        n_peaks = type(self).n_peaks
+        n_peaks = self.n_peaks
 
         mask = (y > 0) * (x < n_peaks * self.estimated_gain)
 
