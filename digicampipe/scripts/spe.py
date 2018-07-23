@@ -335,7 +335,7 @@ def compute_max_histo(files, histo_filename, pixel_id, max_events,
 
 
 def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
-                debug=False):
+                integral_width, shift, pulse_finder_threshold, debug=False):
 
     if not os.path.exists(histo_filename):
 
@@ -348,7 +348,7 @@ def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
         events = subtract_baseline(events)
         # events = find_pulse_1(events, 0.5, 20)
         # events = find_pulse_2(events, widths=[5, 6], threshold_sigma=2)
-        # events = find_pulse_fast(events, threshold=pulse_finder_threshold)
+        events = find_pulse_fast(events, threshold=pulse_finder_threshold)
         # events = find_pulse_correlate(events,
         #                               threshold=pulse_finder_threshold)
         # events = find_pulse_gaussian_filter(events,
@@ -357,15 +357,12 @@ def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
         # events = find_pulse_wavelets(events, widths=[4, 5, 6],
         #                             threshold_sigma=2)
 
-        # events = compute_charge(
-        #    events,
-        #    integral_width=integral_width,
-        #    shift=shift
-        # )
+        events = compute_charge(events, integral_width=integral_width,
+                                shift=shift)
         # events = compute_amplitude(events)
         # events = fit_template(events)
 
-        events = compute_full_waveform_charge(events)
+        # events = compute_full_waveform_charge(events)
 
         if debug:
             events = plot_event(events, 0)
@@ -426,22 +423,24 @@ def entry():
         raw_histo = raw.compute(files, max_events=max_events,
                                 pixel_id=pixel_id, filename=raw_histo_filename)
         baseline = raw_histo.mode()
-        print('hello')
 
         max_histo = compute_max_histo(files, max_histo_filename, pixel_id,
                                       max_events, integral_width, shift,
                                       baseline)
 
         spe_histo = compute_spe(files, charge_histo_filename, pixel_id,
-                                 baseline, max_events, debug=debug)
+                                 baseline, max_events, integral_width, shift,
+                                pulse_finder_threshold, debug=debug)
 
     if args['--fit']:
 
+        raw_histo = Histogram1D.load(raw_histo_filename)
         spe_histo = Histogram1D.load(charge_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
         dark_count_rate = np.zeros(n_pixels) * np.nan
         electronic_noise = np.zeros(n_pixels) * np.nan
+        crosstalk = np.zeros(n_pixels) * np.nan
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
