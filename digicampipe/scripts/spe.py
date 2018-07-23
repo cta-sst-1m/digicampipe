@@ -324,7 +324,7 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-        data = np.load(results_filename)
+        data = dict(np.load(results_filename))
         data['crosstalk'] = crosstalk
         data['gain'] = gain
         np.savez(results_filename, **data)
