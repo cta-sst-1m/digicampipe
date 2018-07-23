@@ -52,15 +52,28 @@ from digicampipe.calib.camera.peak import find_pulse_with_max, \
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.calib.camera.charge import compute_full_waveform_charge
 from digicampipe.scripts import raw
+from digicampipe.scripts.fmpe import FMPEFitter
+from digicampipe.utils.pdf import fmpe_pdf_10
 
 
-class MaxHistoFitter(HistogramFitter):
+class MaxHistoFitter(FMPEFitter):
 
+    n_peaks = 2
+    parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
+                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
+                            'a_0': None, 'a_1': None,}
 
-    def __init__(self):
+    def __init__(self, histogram, estimated_gain, **kwargs):
 
-        super(self)
+        super(MaxHistoFitter, self).__init__(histogram, estimated_gain,
+                                             **kwargs)
 
+    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1):
+
+        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
+                  'sigma_s': sigma_s, 'a_0': a_0, 'a_1': a_1, 'bin_width': 0}
+
+        return fmpe_pdf_10(x, **params)
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
@@ -452,6 +465,23 @@ def entry():
         electronic_noise = np.zeros(n_pixels) * np.nan
         crosstalk = np.zeros(n_pixels) * np.nan
 
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
+                             desc='Pixel'):
+            histo = max_histo[i]
+            fitter = MaxHistoFitter(histo, 20,
+                               throw_nan=True)
+            fitter.fit(ncall=100)
+
+            if debug:
+
+                fitter.draw()
+                fitter.draw_init(x_label='[LSB]')
+                fitter.draw_fit(x_label='[LSB]')
+                plt.show()
+
+
+
+        0/0
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
 

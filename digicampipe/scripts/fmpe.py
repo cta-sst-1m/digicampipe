@@ -74,13 +74,13 @@ class FMPEFitter(HistogramFitter):
 
     def initialize_fit(self):
 
-        y = self.count
+        y = self.count.astype(np.float)
         x = self.bin_centers
         min_dist = self.estimated_gain / 3
+        min_dist = int(min_dist)
+
         n_peaks = self.n_peaks
 
-        y = y.astype(np.float)
-        min_dist = int(min_dist)
         cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
         bin_width = np.diff(x)
         bin_width = np.mean(bin_width)
@@ -164,6 +164,8 @@ class FMPEFitter(HistogramFitter):
 
         self.initial_parameters = params
 
+        return params
+
     def compute_fit_boundaries(self):
 
         limit_params = {}
@@ -187,12 +189,18 @@ class FMPEFitter(HistogramFitter):
 
         self.boundary_parameter = limit_params
 
+        return limit_params
+
     def compute_data_bounds(self):
 
         x = self.histogram.bin_centers
         bin_width = np.diff(self.histogram.bins)
         y = self.histogram.data
-        params = self.initial_parameters
+        if not self.parameters:
+            params = self.initial_parameters
+
+        else:
+            params = self.parameters
         n_peaks = type(self).n_peaks
 
         mask = (y > 0) * (x < n_peaks * self.estimated_gain)
