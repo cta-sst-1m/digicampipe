@@ -45,12 +45,22 @@ from digicampipe.utils.docopt import convert_pixel_args, \
     convert_max_events_args
 from digicampipe.io.containers_calib import SPEResultContainer
 from histogram.histogram import Histogram1D
+from histogram.fit import HistogramFitter
 from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
 from digicampipe.calib.camera.peak import find_pulse_with_max, \
     find_pulse_wavelets, find_pulse_correlate, find_pulse_fast
 from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.calib.camera.charge import compute_full_waveform_charge
 from digicampipe.scripts import raw
+
+
+class MaxHistoFitter(HistogramFitter):
+
+
+    def __init__(self):
+
+        super(self)
+
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):

@@ -3,7 +3,7 @@ Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
 Usage:
-  rate_scan [options] [OUTPUT] [INPUT ...]
+  digicam-rate-scan [options] [OUTPUT] [INPUT ...]
 
 Options:
   --display   Display the plots
