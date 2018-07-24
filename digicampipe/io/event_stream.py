@@ -4,6 +4,7 @@ from collections import namedtuple
 from digicampipe.io.containers_calib import CalibrationContainer
 from tqdm import tqdm
 import numpy as np
+import os
 
 
 def event_stream(filelist, source=None, max_events=None, **kwargs):
@@ -30,6 +31,12 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
         filelist = [filelist]
     n_files = len(filelist)
     count = 0
+
+    for file in filelist:
+
+        if not os.path.exists(file):
+
+            raise FileNotFoundError('File {} does not exists'.format(file))
 
     if max_events is None:
 
