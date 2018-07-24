@@ -27,7 +27,7 @@ from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
 
 
-def compute(files, max_events, pixel_id, filename='raw_histo.pk'):
+def compute(files, max_events, pixel_id, filename):
 
     if os.path.exists(filename):
 
@@ -67,7 +67,8 @@ def entry():
 
     if not os.path.exists(output_path):
 
-        raise IOError('Path for output does not exists \n')
+        raise IOError('Path {} for output '
+                      'does not exists \n'.format(output_path))
 
     if args['--compute']:
 
@@ -104,7 +105,10 @@ def entry():
     if args['--display']:
 
         raw_histo = Histogram1D.load(raw_histo_filename)
-        raw_histo.draw(index=(0, ), log=True, legend=False)
+
+        pixel = 0
+        raw_histo.draw(index=(pixel, ), log=True, legend=False,
+                       label='Histogram {}'.format(pixel), x_label='[LSB]')
         plt.show()
 
     return

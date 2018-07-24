@@ -24,6 +24,7 @@ Options:
   --ncall=N                   Number of calls for the fit [default: 10000]
   --timing=PATH               Timing filename
   --n_samples=N               Number of samples in readout window
+  --estimated_gain=N          Estimated gain for the fit
 '''
 import os
 from docopt import docopt
@@ -276,7 +277,7 @@ def entry():
     timing_histo_filename = args['--timing']
     n_samples = int(args['--n_samples'])
     ncall = int(args['--ncall'])
-    estimated_gain = 20
+    estimated_gain = float(args['--estimated_gain'])
 
     if args['--compute']:
 
