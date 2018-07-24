@@ -7,7 +7,7 @@ Usage:
 
 Options:
   -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
+  --max_events=N              Maximum number of events to analyze
   -o OUTPUT --output=OUTPUT  Folder where to store the results.
   -c --compute                Compute the data.
   -f --fit                    Fit.
@@ -320,28 +320,37 @@ def entry():
                                         throw_nan=True)
                     fitter.fit(ncall=ncall)
 
-                    m = fitter.fitter
-                    gain[i] = m.values['gain']
-                    gain_error[i] = m.errors['gain']
-                    sigma_e[i] = m.values['sigma_e']
-                    sigma_e_error[i] = m.errors['sigma_e']
-                    sigma_s[i] = m.values['sigma_s']
-                    sigma_s_error[i] = m.errors['sigma_s']
-                    baseline[i] = m.values['baseline']
-                    baseline_error[i] = m.errors['baseline']
-                    chi_2[i] = m.fval
+                    param = fitter.parameters
+                    param_error = fitter.errors
+
+                    gain[i] = param['gain']
+                    gain_error[i] = param_error['gain']
+                    sigma_e[i] = param['sigma_e']
+                    sigma_e_error[i] = param_error['sigma_e']
+                    sigma_s[i] = param['sigma_s']
+                    sigma_s_error[i] = param_error['sigma_s']
+                    baseline[i] = param['baseline']
+                    baseline_error[i] = param_error['baseline']
+                    chi_2[i] = fitter.fit_test() * fitter.ndf
                     ndf[i] = fitter.ndf
 
                     if debug:
 
-                        fitter.draw(x_label='LSB', legend=True)
-                        fitter.draw_fit(x_label='LSB', legend=False)
-                        fitter.draw_init(x_label='LSB', legend=False)
+                        x_label = 'Charge [LSB]'
+                        label = 'Pixel {}'.format(pixel)
+
+                        fitter.draw(x_label=x_label, label=label,
+                                    legend=False)
+                        fitter.draw_fit(x_label=x_label, label=label,
+                                        legend=False)
+                        fitter.draw_init(x_label=x_label, label=label,
+                                         legend=False)
 
                         plt.show()
 
                 except Exception as exception:
 
+                    raise exception
                     print('Could not fit FMPE in pixel {}'.format(pixel))
                     print(exception)
 

@@ -1,8 +1,9 @@
-from ctapipe.core import Container
+from ctapipe.core import Container, Map
 from ctapipe.core import Field
-
 from numpy import ndarray
+import numpy as np
 import matplotlib.pyplot as plt
+from histogram.histogram import Histogram1D
 
 
 class CalibrationEventContainer(Container):
@@ -46,3 +47,15 @@ class CalibrationEventContainer(Container):
         plt.plot(self.reconstructed_amplitude[pixel_id], label='amplitude',
                  linestyle='None', marker='o')
         plt.legend()
+
+
+class CalibrationContainer(Container):
+    """
+    This Container() is used for the camera calibration pipeline.
+    It is meant to save each step of the calibration pipeline
+    """
+
+    config = Field(list, 'List of the input parameters'
+                         ' of the calibration analysis')  # Should use dict?
+    pixel_id = Field(ndarray, 'pixel ids')
+    data = CalibrationEventContainer()

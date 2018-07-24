@@ -404,7 +404,7 @@ figure.subplot.hspace  : 0.4    # the amount of height reserved for white space 
 #savefig.dpi         : 100      # figure dots per inch
 #savefig.facecolor   : white    # figure facecolor when saving
 #savefig.edgecolor   : white    # figure edgecolor when saving
-#savefig.format      : png      # png, ps, pdf, svg
+#savefig.format      : svg      # png, ps, pdf, svg
 #savefig.bbox        : standard # 'tight' or 'standard'.
                                 # 'tight' is incompatible with pipe-based animation
                                 # backends but will workd with temporary file based ones:
