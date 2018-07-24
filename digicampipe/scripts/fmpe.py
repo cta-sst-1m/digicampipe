@@ -32,7 +32,6 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 from histogram.histogram import Histogram1D
 from histogram.fit import HistogramFitter
 from digicampipe.utils.docopt import convert_max_events_args, \
@@ -45,7 +44,6 @@ from digicampipe.utils.pdf import fmpe_pdf_10
 
 
 class FMPEFitter(HistogramFitter):
-
     def __init__(self, histogram, estimated_gain, n_peaks=10, **kwargs):
 
         self.estimated_gain = estimated_gain
@@ -53,11 +51,13 @@ class FMPEFitter(HistogramFitter):
         super(FMPEFitter, self).__init__(histogram, **kwargs)
 
         self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
-                            'a_0': None, 'a_1': None, 'a_2': None, 'a_3': None,
-                            'a_4': None, 'a_5': None, 'a_6': None,
-                            'a_7': None, 'a_8': None, 'a_9': None,
-                            'bin_width': None}
+                                     'sigma_e': '$\sigma_e$',
+                                     'sigma_s': '$\sigma_s$',
+                                     'a_0': None, 'a_1': None, 'a_2': None,
+                                     'a_3': None,
+                                     'a_4': None, 'a_5': None, 'a_6': None,
+                                     'a_7': None, 'a_8': None, 'a_9': None,
+                                     'bin_width': None}
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1, a_2,
             a_3, a_4, a_5, a_6, a_7, a_8, a_9):
@@ -228,7 +228,6 @@ class FMPEFitter(HistogramFitter):
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
     debug = args['--debug']
@@ -237,7 +236,6 @@ def entry():
     output_path = args['--output']
 
     if not os.path.exists(output_path):
-
         raise IOError('Path for output does not exists \n')
 
     pixel_id = convert_pixel_args(args['--pixel'])
@@ -252,7 +250,6 @@ def entry():
     timing_filename = os.path.join(output_path, args['--timing'])
 
     if args['--compute']:
-
         # timing_histo = Histogram1D.load(os.path.join(output_path,
         #                                             timing_histo_filename))
 
@@ -262,17 +259,17 @@ def entry():
         pulse_indices = pulse_indices.astype(int)
 
         mpe.compute(
-                files,
-                pixel_id, max_events, pulse_indices, integral_width,
-                shift, bin_width, output_path,
-                charge_histo_filename=charge_histo_filename,
-                amplitude_histo_filename=amplitude_histo_filename,
-                save=True)
+            files,
+            pixel_id, max_events, pulse_indices, integral_width,
+            shift, bin_width, output_path,
+            charge_histo_filename=charge_histo_filename,
+            amplitude_histo_filename=amplitude_histo_filename,
+            save=True)
 
     if args['--fit']:
 
         charge_histo = Histogram1D.load(
-             os.path.join(output_path, charge_histo_filename))
+            os.path.join(output_path, charge_histo_filename))
         amplitude_histo = Histogram1D.load(
             os.path.join(output_path, amplitude_histo_filename))
 
@@ -296,7 +293,6 @@ def entry():
                               total=2, desc='Histogram'):
 
             if x == 0:
-
                 continue
 
             results_filename = 'results_' + os.path.splitext(histo_filenames[x]
@@ -335,7 +331,6 @@ def entry():
                     ndf[i] = fitter.ndf
 
                     if debug:
-
                         x_label = 'Charge [LSB]'
                         label = 'Pixel {}'.format(pixel)
 
@@ -355,12 +350,12 @@ def entry():
                     print(exception)
 
             if not debug:
-
                 np.savez(results_filename,
                          gain=gain, sigma_e=sigma_e,
                          sigma_s=sigma_s, baseline=baseline,
                          gain_error=gain_error, sigma_e_error=sigma_e_error,
-                         sigma_s_error=sigma_s_error, baseline_error=baseline_error,
+                         sigma_s_error=sigma_s_error,
+                         baseline_error=baseline_error,
                          chi_2=chi_2, ndf=ndf,
                          pixel_id=pixel_id,
                          )
@@ -407,13 +402,11 @@ def entry():
                       format(pixel, figure_path))
                 print(e)
 
-
             axis_1.clear()
             axis_2.clear()
             axis_3.clear()
 
     if args['--display']:
-
         amplitude_histo_path = os.path.join(output_path,
                                             'amplitude_histo_fmpe.pk')
         charge_histo_path = os.path.join(output_path,
@@ -433,5 +426,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()
