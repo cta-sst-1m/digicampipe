@@ -23,7 +23,7 @@ Options:
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
-  --params=<YAML_FILE>        Calibration params to use in the fit
+  --gain=<HISTO_FMPE>        Calibration params to use in the fit
 '''
 import os
 from docopt import docopt
@@ -167,52 +167,59 @@ def plot_event(events, pixel_id):
 
 
 def compute(files, pixel_id, max_events, pulse_indices, integral_width,
-            shift, bin_width, output_path,
-            charge_histo_filename='charge_histo.pk',
+            shift, bin_width, charge_histo_filename='charge_histo.pk',
             amplitude_histo_filename='amplitude_histo.pk',
             save=True):
 
-    amplitude_histo_path = os.path.join(output_path, amplitude_histo_filename)
-    charge_histo_path = os.path.join(output_path, charge_histo_filename)
+    if os.path.exists(charge_histo_filename) and save:
 
-    if os.path.exists(charge_histo_path) and save:
+        raise IOError('File {} already exists'.format(charge_histo_filename))
 
-        raise IOError('File {} already exists'.format(charge_histo_path))
+    elif os.path.exists(charge_histo_filename):
 
-    if os.path.exists(amplitude_histo_path) and save:
+        charge_histo = Histogram1D.load(charge_histo_filename)
 
-        raise IOError('File {} already exists'.format(amplitude_histo_path))
+    if os.path.exists(amplitude_histo_filename) and save:
 
-    n_pixels = len(pixel_id)
+        raise IOError('File {} already exists'.format(amplitude_histo_filename))
 
-    events = calibration_event_stream(files, pixel_id=pixel_id,
-                                  max_events=max_events, baseline_new=True)
-    # events = compute_baseline_with_min(events)
-    events = fill_digicam_baseline(events)
-    events = subtract_baseline(events)
-    # events = find_pulse_with_max(events)
-    events = fill_pulse_indices(events, pulse_indices)
-    events = compute_charge(events, integral_width, shift)
-    events = compute_amplitude(events)
+    elif os.path.exists(amplitude_histo_filename):
 
-    charge_histo = Histogram1D(
-        data_shape=(n_pixels,),
-        bin_edges=np.arange(-40 * integral_width,
-                            4096 * integral_width,
-                            bin_width))
+        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
-    amplitude_histo = Histogram1D(
-        data_shape=(n_pixels,),
-        bin_edges=np.arange(-40, 4096, 1))
+    if (not os.path.exists(amplitude_histo_filename)) or \
+            (not os.path.exists(charge_histo_filename)):
 
-    for event in events:
-        charge_histo.fill(event.data.reconstructed_charge)
-        amplitude_histo.fill(event.data.reconstructed_amplitude)
+        n_pixels = len(pixel_id)
 
-    if save:
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                      max_events=max_events, baseline_new=True)
+        # events = compute_baseline_with_min(events)
+        events = fill_digicam_baseline(events)
+        events = subtract_baseline(events)
+        # events = find_pulse_with_max(events)
+        events = fill_pulse_indices(events, pulse_indices)
+        events = compute_charge(events, integral_width, shift)
+        events = compute_amplitude(events)
 
-        charge_histo.save(charge_histo_path)
-        amplitude_histo.save(amplitude_histo_path)
+        charge_histo = Histogram1D(
+            data_shape=(n_pixels,),
+            bin_edges=np.arange(-40 * integral_width,
+                                4096 * integral_width,
+                                bin_width))
+
+        amplitude_histo = Histogram1D(
+            data_shape=(n_pixels,),
+            bin_edges=np.arange(-40, 4096, 1))
+
+        for event in events:
+            charge_histo.fill(event.data.reconstructed_charge)
+            amplitude_histo.fill(event.data.reconstructed_amplitude)
+
+        if save:
+
+            charge_histo.save(charge_histo_filename)
+            amplitude_histo.save(amplitude_histo_filename)
 
     return amplitude_histo, charge_histo
 

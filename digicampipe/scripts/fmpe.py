@@ -228,7 +228,31 @@ class FMPEFitter(HistogramFitter):
         return x[mask], y[mask], bin_width[mask]
 
 
+def compute(files, max_events, pixel_id, n_samples, timing_histo_filename,
+            charge_histo_filename, amplitude_histo_filename, save,
+            integral_width, shift, bin_width):
+
+    timing_histo = timing.compute(files, max_events, pixel_id,
+                                  n_samples,
+                                  filename=timing_histo_filename,
+                                  save=save)
+
+    pulse_indices = timing_histo.mode() // 4
+    pulse_indices = pulse_indices.astype(int)
+
+    amplitude_histo, charge_histo = mpe.compute(
+        files,
+        pixel_id, max_events, pulse_indices, integral_width,
+        shift, bin_width,
+        charge_histo_filename=charge_histo_filename,
+        amplitude_histo_filename=amplitude_histo_filename,
+        save=save)
+
+    return amplitude_histo, charge_histo
+
+
 def entry():
+
     args = docopt(__doc__)
     files = args['<INPUT>']
     debug = args['--debug']
@@ -246,35 +270,30 @@ def entry():
 
     n_pixels = len(pixel_id)
 
-    charge_histo_filename = 'charge_histo_fmpe.pk'
-    amplitude_histo_filename = 'amplitude_histo_fmpe.pk'
+    charge_histo_filename = os.path.join(output_path, 'charge_histo_fmpe.pk')
+    amplitude_histo_filename = os.path.join(output_path,
+                                            'amplitude_histo_fmpe.pk')
     timing_histo_filename = os.path.join(output_path, args['--timing'])
     n_samples = int(args['--n_samples'])
 
     if args['--compute']:
 
-        timing_histo = timing.compute(files, max_events, pixel_id,
-                                      n_samples,
-                                      filename=timing_histo_filename,
-                                      save=True)
-
-        pulse_indices = timing_histo.mode() // 4
-        pulse_indices = pulse_indices.astype(int)
-
-        mpe.compute(
-            files,
-            pixel_id, max_events, pulse_indices, integral_width,
-            shift, bin_width, output_path,
-            charge_histo_filename=charge_histo_filename,
-            amplitude_histo_filename=amplitude_histo_filename,
-            save=True)
+        compute(files,
+                max_events=max_events,
+                pixel_id=pixel_id,
+                n_samples=n_samples,
+                timing_histo_filename=timing_histo_filename,
+                charge_histo_filename=charge_histo_filename,
+                amplitude_histo_filename=amplitude_histo_filename,
+                save=True,
+                integral_width=integral_width,
+                shift=shift,
+                bin_width=bin_width)
 
     if args['--fit']:
 
-        charge_histo = Histogram1D.load(
-            os.path.join(output_path, charge_histo_filename))
-        amplitude_histo = Histogram1D.load(
-            os.path.join(output_path, amplitude_histo_filename))
+        charge_histo = Histogram1D.load(charge_histo_filename)
+        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
         gain = np.zeros(n_pixels) * np.nan
         sigma_e = np.zeros(n_pixels) * np.nan
