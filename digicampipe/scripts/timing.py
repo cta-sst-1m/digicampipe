@@ -3,7 +3,7 @@
 Do a raw data histogram
 
 Usage:
-  timing.py [options] [--] <INPUT>...
+  digicam-timing [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
