@@ -23,7 +23,8 @@ Options:
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
-  --gain=<HISTO_FMPE>        Calibration params to use in the fit
+  --gain=<GAIN_RESULTS>       Calibration params to use in the fit
+  --timing=<TIMING_HISTO>     Timing histogram
 '''
 import os
 from docopt import docopt
@@ -241,15 +242,15 @@ def entry():
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
+    ncall = int(args['--ncall'])
     ac_levels = convert_dac_level(args['--ac_levels'])
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
 
-    timing_histo_filename = 'timing_histo.pk'
-    timing_histo_filename = os.path.join(output_path, timing_histo_filename)
+    timing_histo_filename = args['--timing']
     timing_histo = Histogram1D.load(timing_histo_filename)
 
-    results_filename = 'mpe_fit_results'
+    results_filename = 'mpe_fit_results.npz'
     results_filename = os.path.join(output_path, results_filename)
 
     charge_histo_filename = 'charge_histo_ac_level.pk'
@@ -259,14 +260,7 @@ def entry():
     charge_histo_filename = os.path.join(output_path,
                                          charge_histo_filename)
 
-    fit_results_filename = os.path.join(output_path, 'mpe_results{}.npz')
-
-    if n_pixels > 1:
-
-        fit_results_filename = fit_results_filename.format('')
-    else:
-
-        fit_results_filename = fit_results_filename.format(pixel_ids[0])
+    fmpe_results_filename = args['--gain']
 
     if args['--compute']:
 
@@ -274,8 +268,6 @@ def entry():
             raise ValueError('n_ac levels = {} != '
                              'n_files = {}'.format(n_ac_levels, len(files)))
 
-        amplitude = np.zeros((n_ac_levels, n_pixels))
-        charge = np.zeros((n_ac_levels, n_pixels))
         time = np.zeros((n_ac_levels, n_pixels))
 
         charge_histo = Histogram1D(
@@ -323,15 +315,9 @@ def entry():
         charge_histo.save(charge_histo_filename)
         amplitude_histo.save(amplitude_histo_filename)
 
-        np.savez(fit_results_filename,
-                 amplitude=amplitude, charge=charge, time=time,
-                 pixel_ids=pixel_ids, ac_levels=ac_levels)
-
     if args['--fit']:
 
-        ncall = int(args['--ncall'])
-
-        input_parameters = yaml.load(open(args['--params'], 'r'))
+        input_parameters = dict(np.load(fmpe_results_filename))
 
         gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
         sigma_e = np.zeros((n_ac_levels, n_pixels)) * np.nan

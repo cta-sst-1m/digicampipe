@@ -23,7 +23,6 @@ Options:
                               [default: 1]
   --ncall=N                   Number of calls for the fit [default: 10000]
   --timing=PATH               Timing filename
-                              [default: time.npz]
   --n_samples=N               Number of samples in readout window
 '''
 import os
@@ -273,8 +272,11 @@ def entry():
     charge_histo_filename = os.path.join(output_path, 'charge_histo_fmpe.pk')
     amplitude_histo_filename = os.path.join(output_path,
                                             'amplitude_histo_fmpe.pk')
-    timing_histo_filename = os.path.join(output_path, args['--timing'])
+    results_filename = os.path.join(output_path, 'fmpe_fit_results.npz')
+    timing_histo_filename = args['--timing']
     n_samples = int(args['--n_samples'])
+    ncall = int(args['--ncall'])
+    estimated_gain = 20
 
     if args['--compute']:
 
@@ -293,7 +295,6 @@ def entry():
     if args['--fit']:
 
         charge_histo = Histogram1D.load(charge_histo_filename)
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
         gain = np.zeros(n_pixels) * np.nan
         sigma_e = np.zeros(n_pixels) * np.nan
@@ -306,81 +307,64 @@ def entry():
         chi_2 = np.zeros(n_pixels) * np.nan
         ndf = np.zeros(n_pixels) * np.nan
 
-        estimated_gains = [5, 20]
-        ncall = int(args['--ncall'])
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
+                             desc='Pixel'):
+            histo = charge_histo[i]
 
-        histo_filenames = [amplitude_histo_filename, charge_histo_filename]
+            try:
 
-        for x, histos in tqdm(enumerate([amplitude_histo, charge_histo]),
-                              total=2, desc='Histogram'):
+                fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
+                                    throw_nan=True)
+                fitter.fit(ncall=ncall)
 
-            if x == 0:
-                continue
+                fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
+                                    initial_parameters=fitter.parameters,
+                                    throw_nan=True)
+                fitter.fit(ncall=ncall)
 
-            results_filename = 'results_' + os.path.splitext(histo_filenames[x]
-                                                             )[0] + '.npz'
-            results_filename = os.path.join(output_path, results_filename)
+                param = fitter.parameters
+                param_error = fitter.errors
 
-            estimated_gain = estimated_gains[x]
+                gain[i] = param['gain']
+                gain_error[i] = param_error['gain']
+                sigma_e[i] = param['sigma_e']
+                sigma_e_error[i] = param_error['sigma_e']
+                sigma_s[i] = param['sigma_s']
+                sigma_s_error[i] = param_error['sigma_s']
+                baseline[i] = param['baseline']
+                baseline_error[i] = param_error['baseline']
+                chi_2[i] = fitter.fit_test() * fitter.ndf
+                ndf[i] = fitter.ndf
 
-            for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
-                                 desc='Pixel'):
-                histo = histos[i]
+                if debug:
+                    x_label = 'Charge [LSB]'
+                    label = 'Pixel {}'.format(pixel)
 
-                try:
-
-                    fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
-                                        throw_nan=True)
-                    fitter.fit(ncall=ncall)
-
-                    fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
-                                        initial_parameters=fitter.parameters,
-                                        throw_nan=True)
-                    fitter.fit(ncall=ncall)
-
-                    param = fitter.parameters
-                    param_error = fitter.errors
-
-                    gain[i] = param['gain']
-                    gain_error[i] = param_error['gain']
-                    sigma_e[i] = param['sigma_e']
-                    sigma_e_error[i] = param_error['sigma_e']
-                    sigma_s[i] = param['sigma_s']
-                    sigma_s_error[i] = param_error['sigma_s']
-                    baseline[i] = param['baseline']
-                    baseline_error[i] = param_error['baseline']
-                    chi_2[i] = fitter.fit_test() * fitter.ndf
-                    ndf[i] = fitter.ndf
-
-                    if debug:
-                        x_label = 'Charge [LSB]'
-                        label = 'Pixel {}'.format(pixel)
-
-                        fitter.draw(x_label=x_label, label=label,
+                    fitter.draw(x_label=x_label, label=label,
+                                legend=False)
+                    fitter.draw_fit(x_label=x_label, label=label,
                                     legend=False)
-                        fitter.draw_fit(x_label=x_label, label=label,
-                                        legend=False)
-                        fitter.draw_init(x_label=x_label, label=label,
-                                         legend=False)
+                    fitter.draw_init(x_label=x_label, label=label,
+                                     legend=False)
 
-                        plt.show()
+                    plt.show()
 
-                except Exception as exception:
+            except Exception as exception:
 
-                    raise exception
-                    print('Could not fit FMPE in pixel {}'.format(pixel))
-                    print(exception)
+                raise exception
+                print('Could not fit FMPE in pixel {}'.format(pixel))
+                print(exception)
 
-            if not debug:
-                np.savez(results_filename,
-                         gain=gain, sigma_e=sigma_e,
-                         sigma_s=sigma_s, baseline=baseline,
-                         gain_error=gain_error, sigma_e_error=sigma_e_error,
-                         sigma_s_error=sigma_s_error,
-                         baseline_error=baseline_error,
-                         chi_2=chi_2, ndf=ndf,
-                         pixel_id=pixel_id,
-                         )
+        if not debug:
+            np.savez(results_filename,
+                     gain=gain, sigma_e=sigma_e,
+                     sigma_s=sigma_s, baseline=baseline,
+                     gain_error=gain_error, sigma_e_error=sigma_e_error,
+                     sigma_s_error=sigma_s_error,
+                     baseline_error=baseline_error,
+                     chi_2=chi_2, ndf=ndf,
+                     pixel_id=pixel_id,
+                     )
 
     if args['--save_figures']:
 
