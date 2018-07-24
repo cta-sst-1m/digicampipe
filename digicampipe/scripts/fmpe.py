@@ -24,6 +24,7 @@ Options:
   --ncall=N                   Number of calls for the fit [default: 10000]
   --timing=PATH               Timing filename
                               [default: time.npz]
+  --n_samples=N               Number of samples in readout window
 '''
 import os
 from docopt import docopt
@@ -247,15 +248,17 @@ def entry():
 
     charge_histo_filename = 'charge_histo_fmpe.pk'
     amplitude_histo_filename = 'amplitude_histo_fmpe.pk'
-    timing_filename = os.path.join(output_path, args['--timing'])
+    timing_histo_filename = os.path.join(output_path, args['--timing'])
+    n_samples = int(args['--n_samples'])
 
     if args['--compute']:
-        # timing_histo = Histogram1D.load(os.path.join(output_path,
-        #                                             timing_histo_filename))
 
-        # pulse_indices = timing_histo.mode() // 4
+        timing_histo = timing.compute(files, max_events, pixel_id,
+                                      n_samples,
+                                      filename=timing_histo_filename,
+                                      save=True)
 
-        pulse_indices = np.load(timing_filename)['time'] // 4
+        pulse_indices = timing_histo.mode() // 4
         pulse_indices = pulse_indices.astype(int)
 
         mpe.compute(
