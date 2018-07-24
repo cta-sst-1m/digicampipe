@@ -11,213 +11,23 @@ Options:
   -o OUTPUT --output=OUTPUT   Folder where to store the results.
   -c --compute                Compute the data.
   -f --fit                    Fit
-  --ncall=N                   ncall for fit [default: 10000].
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
-  --ac_levels=<DAC>           LED DC DAC level
+  --dc_levels=<DAC>           LED DC DAC level
   --save_figures              Save the plots to the OUTPUT folder
-  --bin_width=N               Bin width (in LSB) of the histogram
-                              [default: 1]
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
-  --templates=<TEMPLATE>      Templates measured
+  --template=<TEMPLATE>       Templates measured
+  --crosstalk=<CROSSTALK>     Calibration params to use in the fit
 '''
 import os
 from docopt import docopt
-from tqdm import tqdm
-
 import numpy as np
 import matplotlib.pyplot as plt
-from iminuit import describe
-
-from histogram.histogram import Histogram1D
-from histogram.fit import HistogramFitter
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
-    subtract_baseline
-from digicampipe.calib.camera.peak import fill_pulse_indices
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
-from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
-    generalized_poisson
-
-
-class MPEFitter(HistogramFitter):
-
-    def __init__(self, histogram, fixed_params, **kwargs):
-
-        super(MPEFitter, self).__init__(histogram, **kwargs)
-        self.initial_parameters = fixed_params
-        self.iminuit_options = {**self.iminuit_options, **fixed_params}
-        self.parameters_plot_name = {'mu': '$\mu$', 'mu_xt': '$\mu_{XT}$',
-                                     'n_peaks': '$N_{peaks}$', 'gain': '$G$',
-                                     'amplitude': '$A$', 'baseline': '$B$',
-                                     'sigma_e': '$\sigma_e$',
-                                     'sigma_s': '$\sigma_s$'
-                                     }
-
-    def initialize_fit(self):
-
-        fixed_params = self.initial_parameters
-        x = self.bin_centers
-        y = self.count
-
-        gain = fixed_params['gain']
-        sigma_e = fixed_params['sigma_e']
-        sigma_s = fixed_params['sigma_s']
-        baseline = fixed_params['baseline']
-
-        mean_x = np.average(x, weights=y) - baseline
-
-        if 'mu_xt' in fixed_params.keys():
-
-            mu_xt = fixed_params['mu_xt']
-            mu = mean_x * (1 - mu_xt) / gain
-
-        else:
-
-            left = baseline - gain / 2
-            left = np.where(x > left)[0][0]
-
-            right = baseline + gain / 2
-            right = np.where(x < right)[0][-1]
-
-            probability_0_pe = np.sum(y[left:right])
-            probability_0_pe /= np.sum(y)
-            mu = - np.log(probability_0_pe)
-
-            mu_xt = 1 - gain * mu / mean_x
-            mu_xt = max(0.01, mu_xt)
-
-        n_peaks = np.max(x) - (baseline - gain / 2)
-        n_peaks = n_peaks / gain
-        n_peaks = np.round(n_peaks)
-        amplitude = np.sum(y)
-
-        params = {'baseline': baseline, 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'gain': gain, 'amplitude': amplitude,
-                  'mu': mu, 'mu_xt': mu_xt, 'n_peaks': n_peaks}
-
-        self.initial_parameters = params
-
-    def compute_fit_boundaries(self):
-
-        limit_params = {}
-
-        init_params = self.initial_parameters
-
-        baseline = init_params['baseline']
-        gain = init_params['gain']
-        sigma_e = init_params['sigma_e']
-        sigma_s = init_params['sigma_s']
-        mu = init_params['mu']
-        amplitude = init_params['amplitude']
-        n_peaks = init_params['n_peaks']
-
-        limit_params['limit_baseline'] = (
-        baseline - sigma_e, baseline + sigma_e)
-        limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
-        limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
-        limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
-        limit_params['limit_mu'] = (0.5 * mu, 1.5 * mu)
-        limit_params['limit_mu_xt'] = (0, 0.5)
-        limit_params['limit_amplitude'] = (0.5 * amplitude, 1.5 * amplitude)
-        limit_params['limit_n_peaks'] = (max(1., n_peaks - 1.), n_peaks + 1.)
-
-        self.boundary_parameter = limit_params
-
-    def pdf(self, x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude,
-            n_peaks):
-
-        if n_peaks > 0:
-
-            x = x - baseline
-            photoelectron_peak = np.arange(n_peaks, dtype=np.int)
-            sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
-            sigma_n = sigma_n
-            sigma_n = np.sqrt(sigma_n)
-
-            pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
-
-            pdf = pdf * gaussian(x, photoelectron_peak * gain, sigma_n,
-                                 amplitude=1)
-            pdf = np.sum(pdf, axis=-1)
-
-            return pdf * amplitude
-
-        else:
-
-            return np.zeros(x.shape)
-
-
-def plot_event(events, pixel_id):
-
-    for event in events:
-
-        event.data.plot(pixel_id=pixel_id)
-        plt.show()
-
-        yield event
-
-
-def compute(files, pixel_id, max_events, pulse_indices, integral_width,
-            shift, bin_width, charge_histo_filename='charge_histo.pk',
-            amplitude_histo_filename='amplitude_histo.pk',
-            save=True):
-
-    if os.path.exists(charge_histo_filename) and save:
-
-        raise IOError('File {} already exists'.format(charge_histo_filename))
-
-    elif os.path.exists(charge_histo_filename):
-
-        charge_histo = Histogram1D.load(charge_histo_filename)
-
-    if os.path.exists(amplitude_histo_filename) and save:
-
-        raise IOError('File {} already exists'.format(amplitude_histo_filename))
-
-    elif os.path.exists(amplitude_histo_filename):
-
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
-
-    if (not os.path.exists(amplitude_histo_filename)) or \
-            (not os.path.exists(charge_histo_filename)):
-
-        n_pixels = len(pixel_id)
-
-        events = calibration_event_stream(files, pixel_id=pixel_id,
-                                      max_events=max_events, baseline_new=True)
-        # events = compute_baseline_with_min(events)
-        events = fill_digicam_baseline(events)
-        events = subtract_baseline(events)
-        # events = find_pulse_with_max(events)
-        events = fill_pulse_indices(events, pulse_indices)
-        events = compute_charge(events, integral_width, shift)
-        events = compute_amplitude(events)
-
-        charge_histo = Histogram1D(
-            data_shape=(n_pixels,),
-            bin_edges=np.arange(-40 * integral_width,
-                                4096 * integral_width,
-                                bin_width))
-
-        amplitude_histo = Histogram1D(
-            data_shape=(n_pixels,),
-            bin_edges=np.arange(-40, 4096, 1))
-
-        for event in events:
-            charge_histo.fill(event.data.reconstructed_charge)
-            amplitude_histo.fill(event.data.reconstructed_amplitude)
-
-        if save:
-
-            charge_histo.save(charge_histo_filename)
-            amplitude_histo.save(amplitude_histo_filename)
-
-    return amplitude_histo, charge_histo
 
 
 def entry():
@@ -231,208 +41,49 @@ def entry():
 
     if not os.path.exists(output_path):
 
-        raise IOError('Path for output does not exists \n')
+        raise IOError('Path {} for output does not '
+                      'exists \n'.format(output_path))
 
-    pixel_ids = convert_pixel_args(args['--pixel'])
-    integral_width = int(args['--integral_width'])
-    shift = int(args['--shift'])
-    bin_width = int(args['--bin_width'])
-    ncall = int(args['--ncall'])
-    ac_levels = convert_dac_level(args['--ac_levels'])
-    n_pixels = len(pixel_ids)
-    n_ac_levels = len(ac_levels)
+    pixel_id = convert_pixel_args(args['--pixel'])
+    dc_levels = convert_dac_level(args['--dc_levels'])
+    n_pixels = len(pixel_id)
+    n_dc_levels = len(dc_levels)
 
-    timing_histo_filename = args['--timing']
-    timing_histo = Histogram1D.load(timing_histo_filename)
-
-    results_filename = 'mpe_fit_results.npz'
+    results_filename = 'baseline_shift_results.npz'
     results_filename = os.path.join(output_path, results_filename)
 
-    charge_histo_filename = 'charge_histo_ac_level.pk'
-    amplitude_histo_filename = 'amplitude_histo_ac_level.pk'
-    amplitude_histo_filename = os.path.join(output_path,
-                                            amplitude_histo_filename)
-    charge_histo_filename = os.path.join(output_path,
-                                         charge_histo_filename)
-
-    fmpe_results_filename = args['--gain']
+    # fmpe_results_filename = args['--gain']
+    # crosstalk = args['--crosstalk']
+    # templates = args['--template']
 
     if args['--compute']:
 
-        if n_ac_levels != len(files):
-            raise ValueError('n_ac levels = {} != '
-                             'n_files = {}'.format(n_ac_levels, len(files)))
+        if n_dc_levels != len(files):
+            raise ValueError('n_dc levels = {} != '
+                             'n_files = {}'.format(n_dc_levels, len(files)))
 
-        time = np.zeros((n_ac_levels, n_pixels))
+        baseline_mean = np.zeros((n_dc_levels, n_pixels))
+        baseline_std = np.zeros((n_dc_levels, n_pixels))
 
-        charge_histo = Histogram1D(
-            bin_edges=np.arange(- 40 * integral_width,
-                                2000, bin_width),
-            data_shape=(n_ac_levels, n_pixels, ))
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                 max_events=max_events, baseline_new=True)
 
-        amplitude_histo = Histogram1D(
-            bin_edges=np.arange(- 40,
-                                500, bin_width),
-            data_shape=(n_ac_levels, n_pixels,))
+        for count, event in enumerate(events):
 
-        if os.path.exists(charge_histo_filename):
-            raise IOError(
-                'File {} already exists'.format(charge_histo_filename))
+            baseline_mean += event.data.digicam_baseline
+            baseline_std += event.data.digicam_baseline**2
 
-        if os.path.exists(amplitude_histo_filename):
-            raise IOError(
-                'File {} already exists'.format(amplitude_histo_filename))
+        baseline_mean /= count
+        baseline_std /= count
+        baseline_std -= baseline_mean**2
+        baseline_std = np.sqrt(baseline_std)
 
-        for i, (file, ac_level) in tqdm(enumerate(zip(files, ac_levels)),
-                                        total=n_ac_levels, desc='DAC level',
-                                        leave=False):
-
-            time[i] = timing_histo.mode()[pixel_ids]
-            pulse_indices = time[i] // 4
-
-            events = calibration_event_stream(file, pixel_id=pixel_ids,
-                                              max_events=max_events,
-                                              baseline_new=True)
-            # events = compute_baseline_with_min(events)
-            events = fill_digicam_baseline(events)
-            events = subtract_baseline(events)
-            # events = find_pulse_with_max(events)
-            events = fill_pulse_indices(events, pulse_indices)
-            events = compute_charge(events, integral_width, shift)
-            events = compute_amplitude(events)
-
-            for event in events:
-                charge_histo.fill(event.data.reconstructed_charge,
-                                  indices=(i, ))
-                amplitude_histo.fill(event.data.reconstructed_amplitude,
-                                     indices=(i, ))
-
-        charge_histo.save(charge_histo_filename)
-        amplitude_histo.save(amplitude_histo_filename)
+        np.savez(results_filename, baseline_mean=baseline_mean,
+                 baseline_std=baseline_std, dc_levels=dc_levels)
 
     if args['--fit']:
 
-        input_parameters = dict(np.load(fmpe_results_filename))
-
-        gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_e = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_s = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        baseline = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu_xt = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        amplitude = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        gain_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_e_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_s_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        baseline_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu_xt_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        amplitude_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        ac_limit = [np.inf]*n_pixels
-
-        charge_histo = Histogram1D.load(charge_histo_filename)
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
-
-        for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
-                                desc='DAC level', leave=False):
-
-            for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
-                                    desc='Pixel',
-                                    leave=False):
-
-                histo = charge_histo[i, j]
-
-                if histo.data[-1] > 0 or histo.data.sum() == 0:
-
-                    continue
-
-                fit_params_names = describe(mpe_distribution_general)
-                options = {'fix_n_peaks': True}
-                fixed_params = {}
-
-                for param in fit_params_names:
-
-                    if param in input_parameters.keys():
-                        name = 'fix_' + param
-
-                        options[name] = True
-                        fixed_params[param] = input_parameters[param][pixel_id]
-
-                if i > 0:
-
-                    if mu[i - 1, j] > 5:
-                        ac_limit[j] = min(i, ac_limit[j])
-                        ac_limit[j] = int(ac_limit[j])
-
-                        weights_fit = chi_2[:ac_limit[j], j]
-                        weights_fit = weights_fit / ndf[:ac_limit[j], j]
-
-                        options['fix_mu_xt'] = True
-
-                        temp = mu_xt[:ac_limit[j], j] * weights_fit
-                        temp = np.nansum(temp)
-                        temp = temp / np.nansum(weights_fit)
-                        fixed_params['mu_xt'] = temp
-
-                try:
-
-                    fitter = MPEFitter(histogram=histo, cost='MLE',
-                                       pedantic=0, print_level=0,
-                                       throw_nan=True,
-                                       fixed_params=fixed_params,
-                                       **options)
-
-                    fitter.fit(ncall=ncall)
-
-                    if debug:
-                        fitter.draw()
-                        plt.show()
-
-                    m = fitter.fitter
-                    gain[i, j] = m.values['gain']
-                    sigma_e[i, j] = m.values['sigma_e']
-                    sigma_s[i, j] = m.values['sigma_s']
-                    baseline[i, j] = m.values['baseline']
-                    mu[i, j] = m.values['mu']
-                    mu_xt[i, j] = m.values['mu_xt']
-                    amplitude[i, j] = m.values['amplitude']
-
-                    gain_error[i, j] = m.errors['gain']
-                    sigma_e_error[i, j] = m.errors['sigma_e']
-                    sigma_s_error[i, j] = m.errors['sigma_s']
-                    baseline_error[i, j] = m.errors['baseline']
-                    mu_error[i, j] = m.errors['mu']
-                    mu_xt_error[i, j] = m.errors['mu_xt']
-                    amplitude_error[i, j] = m.errors['amplitude']
-
-                    chi_2[i, j] = fitter.fit_test() * fitter.ndf
-                    ndf[i, j] = fitter.ndf
-
-                except Exception as e:
-
-                    print(e)
-                    print('Could not fit pixel {} for DAC level {}'.format(
-                        pixel_id, ac_level))
-
-        np.savez(results_filename,
-                 gain=gain, sigma_e=sigma_e,
-                 sigma_s=sigma_s, baseline=baseline,
-                 mu=mu, mu_xt=mu_xt,
-                 gain_error=gain_error, sigma_e_error=sigma_e_error,
-                 sigma_s_error=sigma_s_error,
-                 baseline_error=baseline_error,
-                 mu_error=mu_error, mu_xt_error=mu_xt_error,
-                 chi_2=chi_2, ndf=ndf,
-                 pixel_ids=pixel_ids,
-                 ac_levels=ac_levels,
-                 amplitude=amplitude,
-                 amplitude_error=amplitude_error,
-                 )
+        pass
 
     if args['--save_figures']:
 
@@ -440,12 +91,14 @@ def entry():
 
     if args['--display']:
 
-        charge_histo = Histogram1D.load(charge_histo_filename)
-        charge_histo.draw(index=(0, 0), log=False, legend=False)
+        data = dict(np.load(results_filename))
+        baseline_mean = data['baseline_mean']
+        baseline_std = data['baseline_std']
+        dc_levels = data['dc_levels']
 
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
-        amplitude_histo.draw(index=(0, 0), log=False, legend=False)
-        plt.show()
+        plt.figure()
+        plt.plot(dc_levels, baseline_mean)
+
 
         pass
 

@@ -346,7 +346,6 @@ def entry():
 
             except Exception as exception:
 
-                raise exception
                 print('Could not fit FMPE in pixel {}'.format(pixel))
                 print(exception)
 
