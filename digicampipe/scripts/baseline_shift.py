@@ -3,7 +3,7 @@
 Do the Multiple Photoelectron anaylsis
 
 Usage:
-  digicam-mpe [options] [--] <INPUT>...
+  digicam-baseline-shift [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
@@ -15,16 +15,12 @@ Options:
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
-  --ac_levels=<DAC>           LED AC DAC level
-  --shift=N                   number of bins to shift before integrating
-                              [default: 0].
-  --integral_width=N          number of bins to integrate over
-                              [default: 7].
+  --ac_levels=<DAC>           LED DC DAC level
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
-  --timing=<TIMING_HISTO>     Timing histogram
+  --templates=<TEMPLATE>      Templates measured
 '''
 import os
 from docopt import docopt

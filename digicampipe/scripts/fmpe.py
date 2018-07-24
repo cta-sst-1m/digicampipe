@@ -228,17 +228,11 @@ class FMPEFitter(HistogramFitter):
         return x[mask], y[mask], bin_width[mask]
 
 
-def compute(files, max_events, pixel_id, n_samples, timing_histo_filename,
+def compute(files, max_events, pixel_id, n_samples, timing_filename,
             charge_histo_filename, amplitude_histo_filename, save,
             integral_width, shift, bin_width):
 
-    timing_histo = timing.compute(files, max_events, pixel_id,
-                                  n_samples,
-                                  filename=timing_histo_filename,
-                                  save=save)
-
-    pulse_indices = timing_histo.mode() // 4
-    pulse_indices = pulse_indices.astype(int)
+    pulse_indices = np.load(timing_filename)['time'] // 4
 
     amplitude_histo, charge_histo = mpe.compute(
         files,
@@ -274,7 +268,7 @@ def entry():
     amplitude_histo_filename = os.path.join(output_path,
                                             'amplitude_histo_fmpe.pk')
     results_filename = os.path.join(output_path, 'fmpe_fit_results.npz')
-    timing_histo_filename = args['--timing']
+    timing_filename = args['--timing']
     n_samples = int(args['--n_samples'])
     ncall = int(args['--ncall'])
     estimated_gain = float(args['--estimated_gain'])
@@ -285,7 +279,7 @@ def entry():
                 max_events=max_events,
                 pixel_id=pixel_id,
                 n_samples=n_samples,
-                timing_histo_filename=timing_histo_filename,
+                timing_filename=timing_filename,
                 charge_histo_filename=charge_histo_filename,
                 amplitude_histo_filename=amplitude_histo_filename,
                 save=True,

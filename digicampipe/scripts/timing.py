@@ -10,6 +10,7 @@ Options:
   --max_events=N              Maximum number of events to analyse
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
   -c --compute                Compute the data.
+  -f --fit                    Fit the timing histo.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
@@ -77,6 +78,7 @@ def entry():
     output_path = args['--output']
     timing_histo_filename = 'timing_histo.pk'
     timing_histo_filename = os.path.join(output_path, timing_histo_filename)
+    results_filename = os.path.join(output_path, 'timing_results.npz')
 
     if not os.path.exists(output_path):
 
@@ -87,6 +89,18 @@ def entry():
         compute(files, max_events, pixel_id, n_samples,
                 timing_histo_filename, save=True,
                 time_method=compute_time_from_max) # compute_time_from_leading_edge)
+
+    if args['--fit']:
+
+        timing_histo = Histogram1D.load(timing_histo_filename)
+
+        timing = timing_histo.mode()
+        timing = timing // 4
+
+        timing[timing <= 4] = np.mean(timing).astype(int)
+        timing = timing * 4
+
+        np.savez(results_filename, time=timing)
 
     if args['--save_figures']:
 
@@ -125,12 +139,18 @@ def entry():
 
         pulse_time = timing_histo.mode()
 
-        plt.figure()
         plot_array_camera(pulse_time, label='most probable time [ns]',
                           allow_pick=True)
 
-        plt.figure()
         plot_parameter(pulse_time, 'most probable time', '[ns]',
+                       bins=20)
+
+        pulse_time = np.load(results_filename)['time']
+
+        plot_array_camera(pulse_time, label='time of pulse [ns]',
+                          allow_pick=True)
+
+        plot_parameter(pulse_time, 'time of pulse', '[ns]',
                        bins=20)
 
         plt.show()

@@ -52,6 +52,7 @@ setup(
             'digicam-raw=digicampipe.scripts.raw:entry',
             'digicam-timing=digicampipe.scripts.timing:entry',
             'digicam-rate-scan=digicampipe.scripts.rate_scan:entry',
+            'digicam-baseline-shift=digicampipe.scripts.baseline_shift:entry',
         ],
     }
 )
