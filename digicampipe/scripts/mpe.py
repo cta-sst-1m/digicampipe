@@ -7,10 +7,10 @@ Usage:
 
 Options:
   -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
+  --max_events=N              Maximum number of events to analyse.
   -o OUTPUT --output=OUTPUT   Folder where to store the results.
   -c --compute                Compute the data.
-  -f --fit                    Fit
+  -f --fit                    Fit.
   --ncall=N                   ncall for fit [default: 10000].
   -d --display                Display.
   -v --debug                  Enter the debug mode.
@@ -235,7 +235,8 @@ def entry():
 
     if not os.path.exists(output_path):
 
-        raise IOError('Path for output does not exists \n')
+        raise IOError('Path {} for output '
+                      'does not exists \n'.format(output_path))
 
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
@@ -246,8 +247,8 @@ def entry():
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
 
-    timing_histo_filename = args['--timing']
-    timing_histo = Histogram1D.load(timing_histo_filename)
+    timing_filename = args['--timing']
+    timing = np.load(timing_filename)['time']
 
     results_filename = 'mpe_fit_results.npz'
     results_filename = os.path.join(output_path, results_filename)
@@ -264,7 +265,7 @@ def entry():
     if args['--compute']:
 
         if n_ac_levels != len(files):
-            raise ValueError('n_ac levels = {} != '
+            raise ValueError('n_ac_levels = {} != '
                              'n_files = {}'.format(n_ac_levels, len(files)))
 
         time = np.zeros((n_ac_levels, n_pixels))
@@ -291,7 +292,7 @@ def entry():
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            time[i] = timing_histo.mode()[pixel_ids]
+            time[i] = timing[pixel_ids]
             pulse_indices = time[i] // 4
 
             events = calibration_event_stream(file, pixel_id=pixel_ids,
@@ -349,7 +350,7 @@ def entry():
                                     desc='Pixel',
                                     leave=False):
 
-                histo = charge_histo[i, j]
+                histo = charge_histo[i, pixel_id]
 
                 if histo.data[-1] > 0 or histo.data.sum() == 0:
 
@@ -394,25 +395,33 @@ def entry():
                     fitter.fit(ncall=ncall)
 
                     if debug:
-                        fitter.draw()
+
+                        x_label = '[LSB]'
+                        label = 'Pixel {}'.format(pixel_id)
+                        fitter.draw(legend=False, x_label=x_label, label=label)
+                        fitter.draw_init(legend=False, x_label=x_label,
+                                         label=label)
+                        fitter.draw_fit(legend=False, x_label=x_label,
+                                        label=label)
                         plt.show()
 
-                    m = fitter.fitter
-                    gain[i, j] = m.values['gain']
-                    sigma_e[i, j] = m.values['sigma_e']
-                    sigma_s[i, j] = m.values['sigma_s']
-                    baseline[i, j] = m.values['baseline']
-                    mu[i, j] = m.values['mu']
-                    mu_xt[i, j] = m.values['mu_xt']
-                    amplitude[i, j] = m.values['amplitude']
+                    param = fitter.parameters
+                    param_err = fitter.errors
+                    gain[i, j] = param['gain']
+                    sigma_e[i, j] = param['sigma_e']
+                    sigma_s[i, j] = param['sigma_s']
+                    baseline[i, j] = param['baseline']
+                    mu[i, j] = param['mu']
+                    mu_xt[i, j] = param['mu_xt']
+                    amplitude[i, j] = param['amplitude']
 
-                    gain_error[i, j] = m.errors['gain']
-                    sigma_e_error[i, j] = m.errors['sigma_e']
-                    sigma_s_error[i, j] = m.errors['sigma_s']
-                    baseline_error[i, j] = m.errors['baseline']
-                    mu_error[i, j] = m.errors['mu']
-                    mu_xt_error[i, j] = m.errors['mu_xt']
-                    amplitude_error[i, j] = m.errors['amplitude']
+                    gain_error[i, j] = param_err['gain']
+                    sigma_e_error[i, j] = param_err['sigma_e']
+                    sigma_s_error[i, j] = param_err['sigma_s']
+                    baseline_error[i, j] = param_err['baseline']
+                    mu_error[i, j] = param_err['mu']
+                    mu_xt_error[i, j] = param_err['mu_xt']
+                    amplitude_error[i, j] = param_err['amplitude']
 
                     chi_2[i, j] = fitter.fit_test() * fitter.ndf
                     ndf[i, j] = fitter.ndf

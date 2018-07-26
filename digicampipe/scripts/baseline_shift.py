@@ -24,6 +24,7 @@ import os
 from docopt import docopt
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
@@ -56,6 +57,10 @@ def entry():
     # crosstalk = args['--crosstalk']
     # templates = args['--template']
 
+    gain = 5
+    template_area = 4
+    crosstalk = 0.08
+
     if args['--compute']:
 
         if n_dc_levels != len(files):
@@ -65,25 +70,40 @@ def entry():
         baseline_mean = np.zeros((n_dc_levels, n_pixels))
         baseline_std = np.zeros((n_dc_levels, n_pixels))
 
-        events = calibration_event_stream(files, pixel_id=pixel_id,
-                                 max_events=max_events, baseline_new=True)
+        for i, file in tqdm(enumerate(files), desc='DC level',
+                            total=len(files)):
 
-        for count, event in enumerate(events):
+            events = calibration_event_stream(file, pixel_id=pixel_id,
+                                              max_events=max_events,
+                                              baseline_new=True)
 
-            baseline_mean += event.data.digicam_baseline
-            baseline_std += event.data.digicam_baseline**2
+            for count, event in enumerate(events):
 
-        baseline_mean /= count
-        baseline_std /= count
-        baseline_std -= baseline_mean**2
-        baseline_std = np.sqrt(baseline_std)
+                baseline_mean[i] += event.data.digicam_baseline
+                baseline_std[i] += event.data.digicam_baseline**2
+
+            count += 1
+            baseline_mean[i] = baseline_mean[i] / count
+            baseline_std[i] = baseline_std[i] / count
+            baseline_std[i] = baseline_std[i] - baseline_mean[i]**2
+            baseline_std[i] = np.sqrt(baseline_std[i])
 
         np.savez(results_filename, baseline_mean=baseline_mean,
                  baseline_std=baseline_std, dc_levels=dc_levels)
 
     if args['--fit']:
 
-        pass
+        data = dict(np.load(results_filename))
+        baseline_mean = data['baseline_mean']
+        baseline_std = data['baseline_std']
+        dc_levels = data['dc_levels']
+
+        baseline_shift = baseline_mean - baseline_mean[0]
+        nsb_rate = baseline_shift / gain / template_area * (1 - crosstalk)
+
+        np.savez(results_filename, baseline_mean=baseline_mean,
+                 baseline_std=baseline_std, dc_levels=dc_levels,
+                 nsb_rate=nsb_rate, baseline_shift=baseline_shift)
 
     if args['--save_figures']:
 
@@ -95,10 +115,20 @@ def entry():
         baseline_mean = data['baseline_mean']
         baseline_std = data['baseline_std']
         dc_levels = data['dc_levels']
+        nsb_rate = data['nsb_rate']
 
         plt.figure()
         plt.plot(dc_levels, baseline_mean)
+        plt.xlabel('DC DAC level')
+        plt.ylabel('Baseline')
+        plt.show()
 
+
+        plt.figure()
+        plt.semilogy(dc_levels, nsb_rate)
+        plt.xlabel('DC DAC level')
+        plt.ylabel('$f_{NSB}$ [GHz]')
+        plt.show()
 
         pass
 
