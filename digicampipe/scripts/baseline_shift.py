@@ -123,7 +123,6 @@ def entry():
         plt.ylabel('Baseline')
         plt.show()
 
-
         plt.figure()
         plt.semilogy(dc_levels, nsb_rate)
         plt.xlabel('DC DAC level')
