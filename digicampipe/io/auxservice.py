@@ -13,22 +13,33 @@ class AuxService:
     def __init__(self, name, basepath):
         self.name = name
         self.basepath = basepath
-        self.glob_expr = path.join(
+        self.glob_expr_fits = path.join(
             basepath,
             '{name}_{{date}}*.fits'.format(
+                name=name,
+            )
+        )
+        self.glob_expr_fits_gz = path.join(
+            basepath,
+            '{name}_{{date}}*.fits.gz'.format(
                 name=name,
             )
         )
         self.namedtuple_klass = None
 
     def get_paths(self, date):
-        return sorted(
-            glob(
-                self.glob_expr.format(
-                    date=date.strftime('%Y%m%d')
-                )
+        fits_files = glob(
+            self.glob_expr_fits.format(
+                date=date.strftime('%Y%m%d')
             )
         )
+        fits_gz_files = glob(
+            self.glob_expr_fits_gz.format(
+                date=date.strftime('%Y%m%d')
+            )
+        )
+        fits_files.extend(fits_gz_files)
+        return sorted(fits_files)
 
     # maxsize needs to be > number of Services
     # lru cache for instance methods is shit...
@@ -126,9 +137,9 @@ def combine_table_metas(tables):
                     result[k].append(v)
             else:
                 if k not in result:
-                    result[k] = set([v])
+                    result[k] = [v]
                 else:
-                    result[k].add(v)
+                    result[k].append(v)
 
     for k, v in result.items():
         if k == 'FILENAME':
@@ -147,6 +158,6 @@ def combine_table_metas(tables):
             continue
         else:
             if len(v) != 1:
-                print('len{(k)} is not 1', k)
+                print('WARNING:', k, 'has', len(v), 'data points instead of 1')
             result[k] = v.pop()
     return result
