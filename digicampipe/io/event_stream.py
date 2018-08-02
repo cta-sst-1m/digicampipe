@@ -57,6 +57,7 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
         except SystemError as e:
             print('WARNING: system error.', e)
 
+
 def calibration_event_stream(path,
                              pixel_id=[...],
                              max_events=None):
