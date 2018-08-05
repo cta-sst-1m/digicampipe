@@ -2,7 +2,7 @@ from datetime import timedelta
 import numpy as np
 from collections import OrderedDict, namedtuple
 import pandas as pd
-
+from warnings import warn
 from functools import lru_cache
 from glob import glob
 from astropy import table
@@ -158,6 +158,6 @@ def combine_table_metas(tables):
             continue
         else:
             if len(v) != 1:
-                print('WARNING:', k, 'has', len(v), 'data points instead of 1')
+                warn(k, 'has', len(v), 'data points instead of 1')
             result[k] = v.pop()
     return result
