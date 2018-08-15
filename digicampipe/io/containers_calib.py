@@ -18,6 +18,10 @@ class CalibrationEventContainer(Container):
 
     # Processed
 
+    dark_baseline = Field(ndarray, 'the baseline computed in dark')
+    baseline_shift = Field(ndarray, 'the baseline shift')
+    nsb_rate = Field(ndarray, 'Night sky background rate')
+    gain_drop = Field(ndarray, 'Gain drop')
     baseline = Field(ndarray, 'the reconstructed baseline')
     pulse_mask = Field(ndarray, 'mask of adc_samples. True if the adc sample'
                                 'contains a pulse  else False')
