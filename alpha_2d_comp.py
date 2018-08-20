@@ -13,7 +13,7 @@ def plot_alpha(datas, **kwargs):
     ax1.hist(datas['alpha'][mask], bins='auto', **kwargs)
 
 
-def correct_alpha(datas, source_x, source_y):  # cyril
+def correct_alpha(datas, source_x=0, source_y=0):  # cyril
     """
     datas['cen_x'] = datas['cen_x'] - source_x
     datas['cen_y'] = datas['cen_y'] - source_y

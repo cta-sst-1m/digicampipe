@@ -60,6 +60,24 @@ def compute_baseline_shift(events):
         yield event
 
 
+def compute_baseline_std(events, n_events):
+
+    baselines_std = []
+    for event in events:
+
+        data = event.data.adc_samples
+
+        if event.event_type == 8:
+
+            baselines_std.append(data.std(axis=1))
+            baselines_std = baselines_std[-n_events:]
+            event.data.baseline_std = np.mean(baselines_std, axis=0)
+
+        if len(baselines_std) == n_events:
+
+            yield event
+
+
 def compute_nsb_rate(events, gain, pulse_area, crosstalk, bias_resistance,
                      cell_capacitance):
 

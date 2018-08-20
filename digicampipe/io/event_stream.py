@@ -76,9 +76,11 @@ def calibration_event_stream(path,
     for event in event_stream(path, max_events=max_events, **kwargs):
         r0_event = list(event.r0.tel.values())[0]
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
+        container.event_type = r0_event.camera_event_type
         container.data.adc_samples = r0_event.adc_samples[pixel_id]
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
         container.data.local_time = r0_event.local_camera_clock
+        container.event_id = r0_event.camera_event_number
         yield container
 
 

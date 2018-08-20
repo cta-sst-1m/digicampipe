@@ -1,9 +1,8 @@
 from ctapipe.core import Container, Map
 from ctapipe.core import Field
 from numpy import ndarray
-import numpy as np
 import matplotlib.pyplot as plt
-from histogram.histogram import Histogram1D
+from ctapipe.io.containers import HillasParametersContainer
 
 
 class CalibrationEventContainer(Container):
@@ -23,6 +22,7 @@ class CalibrationEventContainer(Container):
     nsb_rate = Field(ndarray, 'Night sky background rate')
     gain_drop = Field(ndarray, 'Gain drop')
     baseline = Field(ndarray, 'the reconstructed baseline')
+    baseline_std = Field(ndarray, 'Baseline std')
     pulse_mask = Field(ndarray, 'mask of adc_samples. True if the adc sample'
                                 'contains a pulse  else False')
     reconstructed_amplitude = Field(ndarray, 'array of the same shape as '
@@ -39,6 +39,7 @@ class CalibrationEventContainer(Container):
 
     reconstructed_time = Field(ndarray, 'reconstructed time '
                                         'for each adc sample')
+    cleaning_mask = Field(ndarray, 'cleaning mask, pixel bool array')
 
     def plot(self, pixel_id):
 
@@ -53,6 +54,13 @@ class CalibrationEventContainer(Container):
         plt.legend()
 
 
+class CalibrationContainerMeta(Container):
+
+    time = Field(float, 'time of the event')
+    event_id = Field(int, 'event id')
+    type = Field(int, 'event type')
+
+
 class CalibrationContainer(Container):
     """
     This Container() is used for the camera calibration pipeline.
@@ -63,3 +71,7 @@ class CalibrationContainer(Container):
                          ' of the calibration analysis')  # Should use dict?
     pixel_id = Field(ndarray, 'pixel ids')
     data = CalibrationEventContainer()
+    event_id = Field(int, 'event_id')
+    event_type = Field(int, 'Event type')
+    hillas = Field(HillasParametersContainer, 'Hillas parameters')
+    info = CalibrationContainerMeta()

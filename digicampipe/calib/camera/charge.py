@@ -131,7 +131,7 @@ def compute_photo_electron(events, gains):
 
         gain_drop = event.data.gain_drop
         corrected_gains = gains * gain_drop
-        pe = charge / corrected_gains
+        pe = np.nansum(charge, axis=-1) / corrected_gains
         event.data.reconstructed_number_of_pe = pe
 
         yield event

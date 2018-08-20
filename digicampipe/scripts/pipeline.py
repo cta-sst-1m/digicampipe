@@ -11,127 +11,163 @@ Options:
   -o OUTPUT --output=OUTPUT   Folder where to store the results.
   --dark=FILE                 File containing the Histogram of
                               the dark analysis
-  -c --compute                Compute the data.
-  -f --fit                    Fit.
-  -d --display                Display.
   -v --debug                  Enter the debug mode.
+  -c --compute
+  --display
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --shift=N                   number of bins to shift before integrating
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --save_figures              Save the plots to the OUTPUT folder
-  --n_samples=N               Number of samples in readout window
   --parameters=FILE           Calibration parameters file path
 """
-from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
 from digicampipe.io.event_stream import calibration_event_stream
-from cts_core.utils import Camera
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text
+from ctapipe.io.hdf5tableio import HDF5TableWriter
 from digicampipe.visualization import EventViewer
-from digicampipe.utils import utils
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
-from digicampipe.calib.camera import baseline, peak, charge
-
+from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
+    filter
+from digicampipe.utils import DigiCam
 import os
 import yaml
-import numpy as np
-import matplotlib.pyplot as plt
-import astropy.units as u
 from docopt import docopt
 from histogram.histogram import Histogram1D
-
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from digicampipe.visualization.plot import plot_array_camera
+from
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
-         n_samples, debug):
+         debug, output_path, parameters_filename, compute, display):
     # Input/Output files
 
-    dark_histo = Histogram1D.load(dark_filename)
-    dark_baseline = dark_histo.mean()
+    output_filename = os.path.join(output_path, 'hillas.h5')
+
+    if compute:
+
+        with open(parameters_filename) as file:
+
+            calibration_parameters = yaml.load(file)
+
+        gain = np.array(calibration_parameters['gain'])
+        pulse_area = 4
+        crosstalk = np.array(calibration_parameters['mu_xt'])
+        bias_resistance = 10 * 1E3
+        cell_capacitance = 50 * 1E-15
+        picture_threshold = 20
+        boundary_threshold = 10
+        geom = DigiCam.geometry
+
+        dark_histo = Histogram1D.load(dark_filename)
+        dark_baseline = dark_histo.mean()
+
+        events = calibration_event_stream(files, pixel_id=pixel_ids,
+                                          max_events=max_events, baseline_new=True)
+        events = baseline.fill_dark_baseline(events, dark_baseline)
+        events = baseline.fill_digicam_baseline(events)
+        events = baseline.compute_baseline_shift(events)
+        events = baseline.subtract_baseline(events)
+        events = baseline.compute_baseline_std(events, n_events=100)
+        events = filter.filter_clocked_trigger(events)
+        events = baseline.compute_nsb_rate(events, gain, pulse_area, crosstalk,
+                                           bias_resistance, cell_capacitance)
+        events = baseline.compute_gain_drop(events, bias_resistance,
+                                            cell_capacitance)
+        events = peak.find_pulse_with_max(events)
+        events = charge.compute_charge(events, integral_width, shift)
+        events = charge.compute_photo_electron(events, gains=gain)
+        events = cleaning.compute_cleaning_1(events, snr=3)
+        events = cleaning.compute_tailcuts_clean(events, geom=geom,
+                    overwrite=False,
+                    picture_thresh=picture_threshold,
+                    boundary_thresh=boundary_threshold,
+                    keep_isolated_pixels=False)
+        events = cleaning.compute_boarder_cleaning(events, geom,
+                                                   boundary_threshold)
+        events = cleaning.compute_dilate(events, geom)
+
+        events = image.compute_hillas_parameters(events, geom)
+
+        with HDF5TableWriter(output_filename, 'data') as f:
+
+            for event in events:
+
+                if debug:
+                    print(event.hillas)
+                    plot_array_camera(np.nanmax(event.data.reconstructed_charge,
+                                                axis=-1))
+                    plot_array_camera(event.data.cleaning_mask.astype(float))
+                    plot_array_camera(event.data.reconstructed_number_of_pe)
+                    plt.show()
+
+                event.info.type = event.event_type
+                event.info.time = event.data.local_time
+                event.info.event_id = event.event_id
+
+                f.write('hillas', event.hillas)
+                f.write('info', event.info)
+
+    if display:
+
+        data = pd.read_hdf(output_filename, key='data/hillas')
+        meta = pd.read_hdf(output_filename, key='data/info')
+
+        plt.figure()
+        plt.plot(meta['time'], data['intensity'])
+
+        data = data.dropna()
+
+        plt.figure()
+
+        data = correct_alpha(data)
+        plt.hist(data['alpha'], bins='auto')
+
+        for key, val in data.items():
+
+            plt.figure()
+            plt.hist(val, bins='auto')
+            plt.xlabel(key)
 
 
 
-    events = calibration_event_stream(files, pixel_id=pixel_ids,
-                                      max_events=max_events)
-    events = baseline.fill_dark_baseline(events, dark_baseline)
-    events = baseline.fill_digicam_baseline(events)
-    events = baseline.compute_baseline_shift(events)
-    events = baseline.subtract_baseline(events)
-    events = baseline.compute_nsb_rate(events, gain, pulse_area, crosstalk,
-                                       bias_resistance, cell_capacitance)
-    events = baseline.compute_gain_drop(events, bias_resistance,
-                                        cell_capacitance)
-    events = peak.find_pulse_with_max(events)
-    events = charge.compute_charge(events, integral_width, shift)
-    events = charge.compute_photo_electron(events, gains=gain)
-
-
-    # Image cleaning configuration
-    picture_threshold = 15
-    boundary_threshold = 10
-    shower_distance = 200 * u.mm
-
-    # Define the event stream
-    data_stream = event_stream(args['<files>'], camera=digicam)
-    # Clean pixels
-    data_stream = filter.set_pixels_to_zero(data_stream,
-                                            unwanted_pixels=pixel_not_wanted)
-    # Compute baseline with clocked triggered events
-    # (sliding average over n_bins)
-    data_stream = random_triggers.fill_baseline_r0(data_stream,
-                                                   n_bins=n_bins)
-    # Stop events that are not triggered by DigiCam algorithm
-    # (end of clocked triggered events)
-    data_stream = filter.filter_event_types(data_stream, flags=[1, 2])
-    # Do not return events that have not the baseline computed
-    # (only first events)
-    data_stream = filter.filter_missing_baseline(data_stream)
-
-    # Run the r1 calibration (i.e baseline substraction)
-    data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
-    # Run the dl1 calibration (compute charge in photons + cleaning)
-    data_stream = dl1.calibrate_to_dl1(data_stream,
-                                       time_integration_options,
-                                       additional_mask=additional_mask,
-                                       picture_threshold=picture_threshold,
-                                       boundary_threshold=boundary_threshold)
-    # Return only showers with total number of p.e. above min_photon
-    data_stream = filter.filter_shower(
-        data_stream, min_photon=args['--min_photon'])
-    # Run the dl2 calibration (Hillas)
-    data_stream = dl2.calibrate_to_dl2(
-        data_stream, reclean=reclean, shower_distance=shower_distance)
-
-    if args['--display']:
-
-        with plt.style.context('ggplot'):
-            display = EventViewer(data_stream)
-            display.draw()
-    else:
-        save_hillas_parameters_in_text(
-            data_stream=data_stream, output_filename=args['--outfile_path'])
+        plt.show()
 
 
 def entry():
 
     args = docopt(__doc__)
-    print(args)
     files = args['<INPUT>']
-    debug = args['--debug']
-
     max_events = convert_max_events_args(args['--max_events'])
+    dark_filename = args['--dark']
     output_path = args['--output']
+    compute = args['--compute']
+    display = args['--display']
 
     if not os.path.exists(output_path):
         raise IOError('Path for output does not exists \n')
 
-    pixel_id = convert_pixel_args(args['--pixel'])
+    pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
-    bin_width = int(args['--bin_width'])
-    args['--min_photon'] = int(args['--min_photon'])
-    main(args)
+    debug = args['--debug']
+    parameters_filename = args['--parameters']
+    # args['--min_photon'] = int(args['--min_photon'])
+    main(files=files,
+         max_events=max_events,
+         dark_filename=dark_filename,
+         pixel_ids=pixel_ids,
+         shift=shift,
+         integral_width=integral_width,
+         debug=debug,
+         parameters_filename=parameters_filename,
+         output_path=output_path,
+         compute=compute,
+         display=display)
+
 
 if __name__ == '__main__':
 
+    entry()
