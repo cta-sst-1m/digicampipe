@@ -24,7 +24,6 @@ Options:
 """
 from digicampipe.io.event_stream import calibration_event_stream
 from ctapipe.io.hdf5tableio import HDF5TableWriter
-from digicampipe.visualization import EventViewer
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
@@ -39,6 +38,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from digicampipe.visualization.plot import plot_array_camera
 from digicampipe.utils.hillas import correct_alpha_1
+
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, output_path, parameters_filename, compute, display):
@@ -65,7 +65,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         dark_baseline = dark_histo.mean()
 
         events = calibration_event_stream(files, pixel_id=pixel_ids,
-                                          max_events=max_events, baseline_new=True)
+                                          max_events=max_events,
+                                          baseline_new=True)
         events = baseline.fill_dark_baseline(events, dark_baseline)
         events = baseline.fill_digicam_baseline(events)
         events = baseline.compute_baseline_shift(events)
@@ -97,8 +98,13 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
                 if debug:
                     print(event.hillas)
+                    print(np.nanmax(event.data.reconstructed_charge,
+                                                axis=-1))
+                    print(event.data.baseline)
+                    plt.figure()
                     plot_array_camera(np.nanmax(event.data.reconstructed_charge,
                                                 axis=-1))
+                    plt.figure()
                     plot_array_camera(event.data.cleaning_mask.astype(float))
                     plot_array_camera(event.data.reconstructed_number_of_pe)
                     plt.show()
