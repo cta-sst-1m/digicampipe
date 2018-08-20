@@ -38,7 +38,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from digicampipe.visualization.plot import plot_array_camera
-from
+from digicampipe.utils.hillas import correct_alpha_1
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, output_path, parameters_filename, compute, display):
@@ -122,7 +122,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
         plt.figure()
 
-        data = correct_alpha(data)
+        data = correct_alpha_1(data)
         plt.hist(data['alpha'], bins='auto')
 
         for key, val in data.items():

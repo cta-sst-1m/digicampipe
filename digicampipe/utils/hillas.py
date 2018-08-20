@@ -49,7 +49,7 @@ def correct_alpha_2(data, source_x=0, source_y=0):  # cyril from prod_alpha_plot
 
 
 """
-def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
+def alpha_roland(datas, source_x=0, source_y=0): #roland from prod_alpha_plot.c
 
     alpha = np.sin(datas['miss']/datas['r'])
     alpha2 = np.arctan2(-datas['cen_y'], -datas['cen_x']) - datas['psi'] + np.pi
@@ -87,7 +87,7 @@ def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
 
 
 # etienne from scan_crab_cluster.c
-def correct_alpha_3(data, source_x, source_y):
+def correct_alpha_3(data, source_x=0, source_y=0):
 
     d_x = np.cos(data['psi'])
     d_y = np.sin(data['psi'])
