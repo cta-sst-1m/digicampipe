@@ -14,6 +14,7 @@ class CalibrationEventContainer(Container):
 
     adc_samples = Field(ndarray, 'the raw data')
     digicam_baseline = Field(ndarray, 'the baseline computed by the camera')
+    local_time = Field(ndarray, 'timestamps')
 
     # Processed
 

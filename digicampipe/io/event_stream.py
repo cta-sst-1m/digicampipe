@@ -72,7 +72,7 @@ def calibration_event_stream(path,
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
         container.data.adc_samples = r0_event.adc_samples[pixel_id]
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
-
+        container.data.local_time = r0_event.local_camera_clock
         yield container
 
 
@@ -102,11 +102,11 @@ def add_slow_data(
     }
 
     SlowDataContainer = namedtuple('SlowDataContainer', aux_services)
-
     for event_id, event in enumerate(data_stream):
-        event.slow_data = SlowDataContainer(**{
-            name: service.at(event.r0.tel[1].local_camera_clock)
+        tel = event.r0.tels_with_data[0]
+        services_event = {
+            name: service.at(event.r0.tel[tel].local_camera_clock)
             for (name, service) in services.items()
-        })
-
+        }
+        event.slow_data = SlowDataContainer(**services_event)
         yield event

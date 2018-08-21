@@ -61,6 +61,14 @@ your prompt should look similar to this this:
 
     pip install -e digicampipe
 
+**Note for MacOS users** at the moment the installation of the `protozfitsreader` package requires some manual work.
+Please type this command before running `pip`
+
+```
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:<PATH_TO_YOUR_ANANCODA_LIBRARY_PATH>/lib/python3.6/site-packages
+```
+
+```<PATH_TO_YOUR_ANANCODA_LIBRARY_PATH>``` is where your anaconda was installed.
 
 ### Execute the tests
 
@@ -141,3 +149,19 @@ Then add the folowing line to /etc/astrmetry.cfg:
     add_path ~/astrometry-data
 
 That's it, you are ready to go.
+
+
+### template scan analysis
+
+The purpose of the template scan analysis is to find the shape of the typical non-saturating pulse.
+To perform this analysis download the needed raw data files from somewhere and put
+them into someplace you like, then modify `template_scan_analysis.sh` so it finds the files.
+Afterwards call:
+
+    ./template_scan_analysis.sh
+
+... and wait. This analysis needs 3 cores, ~6GB memory and takes on my machine ~25minutes.
+Once the analysis is done, you can look at the results and perform
+the higher level anlysis with:
+
+    jupyter-notebook template_scan_analysis.ipynb

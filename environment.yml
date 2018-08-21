@@ -14,14 +14,17 @@ dependencies:
 - hdf5
 - iminuit
 - matplotlib
+- numba
 - numpy
 - opencv
+- photutils
 - pip
 - protobuf
 - pyhessio
 - pytest
 - PyYAML
 - scikit-learn
+- scikit-image
 - scipy
 - sphinx_rtd_theme
 - traitlets
