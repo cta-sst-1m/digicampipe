@@ -41,7 +41,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from digicampipe.visualization.plot import plot_array_camera
-from digicampipe.utils.hillas import correct_alpha_1
+from digicampipe.utils.hillas import correct_hillas
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
@@ -51,6 +51,15 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
     hillas_filename = os.path.join(output_path, 'hillas.fits')
     meta_filename = os.path.join(output_path, 'meta.fits')
+
+    """
+    from astropy.io import 
+    fitsadc_diff_file = 'adc_test3_diff.fits'
+    data_diff = np.ones([10, 10])
+    with fits.open(adc_diff_file, mode='ostream', memmap=True) as hdul_diff:
+        hdu_diff = fits.PrimaryHDU(data=data_diff)
+    hdul_diff.append(hdu_diff)
+    """
 
     if compute:
 
@@ -142,7 +151,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         data = data.set_index('time')
         data = data.dropna()
 
-        data = correct_alpha_1(data)
+        data = correct_hillas(data)
 
         plt.figure()
         plt.plot(data['intensity'])

@@ -1,29 +1,27 @@
 import numpy as np
 
 
-def correct_alpha_1(data, source_x=0, source_y=0):  # cyril
-    """
-    datas['cen_x'] = datas['cen_x'] - source_x
-    datas['cen_y'] = datas['cen_y'] - source_y
-    datas['r'] = np.sqrt((datas['cen_x'])**2 + (datas['cen_y'])**2)
-    datas['phi'] = np.arctan2(datas['cen_y'], datas['cen_x'])
-    datas['alpha'] = np.sin(datas['phi']) * np.sin(datas['psi']) + np.cos(datas['phi']) * np.cos(datas['psi'])
-    datas['alpha'] = np.arccos(datas['alpha'])
-    # data['alpha'] = np.abs(data['phi'] - data['psi'])
-    datas['alpha'] = np.remainder(datas['alpha'], np.pi/2)
-    datas['alpha'] = np.rad2deg(datas['alpha'])    # conversion to degrees
-    datas['miss'] = datas['r'] * np.sin(datas['alpha'])
-    return datas
-    """
+def correct_hillas(data, source_x=0, source_y=0):  # cyril
 
     data['x'] = data['x'] - source_x
     data['y'] = data['y'] - source_y
     data['r'] = np.sqrt(data['x']**2.0 + data['y']**2.0)
     data['phi'] = np.arctan2(data['y'], data['x'])
-    data['alpha'] = np.arccos(np.sin(data['phi']) * np.sin(data['psi']) + np.cos(data['phi']) * np.cos(data['psi']))
-    data['alpha'] = np.remainder(data['alpha'], np.pi/2)
-    data['alpha'] = np.rad2deg(data['alpha'])    # conversion to degrees
+
+    data = compute_alpha(data)
+
     data['miss'] = data['r'] * np.sin(data['alpha'])
+    return data
+
+
+def compute_alpha(data):
+
+    data['alpha'] = np.sin(data['phi']) * np.sin(data['psi'])
+    data['alpha'] += np.cos(data['phi']) * np.cos(data['psi'])
+    data['alpha'] = np.arccos(data['alpha'])
+    data['alpha'] = np.remainder(data['alpha'], np.pi/2)
+    data['alpha'] = np.rad2deg(data['alpha']) # conversion to degrees
+
     return data
 
 
