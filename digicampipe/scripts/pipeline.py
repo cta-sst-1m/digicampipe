@@ -20,10 +20,14 @@ Options:
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --save_figures              Save the plots to the OUTPUT folder
+  --picture_threshold=N       Tailcut primary cleaning threshold
+                              [Default: 20]
+  --boundary_threshold=N      Tailcut secondary cleaning threshold
+                              [Default: 15]
   --parameters=FILE           Calibration parameters file path
 """
 from digicampipe.io.event_stream import calibration_event_stream
-from ctapipe.io.hdf5tableio import HDF5TableWriter
+from ctapipe.io.serializer import Serializer
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
@@ -41,10 +45,11 @@ from digicampipe.utils.hillas import correct_alpha_1
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
-         debug, output_path, parameters_filename, compute, display):
+         debug, output_path, parameters_filename, compute, display,
+         picture_threshold, boundary_threshold):
     # Input/Output files
 
-    output_filename = os.path.join(output_path, 'hillas.h5')
+    output_filename = os.path.join(output_path, 'hillas.fits')
 
     if compute:
 
@@ -57,8 +62,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         crosstalk = np.array(calibration_parameters['mu_xt'])
         bias_resistance = 10 * 1E3
         cell_capacitance = 50 * 1E-15
-        picture_threshold = 20
-        boundary_threshold = 10
         geom = DigiCam.geometry
 
         dark_histo = Histogram1D.load(dark_filename)
@@ -80,49 +83,51 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = peak.find_pulse_with_max(events)
         events = charge.compute_charge(events, integral_width, shift)
         events = charge.compute_photo_electron(events, gains=gain)
-        events = cleaning.compute_cleaning_1(events, snr=3)
+        # events = cleaning.compute_cleaning_1(events, snr=3)
         events = cleaning.compute_tailcuts_clean(events, geom=geom,
-                    overwrite=False,
-                    picture_thresh=picture_threshold,
-                    boundary_thresh=boundary_threshold,
-                    keep_isolated_pixels=False)
+                                                 overwrite=True,
+                                                 picture_thresh=
+                                                 picture_threshold,
+                                                 boundary_thresh=
+                                                 boundary_threshold,
+                                                 keep_isolated_pixels=False)
         events = cleaning.compute_boarder_cleaning(events, geom,
                                                    boundary_threshold)
         events = cleaning.compute_dilate(events, geom)
 
         events = image.compute_hillas_parameters(events, geom)
 
-        with HDF5TableWriter(output_filename, 'data') as f:
 
-            for event in events:
 
-                if debug:
-                    print(event.hillas)
-                    print(np.nanmax(event.data.reconstructed_charge,
-                                                axis=-1))
-                    print(event.data.baseline)
-                    plt.figure()
-                    plot_array_camera(np.nanmax(event.data.reconstructed_charge,
-                                                axis=-1))
-                    plt.figure()
-                    plot_array_camera(event.data.cleaning_mask.astype(float))
-                    plot_array_camera(event.data.reconstructed_number_of_pe)
-                    plt.show()
+        # with HDF5TableWriter(output_filename, 'data') as f:
+        # with Serializer(output_filename, mode='w', format='fits') as f:
+        f = Serializer(output_filename, mode='w', format='fits')
 
-                event.info.type = event.event_type
-                event.info.time = event.data.local_time
-                event.info.event_id = event.event_id
+        for event in events:
 
-                f.write('hillas', event.hillas)
-                f.write('info', event.info)
+            if debug:
+
+                print(event.hillas)
+                print(event.data.nsb_rate)
+                plot_array_camera(np.max(event.data.adc_samples, axis=-1))
+                plot_array_camera(np.nanmax(
+                    event.data.reconstructed_charge, axis=-1))
+                plot_array_camera(event.data.cleaning_mask.astype(float))
+                plot_array_camera(event.data.reconstructed_number_of_pe)
+                plt.show()
+
+            event.info.type = event.event_type
+            event.info.time = event.data.local_time
+            event.info.event_id = event.event_id
+
+            f.add_container(event.hillas)
+        f.close()
 
     if display:
 
-        data = pd.read_hdf(output_filename, key='data/hillas')
-        meta = pd.read_hdf(output_filename, key='data/info')
-
-        plt.figure()
-        plt.plot(meta['time'], data['intensity'])
+        from astropy.table import Table
+        data = Table.read(output_filename, format='fits')
+        data = data.to_pandas()
 
         data = data.dropna()
 
@@ -136,8 +141,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             plt.figure()
             plt.hist(val, bins='auto')
             plt.xlabel(key)
-
-
 
         plt.show()
 
@@ -157,6 +160,8 @@ def entry():
 
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
+    picture_threshold = float(args['--picture_threshold'])
+    boundary_threshold = float(args['--boundary_threshold'])
     shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
@@ -171,7 +176,9 @@ def entry():
          parameters_filename=parameters_filename,
          output_path=output_path,
          compute=compute,
-         display=display)
+         display=display,
+         picture_threshold=picture_threshold,
+         boundary_threshold=boundary_threshold)
 
 
 if __name__ == '__main__':

@@ -16,10 +16,10 @@ def correct_alpha_1(data, source_x=0, source_y=0):  # cyril
     return datas
     """
 
-    xx = data['cen_x'] - source_x
-    yy = data['cen_y'] - source_y
-    data['r'] = np.sqrt(xx**2.0 + yy**2.0)
-    data['phi'] = np.arctan2(yy, xx)
+    data['x'] = data['x'] - source_x
+    data['y'] = data['y'] - source_y
+    data['r'] = np.sqrt(data['x']**2.0 + data['y']**2.0)
+    data['phi'] = np.arctan2(data['y'], data['x'])
     data['alpha'] = np.arccos(np.sin(data['phi']) * np.sin(data['psi']) + np.cos(data['phi']) * np.cos(data['psi']))
     data['alpha'] = np.remainder(data['alpha'], np.pi/2)
     data['alpha'] = np.rad2deg(data['alpha'])    # conversion to degrees
@@ -91,8 +91,8 @@ def correct_alpha_3(data, source_x=0, source_y=0):
 
     d_x = np.cos(data['psi'])
     d_y = np.sin(data['psi'])
-    to_c_x = source_x - data['cen_x']
-    to_c_y = source_y - data['cen_y']
+    to_c_x = source_x - data['x']
+    to_c_y = source_y - data['y']
     to_c_norm = np.sqrt(to_c_x**2.0 + to_c_y**2.0)
     to_c_x = to_c_x/to_c_norm
     to_c_y = to_c_y/to_c_norm

@@ -1,6 +1,7 @@
 import numpy as np
 from ctapipe.image import cleaning
 
+
 def compute_cleaning_1(events, snr=3, overwrite=True):
 
     for event in events:
