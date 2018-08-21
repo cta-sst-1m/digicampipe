@@ -49,7 +49,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          picture_threshold, boundary_threshold):
     # Input/Output files
 
-    output_filename = os.path.join(output_path, 'hillas.fits')
+    hillas_filename = os.path.join(output_path, 'hillas.fits')
+    meta_filename = os.path.join(output_path, 'meta.fits')
 
     if compute:
 
@@ -74,7 +75,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = baseline.fill_digicam_baseline(events)
         events = baseline.compute_baseline_shift(events)
         events = baseline.subtract_baseline(events)
-        events = baseline.compute_baseline_std(events, n_events=100)
+        # events = baseline.compute_baseline_std(events, n_events=100)
         events = filter.filter_clocked_trigger(events)
         events = baseline.compute_nsb_rate(events, gain, pulse_area, crosstalk,
                                            bias_resistance, cell_capacitance)
@@ -97,11 +98,12 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
         events = image.compute_hillas_parameters(events, geom)
 
-
-
         # with HDF5TableWriter(output_filename, 'data') as f:
         # with Serializer(output_filename, mode='w', format='fits') as f:
-        f = Serializer(output_filename, mode='w', format='fits')
+        data = Serializer(hillas_filename, mode='w',
+                          format='fits')
+        meta = Serializer(meta_filename, mode='w',
+                          format='fits')
 
         for event in events:
 
@@ -120,21 +122,31 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             event.info.time = event.data.local_time
             event.info.event_id = event.event_id
 
-            f.add_container(event.hillas)
-        f.close()
+            data.add_container(event.hillas)
+            meta.add_container(event.info)
+        data.close()
+        meta.close()
 
     if display:
 
         from astropy.table import Table
-        data = Table.read(output_filename, format='fits')
+        data = Table.read(hillas_filename, format='fits')
         data = data.to_pandas()
 
+        meta = Table.read(meta_filename, format='fits')
+        meta = meta.to_pandas()
+
+        data = pd.concat([data, meta], axis=1)
+
+        data['time'] = pd.to_datetime(data['time'])
+        data = data.set_index('time')
         data = data.dropna()
 
-        plt.figure()
-
         data = correct_alpha_1(data)
-        plt.hist(data['alpha'], bins='auto')
+
+        plt.figure()
+        plt.plot(data['intensity'])
+        plt.ylabel('intensity')
 
         for key, val in data.items():
 
