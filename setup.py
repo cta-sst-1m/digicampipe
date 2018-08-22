@@ -53,7 +53,8 @@ setup(
             'digicam-timing=digicampipe.scripts.timing:entry',
             'digicam-rate-scan=digicampipe.scripts.rate_scan:entry',
             'digicam-baseline-shift=digicampipe.scripts.baseline_shift:entry',
-            'digicam-pipeline=digicampipe.scripts.pipeline:entry'
+            'digicam-pipeline=digicampipe.scripts.pipeline:entry',
+            'digicam-data-quality=digicampipe.scripts.data_quality:entry',
         ],
     }
 )
