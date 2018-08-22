@@ -25,6 +25,7 @@ from docopt import docopt
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from histogram.histogram import Histogram1D
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
@@ -61,6 +62,9 @@ def entry():
     template_area = 4
     crosstalk = 0.08
 
+    histo = Histogram1D(data_shape=(n_dc_levels, n_pixels),
+                        bin_edges=np.arange(0, 4096))
+
     if args['--compute']:
 
         if n_dc_levels != len(files):
@@ -82,12 +86,15 @@ def entry():
                 baseline_mean[i] += event.data.digicam_baseline
                 baseline_std[i] += event.data.digicam_baseline**2
 
+                histo.fill(event.data.adc_samples, indices=(i, ))
+
             count += 1
             baseline_mean[i] = baseline_mean[i] / count
             baseline_std[i] = baseline_std[i] / count
             baseline_std[i] = baseline_std[i] - baseline_mean[i]**2
             baseline_std[i] = np.sqrt(baseline_std[i])
 
+        histo.save(os.path.join(output_path, 'raw_histo.pk'))
         np.savez(results_filename, baseline_mean=baseline_mean,
                  baseline_std=baseline_std, dc_levels=dc_levels)
 
