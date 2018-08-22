@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''
+"""
 Do the Multiple Photoelectron anaylsis
 
 Usage:
@@ -19,7 +19,7 @@ Options:
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
   --template=<TEMPLATE>       Templates measured
   --crosstalk=<CROSSTALK>     Calibration params to use in the fit
-'''
+"""
 import os
 from docopt import docopt
 import numpy as np
@@ -57,10 +57,6 @@ def entry():
     # fmpe_results_filename = args['--gain']
     # crosstalk = args['--crosstalk']
     # templates = args['--template']
-
-    gain = 5
-    template_area = 4
-    crosstalk = 0.08
 
     histo = Histogram1D(data_shape=(n_dc_levels, n_pixels),
                         bin_edges=np.arange(0, 4096))
@@ -105,8 +101,18 @@ def entry():
         baseline_std = data['baseline_std']
         dc_levels = data['dc_levels']
 
+        gain = 5
+        template_area = 18
+        crosstalk = 0.08
+        bias_resistance = 10 * 1E3
+        cell_capacitance = 50 * 1E-15
+
         baseline_shift = baseline_mean - baseline_mean[0]
         nsb_rate = baseline_shift / gain / template_area * (1 - crosstalk)
+
+        nsb_rate = gain * template_area / (baseline_shift * (1 - crosstalk))
+        nsb_rate = nsb_rate - cell_capacitance * bias_resistance
+        nsb_rate = 1 / nsb_rate
 
         np.savez(results_filename, baseline_mean=baseline_mean,
                  baseline_std=baseline_std, dc_levels=dc_levels,
@@ -119,16 +125,35 @@ def entry():
     if args['--display']:
 
         data = dict(np.load(results_filename))
-        baseline_mean = data['baseline_mean']
-        baseline_std = data['baseline_std']
-        dc_levels = data['dc_levels']
+        histo = Histogram1D.load(os.path.join(output_path, 'raw_histo.pk'))
+        baseline_mean = histo.mean()
+        baseline_std = histo.std()
         nsb_rate = data['nsb_rate']
+
+        print(baseline_mean.shape)
+
+        histo.draw((0, 1))
+        histo.draw((49, 1))
 
         plt.figure()
         plt.plot(dc_levels, baseline_mean)
         plt.xlabel('DC DAC level')
-        plt.ylabel('Baseline')
-        plt.show()
+        plt.ylabel('Baseline mean [LSB]')
+
+        plt.figure()
+        plt.plot(dc_levels, baseline_std)
+        plt.xlabel('DC DAC level')
+        plt.ylabel('Baseline std [LSB]')
+
+        plt.figure()
+        plt.plot(nsb_rate, baseline_std)
+        plt.xlabel('$f_{NSB}$ [GHz]')
+        plt.ylabel('Baseline std [LSB]')
+
+        plt.figure()
+        plt.plot(baseline_mean, baseline_std)
+        plt.xlabel('Baseline mean [LSB]')
+        plt.ylabel('Baseline std [LSB]')
 
         plt.figure()
         plt.semilogy(dc_levels, nsb_rate)
