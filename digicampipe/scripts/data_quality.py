@@ -5,8 +5,8 @@ Usage:
 
 Options:
   --help            Show this
-  --time_step=N     Time window in seconds within which values are computed
-                    [Default: 5]
+  --time_step=N     Time window in nanoseconds within which values are computed
+                    [Default: 5000000000]
   --output=PATH     Output path
                     [Default: .]
   --compute
@@ -29,7 +29,7 @@ from digicampipe.io.event_stream import calibration_event_stream
 class DataQualityContainer(Container):
 
     time = Field(ndarray, 'time')
-    baseline = Field(ndarray, 'baseline')
+    baseline = Field(ndarray, 'baseline average over the camera')
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
 
 
@@ -38,7 +38,6 @@ def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
 
-    n_pixels = 1296
     time_step = float(args['--time_step'])
     output_path = args['--output']
     filename = os.path.join(output_path, 'data_quality.fits')
@@ -52,7 +51,7 @@ def entry():
         events = calibration_event_stream(files, baseline_new=True)
 
         time = 0
-        baseline = np.zeros(n_pixels)
+        baseline = 0
         count = 0
 
         container = DataQualityContainer()
@@ -62,7 +61,7 @@ def entry():
 
             new_time = event.data.local_time
             count += 1
-            baseline += event.data.digicam_baseline
+            baseline += np.mean(event.data.digicam_baseline)
             time_diff = new_time - time
             time = new_time
 
@@ -74,6 +73,9 @@ def entry():
                 container.trigger_rate = trigger_rate
                 container.baseline = baseline
                 container.time = time
+
+                baseline = 0
+                count = 0
 
                 file.add_container(container)
 
@@ -88,10 +90,12 @@ def entry():
         data = data.set_index('time')
 
         plt.figure()
-        plt.plot(data['trigger_rate'])
+        plt.plot(data['trigger_rate']*1E9)
+        plt.ylabel('Trigger rate [Hz]')
 
         plt.figure()
         plt.plot(data['baseline'])
+        plt.ylabel('Baseline [LSB]')
 
         plt.show()
 

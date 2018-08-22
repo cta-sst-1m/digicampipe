@@ -28,6 +28,8 @@ Options:
 """
 from digicampipe.io.event_stream import calibration_event_stream
 from ctapipe.io.serializer import Serializer
+from ctapipe.io.containers import HillasParametersContainer
+from ctapipe.core import Field
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
@@ -43,6 +45,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from digicampipe.visualization.plot import plot_array_camera
 from digicampipe.utils.hillas import correct_hillas
+
+
+class PipelineOutputContainer(HillasParametersContainer):
+
+    time = Field(int, 'event time')
+    event_id = Field(int, 'event identification number')
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
