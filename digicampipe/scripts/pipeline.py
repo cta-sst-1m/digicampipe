@@ -37,6 +37,7 @@ import os
 import yaml
 from docopt import docopt
 from histogram.histogram import Histogram1D
+from astropy.table import Table
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -138,7 +139,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
     if display:
 
-        from astropy.table import Table
         data = Table.read(hillas_filename, format='fits')
         data = data.to_pandas()
 
