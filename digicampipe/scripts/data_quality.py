@@ -22,6 +22,7 @@ from ctapipe.io.containers import Container
 from ctapipe.io.serializer import Serializer
 from ctapipe.core import Field
 from astropy.table import Table
+from histogram.histogram import Histogram1D
 
 from digicampipe.io.event_stream import calibration_event_stream
 
@@ -37,10 +38,13 @@ def entry():
 
     args = docopt(__doc__)
     files = args['<INPUT>']
+    pixel_id = np.arange(1296)
+    n_pixels = len(pixel_id)
 
     time_step = float(args['--time_step'])
     output_path = args['--output']
     filename = os.path.join(output_path, 'data_quality.fits')
+    histo_filename = os.path.join(output_path, 'baseline_histo.pk')
 
     if not os.path.exists(output_path):
         raise IOError('Path {} for output '
@@ -56,6 +60,8 @@ def entry():
 
         container = DataQualityContainer()
         file = Serializer(filename, mode='w', format='fits')
+        baseline_histo = Histogram1D(data_shape=(n_pixels, ),
+                                     bin_edges=np.arange(4096))
 
         for i, event in enumerate(events):
 
@@ -64,6 +70,10 @@ def entry():
             baseline += np.mean(event.data.digicam_baseline)
             time_diff = new_time - time
             time = new_time
+
+            print(time)
+
+            baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
 
             if time_diff > time_step and i > 0:
 
@@ -79,6 +89,8 @@ def entry():
 
                 file.add_container(container)
 
+        baseline_histo.save(histo_filename)
+
         file.close()
 
     if args['--display']:
@@ -88,6 +100,15 @@ def entry():
 
         data['time'] = pd.to_datetime(data['time'])
         data = data.set_index('time')
+
+        # baseline_histo = Histogram1D.load(histo_filename)
+        # baseline_mean = baseline_histo.mean()
+        # baseline_std = baseline_histo.std()
+
+        # plt.figure()
+        # plt.bar(pixel_id, baseline_mean)
+        # plt.errorbar(pixel_id, baseline_mean, yerr=baseline_std)
+        # plt.xlabel('pixel ')
 
         plt.figure()
         plt.plot(data['trigger_rate']*1E9)
