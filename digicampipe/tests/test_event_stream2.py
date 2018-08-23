@@ -7,7 +7,7 @@ example_file_path = pkg_resources.resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'SST1M_01_20180822_001.fits.fz'
+        'example_100_evts.000.fits.fz'
     )
 )
 
