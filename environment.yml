@@ -37,6 +37,7 @@ dependencies:
   - recommonmark==0.4.0
   - secretstorage
   - sphinx-automodapi
+  - git+https://github.com/iminuit/probfit.git
   - https://github.com/cta-sst-1m/protozfitsreader/archive/using_cython_generated_wrapper.tar.gz
   - git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
   - git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
