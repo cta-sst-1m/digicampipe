@@ -2,10 +2,6 @@ from digicampipe.io.event_stream import event_stream
 import pkg_resources
 import os
 
-from cts_core.camera import Camera
-from digicampipe.utils import geometry
-
-
 example_file_path = pkg_resources.resource_filename(
     'digicampipe',
     os.path.join(
@@ -14,27 +10,6 @@ example_file_path = pkg_resources.resource_filename(
         'example_100_evts.000.fits.fz'
     )
 )
-
-digicam_config_file = pkg_resources.resource_filename(
-    'digicampipe',
-    os.path.join(
-        'tests',
-        'resources',
-        'camera_config.cfg'
-    )
-)
-
-digicam = Camera(_config_file=digicam_config_file)
-digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
-
-
-def test_event_source_old_style():
-
-    for _ in event_stream(
-            [example_file_path],
-            camera=digicam,
-            camera_geometry=digicam_geometry):
-        pass
 
 
 def test_event_source_new_style():
@@ -48,6 +23,18 @@ def test_event_source_speed_100_events(benchmark):
     @benchmark
     def func():
         for _, i in zip(event_stream(example_file_path), range(100)):
+
+            pass
+
+        assert i == 99
+
+
+def test_check_speed_of_protozfits_again(benchmark):
+    from protozfits import File
+
+    @benchmark
+    def func():
+        for _, i in zip(File(example_file_path).Events, range(100)):
 
             pass
 
