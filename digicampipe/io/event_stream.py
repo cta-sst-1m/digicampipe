@@ -82,6 +82,7 @@ def calibration_event_stream(path,
         container.data.adc_samples = r0_event.adc_samples[pixel_id]
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
         container.data.local_time = r0_event.local_camera_clock
+        container.data.gps_time = r0_event.gps_time
         container.event_id = r0_event.camera_event_number
         yield container
 
