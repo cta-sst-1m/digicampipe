@@ -15,6 +15,6 @@ example_file_path = pkg_resources.resource_filename(
 )
 
 
-def test_main_rate_scan():
+def test_compute_rate_scan():
 
-    rate_scan.main(example_file_path, 'test')
+    rate_scan.compute(example_file_path, 'test')
