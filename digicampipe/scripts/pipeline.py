@@ -87,8 +87,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         dark_baseline = dark_histo.mean()
 
         events = calibration_event_stream(files, pixel_id=pixel_ids,
-                                          max_events=max_events,
-                                          baseline_new=True)
+                                          max_events=max_events)
         events = baseline.fill_dark_baseline(events, dark_baseline)
         events = baseline.fill_digicam_baseline(events)
         events = baseline.compute_baseline_shift(events)

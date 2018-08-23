@@ -193,7 +193,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
         n_pixels = len(pixel_id)
 
         events = calibration_event_stream(files, pixel_id=pixel_id,
-                                      max_events=max_events, baseline_new=True)
+                                      max_events=max_events)
         # events = compute_baseline_with_min(events)
         events = fill_digicam_baseline(events)
         events = subtract_baseline(events)
@@ -296,8 +296,7 @@ def entry():
             pulse_indices = time[i] // 4
 
             events = calibration_event_stream(file, pixel_id=pixel_ids,
-                                              max_events=max_events,
-                                              baseline_new=True)
+                                              max_events=max_events)
             # events = compute_baseline_with_min(events)
             events = fill_digicam_baseline(events)
             events = subtract_baseline(events)
