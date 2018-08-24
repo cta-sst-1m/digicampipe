@@ -160,15 +160,15 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         data = data.set_index('local_time')
         data = data.dropna()
 
-        plt.figure()
-        plt.plot(data['intensity'])
-        plt.ylabel('intensity')
-
         for key, val in data.items():
 
             plt.figure()
             plt.hist(val, bins='auto')
             plt.xlabel(key)
+
+            plt.figure()
+            plt.plot(val)
+            plt.ylabel(key)
 
         plt.show()
 
