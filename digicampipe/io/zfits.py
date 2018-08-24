@@ -42,7 +42,8 @@ def zfits_event_source(
         for event_counter, event in tqdm(
             enumerate(file.Events),
             desc='Events',
-            leave=False
+            leave=True,
+            total=len(file.Events),
         ):
             if max_events is not None and event_counter > max_events:
                 break
