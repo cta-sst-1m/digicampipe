@@ -9,11 +9,12 @@ Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyze
   -o OUTPUT --output=OUTPUT   Folder where to store the results.
+                              [Default: .]
   --dark=FILE                 File containing the Histogram of
                               the dark analysis
   -v --debug                  Enter the debug mode.
   -c --compute
-  --display
+  -d --display
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --shift=N                   number of bins to shift before integrating
                               [default: 0].
@@ -44,13 +45,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from digicampipe.visualization.plot import plot_array_camera
-from digicampipe.utils.hillas import correct_hillas
+from digicampipe.utils.hillas import compute_alpha, compute_miss
 
 
 class PipelineOutputContainer(HillasParametersContainer):
 
-    time = Field(int, 'event time')
+    local_time = Field(int, 'event time')
     event_id = Field(int, 'event identification number')
+    event_type = Field(int, 'event type')
+
+    alpha = Field(float, 'Alpha parameter of the shower')
+    miss = Field(float, 'Miss parameter of the shower')
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
@@ -59,7 +64,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
     # Input/Output files
 
     hillas_filename = os.path.join(output_path, 'hillas.fits')
-    meta_filename = os.path.join(output_path, 'meta.fits')
 
     """
     from astropy.io import 
@@ -116,12 +120,9 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
         events = image.compute_hillas_parameters(events, geom)
 
-        # with HDF5TableWriter(output_filename, 'data') as f:
-        # with Serializer(output_filename, mode='w', format='fits') as f:
-        data = Serializer(hillas_filename, mode='w',
-                          format='fits')
-        meta = Serializer(meta_filename, mode='w',
-                          format='fits')
+        output_file = Serializer(hillas_filename, mode='w', format='fits')
+
+        data_to_store = PipelineOutputContainer()
 
         for event in events:
 
@@ -136,30 +137,28 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
                 plot_array_camera(event.data.reconstructed_number_of_pe)
                 plt.show()
 
-            event.info.type = event.event_type
-            event.info.time = event.data.local_time
-            event.info.event_id = event.event_id
+            data_to_store.alpha = compute_alpha(event.hillas)
+            data_to_store.miss = compute_miss(event.hillas,
+                                              data_to_store.alpha)
+            data_to_store.local_time = event.data.local_time
+            data_to_store.event_type = event.event_type
+            data_to_store.event_id = event.event_id
 
-            data.add_container(event.hillas)
-            meta.add_container(event.info)
-        data.close()
-        meta.close()
+            for key, val in event.hillas.items():
+
+                data_to_store[key] = val
+
+            output_file.add_container(data_to_store)
+        output_file.close()
 
     if display:
 
         data = Table.read(hillas_filename, format='fits')
         data = data.to_pandas()
 
-        meta = Table.read(meta_filename, format='fits')
-        meta = meta.to_pandas()
-
-        data = pd.concat([data, meta], axis=1)
-
-        data['time'] = pd.to_datetime(data['time'])
-        data = data.set_index('time')
+        data['local_time'] = pd.to_datetime(data['local_time'])
+        data = data.set_index('local_time')
         data = data.dropna()
-
-        data = correct_hillas(data)
 
         plt.figure()
         plt.plot(data['intensity'])
