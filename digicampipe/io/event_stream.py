@@ -48,7 +48,7 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
 
     else:
 
-        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=False)
+        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=True)
     for file in file_stream:
         if source is None:
             source = guess_source_from_path(file)
