@@ -129,7 +129,7 @@ def zfits_event_source(
                     r0.trigger_output_patch19 = np.zeros(
                         (432, data.inst.num_samples[tel_id])) * np.nan
 
-                r0.digicam_baseline = unsorted_baseline[_sort_ids]
+                r0.digicam_baseline = unsorted_baseline[_sort_ids] / 16
 
             yield data
 
