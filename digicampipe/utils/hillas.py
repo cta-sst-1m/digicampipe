@@ -1,4 +1,5 @@
 import numpy as np
+import astropy.units as u
 
 
 def correct_hillas(data, source_x=0, source_y=0):  # cyril
@@ -8,21 +9,28 @@ def correct_hillas(data, source_x=0, source_y=0):  # cyril
     data['r'] = np.sqrt(data['x']**2.0 + data['y']**2.0)
     data['phi'] = np.arctan2(data['y'], data['x'])
 
-    data = compute_alpha(data)
-
-    data['miss'] = data['r'] * np.sin(data['alpha'])
-    return data
-
-
-def compute_alpha(data):
-
-    data['alpha'] = np.sin(data['phi']) * np.sin(data['psi'])
-    data['alpha'] += np.cos(data['phi']) * np.cos(data['psi'])
-    data['alpha'] = np.arccos(data['alpha'])
-    data['alpha'] = np.remainder(data['alpha'], np.pi/2)
-    data['alpha'] = np.rad2deg(data['alpha']) # conversion to degrees
+    # data = compute_alpha_and_miss(data)
 
     return data
+
+
+def compute_alpha(hillas_parameters):
+
+    data = hillas_parameters
+
+    alpha = np.cos(data['phi'] - data['psi'])
+    alpha = np.arccos(alpha)
+    alpha = np.remainder(alpha, np.pi/2 * u.rad)
+    alpha = alpha.to(u.deg)
+
+    return alpha
+
+
+def compute_miss(hillas_parameters, alpha):
+
+    miss = hillas_parameters['r'] * np.sin(alpha)
+
+    return miss
 
 
 def correct_alpha_2(data, source_x=0, source_y=0):  # cyril from prod_alpha_plot.c

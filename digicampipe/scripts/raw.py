@@ -9,6 +9,7 @@ Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+                              [Default: .]
   -c --compute                Compute the data.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
