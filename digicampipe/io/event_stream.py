@@ -60,7 +60,7 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
                 count += 1
                 yield event
         except EOFError as e:
-            print('WARNING: unexpected end of file.', e)
+            print('WARNING: unexpected end of file', file, ':', e)
         except SystemError as e:
             print('WARNING: system error.', e)
 
