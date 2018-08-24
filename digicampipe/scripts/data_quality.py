@@ -52,7 +52,7 @@ def entry():
 
     if args['--compute']:
 
-        events = calibration_event_stream(files, baseline_new=True)
+        events = calibration_event_stream(files)
 
         time = 0
         baseline = 0

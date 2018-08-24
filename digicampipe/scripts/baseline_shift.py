@@ -74,8 +74,7 @@ def entry():
                             total=len(files)):
 
             events = calibration_event_stream(file, pixel_id=pixel_id,
-                                              max_events=max_events,
-                                              baseline_new=True)
+                                              max_events=max_events)
 
             for count, event in enumerate(events):
 
