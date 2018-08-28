@@ -20,7 +20,7 @@ expected_columns = ['time', 'baseline', 'trigger_rate']
 
 def test_data_quality():
     files = [example_file1_path]
-    time_step = 1e6 # in ns, average history plot over 1 ms
+    time_step = 1e6  # in ns, average history plot over 1 ms
     with tempfile.TemporaryFile() as fits_file:
         with tempfile.TemporaryFile() as histo_file:
             fits_filename = str(fits_file.name)

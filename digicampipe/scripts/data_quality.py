@@ -11,7 +11,8 @@ Options:
                     [Default: ./data_quality.fits]
   --output-hist=PATH     path to output histo file
                     [Default: ./baseline_histo.pk]
-  --compute         boolean, if true create data_quality.fits and baseline_histo.pk
+  --compute         boolean, if true create data_quality.fits and
+                    baseline_histo.pk
   --display         boolean, if true read the output files of compute and
                     plot history of baseline and trigger rate.
 """
