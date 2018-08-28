@@ -9,8 +9,9 @@ Options:
                     [Default: 5000000000]
   --output=PATH     Output path
                     [Default: .]
-  --compute
-  --display
+  --compute         boolean, if true create data_quality.fits and baseline_histo.pk
+  --display         boolean, if true read the output files of compute and
+                    plot history of baseline and trigger rate.
 """
 from docopt import docopt
 import os
@@ -34,15 +35,10 @@ class DataQualityContainer(Container):
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
 
 
-def entry():
-
-    args = docopt(__doc__)
-    files = args['<INPUT>']
+def entry(files, time_step, output_path, compute, display):
     pixel_id = np.arange(1296)
     n_pixels = len(pixel_id)
 
-    time_step = float(args['--time_step'])
-    output_path = args['--output']
     filename = os.path.join(output_path, 'data_quality.fits')
     histo_filename = os.path.join(output_path, 'baseline_histo.pk')
 
@@ -50,7 +46,7 @@ def entry():
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
 
-    if args['--compute']:
+    if compute:
 
         events = calibration_event_stream(files)
 
@@ -62,9 +58,10 @@ def entry():
         file = Serializer(filename, mode='w', format='fits')
         baseline_histo = Histogram1D(data_shape=(n_pixels, ),
                                      bin_edges=np.arange(4096))
-
+        n_event = 0
+        n_container = 0
         for i, event in enumerate(events):
-
+            n_event += 1
             new_time = event.data.local_time
             count += 1
             baseline += np.mean(event.data.digicam_baseline)
@@ -76,24 +73,19 @@ def entry():
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
 
             if time_diff > time_step and i > 0:
-
                 trigger_rate = count / time_diff
                 baseline = baseline / count
-
                 container.trigger_rate = trigger_rate
                 container.baseline = baseline
                 container.time = time
-
                 baseline = 0
                 count = 0
-
+                n_container += 1
                 file.add_container(container)
-
         baseline_histo.save(histo_filename)
-
         file.close()
 
-    if args['--display']:
+    if display:
 
         data = Table.read(filename, format='fits')
         data = data.to_pandas()
@@ -124,5 +116,10 @@ def entry():
 
 
 if __name__ == '__main__':
-
-    entry()
+    args = docopt(__doc__)
+    files = args['<INPUT>']
+    time_step = float(args['--time_step'])
+    output_path = args['--output']
+    compute = args['--compute']
+    display = args['--display']
+    entry(files, time_step, output_path, compute, display)
