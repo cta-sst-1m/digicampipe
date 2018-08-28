@@ -98,15 +98,17 @@ def entry(files, time_step, fits_filename, histo_filename, compute, display):
         # plt.errorbar(pixel_id, baseline_mean, yerr=baseline_std)
         # plt.xlabel('pixel ')
 
-        plt.figure()
+        fig1 = plt.figure()
         plt.plot(data['trigger_rate']*1E9)
         plt.ylabel('Trigger rate [Hz]')
+        plt.savefig(fits_filename.replace('.fits', '') + '_rate.png')
+        plt.close(fig1)
 
-        plt.figure()
+        fig2 = plt.figure()
         plt.plot(data['baseline'])
         plt.ylabel('Baseline [LSB]')
-
-        plt.show()
+        plt.savefig(fits_filename.replace('.fits', '') + '_baseline.png')
+        plt.close(fig2)
 
     return
 
