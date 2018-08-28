@@ -89,7 +89,7 @@ def zfits_event_source(
                     data.inst.patch_matrix[tel_id] = camera.patch_matrix
                     data.inst.num_pixels[tel_id] = samples.shape[0]
                     data.inst.num_samples[tel_id] = samples.shape[1]
-
+                    loaded_telescopes.append(tel_id)
                 r0 = data.r0.tel[tel_id]
                 r0.camera_event_number = event.eventNumber
                 r0.pixel_flags = event.pixels_flags[_sort_ids]
