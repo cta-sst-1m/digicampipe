@@ -4,7 +4,6 @@ Usage:
   digicam-view [options] [--] <INPUT>...
 
 Options:
-  --baseline_16bits
   --start=N         Event to skip
                     [Default: 0]
 '''
