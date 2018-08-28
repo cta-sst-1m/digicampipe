@@ -38,7 +38,7 @@ dependencies:
   - secretstorage
   - sphinx-automodapi
   - git+https://github.com/iminuit/probfit.git
-  - https://github.com/cta-sst-1m/protozfitsreader/archive/using_cython_generated_wrapper.tar.gz
+  - https://github.com/cta-sst-1m/protozfitsreader/archive/v1.4.0.tar.gzgit add envi
   - git+https://github.com/cta-observatory/ctapipe.git#egg=ctapipe
   - git+https://github.com/cta-sst-1m/CTS.git#egg=CTS
   - git+https://github.com/dstndstn/astrometry.net.git#egg=astrometry
