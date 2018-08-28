@@ -1,12 +1,10 @@
 import tempfile
 import os
-import numpy as np
 from pkg_resources import resource_filename
 from astropy.io import fits
 from digicampipe.scripts.pipeline import main as main_pipeline
 from digicampipe.scripts.raw import compute as compute_raw
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args
+from digicampipe.utils.docopt import convert_pixel_args
 
 example_file1_path = resource_filename(
     'digicampipe',
@@ -32,7 +30,9 @@ calibration_filename = resource_filename(
         'calibration_20180814.yml'
     )
 )
-
+expected_columns = ['phi', 'y', 'skewness', 'intensity', 'x', 'event_id',
+                    'local_time', 'psi', 'width', 'miss', 'alpha', 'length',
+                    'r', 'kurtosis', 'event_type']
 
 def test_pipeline():
     # checks that the pipeline produce a fits file with all columns
@@ -52,7 +52,7 @@ def test_pipeline():
                 pixel_ids=convert_pixel_args(None), 
                 shift=0, 
                 integral_width=7,
-                debug=True, 
+                debug=False,
                 output_path=tmpdirname, 
                 parameters_filename=calibration_filename, 
                 compute=True, 
@@ -62,21 +62,9 @@ def test_pipeline():
             )
             hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
             cols = [c.name for c in hdul[1].columns]
-            assert 'phi' in cols
-            assert 'y' in cols
-            assert 'skewness' in cols
-            assert 'intensity' in cols
-            assert 'x' in cols
-            assert 'event_id' in cols
-            assert 'local_time' in cols
-            assert 'psi' in cols
-            assert 'width' in cols
-            assert 'miss' in cols
-            assert 'alpha' in cols
-            assert 'length' in cols
-            assert 'r' in cols
-            assert 'kurtosis' in cols
-            assert 'event_type' in cols
+            for col in expected_columns:
+                assert col in cols
+                assert len(hdul[1][col]) == len(hdul[1][expected_columns[0]])
 
 
 if __name__ == '__main__':
