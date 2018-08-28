@@ -62,9 +62,10 @@ def test_pipeline():
             )
             hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
             cols = [c.name for c in hdul[1].columns]
+            nevent = len(hdul[1].data['local_time'])
             for col in expected_columns:
                 assert col in cols
-                assert len(hdul[1][col]) == len(hdul[1][expected_columns[0]])
+                assert len(hdul[1].data[col]) == nevent
 
 
 if __name__ == '__main__':
