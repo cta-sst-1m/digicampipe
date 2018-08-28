@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-folder=$HOME'/data/tests/'
+folder=$HOME'/data/calib_for_mc/'
 ghv_on_folder=$folder'ghv_on/'
 ghv_off_folder=$folder'ghv_off/'
 dark_folder=$folder'dark/'
@@ -9,10 +9,10 @@ fmpe_folder=$folder'fmpe/'
 mpe_folder=$folder'mpe/'
 baseline_shift_folder=$folder'baseline_shift/'
 
-integral_width=7
+integral_width=1
 shift=0
 n_samples=50
-estimated_gain=20
+estimated_gain=5
 
 mkdir -p $ghv_on_folder $ghv_off_folder $dark_folder $timing_folder $fmpe_folder $baseline_shift_folder $mpe_folder
 
