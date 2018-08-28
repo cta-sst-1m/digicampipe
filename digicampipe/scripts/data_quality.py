@@ -7,8 +7,10 @@ Options:
   --help            Show this
   --time_step=N     Time window in nanoseconds within which values are computed
                     [Default: 5000000000]
-  --output=PATH     Output path
-                    [Default: .]
+  --output-fits=PATH     path to output fits file
+                    [Default: ./data_quality.fits]
+  --output-hist=PATH     path to output histo file
+                    [Default: ./baseline_histo.pk]
   --compute         boolean, if true create data_quality.fits and baseline_histo.pk
   --display         boolean, if true read the output files of compute and
                     plot history of baseline and trigger rate.
@@ -35,16 +37,9 @@ class DataQualityContainer(Container):
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
 
 
-def entry(files, time_step, output_path, compute, display):
+def entry(files, time_step, fits_filename, histo_filename, compute, display):
     pixel_id = np.arange(1296)
     n_pixels = len(pixel_id)
-
-    filename = os.path.join(output_path, 'data_quality.fits')
-    histo_filename = os.path.join(output_path, 'baseline_histo.pk')
-
-    if not os.path.exists(output_path):
-        raise IOError('Path {} for output '
-                      'does not exists \n'.format(output_path))
 
     if compute:
 
@@ -55,7 +50,7 @@ def entry(files, time_step, output_path, compute, display):
         count = 0
 
         container = DataQualityContainer()
-        file = Serializer(filename, mode='w', format='fits')
+        file = Serializer(fits_filename, mode='w', format='fits')
         baseline_histo = Histogram1D(data_shape=(n_pixels, ),
                                      bin_edges=np.arange(4096))
         n_event = 0
@@ -87,7 +82,7 @@ def entry(files, time_step, output_path, compute, display):
 
     if display:
 
-        data = Table.read(filename, format='fits')
+        data = Table.read(fits_filename, format='fits')
         data = data.to_pandas()
 
         data['time'] = pd.to_datetime(data['time'])
@@ -119,7 +114,8 @@ if __name__ == '__main__':
     args = docopt(__doc__)
     files = args['<INPUT>']
     time_step = float(args['--time_step'])
-    output_path = args['--output']
+    fits_filename = args['--output-fits']
+    histo_filename = args['--output-hist']
     compute = args['--compute']
     display = args['--display']
-    entry(files, time_step, output_path, compute, display)
+    entry(files, time_step, fits_filename, histo_filename, compute, display)
