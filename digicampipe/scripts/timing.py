@@ -3,14 +3,14 @@
 Do a raw data histogram
 
 Usage:
-  timing.py [options] [OUTPUT] [INPUT ...]
+  digicam-timing [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
-  -i INPUT --input=INPUT.     Input files.
   -c --compute                Compute the data.
+  -f --fit                    Fit the timing histo.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
@@ -27,19 +27,22 @@ from histogram.histogram import Histogram1D
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
+from digicampipe.visualization.plot import plot_array_camera, plot_parameter
 from digicampipe.calib.camera.time import compute_time_from_max, \
     compute_time_from_leading_edge
 
 
-def compute(files, max_events, pixel_id, output_path, n_samples,
+def compute(files, max_events, pixel_id, n_samples,
             filename='timing_histo.pk', save=True,
             time_method=compute_time_from_max):
-
-    filename = os.path.join(output_path, filename)
 
     if os.path.exists(filename) and save:
         raise IOError('The file {} already exists \n'.
                       format(filename))
+
+    elif os.path.exists(filename):
+
+        return Histogram1D.load(filename)
 
     n_pixels = len(pixel_id)
     events = calibration_event_stream(files, pixel_id=pixel_id,
@@ -50,7 +53,6 @@ def compute(files, max_events, pixel_id, output_path, n_samples,
     timing_histo = Histogram1D(
         data_shape=(n_pixels, ),
         bin_edges=np.arange(0, n_samples * 4, 1),
-        axis_name='reconstructed time [ns]'
     )
 
     for i, event in enumerate(events):
@@ -67,14 +69,16 @@ def compute(files, max_events, pixel_id, output_path, n_samples,
 def entry():
 
     args = docopt(__doc__)
-    files = args['INPUT']
+    files = args['<INPUT>']
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     n_samples = int(args['--n_samples'])
-    output_path = args['OUTPUT']
+    output_path = args['--output']
     timing_histo_filename = 'timing_histo.pk'
+    timing_histo_filename = os.path.join(output_path, timing_histo_filename)
+    results_filename = os.path.join(output_path, 'timing_results.npz')
 
     if not os.path.exists(output_path):
 
@@ -82,9 +86,21 @@ def entry():
 
     if args['--compute']:
 
-        compute(files, max_events, pixel_id, output_path, n_samples,
+        compute(files, max_events, pixel_id, n_samples,
                 timing_histo_filename, save=True,
-                time_method=compute_time_from_leading_edge)
+                time_method=compute_time_from_max) # compute_time_from_leading_edge)
+
+    if args['--fit']:
+
+        timing_histo = Histogram1D.load(timing_histo_filename)
+
+        timing = timing_histo.mode()
+        timing = timing // 4
+
+        timing[timing <= 4] = np.mean(timing).astype(int)
+        timing = timing * 4
+
+        np.savez(results_filename, time=timing)
 
     if args['--save_figures']:
 
@@ -118,8 +134,24 @@ def entry():
     if args['--display']:
 
         path = os.path.join(output_path, timing_histo_filename)
-        raw_histo = Histogram1D.load(path)
-        raw_histo.draw(index=(0, ), log=True, legend=False)
+        timing_histo = Histogram1D.load(path)
+        timing_histo.draw(index=(0, ), log=True, legend=False)
+
+        pulse_time = timing_histo.mode()
+
+        plot_array_camera(pulse_time, label='most probable time [ns]',
+                          allow_pick=True)
+
+        plot_parameter(pulse_time, 'most probable time', '[ns]',
+                       bins=20)
+
+        pulse_time = np.load(results_filename)['time']
+
+        plot_array_camera(pulse_time, label='time of pulse [ns]',
+                          allow_pick=True)
+
+        plot_parameter(pulse_time, 'time of pulse', '[ns]',
+                       bins=20)
 
         plt.show()
 

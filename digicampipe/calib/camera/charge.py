@@ -52,6 +52,17 @@ def compute_amplitude(events):
         yield event
 
 
+def compute_full_waveform_charge(events):
+
+    for count, event in enumerate(events):
+
+        adc_samples = event.data.adc_samples
+        charges = np.sum(adc_samples, axis=-1)
+        event.data.reconstructed_charge = charges.reshape(-1, 1)
+
+        yield event
+
+
 def fit_template(events, pulse_width=(4, 5), rise_time=12):
 
     for event in events:
@@ -108,5 +119,19 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12):
 
         event.data.reconstructed_amplitude = amplitudes
         event.data.reconstructed_time = times
+
+        yield event
+
+
+def compute_photo_electron(events, gains):
+
+    for event in events:
+
+        charge = event.data.reconstructed_charge
+
+        gain_drop = event.data.gain_drop
+        corrected_gains = gains * gain_drop
+        pe = np.nansum(charge, axis=-1) / corrected_gains
+        event.data.reconstructed_number_of_pe = pe
 
         yield event

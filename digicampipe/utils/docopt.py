@@ -18,6 +18,8 @@ def convert_pixel_args(text):
 
 def convert_dac_level(text):
 
+    dac_level = None
+
     if text is not None:
 
         text = text.split(',')

@@ -1,124 +1,6 @@
-
 import numpy as np
-import matplotlib.pyplot as plt
 from optparse import OptionParser
-
-
-def plot_alpha(datas, **kwargs):
-
-    mask = ~np.isnan(datas['alpha']) * ~np.isinf(datas['alpha'])
-    fig = plt.figure(figsize=(14, 12))
-    ax1 = fig.add_subplot(111)
-    ax1.set_ylabel('alpha [deg]')
-    ax1.hist(datas['alpha'][mask], bins='auto', **kwargs)
-
-
-def correct_alpha(datas, source_x, source_y):  # cyril
-    """
-    datas['cen_x'] = datas['cen_x'] - source_x
-    datas['cen_y'] = datas['cen_y'] - source_y
-    datas['r'] = np.sqrt((datas['cen_x'])**2 + (datas['cen_y'])**2)
-    datas['phi'] = np.arctan2(datas['cen_y'], datas['cen_x'])
-    datas['alpha'] = np.sin(datas['phi']) * np.sin(datas['psi']) + np.cos(datas['phi']) * np.cos(datas['psi'])
-    datas['alpha'] = np.arccos(datas['alpha'])
-    # data['alpha'] = np.abs(data['phi'] - data['psi'])
-    datas['alpha'] = np.remainder(datas['alpha'], np.pi/2)
-    datas['alpha'] = np.rad2deg(datas['alpha'])    # conversion to degrees
-    datas['miss'] = datas['r'] * np.sin(datas['alpha'])
-    return datas
-    """
-
-    xx = datas['cen_x'] - source_x
-    yy = datas['cen_y'] - source_y
-    datas['r'] = np.sqrt(xx**2.0 + yy**2.0)
-    datas['phi'] = np.arctan2(yy, xx)
-    datas['alpha'] = np.arccos(np.sin(datas['phi']) * np.sin(datas['psi']) + np.cos(datas['phi']) * np.cos(datas['psi']))
-    datas['alpha'] = np.remainder(datas['alpha'], np.pi/2)
-    datas['alpha'] = np.rad2deg(datas['alpha'])    # conversion to degrees
-    datas['miss'] = datas['r'] * np.sin(datas['alpha'])
-    return datas
-
-
-def alpha_cyril(datas, source_x, source_y):  # cyril from prod_alpha_plot.c
-
-    x = datas['cen_x'] - source_x
-    y = datas['cen_y'] - source_y
-    datas['r'] = np.sqrt(x**2.0 + y**2.0)
-    phi = np.arctan(y/x)
-    calpha = np.sin(phi) * np.sin(datas['psi']) + np.cos(phi) * np.cos(datas['psi'])
-    alpha = np.arccos(calpha)
-    for i in range(len(alpha)):
-        if alpha[i] > np.pi/2.0:
-            alpha[i] = np.pi - alpha[i]
-    # delta_alpha=np.arctan2(source_y,source_x)-np.arctan2(-1.0*datas['cen_y'],-1.0*datas['cen_x']);
-    # alpha_r = alpha + delta_alpha;
-    # miss_c = r*TMath::Sin(alpha_c);
-    # miss_r = r*TMath::Sin(alpha_r);
-    datas['alpha'] = alpha
-    datas['alpha'] = np.rad2deg(datas['alpha'])    # conversion to degrees
-    datas['miss'] = datas['r'] * np.sin(datas['alpha'])
-    return datas
-
-
-"""
-def alpha_roland(datas, source_x, source_y): #roland from prod_alpha_plot.c
-
-    alpha = np.sin(datas['miss']/datas['r'])
-    alpha2 = np.arctan2(-datas['cen_y'], -datas['cen_x']) - datas['psi'] + np.pi
-
-    for i in range(len(alpha2)):
-        if (alpha2[i] > np.pi):
-            alpha2[i] = alpha2[i] - 2*np.pi
-        elif (alpha2[i] < -np.pi):
-            alpha2[i] = alpha2[i] + 2*np.pi
-
-    delta_alpha2 = np.arctan2(source_y-datas['cen_y'],source_x-datas['cen_x'])-np.arctan2(-datas['cen_y'], -datas['cen_x'])
-    alpha2_crab = alpha2 + delta_alpha2
-
-    for i in range(len(alpha2_crab)):
-        if (alpha2_crab[i] > 2*np.pi):
-            alpha2_crab[i] = alpha2_crab[i] - 2*np.pi
-        elif (alpha2_crab[i] < -2*np.pi):
-            alpha2_crab[i] = alpha2_crab[i] + 2*np.pi
-
-    for i in range(len(alpha2_crab)):
-        if (alpha2_crab[i] > np.pi):
-            alpha2_crab[i] = 2*np.pi - alpha2_crab[i]
-        elif (alpha2_crab[i] < -np.pi):
-            alpha2_crab[i] = -2*np.pi - alpha2_crab[i]
-
-    alpha2_crab = abs(alpha2_crab)
-
-    for i in range(len(alpha2_crab)):
-        if (alpha2_crab[i] > 0.5*np.pi):
-            alpha2_crab[i] = np.pi - alpha2_crab[i]
-
-    datas['alpha'] = alpha2_crab
-    return datas
-"""
-
-
-def alpha_etienne(datas, source_x, source_y):  # etienne's code from scan_crab_cluster.c
-
-    d_x = np.cos(datas['psi'])
-    d_y = np.sin(datas['psi'])
-    to_c_x = source_x - datas['cen_x']
-    to_c_y = source_y - datas['cen_y']
-    to_c_norm = np.sqrt(to_c_x**2.0 + to_c_y**2.0)
-    to_c_x = to_c_x/to_c_norm
-    to_c_y = to_c_y/to_c_norm
-    p_scal_1 = d_x*to_c_x + d_y*to_c_y
-    p_scal_2 = -d_x*to_c_x + -d_y*to_c_y
-    alpha_c_1 = abs(np.arccos(p_scal_1))
-    alpha_c_2 = abs(np.arccos(p_scal_2))
-    alpha_cetienne = alpha_c_1
-    for i in range(len(alpha_cetienne)):
-        if (alpha_c_2[i] < alpha_c_1[i]):
-            alpha_cetienne[i] = alpha_c_2[i]
-    datas['alpha'] = 180.0/np.pi*alpha_cetienne
-    datas['r'] = to_c_norm
-    datas['miss'] = datas['r'] * np.sin(datas['alpha'])
-    return datas
+from digicampipe.utils import hillas
 
 
 if __name__ == '__main__':
@@ -173,10 +55,10 @@ if __name__ == '__main__':
             # y = y_crab_centre
 
             # alpha computing
-            # data_cor2 = correct_alpha(data_cor, source_x=x, source_y=y)
-            # data_cor2 = alpha_cyril(data_cor, source_x=x, source_y=y)  # OK
-            data_cor2 = alpha_etienne(data_cor, source_x=x, source_y=y)  # OK
-            # data_cor2 = alpha_roland(data_cor,source_x=x, source_y=y)
+            # data_cor2 = hillas.correct_alpha_1(data_cor, source_x=x, source_y=y)
+            # data_cor2 = hillas.correct_alpha_2(data_cor, source_x=x, source_y=y)  # OK
+            data_cor2 = hillas.correct_alpha_3(data_cor, source_x=x, source_y=y)  # OK
+            # data_cor2 = hillas.correct_alpha_roland(data_cor,source_x=x, source_y=y)
 
             # 'first bin' sellection + simplified r-min criterion (source musn't be inside the elipse)
             # - with use of the second criterion, number of events in pixel differs from the case without the criterion only about 1% max..

@@ -44,7 +44,7 @@ def plot_hillas(hillas_dict, title='', **kwargs):
     return figure
 
 
-def plot_parameter(parameter, name, units, axis=None, **kwargs):
+def plot_parameter(parameter, name='', units='', axis=None, **kwargs):
 
     parameter = parameter[~(np.isnan(parameter)) * ~np.isinf(parameter)]
 
@@ -66,6 +66,8 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
 
     mask = np.isfinite(data)
     data = np.ma.masked_array(data, mask=~mask)
+
+    plt.figure()
     cam = utils.Camera()
     geom = cam.geometry
     cam_display = CameraDisplay(geom, **kwargs)
@@ -116,7 +118,7 @@ def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
     plt.ylabel(label_y)
 
 
-def plot_histo(data, x_label, show_fit=True, limits=None, **kwargs):
+def plot_histo(data, x_label='', show_fit=True, limits=None, **kwargs):
     mask = np.isfinite(data)
 
     if limits is not None:

@@ -37,12 +37,14 @@ def zfits_event_source(
     camera : utils.Camera(), default DigiCam
     """
     data = DataContainer()
-    with File(url) as file:
 
+    with File(url) as file:
+        loaded_telescopes = []
         for event_counter, event in tqdm(
             enumerate(file.Events),
             desc='Events',
-            leave=False
+            leave=True,
+            total=len(file.Events),
         ):
             if max_events is not None and event_counter > max_events:
                 break
@@ -79,14 +81,15 @@ def zfits_event_source(
                         ))
                     return np.ones(n_pixels) * np.nan
 
-                data.inst.num_channels[tel_id] = event.num_gains
-                data.inst.geom[tel_id] = camera.geometry
-                data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
-                data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
-                data.inst.patch_matrix[tel_id] = camera.patch_matrix
-                data.inst.num_pixels[tel_id] = samples.shape[0]
-                data.inst.num_samples[tel_id] = samples.shape[1]
-
+                if tel_id not in loaded_telescopes:
+                    data.inst.num_channels[tel_id] = event.num_gains
+                    data.inst.geom[tel_id] = camera.geometry
+                    data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
+                    data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
+                    data.inst.patch_matrix[tel_id] = camera.patch_matrix
+                    data.inst.num_pixels[tel_id] = samples.shape[0]
+                    data.inst.num_samples[tel_id] = samples.shape[1]
+                    loaded_telescopes.append(tel_id)
                 r0 = data.r0.tel[tel_id]
                 r0.camera_event_number = event.eventNumber
                 r0.pixel_flags = event.pixels_flags[_sort_ids]
@@ -128,7 +131,7 @@ def zfits_event_source(
                     r0.trigger_output_patch19 = np.zeros(
                         (432, data.inst.num_samples[tel_id])) * np.nan
 
-                r0.digicam_baseline = unsorted_baseline[_sort_ids]
+                r0.digicam_baseline = unsorted_baseline[_sort_ids] / 16
 
             yield data
 

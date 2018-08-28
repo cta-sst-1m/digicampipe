@@ -112,3 +112,12 @@ def filter_period(event_stream, period):
 
                 t_last = t_new
                 yield event
+
+
+def filter_clocked_trigger(events):
+
+    for event in events:
+
+        if not event.event_type == 8:
+
+            yield event

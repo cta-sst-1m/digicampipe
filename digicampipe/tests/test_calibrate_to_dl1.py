@@ -3,7 +3,7 @@ import pkg_resources
 import numpy as np
 from tempfile import TemporaryDirectory
 
-from digicampipe.calib.camera import filter, r1, random_triggers, dl0
+from digicampipe.calib.camera import filter, r1, random_triggers
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import utils
 
@@ -96,7 +96,6 @@ def test_calibrate_to_dl1():
     data_stream = filter.filter_missing_baseline(data_stream)
 
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
-    data_stream = dl0.calibrate_to_dl0(data_stream)
 
     # This is the function under test
     data_stream = calibrate_to_dl1(

@@ -148,7 +148,7 @@ class EventViewer():
         for i, event in zip(range(step), self.event_stream):
             pass
         telescope_id = event.r0.tels_with_data[0]
-        self.event_id = event.r0.event_id
+        self.event_id = event.r0.tel[telescope_id].camera_event_number
         self.r0_container = event.r0.tel[telescope_id]
         self.r1_container = event.r1.tel[telescope_id]
         self.dl0_container = event.dl0.tel[telescope_id]

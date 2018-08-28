@@ -7,15 +7,50 @@ def init_cluster_rate(r0, n_thresholds):
     return cluster_rate
 
 
+def compute_bias_curve_v2(data_stream, thresholds):
+
+    n_thresholds = len(thresholds)
+    n_clusters = 432
+    cluster_rate = np.zeros((n_clusters, n_thresholds))
+    rate = np.zeros(n_thresholds)
+
+    for count, event in enumerate(data_stream):
+
+        for tel_id, r0 in event.r0.tel.items():
+
+            trigger_input = r0.trigger_input_7
+
+            comp = trigger_input[..., np.newaxis] > thresholds
+            temp_cluster_rate = np.sum(comp, axis=1)
+            temp_cluster_rate[temp_cluster_rate > 0] = 1
+            cluster_rate += temp_cluster_rate
+
+            temp_rate = np.sum(temp_cluster_rate, axis=0)
+            temp_rate[temp_rate > 0] = 1
+            rate += temp_rate
+
+    time = ((count + 1) * 4. * trigger_input.shape[-1])
+    rate_error = np.sqrt(rate) / time
+    cluster_rate_error = np.sqrt(cluster_rate) / time
+    rate = rate / time
+    cluster_rate = cluster_rate / time
+
+    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
+
+
 def compute_bias_curve(
     data_stream,
     thresholds,
     blinding=True,
     by_cluster=True,
 ):
-    '''
-    thresholds: 1d array
-    '''
+    """
+    :param data_stream:
+    :param thresholds:
+    :param blinding:
+    :param by_cluster:
+    :return:
+    """
     n_thresholds = len(thresholds)
     rate = np.zeros(n_thresholds)
 
@@ -65,77 +100,3 @@ def compute_bias_curve(
     cluster_rate = cluster_rate / time
 
     return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
-
-
-class TriggerrateThresholdAnalysis:
-
-    def __init__(
-        self,
-        thresholds,
-        blinding=True,
-        by_cluster=True,
-        unwanted_cluster=None
-    ):
-        '''
-        thresholds: 1d array
-        '''
-        self.thresholds = thresholds
-        self.blinding = blinding
-        self.by_cluster = by_cluster
-        self.unwanted_cluster = unwanted_cluster
-
-    def __call__(self, data_stream):
-
-        n_thresholds = len(self.thresholds)
-        rate = np.zeros(n_thresholds)
-
-        # cluster rate can only be initialized when the first event was read.
-        cluster_rate = None
-        for event_id, event in enumerate(data_stream):
-            for r0 in event.r0.tel.values:
-                if cluster_rate is None:
-                    cluster_rate = init_cluster_rate(r0, n_thresholds)
-
-                for threshold_id, threshold in enumerate(
-                        reversed(self.thresholds)):
-
-                    comp = r0.trigger_input_7 > threshold
-
-                    if self.blinding:
-
-                        if np.any(comp):
-
-                            if self.by_cluster:
-                                index = np.where(comp)[0]
-                                cluster_rate[index, - threshold_id - 1] += 1
-                                rate[- threshold_id - 1] += 1
-
-                            else:
-
-                                rate[0:-threshold_id] += 1
-                                break
-
-                    else:
-                        comp = np.sum(comp, axis=0)
-                        comp = comp > 0
-                        n_triggers = np.sum(comp)
-
-                        if n_triggers > r0.trigger_input_7.shape[-1] - 1:
-
-                            rate[0:-threshold_id] += n_triggers
-                            break
-
-                        rate[- threshold_id - 1] += n_triggers
-
-            yield event
-
-        time = ((event_id + 1) * 4. * r0.trigger_input_7.shape[-1])
-        rate_error = np.sqrt(rate) / time
-        cluster_rate_error = np.sqrt(cluster_rate) / time
-        rate = rate / time
-        cluster_rate = cluster_rate / time
-
-        self.rate = rate
-        self.rate_error = rate_error
-        self.cluster_rate = cluster_rate
-        self.cluster_rate_error = cluster_rate_error

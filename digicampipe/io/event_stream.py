@@ -4,6 +4,7 @@ from collections import namedtuple
 from digicampipe.io.containers_calib import CalibrationContainer
 from tqdm import tqdm
 import numpy as np
+import os
 
 
 def event_stream(filelist, source=None, max_events=None, **kwargs):
@@ -31,6 +32,12 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
     n_files = len(filelist)
     count = 0
 
+    for file in filelist:
+
+        if not os.path.exists(file):
+
+            raise FileNotFoundError('File {} does not exists'.format(file))
+
     if max_events is None:
 
         max_events = np.inf
@@ -41,7 +48,7 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
 
     else:
 
-        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=False)
+        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=True)
     for file in file_stream:
         if source is None:
             source = guess_source_from_path(file)
@@ -60,19 +67,23 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
 
 def calibration_event_stream(path,
                              pixel_id=[...],
-                             max_events=None):
+                             max_events=None,
+                             **kwargs):
     """
     Event stream for the calibration of the camera based on the observation
     event_stream()
     """
 
     container = CalibrationContainer()
-    for event in event_stream(path, max_events=max_events):
+    for event in event_stream(path, max_events=max_events, **kwargs):
         r0_event = list(event.r0.tel.values())[0]
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
+        container.event_type = r0_event.camera_event_type
         container.data.adc_samples = r0_event.adc_samples[pixel_id]
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
         container.data.local_time = r0_event.local_camera_clock
+        container.data.gps_time = r0_event.gps_time
+        container.event_id = r0_event.camera_event_number
         yield container
 
 

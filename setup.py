@@ -25,6 +25,7 @@ setup(
     long_description=open('README.md').read(),
     description='A package for DigiCam pipeline',
     install_requires=[
+        'ctapipe>=0.6.0',
         'numpy',
         'matplotlib',
         'scipy',
@@ -52,6 +53,9 @@ setup(
             'digicam-raw=digicampipe.scripts.raw:entry',
             'digicam-timing=digicampipe.scripts.timing:entry',
             'digicam-rate-scan=digicampipe.scripts.rate_scan:entry',
+            'digicam-baseline-shift=digicampipe.scripts.baseline_shift:entry',
+            'digicam-pipeline=digicampipe.scripts.pipeline:entry',
+            'digicam-data-quality=digicampipe.scripts.data_quality:entry',
         ],
     }
 )
