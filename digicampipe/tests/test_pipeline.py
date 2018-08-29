@@ -43,7 +43,7 @@ def test_pipeline():
         compute_raw(
             files=[example_file1_path],
             max_events=None,
-            pixel_id=convert_pixel_args(None), 
+            pixel_id=convert_pixel_args(None),
             filename=dark_filename
         )
         main_pipeline(

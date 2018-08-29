@@ -93,13 +93,11 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = charge.compute_charge(events, integral_width, shift)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
-        events = cleaning.compute_tailcuts_clean(events, geom=geom,
-                                                 overwrite=True,
-                                                 picture_thresh=
-                                                 picture_threshold,
-                                                 boundary_thresh=
-                                                 boundary_threshold,
-                                                 keep_isolated_pixels=False)
+        events = cleaning.compute_tailcuts_clean(
+            events, geom=geom, overwrite=True,
+            picture_thresh=picture_threshold,
+            boundary_thresh=boundary_threshold, keep_isolated_pixels=False
+        )
         events = cleaning.compute_boarder_cleaning(events, geom,
                                                    boundary_threshold)
         events = cleaning.compute_dilate(events, geom)
