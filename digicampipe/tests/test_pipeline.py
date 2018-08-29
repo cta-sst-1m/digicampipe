@@ -39,6 +39,7 @@ def test_pipeline():
     # checks that the pipeline produce a fits file with all columns
     with tempfile.TemporaryDirectory() as tmpdirname:
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
+        hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
         compute_raw(
             files=[example_file1_path],
             max_events=None,
@@ -53,7 +54,7 @@ def test_pipeline():
             shift=0,
             integral_width=7,
             debug=False,
-            output_path=tmpdirname,
+            hillas_filename=hillas_filename,
             parameters_filename=calibration_filename,
             compute=True,
             display=False,
@@ -63,6 +64,7 @@ def test_pipeline():
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
         nevent = len(hdul[1].data['local_time'])
+        assert nevent > 0
         for col in expected_columns:
             assert col in cols
             assert len(hdul[1].data[col]) == nevent

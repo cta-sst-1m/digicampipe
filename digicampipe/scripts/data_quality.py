@@ -4,27 +4,27 @@ Usage:
   digicam-data-quality [options] [--] <INPUT>...
 
 Options:
-  --help            Show this
-  --time_step=N     Time window in nanoseconds within which values are computed
-                    [Default: 5000000000]
-  --output-fits=PATH    path to output fits file
-                    [Default: ./data_quality.fits]
-  --output-hist=PATH    path to output histo file
-                    [Default: ./baseline_histo.pk]
-  --load            If not present, the INPUT files will be analyzed and
-                    output fits and histo files will be created. If present,
-                    that analysis is skipped and the fits and histo files will
-                    serve as input for plotting.
-                    [Default: False]
-  --rate_plot=PATH  path to the output plot history of rate.
-                    Use "none" to not create the plot and "show" to open an
-                    interactive plot instead of creating a file.
-                    [Default: none]
-  --baseline_plot_filename=PATH path to the output plot history of the mean
-                    baseline.
-                    Use "none" to not create the plot and "show" to open an
-                    interactive plot instead of creating a file.
-                    [Default: none]
+  --help                Show this
+  --time_step=N         Time window in nanoseconds within which values are
+                        computed
+                        [Default: 5000000000]
+  --output-fits=FILE    path to output fits file
+                        [Default: ./data_quality.fits]
+  --output-hist=FILE    path to output histo file
+                        [Default: ./baseline_histo.pk]
+  --load                If not present, the INPUT files will be analyzed and
+                        output fits and histo files will be created. If
+                        present, that analysis is skipped and the fits and
+                        histo files will serve as input for plotting.
+                        [Default: False]
+  --rate_plot=FILE      path to the output plot history of rate.
+                        Use "none" to not create the plot and "show" to open an
+                        interactive plot instead of creating a file.
+                        [Default: none]
+  --baseline_plot=FILE  path to the output plot history of the mean baseline.
+                        Use "none" to not create the plot and "show" to open an
+                        interactive plot instead of creating a file.
+                        [Default: none]
 """
 from docopt import docopt
 import matplotlib.pyplot as plt

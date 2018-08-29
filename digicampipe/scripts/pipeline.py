@@ -8,8 +8,8 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyze
-  -o OUTPUT --output=OUTPUT   Folder where to store the results.
-                              [Default: .]
+  -o FILE --output=FILE       file where to store the results.
+                              [Default: ./hillas.fits]
   --dark=FILE                 File containing the Histogram of
                               the dark analysis
   -v --debug                  Enter the debug mode.
@@ -20,7 +20,6 @@ Options:
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
-  --save_figures              Save the plots to the OUTPUT folder
   --picture_threshold=N       Tailcut primary cleaning threshold
                               [Default: 20]
   --boundary_threshold=N      Tailcut secondary cleaning threshold
@@ -59,20 +58,8 @@ class PipelineOutputContainer(HillasParametersContainer):
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
-         debug, output_path, parameters_filename, compute, display,
+         debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold):
-    # Input/Output files
-
-    hillas_filename = os.path.join(output_path, 'hillas.fits')
-
-    """
-    from astropy.io import 
-    fitsadc_diff_file = 'adc_test3_diff.fits'
-    data_diff = np.ones([10, 10])
-    with fits.open(adc_diff_file, mode='ostream', memmap=True) as hdul_diff:
-        hdu_diff = fits.PrimaryHDU(data=data_diff)
-    hdul_diff.append(hdu_diff)
-    """
 
     if compute:
 
@@ -178,13 +165,13 @@ def entry():
     files = args['<INPUT>']
     max_events = convert_max_events_args(args['--max_events'])
     dark_filename = args['--dark']
-    output_path = args['--output']
+    output = args['--output']
     compute = args['--compute']
     display = args['--display']
-
+    output_path = os.path.basename(output)
     if not os.path.exists(output_path):
-        raise IOError('Path for output does not exists \n')
-
+        raise IOError('Path ' + output_path +
+                      'for output hillas does not exists \n')
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
     picture_threshold = float(args['--picture_threshold'])
@@ -192,22 +179,22 @@ def entry():
     shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
-    # args['--min_photon'] = int(args['--min_photon'])
-    main(files=files,
-         max_events=max_events,
-         dark_filename=dark_filename,
-         pixel_ids=pixel_ids,
-         shift=shift,
-         integral_width=integral_width,
-         debug=debug,
-         parameters_filename=parameters_filename,
-         output_path=output_path,
-         compute=compute,
-         display=display,
-         picture_threshold=picture_threshold,
-         boundary_threshold=boundary_threshold)
+    main(
+        files=files,
+        max_events=max_events,
+        dark_filename=dark_filename,
+        pixel_ids=pixel_ids,
+        shift=shift,
+        integral_width=integral_width,
+        debug=debug,
+        parameters_filename=parameters_filename,
+        hillas_filename=output,
+        compute=compute,
+        display=display,
+        picture_threshold=picture_threshold,
+        boundary_threshold=boundary_threshold
+    )
 
 
 if __name__ == '__main__':
-
     entry()
