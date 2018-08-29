@@ -7,17 +7,26 @@ Options:
   --help            Show this
   --time_step=N     Time window in nanoseconds within which values are computed
                     [Default: 5000000000]
-  --output-fits=PATH     path to output fits file
+  --output-fits=PATH    path to output fits file
                     [Default: ./data_quality.fits]
-  --output-hist=PATH     path to output histo file
+  --output-hist=PATH    path to output histo file
                     [Default: ./baseline_histo.pk]
-  --compute         boolean, if true create data_quality.fits and
-                    baseline_histo.pk
-  --display         boolean, if true read the output files of compute and
-                    plot history of baseline and trigger rate.
+  --load            If not present, the INPUT files will be analyzed and
+                    output fits and histo files will be created. If present,
+                    that analysis is skipped and the fits and histo files will
+                    serve as input for plotting.
+                    [Default: False]
+  --rate_plot=PATH  path to the output plot history of rate.
+                    Use "none" to not create the plot and "show" to open an
+                    interactive plot instead of creating a file.
+                    [Default: none]
+  --baseline_plot_filename=PATH path to the output plot history of the mean
+                    baseline.
+                    Use "none" to not create the plot and "show" to open an
+                    interactive plot instead of creating a file.
+                    [Default: none]
 """
 from docopt import docopt
-import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -38,18 +47,15 @@ class DataQualityContainer(Container):
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
 
 
-def entry(files, time_step, fits_filename, histo_filename, compute, display):
+def entry(files, time_step, fits_filename, load_files, histo_filename,
+          rate_plot_filename, baseline_plot_filename):
     pixel_id = np.arange(1296)
     n_pixels = len(pixel_id)
-
-    if compute:
-
+    if not load_files:
         events = calibration_event_stream(files)
-
         time = 0
         baseline = 0
         count = 0
-
         container = DataQualityContainer()
         file = Serializer(fits_filename, mode='w', format='fits')
         baseline_histo = Histogram1D(data_shape=(n_pixels, ),
@@ -63,11 +69,7 @@ def entry(files, time_step, fits_filename, histo_filename, compute, display):
             baseline += np.mean(event.data.digicam_baseline)
             time_diff = new_time - time
             time = new_time
-
-            print(time)
-
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
-
             if time_diff > time_step and i > 0:
                 trigger_rate = count / time_diff
                 baseline = baseline / count
@@ -81,33 +83,29 @@ def entry(files, time_step, fits_filename, histo_filename, compute, display):
         baseline_histo.save(histo_filename)
         file.close()
 
-    if display:
+    data = Table.read(fits_filename, format='fits')
+    data = data.to_pandas()
+    data['time'] = pd.to_datetime(data['time'])
+    data = data.set_index('time')
 
-        data = Table.read(fits_filename, format='fits')
-        data = data.to_pandas()
-
-        data['time'] = pd.to_datetime(data['time'])
-        data = data.set_index('time')
-
-        # baseline_histo = Histogram1D.load(histo_filename)
-        # baseline_mean = baseline_histo.mean()
-        # baseline_std = baseline_histo.std()
-
-        # plt.figure()
-        # plt.bar(pixel_id, baseline_mean)
-        # plt.errorbar(pixel_id, baseline_mean, yerr=baseline_std)
-        # plt.xlabel('pixel ')
-
+    if rate_plot_filename != "none":
         fig1 = plt.figure()
         plt.plot(data['trigger_rate']*1E9)
         plt.ylabel('Trigger rate [Hz]')
-        plt.savefig(fits_filename.replace('.fits', '') + '_rate.png')
+        if rate_plot_filename == "show":
+            plt.show()
+        else:
+            plt.savefig(rate_plot_filename)
         plt.close(fig1)
 
+    if baseline_plot_filename != "none":
         fig2 = plt.figure()
         plt.plot(data['baseline'])
         plt.ylabel('Baseline [LSB]')
-        plt.savefig(fits_filename.replace('.fits', '') + '_baseline.png')
+        if rate_plot_filename == "show":
+            plt.show()
+        else:
+            plt.savefig(baseline_plot_filename)
         plt.close(fig2)
 
     return
@@ -119,6 +117,8 @@ if __name__ == '__main__':
     time_step = float(args['--time_step'])
     fits_filename = args['--output-fits']
     histo_filename = args['--output-hist']
-    compute = args['--compute']
-    display = args['--display']
-    entry(files, time_step, fits_filename, histo_filename, compute, display)
+    load_files = args['--load']
+    rate_plot_filename = args['--rate_plot']
+    baseline_plot_filename = args['--baseline_plot']
+    entry(files, time_step, fits_filename, load_files, histo_filename,
+          rate_plot_filename, baseline_plot_filename)

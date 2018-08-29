@@ -24,8 +24,13 @@ def test_data_quality():
     with tempfile.TemporaryDirectory() as tmpdirname:
         fits_filename = os.path.join(tmpdirname, 'ouptput.fits')
         histo_filename = os.path.join(tmpdirname, 'ouptput.pk')
-        data_quality(files, time_step, fits_filename, histo_filename,
-                     compute=True, display=False)
+        rate_plot_filename = os.path.join(tmpdirname, 'rate.png')
+        baseline_plot_filename = os.path.join(tmpdirname, 'baseline.png')
+        load_files = False
+        data_quality(
+            files, time_step, fits_filename, load_files,
+            histo_filename, rate_plot_filename, baseline_plot_filename
+        )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
         fits_columns = [c.name for c in hdul[1].columns]
@@ -34,12 +39,8 @@ def test_data_quality():
         for col in expected_columns:
             assert col in fits_columns
             assert n_time == len(hdul[1].data[col])
-        data_quality(files, time_step, fits_filename, histo_filename,
-                     compute=False, display=True)
-        rate_image = fits_filename.replace('.fits', '') + '_rate.png'
-        baseline_image = fits_filename.replace('.fits', '') + '_baseline.png'
-        assert os.path.isfile(rate_image)
-        assert os.path.isfile(baseline_image)
+        assert os.path.isfile(rate_plot_filename)
+        assert os.path.isfile(baseline_plot_filename)
 
 
 if __name__ == '__main__':
