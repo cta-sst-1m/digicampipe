@@ -22,10 +22,8 @@ def test_data_quality():
     files = [example_file1_path]
     time_step = 1e6  # in ns, average history plot over 1 ms
     with tempfile.TemporaryDirectory() as tmpdirname:
-        fits_file = os.path.join(tmpdirname, 'ouptput.fits')
-        histo_file = os.path.join(tmpdirname, 'ouptput.pk')
-        fits_filename = str(fits_file.name)
-        histo_filename = str(histo_file.name)
+        fits_filename = os.path.join(tmpdirname, 'ouptput.fits')
+        histo_filename = os.path.join(tmpdirname, 'ouptput.pk')
         data_quality(files, time_step, fits_filename, histo_filename,
                      compute=True, display=False)
         hdul = fits.open(fits_filename)
