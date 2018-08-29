@@ -34,17 +34,17 @@ expected_columns = ['phi', 'y', 'skewness', 'intensity', 'x', 'event_id',
                     'local_time', 'psi', 'width', 'miss', 'alpha', 'length',
                     'r', 'kurtosis', 'event_type']
 
+
 def test_pipeline():
     # checks that the pipeline produce a fits file with all columns
     with tempfile.TemporaryDirectory() as tmpdirname:
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         compute_raw(
-            files=[example_file1_path], 
-            max_events=None, 
+            files=[example_file1_path],
+            max_events=None,
             pixel_id=convert_pixel_args(None), 
             filename=dark_filename
         )
-
         main_pipeline(
             files=[example_file2_path],
             max_events=None,
@@ -57,8 +57,8 @@ def test_pipeline():
             parameters_filename=calibration_filename,
             compute=True,
             display=False,
-            picture_threshold=1, # unusual value, so events pass cuts
-            boundary_threshold=1 # unusual value, so events pass cuts
+            picture_threshold=1,  # unusual value, so events pass cuts
+            boundary_threshold=1  # unusual value, so events pass cuts
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
