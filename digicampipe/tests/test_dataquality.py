@@ -34,6 +34,12 @@ def test_data_quality():
         for col in expected_columns:
             assert col in fits_columns
             assert n_time == len(hdul[1].data[col])
+        data_quality(files, time_step, fits_filename, histo_filename,
+                     compute=False, display=True)
+        rate_image = fits_filename.replace('.fits', '') + '_rate.png'
+        baseline_image = fits_filename.replace('.fits', '') + '_baseline.png'
+        assert os.path.isfile(rate_image)
+        assert os.path.isfile(baseline_image)
 
 
 if __name__ == '__main__':
