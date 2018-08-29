@@ -20,7 +20,7 @@ expected_columns = ['time', 'baseline', 'trigger_rate']
 
 def test_data_quality():
     files = [example_file1_path]
-    time_step = 1e6  # in ns, average history plot over 1 ms
+    time_step = 1e8  # in ns, average history plot over 100 ms
     with tempfile.TemporaryDirectory() as tmpdirname:
         fits_filename = os.path.join(tmpdirname, 'ouptput.fits')
         histo_filename = os.path.join(tmpdirname, 'ouptput.pk')

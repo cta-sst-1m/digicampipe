@@ -53,32 +53,30 @@ def entry(files, time_step, fits_filename, load_files, histo_filename,
     n_pixels = len(pixel_id)
     if not load_files:
         events = calibration_event_stream(files)
-        time = 0
+        init_time = 0
         baseline = 0
         count = 0
         container = DataQualityContainer()
         file = Serializer(fits_filename, mode='w', format='fits')
         baseline_histo = Histogram1D(data_shape=(n_pixels, ),
                                      bin_edges=np.arange(4096))
-        n_event = 0
-        n_container = 0
         for i, event in enumerate(events):
-            n_event += 1
             new_time = event.data.local_time
+            if init_time == 0:
+                init_time = new_time
             count += 1
             baseline += np.mean(event.data.digicam_baseline)
-            time_diff = new_time - time
-            time = new_time
+            time_diff = new_time - init_time
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
             if time_diff > time_step and i > 0:
                 trigger_rate = count / time_diff
                 baseline = baseline / count
                 container.trigger_rate = trigger_rate
                 container.baseline = baseline
-                container.time = time
+                container.time = init_time
                 baseline = 0
                 count = 0
-                n_container += 1
+                init_time = 0
                 file.add_container(container)
         baseline_histo.save(histo_filename)
         file.close()
