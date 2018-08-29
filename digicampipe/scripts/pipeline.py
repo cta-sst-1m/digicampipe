@@ -166,7 +166,7 @@ def entry():
     output = args['--output']
     compute = args['--compute']
     display = args['--display']
-    output_path = os.path.basename(output)
+    output_path = os.path.dirname(output)
     if not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
                       'for output hillas does not exists \n')

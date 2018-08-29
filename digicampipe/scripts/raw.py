@@ -56,7 +56,7 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
 
-    output_path = os.path.basename(raw_histo_filename)
+    output_path = os.path.dirname(raw_histo_filename)
     if not os.path.exists(output_path):
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
