@@ -6,6 +6,7 @@ Usage:
 Options:
   --help                        Show this
   --dark_filename=FILE          path to histogram of the dark files
+  --parameters=FILE             Calibration parameters file path
   --time_step=N                 Time window in nanoseconds within which values
                                 are computed
                                 [Default: 5000000000]
@@ -18,6 +19,7 @@ Options:
                                 be created. If present, that analysis is
                                 skipped and the fits and histo files will serve
                                 as input for plotting.
+                                [Default: False]
   --rate_plot=FILE              path to the output plot history of rate.
                                 Use "none" to not create the plot and "show" to
                                 open an interactive plot instead of creating a
@@ -28,7 +30,6 @@ Options:
                                 "show" to open an interactive plot instead of
                                 creating a file.
                                 [Default: none]
-  --parameters=FILE             Calibration parameters file path
 """
 from docopt import docopt
 import matplotlib.pyplot as plt
@@ -84,7 +85,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files, histo_file
         init_time = 0
         baseline = 0
         count = 0
-        shower_rate = 0
+        shower_count = 0
         container = DataQualityContainer()
         file = Serializer(fits_filename, mode='w', format='fits')
         baseline_histo = Histogram1D(
@@ -99,12 +100,12 @@ def entry(files, dark_filename, time_step, fits_filename, load_files, histo_file
             baseline += np.mean(event.data.digicam_baseline)
             time_diff = new_time - init_time
             if event.data.shower:
-                shower_rate += 1
+                shower_count += 1
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
             if time_diff > time_step and i > 0:
                 trigger_rate = count / time_diff
+                shower_rate = shower_count / time_diff
                 baseline = baseline / count
-                shower_rate = shower_rate / count
                 container.trigger_rate = trigger_rate
                 container.baseline = baseline
                 container.time = init_time
@@ -112,7 +113,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files, histo_file
                 baseline = 0
                 count = 0
                 init_time = 0
-                shower_rate = 0
+                shower_count = 0
                 file.add_container(container)
         baseline_histo.save(histo_filename)
         file.close()
