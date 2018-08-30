@@ -4,6 +4,8 @@ import numpy as np
 from pkg_resources import resource_filename
 from astropy.io import fits
 from digicampipe.scripts.data_quality import entry as data_quality
+from digicampipe.scripts.raw import compute as compute_raw
+from digicampipe.utils.docopt import convert_pixel_args
 
 
 example_file1_path = resource_filename(
@@ -12,6 +14,22 @@ example_file1_path = resource_filename(
         'tests',
         'resources',
         'example_100_evts.000.fits.fz'
+    )
+)
+example_file2_path = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'example_10_evts.000.fits.fz'
+    )
+)
+parameters_filename = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'calibration_20180814.yml'
     )
 )
 
@@ -27,9 +45,17 @@ def test_data_quality():
         rate_plot_filename = os.path.join(tmpdirname, 'rate.png')
         baseline_plot_filename = os.path.join(tmpdirname, 'baseline.png')
         load_files = False
+        dark_filename = os.path.join(tmpdirname, 'dark.pk')
+        compute_raw(
+            files=[example_file1_path],
+            max_events=None,
+            pixel_id=convert_pixel_args(None),
+            filename=dark_filename
+        )
         data_quality(
-            files, time_step, fits_filename, load_files,
-            histo_filename, rate_plot_filename, baseline_plot_filename
+            files, dark_filename, time_step, fits_filename, load_files,
+            histo_filename, rate_plot_filename, baseline_plot_filename,
+            parameters_filename
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
