@@ -137,13 +137,11 @@ def compute_photo_electron(events, gains):
         yield event
 
 
-def compute_fractional_photo_electron(events, zero_pe_integral, gain_integral,
+def compute_fractional_photo_electron(events, gains_integral,
                               n_sample_integral=7, n_sample=50, n_pixel=1296):
     """
     :param events: a stream of events
-    :param zero_pe_integral: value corresponding to 0 pe while integrated
-    adc count (baseline subtracted) over n_sample_integral
-    :param gain_integral: value corresponding to how many integrated
+    :param gains_integral: value corresponding to how many integrated
     adc counts (baseline subtracted) over n_sample_integral corresponds to 1 pe
     :param n_sample_integral: size of the integration window used to determine
     zero_pe_integral and gain_integral.
@@ -152,20 +150,14 @@ def compute_fractional_photo_electron(events, zero_pe_integral, gain_integral,
     filled with fractional pe for each sample and each pixel. Integrating the
     fractional pe over n_sample_integral gives the charge in pe.
     """
-    assert zero_pe_integral.shape == n_pixel
-    assert gain_integral.shape == n_pixel
+    assert gains_integral.shape == (n_pixel,)
     frac_gain = np.tile(
-        gain_integral[:, None]/n_sample_integral,
-        [1, n_sample]
-    )
-    zero_pe_frac = np.tile(
-        zero_pe_integral[:, None] / n_sample_integral,
+        gains_integral[:, None]/n_sample_integral,
         [1, n_sample]
     )
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
-        gain_drop = event.data.gain_drop
-        reconstructed_fraction_of_pe = (adc_samples - zero_pe_frac) / \
-                               (frac_gain * gain_drop)
+        gain_drop = event.data.gain_drop[:, None]
+        reconstructed_fraction_of_pe = adc_samples / (frac_gain * gain_drop)
         event.data.reconstructed_fraction_of_pe = reconstructed_fraction_of_pe
-
+        yield event
