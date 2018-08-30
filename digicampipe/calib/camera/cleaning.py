@@ -115,7 +115,12 @@ def compute_3d_cleaning(events, geom, threshold_pe_frac=20, threshold_time=2.1,
         var_y = np.nansum(pe_frac * (pix_y - mean_y_tiled) ** 2 , axis=0) / \
                 sum_pixel_pe
         shower = False
-        if np.logical_and(np.isfinite(var_x + var_y), var_x + var_y > 0):
-            std_xy = np.mean(np.sqrt(var_x + var_y))
+        selection = np.logical_and(
+            np.isfinite(var_x + var_y),
+            var_x + var_y > 0
+        )
+        if np.any(selection):
+            std_xy = np.mean(np.sqrt(var_x + var_y)[selection])
             shower = std_xy > threshold_size
         event.data.shower = shower
+        yield event
