@@ -4,27 +4,31 @@ Usage:
   digicam-data-quality [options] [--] <INPUT>...
 
 Options:
-  --help                Show this
-  --dark_filename=FILE  path to histogram of the dark files
-  --time_step=N         Time window in nanoseconds within which values are
-                        computed
-                        [Default: 5000000000]
-  --output-fits=FILE    path to output fits file
-                        [Default: ./data_quality.fits]
-  --output-hist=FILE    path to output histo file
-                        [Default: ./baseline_histo.pk]
-  --load                If not present, the INPUT files will be analyzed and
-                        output fits and histo files will be created. If
-                        present, that analysis is skipped and the fits and
-                        histo files will serve as input for plotting.
-  --rate_plot=FILE      path to the output plot history of rate.
-                        Use "none" to not create the plot and "show" to open an
-                        interactive plot instead of creating a file.
-                        [Default: none]
-  --baseline_plot=FILE  path to the output plot history of the mean baseline.
-                        Use "none" to not create the plot and "show" to open an
-                        interactive plot instead of creating a file.
-                        [Default: none]
+  --help                        Show this
+  --dark_filename=FILE          path to histogram of the dark files
+  --time_step=N                 Time window in nanoseconds within which values
+                                are computed
+                                [Default: 5000000000]
+  --output-fits=FILE            path to output fits file
+                                [Default: ./data_quality.fits]
+  --output-hist=FILE            path to output histo file
+                                [Default: ./baseline_histo.pk]
+  --load                        If not present, the INPUT files will be
+                                analyzed and output fits and histo files will
+                                be created. If present, that analysis is
+                                skipped and the fits and histo files will serve
+                                as input for plotting.
+  --rate_plot=FILE              path to the output plot history of rate.
+                                Use "none" to not create the plot and "show" to
+                                open an interactive plot instead of creating a
+                                file.
+                                [Default: none]
+  --baseline_plot=FILE          path to the output plot history of the mean
+                                baseline. Use "none" to not create the plot and
+                                "show" to open an interactive plot instead of
+                                creating a file.
+                                [Default: none]
+  --parameters=FILE             Calibration parameters file path
 """
 from docopt import docopt
 import matplotlib.pyplot as plt
@@ -155,5 +159,6 @@ if __name__ == '__main__':
     load_files = args['--load']
     rate_plot_filename = args['--rate_plot']
     baseline_plot_filename = args['--baseline_plot']
-    entry(files, time_step, fits_filename, load_files, histo_filename,
-          rate_plot_filename, baseline_plot_filename)
+    parameters_filename = args['--parameters']
+    entry(files, dark_filename, time_step, fits_filename, load_files, histo_filename,
+          rate_plot_filename, baseline_plot_filename, parameters_filename)
