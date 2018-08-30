@@ -149,8 +149,6 @@ def entry(files, dark_filename, time_step, fits_filename, load_files, histo_file
 
 
 if __name__ == '__main__':
-    import sys
-    print(sys.argv)
     args = docopt(__doc__)
     files = args['<INPUT>']
     dark_filename = args['--dark_filename']
