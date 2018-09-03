@@ -47,7 +47,7 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
     compute_baseline_shift, fill_dark_baseline
-from digicampipe.calib.camera.charge import compute_fractional_photo_electron
+from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
 
 class DataQualityContainer(Container):
@@ -80,7 +80,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files, histo_file
             cell_capacitance
         )
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
-        events = compute_fractional_photo_electron(events, gain_integral)
+        events = compute_sample_photo_electron(events, gain_integral)
         events = compute_3d_cleaning(events, geom=DigiCam.geometry)
         init_time = 0
         baseline = 0

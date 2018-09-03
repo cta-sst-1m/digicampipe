@@ -37,7 +37,7 @@ class CalibrationEventContainer(Container):
     reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
                                                 'electrons for each adc sample'
                                        )
-    reconstructed_fraction_of_pe = Field(
+    sample_pe = Field(
         ndarray,
         'array of the same shape as adc_samples giving the estimated fraction '
         'of photon electrons for each adc sample'

@@ -1,4 +1,5 @@
 import numpy as np
+from astropy import units as u
 from ctapipe.image import cleaning
 
 
@@ -84,40 +85,44 @@ def compute_dilate(events, geom):
         yield event
 
 
-def compute_3d_cleaning(events, geom, threshold_pe_frac=20, threshold_time=2.1,
-                        threshold_size=0.005, n_sample=50, sampling_time=4,
-                        n_pixel=1296):
-    samples = np.arange(0, n_sample * sampling_time, sampling_time)
-    pix_x = np.tile(geom.pix_x.value[:, None], [1, n_sample])
-    pix_y = np.tile(geom.pix_y.value[:, None], [1, n_sample])
-    pix_t = np.tile(samples[None, :], [n_pixel, 1])
+def compute_3d_cleaning(events, geom, threshold_sample_pe=20,
+                        threshold_time=2.1 * u.ns, threshold_size=0.005 * u.mm,
+                        n_sample=50, sampling_time=4 * u.ns):
+    samples = np.arange(
+        0, n_sample * sampling_time.value, sampling_time.value
+    ) * sampling_time.unit
+    pix_x = geom.pix_x[:, None]
+    pix_y = geom.pix_y[:, None]
+    pix_t = samples[None, :]
     for event in events:
-        pe_frac = event.data.reconstructed_fraction_of_pe
+        sample_pe = event.data.sample_pe
         # ignore missing pixels
-        pe_frac[~np.isfinite(pe_frac)] = 0
-        # set to 0 the samples with fractional pe lower than threshold_pe_frac
-        pe_frac[pe_frac < threshold_pe_frac] = 0
-        sum_t = np.nansum(pe_frac, axis=1)
-        mean_t = np.nansum(pe_frac * pix_t, axis=1) / sum_t
-        mean_t_tiled = np.tile(mean_t[:, None], [1, n_sample])
-        var_t = np.nansum(pe_frac * (pix_t - mean_t_tiled) ** 2 , axis=1) / \
-                sum_t
+        sample_pe[~np.isfinite(sample_pe)] = 0
+        # set to 0 the samples with sample_pe lower than threshold_sample_pe
+        sample_pe[sample_pe < threshold_sample_pe] = 0
+        sum_t = np.nansum(sample_pe, axis=1)
+        mean_t = np.nansum(sample_pe * pix_t, axis=1) / sum_t
+        var_t = np.nansum(
+            sample_pe * (pix_t - mean_t[:, None]) ** 2, axis=1
+        ) / sum_t
         # set fractional pe to 0 for pixels with too short pulses
-        pe_frac[np.sqrt(var_t) < threshold_time, :] = 0
+        sample_pe[np.sqrt(var_t) < threshold_time, :] = 0
 
-        sum_pixel_pe = np.nansum(pe_frac, axis=0)
-        mean_x = np.nansum(pe_frac * pix_x, axis=0) / sum_pixel_pe
-        mean_y = np.nansum(pe_frac * pix_y, axis=0) / sum_pixel_pe
-        mean_x_tiled = np.tile(mean_x[None, :], [n_pixel, 1])
-        mean_y_tiled = np.tile(mean_y[None, :], [n_pixel, 1])
-        var_x = np.nansum(pe_frac * (pix_x - mean_x_tiled) ** 2 , axis=0) / \
-                sum_pixel_pe
-        var_y = np.nansum(pe_frac * (pix_y - mean_y_tiled) ** 2 , axis=0) / \
-                sum_pixel_pe
+        sum_pixel_pe = np.nansum(sample_pe, axis=0)
+        mean_x = np.nansum(sample_pe * pix_x, axis=0) / sum_pixel_pe
+        mean_y = np.nansum(sample_pe * pix_y, axis=0) / sum_pixel_pe
+        var_x = np.nansum(
+            sample_pe * (pix_x - mean_x[None, :]) ** 2,
+            axis=0
+        ) / sum_pixel_pe
+        var_y = np.nansum(
+            sample_pe * (pix_y - mean_y[None, :]) ** 2,
+            axis=0
+        ) / sum_pixel_pe
         shower = False
         selection = np.logical_and(
             np.isfinite(var_x + var_y),
-            var_x + var_y > 0
+            (var_x + var_y) > 0
         )
         if np.any(selection):
             std_xy = np.mean(np.sqrt(var_x + var_y)[selection])
