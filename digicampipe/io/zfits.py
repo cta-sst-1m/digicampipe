@@ -94,10 +94,12 @@ def zfits_event_source(
                 r0.camera_event_number = event.eventNumber
                 r0.pixel_flags = event.pixels_flags[_sort_ids]
                 r0.local_camera_clock = (
-                    event.local_time_sec * 1E9 + event.local_time_nanosec
+                    np.int64(event.local_time_sec * 1E9) +
+                    np.int64(event.local_time_nanosec)
                 )
                 r0.gps_time = (
-                    event.trig.timeSec * 1E9 + event.trig.timeNanoSec
+                    np.int64(event.trig.timeSec * 1E9) +
+                    np.int64(event.trig.timeNanoSec)
                 )
                 r0.camera_event_type = event.event_type
                 r0.array_event_type = event.eventType
