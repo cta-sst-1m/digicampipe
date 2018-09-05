@@ -38,7 +38,6 @@ def entry(files, plot, event_type='none'):
     for event in events:
         n_event += 1
         tel = event.r0.tels_with_data[0]
-
         top7 += np.sum(event.r0.tel[tel].trigger_output_patch7, axis=1)
     patches_rate = top7 / n_event
     pixels_rate = patches_rate.reshape([1, -1]).dot(patch_matrix).flatten()
@@ -52,8 +51,8 @@ def entry(files, plot, event_type='none'):
     display.image = pixels_rate
     output_path = os.path.dirname(plot)
     if plot == "show" or not os.path.isdir(output_path):
-        if not os.path.isdir(output_path):
-            print('WARNING: Path ' + output_path + 'for output trigger ' +
+        if not plot == "show":
+            print('WARNING: Path ' + output_path + ' for output trigger ' +
                   'uniformity does not exist, displaying the plot instead.\n')
         plt.show()
     else:
