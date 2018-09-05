@@ -84,8 +84,10 @@ def zfits_event_source(
                 if tel_id not in loaded_telescopes:
                     data.inst.num_channels[tel_id] = event.num_gains
                     data.inst.geom[tel_id] = camera.geometry
-                    data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
-                    data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
+                    data.inst.cluster_matrix_7[tel_id] = \
+                        camera.cluster_7_matrix
+                    data.inst.cluster_matrix_19[tel_id] = \
+                        camera.cluster_19_matrix
                     data.inst.patch_matrix[tel_id] = camera.patch_matrix
                     data.inst.num_pixels[tel_id] = samples.shape[0]
                     data.inst.num_samples[tel_id] = samples.shape[1]

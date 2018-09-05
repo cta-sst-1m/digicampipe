@@ -301,9 +301,9 @@ class ReconstructedShowerContainer(Container):
     az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty',
                            unit=u.deg)
     core_x = Field(0.0, 'reconstructed x coordinate of the core position',
-                  unit=u.m)
+                   unit=u.m)
     core_y = Field(0.0, 'reconstructed y coordinate of the core position',
-                  unit=u.m)
+                   unit=u.m)
     core_uncertainty = Field(0.0, 'uncertainty of the reconstructed core \
                              position', unit=u.m)
     h_max = Field(0.0, 'reconstructed height of the shower maximum')
