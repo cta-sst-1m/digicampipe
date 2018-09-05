@@ -23,25 +23,33 @@ import numpy as np
 from digicampipe.utils import DigiCam
 from digicampipe.io.event_stream import event_stream, add_slow_data
 import os
+from digicampipe.utils.geometry import compute_patch_matrix
+from ctapipe.instrument.camera import CameraGeometry
+from ctapipe.visualization import CameraDisplay
+from astropy import units as u
 
-
-def entry(files, plot, even_type='none'):
-    input_path = os.path.dirname(files[0])
-    aux_basepath = input_path.replace('/raw', '/aux')
-
+def entry(files, plot, event_type='none'):
     events = event_stream(files)
-    events = add_slow_data(events, basepath=aux_basepath)
-
-    top7 = None
+    #patxh matrix is a bool of size n_patch x n_pixel
+    patch_matrix = compute_patch_matrix(camera=DigiCam)
+    n_patch, n_pixel = patch_matrix.shape
+    top7 = np.zeros([n_patch], dtype=np.float32)
+    n_event = 0
     for event in events:
-        top7 = event.trigger_output_patch7
-        print(top7)
-        continue
+        n_event += 1
+        tel = event.r0.tels_with_data[0]
 
+        top7 += np.sum(event.r0.tel[tel].trigger_output_patch7, axis=1)
+    patches_rate = top7 / n_event
+    pixels_rate = patches_rate.reshape([1, -1]).dot(patch_matrix).flatten()
+    print('pixels_rate from', np.min(pixels_rate), 'to', np.max(pixels_rate),
+          'trigger/event')
+    print(pixels_rate)
     fig1 = plt.figure()
-    plt.plot()
-    plt.plot(top7)
-    plt.ylabel('rate [Hz]')
+    ax = plt.gca()
+    display = CameraDisplay(DigiCam.geometry, ax=ax, title='Trigger uniformity')
+    display.add_colorbar()
+    display.image = pixels_rate
     output_path = os.path.dirname(plot)
     if plot == "show" or not os.path.isdir(output_path):
         if not os.path.isdir(output_path):

@@ -14,7 +14,7 @@ Options:
                                 [Default: ./data_quality.fits]
   --output-hist=FILE            path to output histo file
                                 [Default: ./baseline_histo.pk]
-  --load                        If not present, the INPUT files will be
+  --load                        If not present, the INPUT zfits files will be
                                 analyzed and output fits and histo files will
                                 be created. If present, that analysis is
                                 skipped and the fits and histo files will serve
