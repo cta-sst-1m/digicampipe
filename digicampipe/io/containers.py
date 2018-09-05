@@ -22,6 +22,7 @@ import pickle
 from os.path import isfile
 from ctapipe.io.serializer import Serializer
 from os import remove
+import numpy as np
 
 __all__ = ['InstrumentContainer',
            'R0Container',
@@ -152,8 +153,8 @@ class R0CameraContainer(Container):
     hv_off_baseline = Field(ndarray, 'HV off baseline')
     camera_event_id = Field(int, 'Camera event number')
     camera_event_number = Field(int, "camera event number")
-    local_camera_clock = Field(float, "camera timestamp")
-    gps_time = Field(float, "gps timestamp")
+    local_camera_clock = Field(np.int64, "camera timestamp")
+    gps_time = Field(np.int64, "gps timestamp")
     white_rabbit_time = Field(float, "precise white rabbit based timestamp")
     camera_event_type = Field(int, "camera event type")
     array_event_type = Field(int, "array event type")
@@ -300,9 +301,9 @@ class ReconstructedShowerContainer(Container):
     az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty',
                            unit=u.deg)
     core_x = Field(0.0, 'reconstructed x coordinate of the core position',
-                  unit=u.m)
+                   unit=u.m)
     core_y = Field(0.0, 'reconstructed y coordinate of the core position',
-                  unit=u.m)
+                   unit=u.m)
     core_uncertainty = Field(0.0, 'uncertainty of the reconstructed core \
                              position', unit=u.m)
     h_max = Field(0.0, 'reconstructed height of the shower maximum')
