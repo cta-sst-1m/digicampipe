@@ -25,7 +25,7 @@ setup(
     long_description=open('README.md').read(),
     description='A package for DigiCam pipeline',
     install_requires=[
-        'ctapipe>=0.6.0',
+#        'ctapipe>=0.6.0',
         'numpy',
         'matplotlib',
         'scipy',
