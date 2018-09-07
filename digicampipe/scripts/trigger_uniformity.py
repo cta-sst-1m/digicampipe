@@ -26,13 +26,14 @@ from digicampipe.calib.camera.filter import filter_event_types
 import os
 from digicampipe.utils.geometry import compute_patch_matrix
 from ctapipe.visualization import CameraDisplay
+from digicampipe.visualization.plot import plot_array_camera
 
 
 def entry(files, plot, event_type='none'):
     events = event_stream(files)
-    if event_type is None or event_type == 'none' or event_type == 'None':
-        pass
-    else:
+    if not (event_type is None or
+            event_type == 'none' or
+            event_type == 'None'):
         flags = [int(flag) for flag in event_type.strip(',').split(',')]
         events = filter_event_types(events, flags=flags)
     # patxh matrix is a bool of size n_patch x n_pixel
