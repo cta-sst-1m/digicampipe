@@ -91,8 +91,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         gain_amplitude = gain * charge_to_amplitude_factor
 
         crosstalk = np.array(calibration_parameters['mu_xt'])
-        bias_resistance = 10 * 1E3 * u.Ohm # 10 kOhm
-        cell_capacitance = 50 * 1E-15 * u.Farad # 50 fF
+        bias_resistance = 10 * 1E3 * u.Ohm  # 10 kOhm
+        cell_capacitance = 50 * 1E-15 * u.Farad  # 50 fF
         geom = DigiCam.geometry
 
         dark_histo = Histogram1D.load(dark_filename)
