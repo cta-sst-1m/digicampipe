@@ -98,8 +98,8 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
 
         nsb_rate = event.data.nsb_rate
         gain_drop = 1. / (1. + nsb_rate * cell_capacitance
-                          * bias_resistance * 1E9)
-
+                          * bias_resistance)
+        gain_drop = gain_drop.value
         event.data.gain_drop = gain_drop
 
         yield event
