@@ -25,6 +25,7 @@ setup(
     long_description=open('README.md').read(),
     description='A package for DigiCam pipeline',
     install_requires=[
+        'ctapipe>=0.6.0',
         'numpy',
         'matplotlib',
         'scipy',
@@ -32,7 +33,7 @@ setup(
         'h5py',
         'tqdm',
     ],
-    tests_require=['pytest>=3.0.0', 'ctapipe>=0.6.0'],
+    tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
     package_data={
         '': [
