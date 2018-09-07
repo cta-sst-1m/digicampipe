@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 dark_files=(/sst1m/raw/2018/08/19/SST1M_01/SST1M_01_20180819_001.fits.fz /sst1m/raw/2018/08/19/SST1M_01/SST1M_01_20180819_002.fits.fz /sst1m/raw/2018/08/19/SST1M_01/SST1M_01_20180819_003.fits.fz
 )
 science_files=(/sst1m/raw/2018/08/19/SST1M_01/SST1M_01_20180819_009.fits.fz /sst1m/raw/2018/08/19/SST1M_01/SST1M_01_20180819_010.fits.fz
