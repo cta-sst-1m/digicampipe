@@ -57,6 +57,20 @@ def test_pulse_template_normalization():
     assert np.max(template.amplitude) == 1
 
 
+def test_pulse_template_ndarray_amplitude():
+
+    n_samples = 51
+    time = np.linspace(0, 50, num=n_samples)
+    amplitude = [np.ones(n_samples), np.ones(n_samples)]
+    amplitude = np.array(amplitude)
+
+    template = PulseTemplate(amplitude, time)
+    y = template(time, amplitude=2)
+
+    assert (template.integral() == np.array([50, 50])).all()
+    np.testing.assert_almost_equal(y, amplitude * 2)
+
+
 if __name__ == '__main__':
 
     test_pulse_template_plot()

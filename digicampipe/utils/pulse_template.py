@@ -19,7 +19,9 @@ class PulseTemplate:
 
     def __call__(self, time, amplitude=1, t_0=0):
 
-        return amplitude * self._template(time - t_0)
+        y = amplitude * self._template(time - t_0)
+
+        return np.array(y)
 
     @classmethod
     def load(cls, filename):
@@ -39,9 +41,9 @@ class PulseTemplate:
             normalization = np.min(self.amplitude)
 
         self.amplitude = self.amplitude / normalization
+
         return interp1d(self.time, self.amplitude, kind='cubic',
-                                          bounds_error=False, fill_value=0.,
-                                          assume_sorted=True)
+                        bounds_error=False, fill_value=0., assume_sorted=True)
 
     def integral(self):
 
