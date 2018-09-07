@@ -26,6 +26,7 @@ Options:
   --boundary_threshold=N      Tailcut secondary cleaning threshold
                               [Default: 15]
   --parameters=FILE           Calibration parameters file path
+  --template=FILE             Pulse template file path
 """
 from digicampipe.io.event_stream import calibration_event_stream
 from ctapipe.io.serializer import Serializer
@@ -60,19 +61,10 @@ class PipelineOutputContainer(HillasParametersContainer):
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, output_path, parameters_filename, compute, display,
-         picture_threshold, boundary_threshold):
+         picture_threshold, boundary_threshold, template_filename):
     # Input/Output files
 
     hillas_filename = os.path.join(output_path, 'hillas.fits')
-
-    """
-    from astropy.io import 
-    fitsadc_diff_file = 'adc_test3_diff.fits'
-    data_diff = np.ones([10, 10])
-    with fits.open(adc_diff_file, mode='ostream', memmap=True) as hdul_diff:
-        hdu_diff = fits.PrimaryHDU(data=data_diff)
-    hdul_diff.append(hdu_diff)
-    """
 
     if compute:
 
@@ -80,11 +72,25 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
             calibration_parameters = yaml.load(file)
 
-        gain = np.array(calibration_parameters['gain'])
-        pulse_area = 4
+        t_template, x_template = np.loadtxt(template_filename).T
+        pulse_area = np.trapz(x_template, t_template)  # 17.966227169659913 ns
+        dt_template = t_template[1] - t_template[0]
+        dt_sampling = 4
+        step = int(dt_sampling / dt_template)
+        x_template = x_template[::step]
+
+        integration_window = np.ones(integral_width)
+        charge_to_amplitude_factor = np.convolve(x_template,
+                                                 integration_window)
+        charge_to_amplitude_factor = np.max(charge_to_amplitude_factor)
+        charge_to_amplitude_factor = 1 / charge_to_amplitude_factor  # ~ 0.24
+
+        gain = np.array(calibration_parameters['gain'])  # ~ 20 LSB / p.e.
+        gain_amplitude = gain * charge_to_amplitude_factor
+
         crosstalk = np.array(calibration_parameters['mu_xt'])
-        bias_resistance = 10 * 1E3
-        cell_capacitance = 50 * 1E-15
+        bias_resistance = 10 * 1E3  # 10 kOhm
+        cell_capacitance = 50 * 1E-15  # 50 fF
         geom = DigiCam.geometry
 
         dark_histo = Histogram1D.load(dark_filename)
@@ -98,7 +104,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = baseline.subtract_baseline(events)
         # events = baseline.compute_baseline_std(events, n_events=100)
         events = filter.filter_clocked_trigger(events)
-        events = baseline.compute_nsb_rate(events, gain, pulse_area, crosstalk,
+        events = baseline.compute_nsb_rate(events, gain_amplitude,
+                                           pulse_area, crosstalk,
                                            bias_resistance, cell_capacitance)
         events = baseline.compute_gain_drop(events, bias_resistance,
                                             cell_capacitance)
@@ -129,6 +136,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
                 print(event.hillas)
                 print(event.data.nsb_rate)
+                print(event.data.gain_drop)
+                print(event.data.baseline_shift)
                 plot_array_camera(np.max(event.data.adc_samples, axis=-1))
                 plot_array_camera(np.nanmax(
                     event.data.reconstructed_charge, axis=-1))
@@ -192,7 +201,8 @@ def entry():
     shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
-    # args['--min_photon'] = int(args['--min_photon'])
+    # args['--min_photon'] = int(args['--min_photon']
+    template_filename = args['--template']
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
@@ -205,7 +215,8 @@ def entry():
          compute=compute,
          display=display,
          picture_threshold=picture_threshold,
-         boundary_threshold=boundary_threshold)
+         boundary_threshold=boundary_threshold,
+         template_filename=template_filename)
 
 
 if __name__ == '__main__':
