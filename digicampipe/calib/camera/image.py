@@ -8,7 +8,7 @@ def compute_hillas_parameters(events, geom):
         mask = event.data.cleaning_mask
         image = event.data.reconstructed_number_of_pe
         image[~mask] = 0
-        hillas = hillas_parameters(geom, image)
+        hillas = hillas_parameters(geom, image, container=True)
         event.hillas = hillas
 
         yield event
