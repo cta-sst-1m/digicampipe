@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from digicampipe.utils import DigiCam
 from digicampipe.io.event_stream import event_stream
+from digicampipe.calib.camera.filter import filter_event_types
 import os
 from digicampipe.utils.geometry import compute_patch_matrix
 from ctapipe.visualization import CameraDisplay
@@ -29,6 +30,11 @@ from ctapipe.visualization import CameraDisplay
 
 def entry(files, plot, event_type='none'):
     events = event_stream(files)
+    if event_type is None or event_type == 'none' or event_type == 'None':
+        pass
+    else:
+        flags = [int(flag) for flag in event_type.strip(',').split(',')]
+        events = filter_event_types(events, flags=flags)
     # patxh matrix is a bool of size n_patch x n_pixel
     patch_matrix = compute_patch_matrix(camera=DigiCam)
     n_patch, n_pixel = patch_matrix.shape
