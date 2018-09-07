@@ -3,7 +3,7 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
 
-class PulseTemplate:
+class NormalizedPulseTemplate:
 
     def __init__(self, amplitude, time):
 
@@ -22,6 +22,12 @@ class PulseTemplate:
         y = amplitude * self._template(time - t_0)
 
         return np.array(y)
+
+    def __getitem__(self, item):
+
+        print(self.amplitude[item], item)
+
+        return NormalizedPulseTemplate(amplitude=self.amplitude[item], time=self.time)
 
     @classmethod
     def load(cls, filename):
