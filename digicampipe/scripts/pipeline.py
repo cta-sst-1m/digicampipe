@@ -42,6 +42,7 @@ import yaml
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from astropy.table import Table
+import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -73,9 +74,10 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             calibration_parameters = yaml.load(file)
 
         t_template, x_template = np.loadtxt(template_filename).T
+        t_template = t_template * u.ns
         pulse_area = np.trapz(x_template, t_template)  # 17.966227169659913 ns
         dt_template = t_template[1] - t_template[0]
-        dt_sampling = 4
+        dt_sampling = 4 * u.ns
         step = int(dt_sampling / dt_template)
         x_template = x_template[::step]
 
@@ -89,8 +91,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         gain_amplitude = gain * charge_to_amplitude_factor
 
         crosstalk = np.array(calibration_parameters['mu_xt'])
-        bias_resistance = 10 * 1E3  # 10 kOhm
-        cell_capacitance = 50 * 1E-15  # 50 fF
+        bias_resistance = 10 * 1E3 * u.Ohm # 10 kOhm
+        cell_capacitance = 50 * 1E-15 * u.Farad # 50 fF
         geom = DigiCam.geometry
 
         dark_histo = Histogram1D.load(dark_filename)
