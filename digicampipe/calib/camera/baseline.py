@@ -5,6 +5,7 @@ __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_shift', 'compute_baseline_std',
            'compute_nsb_rate', 'compute_gain_drop']
 
+
 def fill_dark_baseline(events, dark_baseline):
 
     for event in events:

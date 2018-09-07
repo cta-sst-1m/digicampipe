@@ -50,6 +50,7 @@ from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
 from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
 
+
 class DataQualityContainer(Container):
 
     time = Field(ndarray, 'time')
@@ -58,9 +59,10 @@ class DataQualityContainer(Container):
     shower_rate = Field(ndarray, 'shower rate')
 
 
-def entry(files, dark_filename, time_step, fits_filename, load_files, histo_filename,
-          rate_plot_filename, baseline_plot_filename, parameters_filename,
-          bias_resistance=1e4, cell_capacitance = 5e-14, pulse_area=4):
+def entry(files, dark_filename, time_step, fits_filename, load_files,
+          histo_filename, rate_plot_filename, baseline_plot_filename,
+          parameters_filename, bias_resistance=1e4, cell_capacitance=5e-14,
+          pulse_area=4):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
     gain_integral = np.array(calibration_parameters['gain'])
@@ -159,5 +161,6 @@ if __name__ == '__main__':
     rate_plot_filename = args['--rate_plot']
     baseline_plot_filename = args['--baseline_plot']
     parameters_filename = args['--parameters']
-    entry(files, dark_filename, time_step, fits_filename, load_files, histo_filename,
-          rate_plot_filename, baseline_plot_filename, parameters_filename)
+    entry(files, dark_filename, time_step, fits_filename, load_files,
+          histo_filename, rate_plot_filename, baseline_plot_filename,
+          parameters_filename)

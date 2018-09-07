@@ -21,16 +21,15 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 import numpy as np
 from digicampipe.utils import DigiCam
-from digicampipe.io.event_stream import event_stream, add_slow_data
+from digicampipe.io.event_stream import event_stream
 import os
 from digicampipe.utils.geometry import compute_patch_matrix
-from ctapipe.instrument.camera import CameraGeometry
 from ctapipe.visualization import CameraDisplay
-from astropy import units as u
+
 
 def entry(files, plot, event_type='none'):
     events = event_stream(files)
-    #patxh matrix is a bool of size n_patch x n_pixel
+    # patxh matrix is a bool of size n_patch x n_pixel
     patch_matrix = compute_patch_matrix(camera=DigiCam)
     n_patch, n_pixel = patch_matrix.shape
     top7 = np.zeros([n_patch], dtype=np.float32)
@@ -46,7 +45,8 @@ def entry(files, plot, event_type='none'):
     print(pixels_rate)
     fig1 = plt.figure()
     ax = plt.gca()
-    display = CameraDisplay(DigiCam.geometry, ax=ax, title='Trigger uniformity')
+    display = CameraDisplay(DigiCam.geometry, ax=ax,
+                            title='Trigger uniformity')
     display.add_colorbar()
     display.image = pixels_rate
     output_path = os.path.dirname(plot)
