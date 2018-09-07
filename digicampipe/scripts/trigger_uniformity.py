@@ -7,10 +7,10 @@ Options:
   --help                        Show this
   --plot=FILE                   path to the output plot. Will show the average
                                 over all events of the trigger rate.
-                                If set to none, th eplot is displayed and not
+                                If set to none, the plot is displayed and not
                                 saved.
                                 [Default: none]
-  --event_type=FILE             comma separated list of the event type which
+  --event_type=LIST             comma separated list of the event type which
                                 will be used to calculate the rate:
                                 1: patch7 trigger
                                 8: clocked trigger
