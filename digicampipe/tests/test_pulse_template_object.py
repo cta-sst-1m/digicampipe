@@ -14,6 +14,7 @@ template_filename = resource_filename(
 )
 
 PULSE_AREA = 17.974891497703858
+RATIO_CHARGE_AMPLITUDE = 0.24164813864342138
 
 
 def test_pulse_template_creation_with_file():
@@ -82,6 +83,14 @@ def test_pulse_template_object_get_sub_template():
 
     assert template[0].integral() == 50
     np.testing.assert_almost_equal(template[1].integral(), 50 / 2)
+
+
+def test_charge_amplitude_ratio():
+
+    template = NormalizedPulseTemplate.load(template_filename)
+    ratio = template.compute_charge_amplitude_ratio(7, 4)
+
+    assert RATIO_CHARGE_AMPLITUDE == ratio
 
 
 if __name__ == '__main__':

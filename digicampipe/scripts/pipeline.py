@@ -36,6 +36,7 @@ from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
     filter
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils import DigiCam
 import os
 import yaml
@@ -73,22 +74,14 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
             calibration_parameters = yaml.load(file)
 
-        t_template, x_template = np.loadtxt(template_filename).T
-        t_template = t_template * u.ns
-        pulse_area = np.trapz(x_template, t_template)  # 17.966227169659913 ns
-        dt_template = t_template[1] - t_template[0]
-        dt_sampling = 4 * u.ns
-        step = int(dt_sampling / dt_template)
-        x_template = x_template[::step]
+        pulse_template = NormalizedPulseTemplate.load(template_filename)
 
-        integration_window = np.ones(integral_width)
-        charge_to_amplitude_factor = np.convolve(x_template,
-                                                 integration_window)
-        charge_to_amplitude_factor = np.max(charge_to_amplitude_factor)
-        charge_to_amplitude_factor = 1 / charge_to_amplitude_factor  # ~ 0.24
+        pulse_area = pulse_template.integral() * u.ns
+        ratio = pulse_template.compute_charge_amplitude_ratio(
+            integral_width=integral_width, dt_sampling=4)  # ~ 0.24
 
         gain = np.array(calibration_parameters['gain'])  # ~ 20 LSB / p.e.
-        gain_amplitude = gain * charge_to_amplitude_factor
+        gain_amplitude = gain * ratio
 
         crosstalk = np.array(calibration_parameters['mu_xt'])
         bias_resistance = 10 * 1E3 * u.Ohm  # 10 kOhm
