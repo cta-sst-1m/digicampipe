@@ -55,3 +55,10 @@ def test_pulse_template_normalization():
     template = PulseTemplate(x*0.1, t)
 
     assert np.max(template.amplitude) == 1
+
+
+if __name__ == '__main__':
+
+    test_pulse_template_plot()
+    import matplotlib.pyplot as plt
+    plt.show()

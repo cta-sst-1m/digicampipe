@@ -30,8 +30,6 @@ class PulseTemplate:
 
     def _interpolate(self):
 
-        normalization = 0
-
         if abs(np.min(self.amplitude)) <= abs(np.max(self.amplitude)):
 
             normalization = np.max(self.amplitude)
@@ -72,6 +70,12 @@ class PulseTemplate:
             fig = plt.figure()
             axes = fig.add_subplot(111)
 
-        axes.plot(self.time, self.amplitude, **kwargs)
+        t = np.linspace(self.time.min(), self.time.max(),
+                        num=len(self.time)*100)
+
+        axes.plot(self.time, self.amplitude, label='Template data-points',
+                  **kwargs)
+        axes.plot(t, self(t), label='Interpolated template')
+        axes.legend(loc='best')
 
         return axes
