@@ -75,15 +75,13 @@ def test_pulse_template_object_get_sub_template():
 
     n_samples = 51
     time = np.linspace(0, 50, num=n_samples)
-    amplitude = [np.ones(n_samples), 2 * np.ones(n_samples)]
+    amplitude = [np.ones(n_samples), np.arange(n_samples)]
     amplitude = np.array(amplitude)
 
     template = NormalizedPulseTemplate(amplitude, time)
 
-
-    print(template[1].amplitude)
     assert template[0].integral() == 50
-    assert template[1].integral() == 100
+    np.testing.assert_almost_equal(template[1].integral(), 50 / 2)
 
 
 if __name__ == '__main__':
