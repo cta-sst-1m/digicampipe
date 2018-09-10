@@ -13,7 +13,7 @@ Welcome to digicampipe's documentation!
    install/index
    containers/index
 
-.. automodule:: digicampipe
+.. automodapi:: digicampipe.calib.camera
 
 Indices and tables
 ==================

@@ -32,7 +32,6 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 from recommonmark.parser import CommonMarkParser
-from pkg_resources import resource_string
 from digicampipe import __version__
 
 extensions = ['sphinx.ext.autodoc',
@@ -44,7 +43,15 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
               'sphinx.ext.githubpages',
-              'sphinx_automodapi.automodapi']
+              'autoapi.sphinx',
+              ]
+
+autoapi_modules = {
+   'digicampipe': {
+      'override': False,
+      'output': 'auto'
+   }
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
