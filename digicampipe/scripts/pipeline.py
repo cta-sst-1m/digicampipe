@@ -196,7 +196,7 @@ def entry():
     debug = args['--debug']
     parameters_filename = args['--parameters']
     # args['--min_photon'] = int(args['--min_photon'])
-    template_filename= args['--template']
+    template_filename = args['--template']
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
