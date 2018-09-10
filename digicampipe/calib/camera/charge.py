@@ -137,11 +137,10 @@ def compute_photo_electron(events, gains):
         yield event
 
 
-def compute_sample_photo_electron(events, gains_integral):
+def compute_sample_photo_electron(events, gain_amplitude):
     """
     :param events: a stream of events
-    :param gains_integral: value corresponding to how many integrated
-    adc counts (baseline subtracted) over n_sample_integral corresponds to 1 pe
+    :param gain_amplitude: To the amplitude of 1 pe in LSB
     :return: a stream of event with event.data.sample_pe filled with
     fractional pe for each pixel and each sample. Integrating the
     fractional pe along all samples gives the charge in pe of the
@@ -150,6 +149,6 @@ def compute_sample_photo_electron(events, gains_integral):
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
         gain_drop = event.data.gain_drop[:, None]
-        sample_pe = adc_samples / (gains_integral[:, None] * gain_drop)
+        sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop)
         event.data.sample_pe = sample_pe
         yield event
