@@ -1,6 +1,6 @@
 from setuptools import setup
 
-with open('digicampipe/VERSION') as f:
+with open('VERSION') as f:
     __version__ = f.read().strip()
 
 
