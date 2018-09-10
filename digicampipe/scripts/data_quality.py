@@ -30,6 +30,7 @@ Options:
                                 "show" to open an interactive plot instead of
                                 creating a file.
                                 [Default: none]
+  --template=FILE               Pulse template file path
 """
 from docopt import docopt
 import matplotlib.pyplot as plt
@@ -41,6 +42,7 @@ from ctapipe.io.containers import Container
 from ctapipe.io.serializer import Serializer
 from ctapipe.core import Field
 from astropy.table import Table
+import astropy.units as u
 from histogram.histogram import Histogram1D
 from digicampipe.utils import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
@@ -49,6 +51,7 @@ from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
     compute_baseline_shift, fill_dark_baseline
 from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 
 class DataQualityContainer(Container):
@@ -61,11 +64,18 @@ class DataQualityContainer(Container):
 
 def entry(files, dark_filename, time_step, fits_filename, load_files,
           histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename, bias_resistance=1e4, cell_capacitance=5e-14,
-          pulse_area=4):
+          parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
+          cell_capacitance=5e-14 * u.Farad):
+
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
+
+    pulse_template = NormalizedPulseTemplate.load(template_filename)
+    pulse_area = pulse_template.integral() * u.ns
     gain_integral = np.array(calibration_parameters['gain'])
+
+    charge_to_amplitude = pulse_template.compute_charge_amplitude_ratio(7, 4)
+    gain_amplitude = gain_integral * charge_to_amplitude
     crosstalk = np.array(calibration_parameters['mu_xt'])
     pixel_id = np.arange(1296)
     n_pixels = len(pixel_id)
@@ -78,11 +88,11 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
         events = subtract_baseline(events)
         events = compute_baseline_shift(events)
         events = compute_nsb_rate(
-            events, gain_integral, pulse_area, crosstalk, bias_resistance,
+            events, gain_amplitude, pulse_area, crosstalk, bias_resistance,
             cell_capacitance
         )
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
-        events = compute_sample_photo_electron(events, gain_integral)
+        events = compute_sample_photo_electron(events, gain_amplitude)
         events = compute_3d_cleaning(events, geom=DigiCam.geometry)
         init_time = 0
         baseline = 0
@@ -161,6 +171,8 @@ if __name__ == '__main__':
     rate_plot_filename = args['--rate_plot']
     baseline_plot_filename = args['--baseline_plot']
     parameters_filename = args['--parameters']
+    template_filename = args['--template']
+
     entry(files, dark_filename, time_step, fits_filename, load_files,
           histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename)
+          parameters_filename, template_filename)

@@ -33,6 +33,16 @@ parameters_filename = resource_filename(
     )
 )
 
+
+template_filename = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_SST-1M_pixel_0.dat'
+    )
+)
+
 expected_columns = ['time', 'baseline', 'trigger_rate']
 
 
@@ -55,7 +65,7 @@ def test_data_quality():
         data_quality(
             files, dark_filename, time_step, fits_filename, load_files,
             histo_filename, rate_plot_filename, baseline_plot_filename,
-            parameters_filename
+            parameters_filename, template_filename,
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
