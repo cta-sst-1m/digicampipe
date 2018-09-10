@@ -14,6 +14,9 @@ Options:
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the same folder as output file.
+  --baseline_filename=FILE    Output path for baseline histogram. If None the
+                              histogram will not be computed.
+                              [Default: None]
 '''
 import os
 from docopt import docopt
@@ -48,6 +51,27 @@ def compute(files, max_events, pixel_id, filename):
         return raw_histo
 
 
+def compute_baseline_histogram(files, max_events, pixel_id, filename):
+
+    if os.path.exists(filename) and len(files) == 0:
+        baseline_histo = Histogram1D.load(filename)
+        return baseline_histo
+    else:
+        n_pixels = len(pixel_id)
+        events = calibration_event_stream(files, pixel_id=pixel_id,
+                                          max_events=max_events)
+        baseline_histo = Histogram1D(
+            data_shape=(n_pixels,),
+            bin_edges=np.arange(-4096, 4096, 1/16),
+            )
+
+        for event in events:
+            baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
+        baseline_histo.save(filename)
+
+        return baseline_histo
+
+
 def entry():
 
     args = docopt(__doc__)
@@ -57,6 +81,10 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
 
+    if args['--baseline_filename'] == 'None':
+
+        baseline_filename = None
+
     output_path = os.path.dirname(raw_histo_filename)
     if not os.path.exists(output_path):
         raise IOError('Path {} for output '
@@ -64,6 +92,11 @@ def entry():
 
     if args['--compute']:
         compute(files, max_events, pixel_id, raw_histo_filename)
+
+        if args['--baseline_filename']:
+
+            compute_baseline_histogram(files, max_events, pixel_id,
+                                       baseline_filename)
 
     if args['--save_figures']:
         raw_histo = Histogram1D.load(raw_histo_filename)
