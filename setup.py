@@ -1,11 +1,13 @@
 from setuptools import setup
+from pkg_resources import resource_string
 
-with open('VERSION') as f:
-    __version__ = f.read().strip()
+PACKAGE_NAME = 'digicampipe'
 
+__version__ = resource_string(PACKAGE_NAME, 'VERSION')
+print(__version__)
 
 setup(
-    name='digicampipe',
+    name=PACKAGE_NAME,
     version=__version__,
     packages=[
         'digicampipe',

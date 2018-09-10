@@ -32,7 +32,7 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 from recommonmark.parser import CommonMarkParser
-
+from pkg_resources import resource_string
 
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
@@ -72,9 +72,8 @@ author = 'SST-1M'
 # The short X.Y version.
 # The full version, including alpha/beta/rc tags.
 
-with open('../VERSION') as f:
-    __version__ = f.read().strip()
-
+__version__ = resource_string(project, 'VERSION')
+print(__version__)
 release = __version__
 version = __version__
 
@@ -89,6 +88,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
+
 exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.

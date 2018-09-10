@@ -13,6 +13,7 @@ Welcome to digicampipe's documentation!
    install/index
    containers/index
 
+.. automodule:: digicampipe
 
 Indices and tables
 ==================
