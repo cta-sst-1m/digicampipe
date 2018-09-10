@@ -153,6 +153,12 @@ def entry():
             plot_array_camera(mean_baseline,
                               label='Mean DigiCam baseline [LSB]')
 
+            plot_array_camera(mean_baseline - mean_value,
+                              label='Diff [LSB]')
+
+            plot_histo(mean_baseline - mean_value, bins='auto',
+                       x_label='Diff [LSB]')
+
         plt.show()
 
     return
