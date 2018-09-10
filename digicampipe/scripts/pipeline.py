@@ -8,8 +8,8 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyze
-  -o OUTPUT --output=OUTPUT   Folder where to store the results.
-                              [Default: .]
+  -o FILE --output=FILE       file where to store the results.
+                              [Default: ./hillas.fits]
   --dark=FILE                 File containing the Histogram of
                               the dark analysis
   -v --debug                  Enter the debug mode.
@@ -20,7 +20,6 @@ Options:
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
-  --save_figures              Save the plots to the OUTPUT folder
   --picture_threshold=N       Tailcut primary cleaning threshold
                               [Default: 20]
   --boundary_threshold=N      Tailcut secondary cleaning threshold
@@ -62,11 +61,8 @@ class PipelineOutputContainer(HillasParametersContainer):
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
-         debug, output_path, parameters_filename, compute, display,
+         debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename):
-    # Input/Output files
-
-    hillas_filename = os.path.join(output_path, 'hillas.fits')
 
     if compute:
 
@@ -108,13 +104,11 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = charge.compute_charge(events, integral_width, shift)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
-        events = cleaning.compute_tailcuts_clean(events, geom=geom,
-                                                 overwrite=True,
-                                                 picture_thresh=
-                                                 picture_threshold,
-                                                 boundary_thresh=
-                                                 boundary_threshold,
-                                                 keep_isolated_pixels=False)
+        events = cleaning.compute_tailcuts_clean(
+            events, geom=geom, overwrite=True,
+            picture_thresh=picture_threshold,
+            boundary_thresh=boundary_threshold, keep_isolated_pixels=False
+        )
         events = cleaning.compute_boarder_cleaning(events, geom,
                                                    boundary_threshold)
         events = cleaning.compute_dilate(events, geom)
@@ -182,13 +176,13 @@ def entry():
     files = args['<INPUT>']
     max_events = convert_max_events_args(args['--max_events'])
     dark_filename = args['--dark']
-    output_path = args['--output']
+    output = args['--output']
     compute = args['--compute']
     display = args['--display']
-
+    output_path = os.path.dirname(output)
     if not os.path.exists(output_path):
-        raise IOError('Path for output does not exists \n')
-
+        raise IOError('Path ' + output_path +
+                      'for output hillas does not exists \n')
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
     picture_threshold = float(args['--picture_threshold'])
@@ -196,8 +190,8 @@ def entry():
     shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
-    # args['--min_photon'] = int(args['--min_photon']
-    template_filename = args['--template']
+    # args['--min_photon'] = int(args['--min_photon'])
+    template_filename= args['--template']
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
@@ -206,14 +200,14 @@ def entry():
          integral_width=integral_width,
          debug=debug,
          parameters_filename=parameters_filename,
-         output_path=output_path,
+         hillas_filename=output,
          compute=compute,
          display=display,
          picture_threshold=picture_threshold,
          boundary_threshold=boundary_threshold,
-         template_filename=template_filename)
+         template_filename=template_filename
+         )
 
 
 if __name__ == '__main__':
-
     entry()
