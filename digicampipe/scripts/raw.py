@@ -25,7 +25,7 @@ from histogram.histogram import Histogram1D
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
-from digicampipe.visualization.plot import plot_histo
+from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
 def compute(files, max_events, pixel_id, filename):
@@ -102,6 +102,7 @@ def entry():
 
         mean_value = raw_histo.mean()
         plot_histo(mean_value, bins='auto', x_label='Mean value [LSB]')
+        plot_array_camera(mean_value, label='Mean value [LSB]')
 
         plt.show()
 
