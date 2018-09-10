@@ -27,7 +27,8 @@ class NormalizedPulseTemplate:
 
         print(self.amplitude[item], item)
 
-        return NormalizedPulseTemplate(amplitude=self.amplitude[item], time=self.time)
+        return NormalizedPulseTemplate(amplitude=self.amplitude[item],
+                                       time=self.time)
 
     @classmethod
     def load(cls, filename):
