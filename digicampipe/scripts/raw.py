@@ -93,7 +93,7 @@ def entry():
     if args['--compute']:
         compute(files, max_events, pixel_id, raw_histo_filename)
 
-        if args['--baseline_filename']:
+        if baseline_filename:
 
             compute_baseline_histogram(files, max_events, pixel_id,
                                        baseline_filename)
@@ -136,6 +136,20 @@ def entry():
         mean_value = raw_histo.mean()
         plot_histo(mean_value, bins='auto', x_label='Mean value [LSB]')
         plot_array_camera(mean_value, label='Mean value [LSB]')
+
+        if baseline_filename:
+
+            baseline_histo = Histogram1D.load(baseline_filename)
+
+            baseline_histo.draw(index=(pixel, ), log=True, legend=False,
+                                label='Histogram {}'.format(pixel),
+                                x_label='DigiCam baseline [LSB]')
+
+            mean_baseline = baseline_histo.mean()
+            plot_histo(mean_baseline, bins='auto',
+                       x_label='Mean DigiCam baseline [LSB]')
+            plot_array_camera(mean_baseline,
+                              label='Mean DigiCam baseline [LSB]')
 
         plt.show()
 
