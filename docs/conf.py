@@ -33,6 +33,7 @@
 # ones.
 from recommonmark.parser import CommonMarkParser
 from pkg_resources import resource_string
+from digicampipe import __version__
 
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
@@ -72,8 +73,6 @@ author = 'SST-1M'
 # The short X.Y version.
 # The full version, including alpha/beta/rc tags.
 
-__version__ = resource_string(project, 'VERSION')
-print(__version__)
 release = __version__
 version = __version__
 

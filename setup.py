@@ -3,8 +3,7 @@ from pkg_resources import resource_string
 
 PACKAGE_NAME = 'digicampipe'
 
-__version__ = resource_string(PACKAGE_NAME, 'VERSION')
-print(__version__)
+__version__ = resource_string(PACKAGE_NAME, 'VERSION').decode().strip()
 
 setup(
     name=PACKAGE_NAME,
