@@ -14,9 +14,9 @@ Options:
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the same folder as output file.
-  --baseline_filename=FILE    Output path for baseline histogram. If None the
-                              histogram will not be computed. Filename should
-                              end with '.pk'
+  --baseline_filename=FILE    Output path for DigiCam calculated baseline
+                              histogram. If None the histogram will not be
+                              computed. FILE should end with '.pk'
                               [Default: None]
 """
 import os
