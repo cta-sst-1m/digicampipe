@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''
+"""
 Do a raw data histogram
 
 Usage:
@@ -17,7 +17,7 @@ Options:
   --baseline_filename=FILE    Output path for baseline histogram. If None the
                               histogram will not be computed.
                               [Default: None]
-'''
+"""
 import os
 from docopt import docopt
 from tqdm import tqdm
