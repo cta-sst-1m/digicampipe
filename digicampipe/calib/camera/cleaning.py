@@ -70,9 +70,9 @@ def compute_boarder_cleaning(events, geom, boundary_threshold, skip=False):
         on_border = np.any(num_neighbors < 6)
         event.data.border = on_border
 
-        if not on_border and skip:
+        if on_border and skip:
 
-            yield event
+            continue
 
         else:
 
