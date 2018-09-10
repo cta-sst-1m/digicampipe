@@ -9,13 +9,14 @@ Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   -o FILE --output=FILE.      File where to store the results.
-                              [Default: .]
+                              [Default: ./raw_histo.pk]
   -c --compute                Compute the data.
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the same folder as output file.
   --baseline_filename=FILE    Output path for baseline histogram. If None the
-                              histogram will not be computed.
+                              histogram will not be computed. Filename should
+                              end with '.pk'
                               [Default: None]
 """
 import os
@@ -81,7 +82,8 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
 
-    if args['--baseline_filename'] == 'None':
+    baseline_filename = args['--baseline_filename']
+    if baseline_filename == 'None':
 
         baseline_filename = None
 
