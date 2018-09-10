@@ -53,6 +53,7 @@ from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
+
 class DataQualityContainer(Container):
 
     time = Field(ndarray, 'time')
