@@ -1,6 +1,5 @@
 import tempfile
 import os
-import numpy as np
 from pkg_resources import resource_filename
 from astropy.io import fits
 from digicampipe.scripts.pipeline import main as main_pipeline
