@@ -140,7 +140,7 @@ def compute_photo_electron(events, gains):
 def compute_sample_photo_electron(events, gain_amplitude):
     """
     :param events: a stream of events
-    :param gain_amplitude: To the amplitude of 1 pe in LSB
+    :param gain_amplitude: Corresponds to the pulse amplitude of 1 pe in LSB
     :return: a stream of event with event.data.sample_pe filled with
     fractional pe for each pixel and each sample. Integrating the
     fractional pe along all samples gives the charge in pe of the
