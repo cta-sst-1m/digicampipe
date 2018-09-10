@@ -10,7 +10,7 @@ Options:
   --max_events=N              Maximum number of events to analyse
   -o FILE --output=FILE.      File where to store the results.
                               [Default: ./raw_histo.pk]
-  -c --compute                Compute the data.
+  -c --compute                Compute the raw data histograms.
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the same folder as output file.
