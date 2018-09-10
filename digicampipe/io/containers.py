@@ -135,10 +135,10 @@ class R0CameraContainer(Container):
                                 operation
     :type camera_event_number: (int)
     :param local_camera_clock: time stamp from internal DigiCam clock (ns)
-    :type local_camera_clock: (float)
+    :type local_camera_clock: (int)
     :param gps_time: time stamp provided by a precise external clock
                      (synchronized between hardware components)
-
+    :type gps_time: (int)
     """
     pixel_flags = Field(ndarray, 'numpy array containing pixel flags')
     adc_samples = Field(ndarray,
