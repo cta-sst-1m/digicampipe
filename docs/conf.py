@@ -43,15 +43,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig',
               'sphinx.ext.viewcode',
               'sphinx.ext.githubpages',
-              'autoapi.sphinx',
+              'sphinx_automodapi.automodapi',
               ]
 
-autoapi_modules = {
-   'digicampipe': {
-      'override': False,
-      'output': 'auto'
-   }
-}
+numpydoc_show_class_members = False,
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
