@@ -1,5 +1,6 @@
 import tempfile
 import os
+import numpy as np
 from pkg_resources import resource_filename
 from astropy.io import fits
 from digicampipe.scripts.pipeline import main as main_pipeline
@@ -67,8 +68,8 @@ def test_pipeline():
             parameters_filename=calibration_filename,
             compute=True,
             display=False,
-            picture_threshold=1,  # unusual value, so events pass cuts
-            boundary_threshold=1  # unusual value, so events pass cuts
+            picture_threshold=50,  # unusual value, so events pass cuts
+            boundary_threshold=20,  # unusual value, so events pass cuts
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]

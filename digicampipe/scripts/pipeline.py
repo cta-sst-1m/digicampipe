@@ -58,6 +58,7 @@ class PipelineOutputContainer(HillasParametersContainer):
 
     alpha = Field(float, 'Alpha parameter of the shower')
     miss = Field(float, 'Miss parameter of the shower')
+    border = Field(bool, 'Is the event touching the camera borders')
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
@@ -104,6 +105,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = charge.compute_charge(events, integral_width, shift)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
+
         events = cleaning.compute_tailcuts_clean(
             events, geom=geom, overwrite=True,
             picture_thresh=picture_threshold,
@@ -127,6 +129,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
                 print(event.data.nsb_rate)
                 print(event.data.gain_drop)
                 print(event.data.baseline_shift)
+                print(event.data.border)
                 plot_array_camera(np.max(event.data.adc_samples, axis=-1))
                 plot_array_camera(np.nanmax(
                     event.data.reconstructed_charge, axis=-1))
@@ -140,6 +143,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data_to_store.local_time = event.data.local_time
             data_to_store.event_type = event.event_type
             data_to_store.event_id = event.event_id
+            data_to_store.border = event.data.border
 
             for key, val in event.hillas.items():
 
@@ -180,6 +184,7 @@ def entry():
     compute = args['--compute']
     display = args['--display']
     output_path = os.path.dirname(output)
+
     if not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
                       'for output hillas does not exists \n')
