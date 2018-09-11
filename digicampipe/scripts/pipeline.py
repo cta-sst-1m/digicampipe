@@ -8,8 +8,8 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyze
-  -o OUTPUT --output=OUTPUT   Folder where to store the results.
-                              [Default: .]
+  -o FILE --output=FILE       file where to store the results.
+                              [Default: ./hillas.fits]
   --dark=FILE                 File containing the Histogram of
                               the dark analysis
   -v --debug                  Enter the debug mode.
@@ -20,12 +20,12 @@ Options:
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
-  --save_figures              Save the plots to the OUTPUT folder
   --picture_threshold=N       Tailcut primary cleaning threshold
                               [Default: 20]
   --boundary_threshold=N      Tailcut secondary cleaning threshold
                               [Default: 15]
   --parameters=FILE           Calibration parameters file path
+  --template=FILE             Pulse template file path
 """
 from digicampipe.io.event_stream import calibration_event_stream
 from ctapipe.io.serializer import Serializer
@@ -35,12 +35,14 @@ from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
     filter
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils import DigiCam
 import os
 import yaml
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from astropy.table import Table
+import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -56,23 +58,12 @@ class PipelineOutputContainer(HillasParametersContainer):
 
     alpha = Field(float, 'Alpha parameter of the shower')
     miss = Field(float, 'Miss parameter of the shower')
+    border = Field(bool, 'Is the event touching the camera borders')
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
-         debug, output_path, parameters_filename, compute, display,
-         picture_threshold, boundary_threshold):
-    # Input/Output files
-
-    hillas_filename = os.path.join(output_path, 'hillas.fits')
-
-    """
-    from astropy.io import 
-    fitsadc_diff_file = 'adc_test3_diff.fits'
-    data_diff = np.ones([10, 10])
-    with fits.open(adc_diff_file, mode='ostream', memmap=True) as hdul_diff:
-        hdu_diff = fits.PrimaryHDU(data=data_diff)
-    hdul_diff.append(hdu_diff)
-    """
+         debug, hillas_filename, parameters_filename, compute, display,
+         picture_threshold, boundary_threshold, template_filename):
 
     if compute:
 
@@ -80,11 +71,18 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
             calibration_parameters = yaml.load(file)
 
-        gain = np.array(calibration_parameters['gain'])
-        pulse_area = 4
+        pulse_template = NormalizedPulseTemplate.load(template_filename)
+
+        pulse_area = pulse_template.integral() * u.ns
+        ratio = pulse_template.compute_charge_amplitude_ratio(
+            integral_width=integral_width, dt_sampling=4)  # ~ 0.24
+
+        gain = np.array(calibration_parameters['gain'])  # ~ 20 LSB / p.e.
+        gain_amplitude = gain * ratio
+
         crosstalk = np.array(calibration_parameters['mu_xt'])
-        bias_resistance = 10 * 1E3
-        cell_capacitance = 50 * 1E-15
+        bias_resistance = 10 * 1E3 * u.Ohm  # 10 kOhm
+        cell_capacitance = 50 * 1E-15 * u.Farad  # 50 fF
         geom = DigiCam.geometry
 
         dark_histo = Histogram1D.load(dark_filename)
@@ -98,7 +96,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = baseline.subtract_baseline(events)
         # events = baseline.compute_baseline_std(events, n_events=100)
         events = filter.filter_clocked_trigger(events)
-        events = baseline.compute_nsb_rate(events, gain, pulse_area, crosstalk,
+        events = baseline.compute_nsb_rate(events, gain_amplitude,
+                                           pulse_area, crosstalk,
                                            bias_resistance, cell_capacitance)
         events = baseline.compute_gain_drop(events, bias_resistance,
                                             cell_capacitance)
@@ -106,13 +105,12 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = charge.compute_charge(events, integral_width, shift)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
-        events = cleaning.compute_tailcuts_clean(events, geom=geom,
-                                                 overwrite=True,
-                                                 picture_thresh=
-                                                 picture_threshold,
-                                                 boundary_thresh=
-                                                 boundary_threshold,
-                                                 keep_isolated_pixels=False)
+
+        events = cleaning.compute_tailcuts_clean(
+            events, geom=geom, overwrite=True,
+            picture_thresh=picture_threshold,
+            boundary_thresh=boundary_threshold, keep_isolated_pixels=False
+        )
         events = cleaning.compute_boarder_cleaning(events, geom,
                                                    boundary_threshold)
         events = cleaning.compute_dilate(events, geom)
@@ -129,6 +127,9 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
                 print(event.hillas)
                 print(event.data.nsb_rate)
+                print(event.data.gain_drop)
+                print(event.data.baseline_shift)
+                print(event.data.border)
                 plot_array_camera(np.max(event.data.adc_samples, axis=-1))
                 plot_array_camera(np.nanmax(
                     event.data.reconstructed_charge, axis=-1))
@@ -142,6 +143,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data_to_store.local_time = event.data.local_time
             data_to_store.event_type = event.event_type
             data_to_store.event_id = event.event_id
+            data_to_store.border = event.data.border
 
             for key, val in event.hillas.items():
 
@@ -178,13 +180,14 @@ def entry():
     files = args['<INPUT>']
     max_events = convert_max_events_args(args['--max_events'])
     dark_filename = args['--dark']
-    output_path = args['--output']
+    output = args['--output']
     compute = args['--compute']
     display = args['--display']
+    output_path = os.path.dirname(output)
 
     if not os.path.exists(output_path):
-        raise IOError('Path for output does not exists \n')
-
+        raise IOError('Path ' + output_path +
+                      'for output hillas does not exists \n')
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
     picture_threshold = float(args['--picture_threshold'])
@@ -193,6 +196,7 @@ def entry():
     debug = args['--debug']
     parameters_filename = args['--parameters']
     # args['--min_photon'] = int(args['--min_photon'])
+    template_filename = args['--template']
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
@@ -201,13 +205,14 @@ def entry():
          integral_width=integral_width,
          debug=debug,
          parameters_filename=parameters_filename,
-         output_path=output_path,
+         hillas_filename=output,
          compute=compute,
          display=display,
          picture_threshold=picture_threshold,
-         boundary_threshold=boundary_threshold)
+         boundary_threshold=boundary_threshold,
+         template_filename=template_filename
+         )
 
 
 if __name__ == '__main__':
-
     entry()

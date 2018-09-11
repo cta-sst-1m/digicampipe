@@ -118,7 +118,7 @@ def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
     plt.ylabel(label_y)
 
 
-def plot_histo(data, x_label='', show_fit=True, limits=None, **kwargs):
+def plot_histo(data, x_label='', show_fit=False, limits=None, **kwargs):
     mask = np.isfinite(data)
 
     if limits is not None:

@@ -1,5 +1,10 @@
 import numpy as np
 
+__all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
+           'compute_baseline_with_min', 'subtract_baseline',
+           'compute_baseline_shift', 'compute_baseline_std',
+           'compute_nsb_rate', 'compute_gain_drop']
+
 
 def fill_dark_baseline(events, dark_baseline):
 
@@ -98,8 +103,8 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
 
         nsb_rate = event.data.nsb_rate
         gain_drop = 1. / (1. + nsb_rate * cell_capacitance
-                          * bias_resistance * 1E9)
-
+                          * bias_resistance)
+        gain_drop = gain_drop.value
         event.data.gain_drop = gain_drop
 
         yield event

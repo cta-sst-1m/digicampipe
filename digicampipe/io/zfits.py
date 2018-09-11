@@ -131,8 +131,10 @@ def zfits_event_source(
                 if tel_id not in loaded_telescopes:
                     data.inst.num_channels[tel_id] = event.num_gains
                     data.inst.geom[tel_id] = camera.geometry
-                    data.inst.cluster_matrix_7[tel_id] = camera.cluster_7_matrix
-                    data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
+                    data.inst.cluster_matrix_7[tel_id] = \
+                        camera.cluster_7_matrix
+                    data.inst.cluster_matrix_19[tel_id] = \
+                        camera.cluster_19_matrix
                     data.inst.patch_matrix[tel_id] = camera.patch_matrix
                     data.inst.num_pixels[tel_id] = samples.shape[0]
                     data.inst.num_samples[tel_id] = samples.shape[1]
@@ -141,10 +143,12 @@ def zfits_event_source(
                 r0.camera_event_number = event.eventNumber
                 r0.pixel_flags = event.pixels_flags[_sort_ids]
                 r0.local_camera_clock = (
-                    event.local_time_sec * 1E9 + event.local_time_nanosec
+                    np.int64(event.local_time_sec * 1E9) +
+                    np.int64(event.local_time_nanosec)
                 )
                 r0.gps_time = (
-                    event.trig.timeSec * 1E9 + event.trig.timeNanoSec
+                    np.int64(event.trig.timeSec * 1E9) +
+                    np.int64(event.trig.timeNanoSec)
                 )
                 r0.camera_event_type = event.event_type
                 r0.array_event_type = event.eventType

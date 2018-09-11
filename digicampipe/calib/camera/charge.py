@@ -135,3 +135,20 @@ def compute_photo_electron(events, gains):
         event.data.reconstructed_number_of_pe = pe
 
         yield event
+
+
+def compute_sample_photo_electron(events, gain_amplitude):
+    """
+    :param events: a stream of events
+    :param gain_amplitude: Corresponds to the pulse amplitude of 1 pe in LSB
+    :return: a stream of event with event.data.sample_pe filled with
+    fractional pe for each pixel and each sample. Integrating the
+    fractional pe along all samples gives the charge in pe of the
+    full event.
+    """
+    for count, event in enumerate(events):
+        adc_samples = event.data.adc_samples
+        gain_drop = event.data.gain_drop[:, None]
+        sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop)
+        event.data.sample_pe = sample_pe
+        yield event

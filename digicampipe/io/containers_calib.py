@@ -37,13 +37,19 @@ class CalibrationEventContainer(Container):
     reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
                                                 'electrons for each adc sample'
                                        )
-
+    sample_pe = Field(
+        ndarray,
+        'array of the same shape as adc_samples giving the estimated fraction '
+        'of photon electrons for each adc sample'
+    )
     reconstructed_time = Field(ndarray, 'reconstructed time '
                                         'for each adc sample')
     cleaning_mask = Field(ndarray, 'cleaning mask, pixel bool array')
+    shower = Field(bool, 'is the event considered as a shower')
+    border = Field(bool, 'is the event after cleaning touchin the camera '
+                         'borders')
 
     def plot(self, pixel_id):
-
         plt.figure()
         plt.title('pixel : {}'.format(pixel_id))
         plt.plot(self.adc_samples[pixel_id], label='raw')
