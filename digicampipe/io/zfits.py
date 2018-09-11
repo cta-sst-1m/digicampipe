@@ -69,6 +69,7 @@ def zfits_event_source(
 
         n_events_in_file = len(file.Events)
         events = file.Events
+        index_of_event = 0
 
         if event_id is not None:
 
@@ -91,6 +92,7 @@ def zfits_event_source(
             enumerate(events),
             desc='Events',
             leave=True,
+            initial=index_of_event,
             total=n_events_in_file,
         ):
             if max_events is not None and event_counter > max_events:
