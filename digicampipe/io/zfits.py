@@ -77,7 +77,6 @@ def zfits_event_source(
 
             first_event_id = file.Events[0].eventNumber
             last_event_id = file.Events[n_events_in_file - 1].eventNumber
-
             if not first_event_id <= event_id <= last_event_id:
 
                 raise IndexError('Cannot find event ID {} in File {}\n'
@@ -86,7 +85,7 @@ def zfits_event_source(
                                                              first_event_id,
                                                              last_event_id))
 
-            events = events[max(index_of_event-1, 0):]
+            events = events[max(index_of_event, 0):]
 
         for event_counter, event in tqdm(
             enumerate(events),
