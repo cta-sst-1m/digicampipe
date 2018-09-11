@@ -1,5 +1,6 @@
 from digicampipe.io.zfits import zfits_event_source
 from digicampipe.io.zfits import count_number_events
+from digicampipe.io.event_stream import event_stream
 
 import pkg_resources
 import os
@@ -40,6 +41,15 @@ def test_event_id():
 
     for data in zfits_event_source(example_file_path,
                                    event_id=event_id):
+        tel_id = 1
+        r0 = data.r0.tel[tel_id]
+        number = r0.camera_event_number
+
+        break
+
+    assert number == event_id
+
+    for data in event_stream(example_file_path, event_id=event_id):
         tel_id = 1
         r0 = data.r0.tel[tel_id]
         number = r0.camera_event_number
