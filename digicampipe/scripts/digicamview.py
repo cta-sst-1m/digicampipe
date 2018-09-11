@@ -6,6 +6,8 @@ Usage:
 Options:
   --start=N         Event to skip
                     [Default: 0]
+  --event_id=N      Event id to start
+                    [Default: None]
 '''
 from docopt import docopt
 from digicampipe.io import event_stream
@@ -14,7 +16,11 @@ from digicampipe.visualization import EventViewer
 
 def entry():
     args = docopt(__doc__)
-    data_stream = event_stream.event_stream(args['<INPUT>'])
+
+    event_id = args['--event_id']
+    event_id = int(event_id) if event_id != 'None' else None
+    data_stream = event_stream.event_stream(args['<INPUT>'],
+                                            event_id=event_id)
     for _, i in zip(data_stream, range(int(args['--start']))):
 
         pass
