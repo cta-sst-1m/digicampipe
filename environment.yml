@@ -38,9 +38,9 @@ dependencies:
   - sphinx-automodapi
   - git+https://github.com/iminuit/probfit.git
   - https://github.com/cta-sst-1m/protozfitsreader/archive/v1.4.0.tar.gz
+  - git+https://github.com/cta-observatory/pyhessio.git
   - git+https://github.com/cta-observatory/ctapipe.git
   - git+https://github.com/cta-sst-1m/CTS.git
   - git+https://github.com/dstndstn/astrometry.net.git
   - https://github.com/calispac/histogram/archive/0.3.2.tar.gz
   - git+https://github.com/uvemas/ViTables.git
-  - git+https://github.com/cta-observatory/pyhessio.git
