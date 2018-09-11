@@ -38,7 +38,7 @@ def compute_tailcuts_clean(events, geom, overwrite=True, **kwargs):
         yield event
 
 
-def compute_boarder_cleaning(events, geom, boundary_threshold):
+def compute_boarder_cleaning(events, geom, boundary_threshold, skip=False):
 
     pixel_id = np.array(geom.pix_id)
 
@@ -68,8 +68,13 @@ def compute_boarder_cleaning(events, geom, boundary_threshold):
 
         num_neighbors = np.sum(geom.neighbor_matrix[mask], axis=-1)
         on_border = np.any(num_neighbors < 6)
+        event.data.border = on_border
 
-        if not on_border:
+        if on_border and skip:
+
+            continue
+
+        else:
 
             yield event
 
