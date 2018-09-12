@@ -1,10 +1,11 @@
-from pkg_resources import resource_filename
 import os
 import warnings
-import numpy as np
 
+import numpy as np
 from cts_core.camera import Camera
-from digicampipe.utils import geometry
+from pkg_resources import resource_filename
+
+from digicampipe.instrument import geometry
 from digicampipe.io.event_stream import event_stream, add_slow_data
 
 warnings.simplefilter("ignore")

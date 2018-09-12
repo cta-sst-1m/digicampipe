@@ -25,9 +25,9 @@ from ctapipe.visualization import CameraDisplay
 from docopt import docopt
 
 from digicampipe.calib.filter import filter_event_types
+from digicampipe.instrument.geometry import compute_patch_matrix
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import DigiCam
-from digicampipe.utils.geometry import compute_patch_matrix
 
 
 def entry(files, plot, event_type='none'):

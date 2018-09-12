@@ -9,13 +9,10 @@ import logging
 from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.time import Time
-
-import digicampipe.utils as utils
-import numpy as np
-
-from digicampipe.io.containers import DataContainer
 from ctapipe.core import Provenance
 from ctapipe.instrument import TelescopeDescription, SubarrayDescription
+
+from digicampipe.io.containers import DataContainer
 
 logger = logging.getLogger(__name__)
 
@@ -275,11 +272,11 @@ def _fill_instrument_info(data, pyhessio_file, camera_geometry, camera):
 
                 geometry = camera_geometry
                 patch_matrix = \
-                    utils.geometry.compute_patch_matrix(camera=camera)
+                    digicampipe.instruments.geometry.compute_patch_matrix(camera=camera)
                 cluster_7_matrix = \
-                    utils.geometry.compute_cluster_matrix_7(camera=camera)
+                    digicampipe.instruments.geometry.compute_cluster_matrix_7(camera=camera)
                 cluster_19_matrix = \
-                    utils.geometry.compute_cluster_matrix_19(camera=camera)
+                    digicampipe.instruments.geometry.compute_cluster_matrix_19(camera=camera)
 
                 data.inst.geom[tel_id] = geometry
                 data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix

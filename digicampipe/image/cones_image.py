@@ -1,4 +1,19 @@
+import decimal
+from decimal import Decimal, ROUND_HALF_EVEN
+
+import matplotlib.pyplot as plt
+import numpy as np
+from astropy import units as u
+from astropy.io import fits
+from cts_core.camera import Camera
 from pkg_resources import resource_filename
+from scipy import signal, optimize
+
+from digicampipe.image.kernels import (
+    gauss,
+    high_pass_filter_77,
+    high_pass_filter_2525,
+)
 from digicampipe.image.utils import (
     get_neg_hexagonalicity_with_mask,
     set_hexagon,
@@ -11,22 +26,7 @@ from digicampipe.image.utils import (
     CroppedImage,
     fit_gauss_2d,
 )
-import os
-import decimal
-from decimal import Decimal, ROUND_HALF_EVEN
-import numpy as np
-from scipy import signal, optimize
-from astropy import units as u
-from astropy.io import fits
-import matplotlib.pyplot as plt
-
-from digicampipe.utils import geometry
-from digicampipe.image.kernels import (
-    gauss,
-    high_pass_filter_77,
-    high_pass_filter_2525,
-)
-from cts_core.camera import Camera
+from digicampipe.instrument import geometry
 
 camera_config_file = resource_filename(
     'digicampipe',

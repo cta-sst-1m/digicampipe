@@ -1,9 +1,10 @@
-import pkg_resources
 from os import path
+
+import pkg_resources
+from cts_core import camera
 from scipy.sparse import csr_matrix
 
-from cts_core import camera
-from digicampipe.utils import geometry
+from digicampipe.instrument import geometry
 
 
 class Camera(camera.Camera):
