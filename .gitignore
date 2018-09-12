@@ -7,6 +7,9 @@ digicampipe/tests/resources/cones_1509411741-cone.fits
 digicampipe/tests/resources/*.png
 digicampipe/tests/resources/stars_on_lid/*.png
 
+# Jupyter notebooks checkpoints
+notebooks/.pynb_checkpoints
+
 #Pycharm config
 .idea/*
 
