@@ -38,13 +38,13 @@ from histogram.histogram import Histogram1D
 from histogram.fit import HistogramFitter
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
+from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline
-from digicampipe.calib.camera.peak import fill_pulse_indices
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
-from digicampipe.utils import convert_max_events_args, \
+from digicampipe.calib.peak import fill_pulse_indices
+from digicampipe.calib.charge import compute_charge, compute_amplitude
+from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
-from digicampipe.utils import mpe_distribution_general, gaussian, \
+from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
     generalized_poisson
 
 

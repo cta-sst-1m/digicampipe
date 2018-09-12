@@ -29,7 +29,7 @@ from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils import convert_max_events_args, \
+from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
 
 
@@ -37,7 +37,6 @@ def entry():
 
     args = docopt(__doc__)
     files = args['<INPUT>']
-    debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
     output_path = args['--output']
@@ -108,8 +107,6 @@ def entry():
         cell_capacitance = 50 * 1E-15
 
         baseline_shift = baseline_mean - baseline_mean[0]
-        nsb_rate = baseline_shift / gain / template_area * (1 - crosstalk)
-
         nsb_rate = gain * template_area / (baseline_shift * (1 - crosstalk))
         nsb_rate = nsb_rate - cell_capacitance * bias_resistance
         nsb_rate = 1 / nsb_rate

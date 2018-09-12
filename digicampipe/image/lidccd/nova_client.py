@@ -435,8 +435,7 @@ if __name__ == '__main__':
         print('You must either specify --apikey or set AN_API_KEY')
         sys.exit(-1)
 
-    args = {}
-    args['apiurl'] = opt.server
+    args = {'apiurl': opt.server}
     c = Client(**args)
     c.login(opt.apikey)
 

@@ -38,17 +38,17 @@ from astropy.table import Table
 from ctapipe.core import Field
 from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.io.serializer import Serializer
-from digicampipe.calib.camera import baseline, peak, charge, cleaning, image
+from digicampipe.calib import baseline, peak, charge, cleaning, image
 from docopt import docopt
 from histogram.histogram import Histogram1D
 
 from digicampipe.calib import filter
 from digicampipe.image.hillas import compute_alpha, compute_miss
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils import DigiCam
-from digicampipe.utils import convert_max_events_args, \
+from digicampipe.instrument.camera import DigiCam
+from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
-from digicampipe.utils import NormalizedPulseTemplate
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
 
 

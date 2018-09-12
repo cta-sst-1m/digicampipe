@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 from tqdm import trange
-from digicampipe.utils import Camera
+from digicampipe.instrument.camera import Camera
 
 
 def disp_eval(parameters, width, length, cog_x, cog_y,
@@ -19,10 +18,10 @@ def disp_eval(parameters, width, length, cog_x, cog_y,
     # wind nebuale ..., but better reference is: (Domingo-Santamaria+, 2005)
     elif method == 2:
         A = (parameter_values['A0'] + parameter_values['A1'] * np.log10(size)
-             + pparameter_values['A2'] * np.log10(size)**2)
+             + parameter_values['A2'] * np.log10(size)**2)
         B = (parameter_values['A3'] + parameter_values['A4'] * np.log10(size)
              + parameter_values['A5'] * np.log10(size)**2)
-        eta = (pparameter_values['A6'] + parameter_values['A7'] * np.log10(size)
+        eta = (parameter_values['A6'] + parameter_values['A7'] * np.log10(size)
                + parameter_values['A8'] * np.log10(size)**2)
         disp_comp = A + B * (width / (length + eta * leakage2))
 
@@ -67,7 +66,7 @@ def disp_eval(parameters, width, length, cog_x, cog_y,
     return disp_comp, x_source_comp, y_source_comp, residuals.flatten()
 
 
-def leak_pixels(pix_x, pix_y, image):
+def leak_pixels(image):
 
     cam = Camera()
     geom = cam.geometry
@@ -255,7 +254,7 @@ def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):
          ))
     x, y = np.meshgrid(np.unique(data[:, 1]), np.unique(data[:, 0]))
     fig = plt.figure(figsize=(9, 8))
-    ax1 = fig.add_subplot(111)
+    fig.add_subplot(111)
     plt.imshow(rms2, vmin=vmin, vmax=vmax)
     cbar = plt.colorbar()
     cbar.set_label(cbarlabel)
@@ -267,7 +266,7 @@ def plot_2d(data, vmin, vmax, xlabel, ylabel, cbarlabel):
 
 def plot_event(pix_x, pix_y, image):
 
-    fig = plt.figure(figsize=(9, 9))
+    plt.figure(figsize=(9, 9))
     plt.scatter(pix_x[image == 0], pix_y[image == 0], color=[0.9, 0.9, 0.9])
     pix_x_event = pix_x[image > 0]
     pix_y_event = pix_y[image > 0]

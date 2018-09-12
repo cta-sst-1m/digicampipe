@@ -1,6 +1,6 @@
 import numpy as np
 
-from digicampipe.utils import DigiCam
+from digicampipe.instrument.camera import DigiCam
 
 
 def compute_trigger_patch(adc_samples, baseline,

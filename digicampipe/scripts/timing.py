@@ -25,11 +25,10 @@ import matplotlib.pyplot as plt
 from histogram.histogram import Histogram1D
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils import convert_max_events_args,\
+from digicampipe.utils.docopt import convert_max_events_args,\
     convert_pixel_args
 from digicampipe.visualization.plot import plot_array_camera, plot_parameter
-from digicampipe.calib.camera.time import compute_time_from_max, \
-    compute_time_from_leading_edge
+from digicampipe.calib.time import compute_time_from_max
 
 
 def compute(files, max_events, pixel_id, n_samples,
@@ -70,7 +69,6 @@ def entry():
 
     args = docopt(__doc__)
     files = args['<INPUT>']
-    debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])

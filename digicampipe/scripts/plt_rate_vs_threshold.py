@@ -1,7 +1,7 @@
-'''
+"""
 Usage:
   plt_rate_vs_threshold <trigger_npz_file>...
-'''
+"""
 from docopt import docopt
 import numpy as np
 import matplotlib.pyplot as plt

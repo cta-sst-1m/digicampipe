@@ -3,7 +3,7 @@ import numpy as np
 from ctapipe.visualization import CameraDisplay
 from scipy.stats import norm
 
-import digicampipe.utils as utils
+from digicampipe.instrument.camera import DigiCam
 
 
 def plot_hillas(hillas_dict, title='', **kwargs):
@@ -67,7 +67,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
     data = np.ma.masked_array(data, mask=~mask)
 
     plt.figure()
-    cam = utils.Camera()
+    cam = DigiCam
     geom = cam.geometry
     cam_display = CameraDisplay(geom, **kwargs)
     cam_display.cmap.set_bad(color='k')

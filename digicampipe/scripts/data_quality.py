@@ -44,14 +44,14 @@ from ctapipe.core import Field
 from astropy.table import Table
 import astropy.units as u
 from histogram.histogram import Histogram1D
-from digicampipe.utils import DigiCam
+from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
+from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
     compute_baseline_shift, fill_dark_baseline
-from digicampipe.calib.camera.charge import compute_sample_photo_electron
-from digicampipe.calib.camera.cleaning import compute_3d_cleaning
-from digicampipe.utils import NormalizedPulseTemplate
+from digicampipe.calib.charge import compute_sample_photo_electron
+from digicampipe.calib.cleaning import compute_3d_cleaning
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 
 class DataQualityContainer(Container):

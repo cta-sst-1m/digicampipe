@@ -1,16 +1,31 @@
 import numpy as np
 from scipy.ndimage.filters import convolve1d
-from digicampipe.utils.utils import get_pulse_shape
 from iminuit import Minuit
 import matplotlib.pyplot as plt
 from probfit import Chi2Regression
+from pkg_resources import resource_filename
+import os
+
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+
+TEMPLATE_FILENAME = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_SST-1M_pixel_0.dat'
+    )
+)
+
+PULSE_TEMPLATE = NormalizedPulseTemplate.load(TEMPLATE_FILENAME)
 
 
-def compute_charge(events, integral_width, shift, maximum_width=2):
+def compute_charge(events, integral_width, shift):
     """
 
     :param events: a stream of events
     :param integral_width: width of the integration window
+    :param shift: shift to the pulse index
     :param maximum_width: width of the region (bin size) to compute charge,
     maximum value is retained. (not implemented yet)
     :return:
@@ -63,7 +78,8 @@ def compute_full_waveform_charge(events):
         yield event
 
 
-def fit_template(events, pulse_width=(4, 5), rise_time=12):
+def fit_template(events, pulse_width=(4, 5), rise_time=12,
+                 template=PULSE_TEMPLATE):
 
     for event in events:
 
@@ -103,8 +119,8 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12):
             amplitude_0 = np.max(y)
             limit_amplitude = (max(np.min(y), 0), amplitude_0 * 1.2)
 
-            chi2 = Chi2Regression(get_pulse_shape, t, y)
-            m = Minuit(chi2, t=t_0,
+            chi2 = Chi2Regression(template, t, y)
+            m = Minuit(chi2, t_0=t_0,
                        amplitude=amplitude_0,
                        limit_t=limit_t,
                        limit_amplitude=limit_amplitude,
@@ -113,7 +129,7 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12):
                        print_level=0, pedantic=False)
             m.migrad()
 
-            adc_samples[pulse_index[0]] -= get_pulse_shape(time, **m.values)
+            adc_samples[pulse_index[0]] -= template(time, **m.values)
             amplitudes[pulse_index] = m.values['amplitude']
             times[pulse_index] = m.values['t']
 

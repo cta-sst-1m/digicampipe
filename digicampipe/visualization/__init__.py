@@ -6,7 +6,7 @@ from matplotlib.widgets import Button, RadioButtons, CheckButtons
 import matplotlib
 
 from ctapipe.visualization import CameraDisplay
-from digicampipe.utils import DigiCam
+from digicampipe.instrument.camera import DigiCam
 
 
 class EventViewer():
@@ -198,8 +198,7 @@ class EventViewer():
         self.draw_readout(self.pixel_id)
         self.draw_camera()
         self.button_next_event.label.set_text(
-            'Next : current event #%d' % (self.event_id)
-        )
+            'Next : current event {}'.format(self.event_id))
 
     def draw(self):
         self.next()
@@ -395,7 +394,8 @@ class EventViewer():
             elif self.camera_view_type == 'time':
                 self.image = image[:, self.time_bin]
         else:
-            print('Cannot compute for camera type : %s' % self.camera_view)
+            print('Cannot compute for camera type : %s' %
+                  self.camera_view_type)
         if self.limits_colormap is not None:
             mask = (self.image >= self.limits_colormap[0])
             if not self.limits_colormap[1] == np.inf:

@@ -17,8 +17,8 @@ from digicampipe.io.event_stream import calibration_event_stream
 from tqdm import tqdm
 from docopt import docopt
 
-from digicampipe.calib.camera.time import estimate_arrival_time
-from digicampipe.utils import Histogram2dChunked
+from digicampipe.calib.time import estimate_arrival_time
+from digicampipe.utils.hist2d import Histogram2dChunked
 
 
 def main(outfile_path, input_files=[]):
@@ -75,6 +75,7 @@ def entry():
         outfile_path=args['--output'],
         input_files=args['<input_files>'],
     )
+
 
 if __name__ == '__main__':
     entry()

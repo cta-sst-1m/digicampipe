@@ -35,13 +35,12 @@ import matplotlib.pyplot as plt
 
 from histogram.histogram import Histogram1D
 from histogram.fit import HistogramFitter
-from digicampipe.utils import convert_max_events_args, \
+from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 
-from digicampipe.scripts import timing
 from digicampipe.scripts import mpe
-from digicampipe.utils import PeakNotFound
-from digicampipe.utils import fmpe_pdf_10
+from digicampipe.utils.exception import PeakNotFound
+from digicampipe.utils.pdf import fmpe_pdf_10
 
 
 class FMPEFitter(HistogramFitter):

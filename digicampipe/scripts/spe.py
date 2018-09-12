@@ -33,16 +33,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils import convert_pixel_args, \
+from digicampipe.utils.docopt import convert_pixel_args, \
     convert_max_events_args
 from histogram.histogram import Histogram1D
-from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, \
+from digicampipe.calib.baseline import fill_baseline, subtract_baseline
+from digicampipe.calib.peak import find_pulse_with_max, \
     find_pulse_fast
-from digicampipe.calib.camera.charge import compute_charge
+from digicampipe.calib.charge import compute_charge
 from digicampipe.scripts import raw
 from digicampipe.scripts.fmpe import FMPEFitter
-from digicampipe.utils import fmpe_pdf_10
+from digicampipe.utils.pdf import fmpe_pdf_10
 
 
 class MaxHistoFitter(FMPEFitter):

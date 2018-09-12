@@ -14,8 +14,8 @@ from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from astropy.wcs import WCS
 from astroquery.vizier import Vizier
-from digicampipe.image.kernels import gauss, high_pass_filter_2525
-from digicampipe.image.nova_client import Client
+from digicampipe.image.lidccd.kernels import gauss, high_pass_filter_2525
+from digicampipe.image.lidccd.nova_client import Client
 from matplotlib.patches import Circle, Rectangle
 from scipy import signal
 

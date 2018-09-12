@@ -10,16 +10,13 @@ might change rapidly as there is no final data level definition.
 
 from astropy import units as u
 from astropy.time import Time
-from ctapipe.core import Container, Map, Field
+from ctapipe.core import Container, Map
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io.containers import HillasParametersContainer
 from matplotlib import pyplot as plt
-from numpy.core.multiarray import ndarray
 
-try:
-    from ctapipe.core import Field
-except ImportError:
-    from ctapipe.core import Item as Field
+from ctapipe.core import Field
+
 from numpy import ndarray
 from gzip import open as gzip_open
 import pickle

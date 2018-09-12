@@ -13,6 +13,7 @@ from ctapipe.core import Provenance
 from ctapipe.instrument import TelescopeDescription, SubarrayDescription
 
 from digicampipe.io.containers import DataContainer
+from digicampipe.instrument.camera import DigiCam
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def hessio_get_list_event_ids(url, max_events=None):
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry, camera, max_events=None,
+def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
                         use_event_id=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
@@ -271,12 +272,9 @@ def _fill_instrument_info(data, pyhessio_file, camera_geometry, camera):
                 data.inst.mirror_numtiles[tel_id] = num_tiles
 
                 geometry = camera_geometry
-                patch_matrix = \
-                    digicampipe.instruments.geometry.compute_patch_matrix(camera=camera)
-                cluster_7_matrix = \
-                    digicampipe.instruments.geometry.compute_cluster_matrix_7(camera=camera)
-                cluster_19_matrix = \
-                    digicampipe.instruments.geometry.compute_cluster_matrix_19(camera=camera)
+                patch_matrix = camera.patch_matrix
+                cluster_7_matrix = camera.cluster_7_matrix
+                cluster_19_matrix = camera.cluster_19_matrix
 
                 data.inst.geom[tel_id] = geometry
                 data.inst.cluster_matrix_7[tel_id] = cluster_7_matrix

@@ -6,7 +6,7 @@ from pkg_resources import resource_filename
 
 from digicampipe.scripts.pipeline import main as main_pipeline
 from digicampipe.scripts.raw import compute as compute_raw
-from digicampipe.utils import convert_pixel_args
+from digicampipe.utils.docopt import convert_pixel_args
 
 example_file1_path = resource_filename(
     'digicampipe',

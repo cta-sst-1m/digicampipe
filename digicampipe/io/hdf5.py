@@ -1,5 +1,5 @@
 from digicampipe.io.containers import DataContainer
-import digicampipe.utils as utils
+from digicampipe.instrument.camera import DigiCam
 import h5py
 import numpy as np
 from tqdm import tqdm
@@ -9,7 +9,7 @@ __all__ = ['digicamtoy_event_source']
 
 def digicamtoy_event_source(
     url,
-    camera=utils.DigiCam,
+    camera=DigiCam,
     max_events=None,
     chunk_size=150,
 ):
@@ -21,6 +21,7 @@ def digicamtoy_event_source(
     max_events : int, optional
         maximum number of events to read
     camera : utils.Camera() default: utils.DigiCam
+    chunk_size : Number of events to load into the memory at once
     """
 
     data = DataContainer()

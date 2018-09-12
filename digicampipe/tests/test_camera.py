@@ -6,7 +6,7 @@ Not all features it inherits ... just the two new features are tested.
 
 
 def test_can_be_constructed_without_config_path():
-    from digicampipe.utils import Camera
+    from digicampipe.instrument.camera import Camera
     cam = Camera()
 
     # This is calling the __init__ of its base-class. So I do not need to
@@ -20,7 +20,7 @@ def test_can_be_constructed_without_config_path():
 
 
 def has_attribute_geometry():
-    from digicampipe.utils import Camera
+    from digicampipe.instrument.camera import Camera
     cam = Camera()
 
     g = cam.geometry

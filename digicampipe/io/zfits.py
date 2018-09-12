@@ -56,7 +56,7 @@ def zfits_event_source(
         be used for example emulate the final CTA data format, where there
         would be 1 telescope per file (whereas in current monte-carlo,
         they are all interleaved into one file)
-    camera : utils.Camera(), default DigiCam
+    camera : digicampipe.instrument.Camera(), default DigiCam
     event_id: int
         Event id to start at. If the exact event ID does not exists
         it will return the closest past event. If the event ID is out of the
@@ -124,8 +124,8 @@ def zfits_event_source(
                 except AttributeError:
                     warnings.warn((
                         "Could not read `hiGain.waveforms.baselines`"
-                        " for event:{0}"
-                        "of file:{url}".format(event_counter, url)
+                        "for event:{}\n"
+                        "of file:{}\n".format(event_counter, url)
                         ))
                     return np.ones(n_pixels) * np.nan
 

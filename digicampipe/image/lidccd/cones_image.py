@@ -6,7 +6,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from cts_core.camera import Camera
-from digicampipe.image.kernels import (
+from digicampipe.image.lidccd.kernels import (
     gauss,
     high_pass_filter_77,
     high_pass_filter_2525,

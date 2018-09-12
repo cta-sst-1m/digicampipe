@@ -4,7 +4,7 @@ import numpy as np
 from ctapipe.instrument import CameraGeometry
 
 
-def make_image(geom: CameraGeometry, image, container=False):
+def make_image(geom: CameraGeometry, image):
 
     pix_x = np.asanyarray(geom.pix_x, dtype=np.float64).value
     pix_y = np.asanyarray(geom.pix_y, dtype=np.float64).value

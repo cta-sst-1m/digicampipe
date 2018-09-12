@@ -8,7 +8,7 @@ import os
 
 
 def event_stream(filelist, source=None, max_events=None, **kwargs):
-    '''Iterable of events in the form of `DataContainer`.
+    """Iterable of events in the form of `DataContainer`.
 
     Parameters
     ----------
@@ -20,9 +20,10 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
             * digicampipe.io.zfits.zfits_event_source
             * digicampipe.io.hdf5.digicamtoy_event_source
             * digicampipe.io.hessio_digicam.hessio_event_source
+    max_events: max_events to iterate over
     kwargs: parameters for event_source
         Some event_sources need special parameters to work, c.f. their doc.
-    '''
+    """
 
     # If the caller gives us a path and not a list of paths,
     # we convert it to a list.

@@ -26,7 +26,7 @@ class Rectangle:
             self.bottom, self.top = bottom, top
 
     def __str__(self):
-        return "Rectangle(left=, bottom=, right=, top=)" % (
+        return 'Rectangle(left={}, bottom={}, right={}, top={})'.format(
             self.left, self.bottom, self.right, self.top)
 
     def width(self):
