@@ -6,15 +6,15 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from cts_core.camera import Camera
-from pkg_resources import resource_filename
-from scipy import signal, optimize
-
 from digicampipe.image.kernels import (
     gauss,
     high_pass_filter_77,
     high_pass_filter_2525,
 )
-from digicampipe.image.utils import (
+from pkg_resources import resource_filename
+from scipy import signal, optimize
+
+from digicampipe.image.lidccd.utils import (
     get_neg_hexagonalicity_with_mask,
     set_hexagon,
     get_peaks_separation,

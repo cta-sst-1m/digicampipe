@@ -1,4 +1,4 @@
-from digicampipe.image.cones_image import ConesImage, cones_simu
+from digicampipe.image.lidccd.cones_image import ConesImage, cones_simu
 
 
 def get_cone_position_simu(output_filename=None):
