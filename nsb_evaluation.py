@@ -14,14 +14,16 @@ Options:
   -b <path>, --baseline_path=<path>  \
 path to baseline file usually called "dark.npz"
 '''
-from digicampipe.calib.camera import filter, r1, random_triggers
-from digicampipe.io.event_stream import event_stream
-from digicampipe.utils import Camera
-from digicampipe.io.save_external_triggers import save_external_triggers
-import numpy as np
-import matplotlib.pyplot as plt
 import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
 from docopt import docopt
+
+from digicampipe.calib import filter
+from digicampipe.calib.camera import r1, random_triggers
+from digicampipe.io.event_stream import event_stream
+from digicampipe.io.save_external_triggers import save_external_triggers
+from digicampipe.utils import Camera
 
 
 def main(
@@ -43,7 +45,7 @@ def main(
     data_stream = filter.filter_missing_baseline(data_stream)
     data_stream = filter.filter_event_types(data_stream, flags=[8])
     data_stream = r1.calibrate_to_r1(data_stream, baseline)
-    data_stream = filter.filter_period(data_stream, period=10*u.second)
+    data_stream = filter.filter_period(data_stream, period=10 * u.second)
 
     save_external_triggers(
         data_stream,

@@ -16,11 +16,12 @@ Options:
   -h --help     Show this screen.
   --unwanted_pixels=<integers>   list of integers with commas [default: ]
 '''
-from digicampipe.calib.camera import filter
+from docopt import docopt
+from tqdm import tqdm
+
+from digicampipe.calib import filter
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
-from tqdm import tqdm
-from docopt import docopt
 
 
 def main(baseline_file_path, urls, unwanted_pixels=[]):

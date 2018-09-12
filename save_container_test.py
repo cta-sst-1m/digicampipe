@@ -1,9 +1,11 @@
-from digicampipe.calib.camera import filter, random_triggers, r1, dl2, dl1
+import astropy.units as u
+from cts_core.camera import Camera
+
+from digicampipe.calib import filter
+from digicampipe.calib.camera import random_triggers
+from digicampipe.io.containers import save_to_pickle_gz
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import utils, geometry
-from cts_core.camera import Camera
-import astropy.units as u
-from digicampipe.io.containers import save_to_pickle_gz
 
 if __name__ == '__main__':
     # Data configuration

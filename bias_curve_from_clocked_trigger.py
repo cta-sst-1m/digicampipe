@@ -5,11 +5,12 @@ i.e. measure the trigger rate as a function of threshold.
 Usage:
   bias_curve_from_clocked_trigger <outfile> <fitsfiles>...
 '''
-from docopt import docopt
-from digicampipe.calib.camera import filter
-from digicampipe.io.event_stream import event_stream
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from docopt import docopt
+
+from digicampipe.calib import filter
+from digicampipe.io.event_stream import event_stream
 
 if __name__ == '__main__':
     args = docopt(__doc__)

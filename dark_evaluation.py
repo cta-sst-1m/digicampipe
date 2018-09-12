@@ -17,17 +17,20 @@ Options:
   --unwanted_clusters=<integers>   list of integers with commas [default: 200]
   --unblind   do not use blind
 '''
-from digicampipe.calib.camera import filter, r0
+from os import path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pkg_resources
+from docopt import docopt
+from tqdm import tqdm
+
+from digicampipe.calib import filter
+from digicampipe.calib.camera import r0
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.save_adc import save_dark
 from digicampipe.io.save_bias_curve import save_bias_curve
 from digicampipe.utils import DigiCam
-import matplotlib.pyplot as plt
-import numpy as np
-from tqdm import tqdm
-import pkg_resources
-from os import path
-from docopt import docopt
 
 example_file_path = pkg_resources.resource_filename(
         'digicampipe',

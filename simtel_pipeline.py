@@ -28,23 +28,21 @@ Options:
   --min_photon <int>     Filtering on big showers [default: 50]
   --display     Display rather than output data
 '''
-import numpy as np
-import matplotlib.pyplot as plt
 import astropy.units as u
-from digicampipe.io.event_stream import event_stream
-from digicampipe.utils import geometry
+import matplotlib.pyplot as plt
+import numpy as np
 from cts_core.camera import Camera
-from digicampipe.utils import utils
-
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text, \
-    save_hillas_parameters
-
-from digicampipe.calib.camera import dl0, dl2, filter, r1, dl1
-from digicampipe.utils import utils, calib
-import simtel_baseline
-from digicampipe.utils import events_image
-import mc_shower
 from docopt import docopt
+
+import mc_shower
+import simtel_baseline
+from digicampipe.calib import filter
+from digicampipe.calib.camera import dl2, r1, dl1
+from digicampipe.io.event_stream import event_stream
+from digicampipe.io.save_hillas import save_hillas_parameters
+from digicampipe.utils import events_image
+from digicampipe.utils import geometry
+from digicampipe.utils import utils
 from digicampipe.visualization import EventViewer
 
 

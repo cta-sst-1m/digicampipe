@@ -11,14 +11,14 @@ Options:
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
   -i INPUT --input=INPUT.     Input files.
 '''
-from docopt import docopt
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from docopt import docopt
 
-from digicampipe.calib.camera import filter, r0, random_triggers
-from digicampipe.io.save_bias_curve import compute_bias_curve, \
-    compute_bias_curve_v2
+from digicampipe.calib import filter
+from digicampipe.calib.camera import r0, random_triggers
 from digicampipe.io.event_stream import event_stream
+from digicampipe.io.save_bias_curve import compute_bias_curve
 
 
 def compute(files, output_filename):

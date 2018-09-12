@@ -33,8 +33,8 @@ from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.core import Field
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
-from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
-    filter
+from digicampipe.calib.camera import baseline, peak, charge, cleaning, image
+from digicampipe.calib import filter
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils import DigiCam
 import os

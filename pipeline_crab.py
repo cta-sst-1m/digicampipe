@@ -19,16 +19,18 @@ Options:
 path to baseline file usually called "dark.npz"
   --min_photon <int>     Filtering on big showers [default: 20]
 '''
-from digicampipe.calib.camera import filter, r1, random_triggers, dl0, dl2, dl1
-from digicampipe.io.event_stream import event_stream
-from cts_core.utils import Camera
-from digicampipe.io.save_hillas import save_hillas_parameters_in_text
-from digicampipe.visualization import EventViewer
-from digicampipe.utils import utils
-import numpy as np
-import matplotlib.pyplot as plt
 import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
+from cts_core.utils import Camera
 from docopt import docopt
+
+from digicampipe.calib import filter
+from digicampipe.calib.camera import r1, random_triggers, dl2, dl1
+from digicampipe.io.event_stream import event_stream
+from digicampipe.io.save_hillas import save_hillas_parameters_in_text
+from digicampipe.utils import utils
+from digicampipe.visualization import EventViewer
 
 
 def main(args):

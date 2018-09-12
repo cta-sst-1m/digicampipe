@@ -17,16 +17,17 @@ Options:
                                 By default set to none which keeps all events.
                                 [Default: none]
 """
-from docopt import docopt
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
-from digicampipe.utils import DigiCam
-from digicampipe.io.event_stream import event_stream
-from digicampipe.calib.camera.filter import filter_event_types
-import os
-from digicampipe.utils.geometry import compute_patch_matrix
 from ctapipe.visualization import CameraDisplay
-from digicampipe.visualization.plot import plot_array_camera
+from docopt import docopt
+
+from digicampipe.calib.filter import filter_event_types
+from digicampipe.io.event_stream import event_stream
+from digicampipe.utils import DigiCam
+from digicampipe.utils.geometry import compute_patch_matrix
 
 
 def entry(files, plot, event_type='none'):

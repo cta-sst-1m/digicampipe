@@ -1,12 +1,13 @@
 import os.path
-import pkg_resources
-import numpy as np
 from tempfile import TemporaryDirectory
 
-from digicampipe.calib.camera import filter, r1, random_triggers
+import numpy as np
+import pkg_resources
+
+from digicampipe.calib import filter
+from digicampipe.calib.camera import r1, random_triggers
 from digicampipe.io.event_stream import event_stream
 from digicampipe.utils import utils
-
 
 example_file_path = pkg_resources.resource_filename(
     'digicampipe',
