@@ -108,3 +108,27 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
         event.data.gain_drop = gain_drop
 
         yield event
+
+
+def fill_baseline_r0(event_stream, n_bins=10000):
+    n_events = None
+    baselines = []
+    baselines_std = []
+    for event in event_stream:
+        for telescope_id in event.r0.tels_with_data:
+            r0_camera = event.r0.tel[telescope_id]
+            adc_samples = r0_camera.adc_samples
+            if n_events is None:
+                n_events = n_bins // adc_samples.shape[1]
+
+            if r0_camera.camera_event_type == 8:
+                baselines.append(adc_samples.mean(axis=1))
+                baselines = baselines[-n_events:]
+                baselines_std.append(adc_samples.std(axis=1))
+                baselines_std = baselines_std[-n_events:]
+
+            if len(baselines) == n_events:
+                r0_camera.baseline = np.mean(baselines, axis=0)
+                r0_camera.standard_deviation = np.mean(baselines_std, axis=0)
+        yield event
+
