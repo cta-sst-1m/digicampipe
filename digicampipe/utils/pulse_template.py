@@ -17,9 +17,9 @@ class NormalizedPulseTemplate:
         self.amplitude = amplitude
         self._template = self._interpolate()
 
-    def __call__(self, time, amplitude=1, t_0=0):
+    def __call__(self, time, amplitude=1, t_0=0, baseline=0):
 
-        y = amplitude * self._template(time - t_0)
+        y = amplitude * self._template(time - t_0) + baseline
 
         return np.array(y)
 

@@ -27,27 +27,29 @@ Options:
   --parameters=FILE           Calibration parameters file path
   --template=FILE             Pulse template file path
 """
-from digicampipe.io.event_stream import calibration_event_stream
-from ctapipe.io.serializer import Serializer
-from ctapipe.io.containers import HillasParametersContainer
-from ctapipe.core import Field
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args
-from digicampipe.calib.camera import baseline, peak, charge, cleaning, image
-from digicampipe.calib import filter
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
-from digicampipe.utils import DigiCam
 import os
+
+import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import yaml
+from astropy.table import Table
+from ctapipe.core import Field
+from ctapipe.io.containers import HillasParametersContainer
+from ctapipe.io.serializer import Serializer
+from digicampipe.calib.camera import baseline, peak, charge, cleaning, image
 from docopt import docopt
 from histogram.histogram import Histogram1D
-from astropy.table import Table
-import astropy.units as u
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+
+from digicampipe.calib import filter
+from digicampipe.image.hillas import compute_alpha, compute_miss
+from digicampipe.io.event_stream import calibration_event_stream
+from digicampipe.utils import DigiCam
+from digicampipe.utils.docopt import convert_max_events_args, \
+    convert_pixel_args
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
-from digicampipe.utils.hillas import compute_alpha, compute_miss
 
 
 class PipelineOutputContainer(HillasParametersContainer):

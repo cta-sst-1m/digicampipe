@@ -1,7 +1,8 @@
-import numpy as np
 from optparse import OptionParser
-from digicampipe.utils import hillas
 
+import numpy as np
+
+from digicampipe.image import hillas
 
 if __name__ == '__main__':
 

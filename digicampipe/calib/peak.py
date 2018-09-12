@@ -4,8 +4,20 @@ from scipy.signal import find_peaks_cwt
 from scipy.ndimage.filters import convolve1d, gaussian_filter1d
 from scipy.signal import correlate
 from tqdm import tqdm
+from pkg_resources import resource_filename
+import os
 
-from digicampipe.utils.utils import get_pulse_shape
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+
+
+TEMPLATE_FILENAME = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_SST-1M_pixel_0.dat'
+    )
+)
 
 
 def find_pulse_1(events, threshold, min_distance):
@@ -73,10 +85,12 @@ def find_pulse_fast(events, threshold):
         yield event
 
 
-def find_pulse_correlate(events, threshold):
+def find_pulse_correlate(events, threshold,
+                         pulse_template=NormalizedPulseTemplate.load(
+                             TEMPLATE_FILENAME)):
 
     time = np.linspace(0, 91*4, num=91)
-    template = get_pulse_shape(time, t=0, amplitude=1, baseline=0)
+    template = pulse_template(time, t_0=0, amplitude=1, baseline=0)
     template[template < 0.1] = 0
     template = np.tile(template, (1296, 1))
     template = template / np.sum(template, axis=-1)[..., np.newaxis]
