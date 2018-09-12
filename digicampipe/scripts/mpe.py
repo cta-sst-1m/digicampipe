@@ -30,8 +30,6 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from digicampipe.utils.p import mpe_distribution_general, gaussian, \
-    generalized_poisson
 from docopt import docopt
 from histogram.fit import HistogramFitter
 from histogram.histogram import Histogram1D
@@ -45,6 +43,8 @@ from digicampipe.calib.peak import fill_pulse_indices
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
+from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
+    generalized_poisson
 
 
 class MPEFitter(HistogramFitter):
