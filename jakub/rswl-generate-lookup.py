@@ -1,11 +1,11 @@
-import numpy as np
 from optparse import OptionParser
-from scipy import interpolate
-from shower_geometry import impact_parameter
-import rswl_plot
+
 import matplotlib.pyplot as plt
+import numpy as np
+import rswl_plot
 from fill_lookup import fill_lookup
 
+from jakub.shower_geometry import impact_parameter
 
 if __name__ == '__main__':
 

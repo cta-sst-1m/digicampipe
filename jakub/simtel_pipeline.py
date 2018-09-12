@@ -30,13 +30,12 @@ Options:
 '''
 import astropy.units as u
 import matplotlib.pyplot as plt
+import mc_shower
 import numpy as np
 from cts_core.camera import Camera
 from digicampipe.calib.camera import dl2, r1, dl1
 from docopt import docopt
 
-import mc_shower
-import simtel_baseline
 from digicampipe.calib import filter
 from digicampipe.instrument import geometry
 from digicampipe.io.event_stream import event_stream
@@ -44,6 +43,7 @@ from digicampipe.io.save_hillas import save_hillas_parameters
 from digicampipe.utils import events_image
 from digicampipe.utils import utils
 from digicampipe.visualization import EventViewer
+from jakub import simtel_baseline
 
 
 def main(

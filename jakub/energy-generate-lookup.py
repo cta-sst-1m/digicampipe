@@ -1,11 +1,11 @@
-import numpy as np
 from optparse import OptionParser
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from shower_geometry import impact_parameter
-from rswl_plot import energy_lookup2d
-from fill_lookup import fill_lookup
 
+import matplotlib.pyplot as plt
+import numpy as np
+from fill_lookup import fill_lookup
+from rswl_plot import energy_lookup2d
+
+from jakub.shower_geometry import impact_parameter
 
 if __name__ == '__main__':
 
