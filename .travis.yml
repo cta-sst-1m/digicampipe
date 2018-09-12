@@ -42,6 +42,7 @@ install:
 - conda create -q -n digicampipe python=$PYTHON_VERSION pip
 - conda env update -f environment.yml
 - source activate digicampipe
+- pip install --upgrade pip
 - pip install .
 script:
 - pytest digicampipe
