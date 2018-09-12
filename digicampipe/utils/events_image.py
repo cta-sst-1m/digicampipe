@@ -1,11 +1,7 @@
-# Functions for extracting and saving cleaned events,
-# called from pipeline_crab.py
+# Functions for extracting and saving cleaned events
 
 import numpy as np
-from astropy.coordinates import Angle
-import astropy.units as u
 from ctapipe.instrument import CameraGeometry
-import matplotlib.pyplot as plt
 
 
 def make_image(geom: CameraGeometry, image, container=False):
