@@ -1,4 +1,4 @@
-from digicampipe.io import zfits, hdf5, hessio_digicam
+from digicampipe.io import zfits, hdf5, hessio
 from .auxservice import AuxService
 from collections import namedtuple
 from digicampipe.io.containers import CalibrationContainer
@@ -93,7 +93,7 @@ def guess_source_from_path(path):
     elif path.endswith('.h5') or path.endswith('.hdf5'):
         return hdf5.digicamtoy_event_source
     else:
-        return hessio_digicam.hessio_event_source
+        return hessio.hessio_event_source
 
 
 def add_slow_data(
