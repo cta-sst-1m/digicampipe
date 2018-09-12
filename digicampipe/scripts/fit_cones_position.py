@@ -45,37 +45,38 @@ def get_cones_position(filename):
     image = fits.open(filename)[0].data
     cones_img = ConesImage(image)
     cones_img.plot_cones(
-        output_filename=filename.replace('.fits','-cones.png')
+        output_filename=filename.replace('.fits', '-cones.png')
     )
     cones_img.plot_fft_cones(
-        output_filename=filename.replace('.fits','-cones-fft.png')
+        output_filename=filename.replace('.fits', '-cones-fft.png')
     )
     cones_img.get_cones_separation_reciprocal(
-        output_filename=filename.replace('.fits','-cones-sep-reciprocal.png')
+        output_filename=filename.replace('.fits', '-cones-sep-reciprocal.png')
     )
     cones_img.plot_fft_cones(
-        output_filename=filename.replace('.fits','-cones-fft-masked.png'),
+        output_filename=filename.replace('.fits', '-cones-fft-masked.png'),
         radius_mask=2.1
     )
-    cones_img.get_cone(output_filename=filename.replace('.fits','-cone.png'),
+    cones_img.get_cone(output_filename=filename.replace('.fits', '-cone.png'),
                        radius_mask=2.1)
     cones_img.scan_cone_position(
-        output_filename=filename.replace('.fits','-hexagonalicity.png'),
+        output_filename=filename.replace('.fits', '-hexagonalicity.png'),
         radius_mask=2.1,
         center_scan=cones_img.center_fitted,
         rotations=(60, 120, 180, 240, 300)
     )
     cones_img.plot_cones(
-        output_filename=filename.replace('.fits','-cones-filtered.png'),
+        output_filename=filename.replace('.fits', '-cones-filtered.png'),
         radius_mask=2.1
     )
     cones_img.plot_cones_presence(
-        output_filename=filename.replace('.fits','-cones-presence.png')
+        output_filename=filename.replace('.fits', '-cones-presence.png')
     )
     cones_img.fit_camera_geometry()
     cones_img.refine_camera_geometry()
     cones_img.plot_camera_geometry(
-        output_filename=filename.replace('.fits','-cones-presence-filtered.png')
+        output_filename=filename.replace('.fits',
+                                         '-cones-presence-filtered.png')
     )
     return cones_img.pixels_pos_predict
 
@@ -86,6 +87,7 @@ if __name__ == '__main__':
     )
 
     from pkg_resources import resource_filename
+
     example_lid_CCD_image_file_path = resource_filename('digicampipe',
                                                         'tests/resources/cones_1509411741.fits')
     pos_predict = get_cones_position(example_lid_CCD_image_file_path)

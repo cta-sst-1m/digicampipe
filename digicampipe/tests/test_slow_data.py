@@ -30,7 +30,6 @@ digicam_config_file = resource_filename(
 
 aux_basepath = resource_filename('digicampipe', 'tests/resources/')
 
-
 digicam = Camera(_config_file=digicam_config_file)
 digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)
 

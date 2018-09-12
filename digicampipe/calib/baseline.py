@@ -7,36 +7,28 @@ __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
 
 
 def fill_dark_baseline(events, dark_baseline):
-
     for event in events:
-
         event.data.dark_baseline = dark_baseline
 
         yield event
 
 
 def fill_baseline(events, baseline):
-
     for event in events:
-
         event.data.baseline = baseline
 
         yield event
 
 
 def fill_digicam_baseline(events):
-
     for event in events:
-
         event.data.baseline = event.data.digicam_baseline
 
         yield event
 
 
 def compute_baseline_with_min(events):
-
     for event in events:
-
         adc_samples = event.data.adc_samples
         event.data.baseline = np.min(adc_samples, axis=-1)
 
@@ -44,9 +36,7 @@ def compute_baseline_with_min(events):
 
 
 def subtract_baseline(events):
-
     for event in events:
-
         baseline = event.data.baseline
 
         event.data.adc_samples = event.data.adc_samples.astype(baseline.dtype)
@@ -56,9 +46,7 @@ def subtract_baseline(events):
 
 
 def compute_baseline_shift(events):
-
     for event in events:
-
         event.data.baseline_shift = event.data.baseline \
                                     - event.data.dark_baseline
 
@@ -66,28 +54,23 @@ def compute_baseline_shift(events):
 
 
 def compute_baseline_std(events, n_events):
-
     baselines_std = []
     for event in events:
 
         data = event.data.adc_samples
 
         if event.event_type == 8:
-
             baselines_std.append(data.std(axis=1))
             baselines_std = baselines_std[-n_events:]
             event.data.baseline_std = np.mean(baselines_std, axis=0)
 
         if len(baselines_std) == n_events:
-
             yield event
 
 
 def compute_nsb_rate(events, gain, pulse_area, crosstalk, bias_resistance,
                      cell_capacitance):
-
     for event in events:
-
         baseline_shift = event.data.baseline_shift
         nsb_rate = baseline_shift / (gain * pulse_area * (1 + crosstalk) -
                                      baseline_shift * bias_resistance *
@@ -98,9 +81,7 @@ def compute_nsb_rate(events, gain, pulse_area, crosstalk, bias_resistance,
 
 
 def compute_gain_drop(events, bias_resistance, cell_capacitance):
-
     for event in events:
-
         nsb_rate = event.data.nsb_rate
         gain_drop = 1. / (1. + nsb_rate * cell_capacitance
                           * bias_resistance)
@@ -131,4 +112,3 @@ def fill_baseline_r0(event_stream, n_bins=10000):
                 r0_camera.baseline = np.mean(baselines, axis=0)
                 r0_camera.standard_deviation = np.mean(baselines_std, axis=0)
         yield event
-

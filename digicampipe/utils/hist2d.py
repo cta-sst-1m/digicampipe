@@ -2,7 +2,6 @@ import numpy as np
 
 
 class Histogram2d:
-
     def __init__(self, shape, range):
         self.histo = np.zeros(shape, dtype='u2')
         self.range = range
@@ -23,7 +22,6 @@ class Histogram2d:
 
 
 class Histogram2dChunked(Histogram2d):
-
     def __init__(self, shape, range, buffer_size=1000):
         super().__init__(shape=shape, range=range)
 

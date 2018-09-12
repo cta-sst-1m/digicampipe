@@ -3,17 +3,17 @@
 Client for nova API (from astrometry.net), under GPL3
 Modified by Yves Renier on 20/12/2017 for porting to python3
 """
+import base64
+import json
 import os
 import sys
 import time
-import base64
-from urllib.request import urlopen, Request, HTTPError
-from urllib.parse import urlencode, quote
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.application import MIMEApplication
 from email.encoders import encode_noop
-import json
+from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from urllib.parse import urlencode, quote
+from urllib.request import urlopen, Request, HTTPError
 
 
 def json2python(data):
@@ -39,8 +39,8 @@ class Client(object):
     default_url = 'http://nova.astrometry.net/api/'
 
     def __init__(
-        self,
-        apiurl=default_url
+            self,
+            apiurl=default_url
     ):
         self.session = None
         self.apiurl = apiurl
@@ -296,6 +296,7 @@ class Client(object):
 if __name__ == '__main__':
     print("Running with args %s" % sys.argv)
     import optparse
+
     parser = optparse.OptionParser()
     parser.add_option('--server', dest='server', default=Client.default_url,
                       help='Set server base URL (eg, %default)')

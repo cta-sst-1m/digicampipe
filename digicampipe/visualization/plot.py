@@ -7,7 +7,6 @@ from digicampipe.instrument.camera import DigiCam
 
 
 def plot_hillas(hillas_dict, title='', **kwargs):
-
     figure, axis_array = plt.subplots(3, 4)
     figure.suptitle(title)
     figure.subplots_adjust(top=0.95)
@@ -44,7 +43,6 @@ def plot_hillas(hillas_dict, title='', **kwargs):
 
 
 def plot_parameter(parameter, name='', units='', axis=None, **kwargs):
-
     parameter = parameter[~(np.isnan(parameter)) * ~np.isinf(parameter)]
 
     if axis is None:
@@ -62,7 +60,6 @@ def plot_parameter(parameter, name='', units='', axis=None, **kwargs):
 
 
 def plot_array_camera(data, label='', limits=None, **kwargs):
-
     mask = np.isfinite(data)
     data = np.ma.masked_array(data, mask=~mask)
 
@@ -96,7 +93,6 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
 
 def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
                      **kwargs):
-
     mask = np.isfinite(x) * np.isfinite(y)
 
     x = x[mask]

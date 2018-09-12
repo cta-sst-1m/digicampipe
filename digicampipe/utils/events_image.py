@@ -5,7 +5,6 @@ from ctapipe.instrument import CameraGeometry
 
 
 def make_image(geom: CameraGeometry, image):
-
     pix_x = np.asanyarray(geom.pix_x, dtype=np.float64).value
     pix_y = np.asanyarray(geom.pix_y, dtype=np.float64).value
     image = np.asanyarray(image, dtype=np.float64)
@@ -17,13 +16,11 @@ def make_image(geom: CameraGeometry, image):
 
 
 def save_image(pix_x, pix_y, image, filename_pix, filename_eventsimage):
-
     np.savetxt(filename_pix, np.vstack((pix_x, pix_y)), '%1.4f')
     np.savetxt(filename_eventsimage, image, '%1.5f')
 
 
 def load_image(pixels_file, events_file):
-
     pixels = np.loadtxt(pixels_file)
     events = np.loadtxt(events_file)
 
@@ -31,7 +28,6 @@ def load_image(pixels_file, events_file):
 
 
 def save_events(event_stream, filename_pix, filename_eventsimage):
-
     image_all = []
 
     for i, event in enumerate(event_stream):
@@ -57,13 +53,11 @@ def save_events(event_stream, filename_pix, filename_eventsimage):
 
 
 def save_timing(event_stream, filename_timing):
-
     timing_all = []
 
     for i, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
-
             dl1_camera = event.dl1.tel[telescope_id]
             mask = dl1_camera.cleaning_mask
             timing_data = dl1_camera.time_bin[1]

@@ -34,7 +34,6 @@ from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
 def compute(files, max_events, pixel_id, filename):
-
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
@@ -45,7 +44,7 @@ def compute(files, max_events, pixel_id, filename):
         raw_histo = Histogram1D(
             data_shape=(n_pixels,),
             bin_edges=np.arange(0, 4095, 1),
-            )
+        )
 
         for event in events:
             raw_histo.fill(event.data.adc_samples)
@@ -54,7 +53,6 @@ def compute(files, max_events, pixel_id, filename):
 
 
 def compute_baseline_histogram(files, max_events, pixel_id, filename):
-
     if os.path.exists(filename) and len(files) == 0:
         baseline_histo = Histogram1D.load(filename)
         return baseline_histo
@@ -64,8 +62,8 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename):
                                           max_events=max_events)
         baseline_histo = Histogram1D(
             data_shape=(n_pixels,),
-            bin_edges=np.arange(-4096, 4096, 1/16),
-            )
+            bin_edges=np.arange(-4096, 4096, 1 / 16),
+        )
 
         for event in events:
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
@@ -75,7 +73,6 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename):
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
 
@@ -85,7 +82,6 @@ def entry():
 
     baseline_filename = args['--baseline_filename']
     if baseline_filename == 'None':
-
         baseline_filename = None
 
     output_path = os.path.dirname(raw_histo_filename)
@@ -97,7 +93,6 @@ def entry():
         compute(files, max_events, pixel_id, raw_histo_filename)
 
         if baseline_filename:
-
             compute_baseline_histogram(files, max_events, pixel_id,
                                        baseline_filename)
 
@@ -133,7 +128,7 @@ def entry():
         raw_histo = Histogram1D.load(raw_histo_filename)
 
         pixel = 0
-        raw_histo.draw(index=(pixel, ), log=True, legend=False,
+        raw_histo.draw(index=(pixel,), log=True, legend=False,
                        label='Histogram {}'.format(pixel), x_label='[LSB]')
 
         mean_value = raw_histo.mean()
@@ -141,10 +136,9 @@ def entry():
         plot_array_camera(mean_value, label='Mean value [LSB]')
 
         if baseline_filename:
-
             baseline_histo = Histogram1D.load(baseline_filename)
 
-            baseline_histo.draw(index=(pixel, ), log=True, legend=False,
+            baseline_histo.draw(index=(pixel,), log=True, legend=False,
                                 label='Histogram {}'.format(pixel),
                                 x_label='DigiCam baseline [LSB]')
 
@@ -166,5 +160,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()

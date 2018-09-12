@@ -10,14 +10,13 @@ Options:
   --output=PATH           outfile path, if not given, we just append ".h5" to
                           the input file path
 '''
-import numpy as np
 import h5py
-from digicampipe.io.event_stream import calibration_event_stream
-
-from tqdm import tqdm
+import numpy as np
 from docopt import docopt
+from tqdm import tqdm
 
 from digicampipe.calib.time import estimate_arrival_time
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.hist2d import Histogram2dChunked
 
 
@@ -40,8 +39,8 @@ def main(outfile_path, input_files=[]):
         integral = integral.clip(1)
 
         adc = (
-            adc / integral[:, None]
-        ) * Rough_factor_between_single_pe_amplitude_and_integral
+                  adc / integral[:, None]
+              ) * Rough_factor_between_single_pe_amplitude_and_integral
 
         arrival_time_in_ns = estimate_arrival_time(adc) * 4
         time_in_ns = np.arange(adc.shape[1]) * 4

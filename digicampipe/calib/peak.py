@@ -1,14 +1,14 @@
-import numpy as np
-import peakutils
-from scipy.signal import find_peaks_cwt
-from scipy.ndimage.filters import convolve1d, gaussian_filter1d
-from scipy.signal import correlate
-from tqdm import tqdm
-from pkg_resources import resource_filename
 import os
 
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+import numpy as np
+import peakutils
+from pkg_resources import resource_filename
+from scipy.ndimage.filters import convolve1d, gaussian_filter1d
+from scipy.signal import correlate
+from scipy.signal import find_peaks_cwt
+from tqdm import tqdm
 
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 TEMPLATE_FILENAME = resource_filename(
     'digicampipe',
@@ -21,13 +21,11 @@ TEMPLATE_FILENAME = resource_filename(
 
 
 def find_pulse_1(events, threshold, min_distance):
-
     for count, event in enumerate(events):
 
         pulse_mask = np.zeros(event.adc_samples.shape, dtype=np.bool)
 
         for pixel_id, adc_sample in enumerate(event.data.adc_samples):
-
             peak_index = peakutils.indexes(adc_sample, threshold, min_distance)
             pulse_mask[pixel_id, peak_index] = True
 
@@ -37,7 +35,6 @@ def find_pulse_1(events, threshold, min_distance):
 
 
 def find_pulse_wavelets(events, threshold_sigma, widths, **kwargs):
-
     for count, event in enumerate(events):
 
         adc_samples = event.data.adc_samples
@@ -50,10 +47,9 @@ def find_pulse_wavelets(events, threshold_sigma, widths, **kwargs):
             peak_index = find_peaks_cwt(adc_sample, widths, **kwargs)
 
             if len(peak_index):
-
                 peak_index = peak_index[
                     adc_sample[peak_index] > threshold
-                ]
+                    ]
                 pulse_mask[pixel_id, peak_index] = True
 
         event.data.pulse_mask = pulse_mask
@@ -88,8 +84,7 @@ def find_pulse_fast(events, threshold):
 def find_pulse_correlate(events, threshold,
                          pulse_template=NormalizedPulseTemplate.load(
                              TEMPLATE_FILENAME)):
-
-    time = np.linspace(0, 91*4, num=91)
+    time = np.linspace(0, 91 * 4, num=91)
     template = pulse_template(time, t_0=0, amplitude=1, baseline=0)
     template[template < 0.1] = 0
     template = np.tile(template, (1296, 1))
@@ -118,13 +113,11 @@ def find_pulse_correlate(events, threshold,
 
 
 def find_pulse_with_max(events):
-
     for i, event in enumerate(events):
 
         adc_samples = event.data.adc_samples
 
         if i == 0:
-
             n_samples = adc_samples.shape[-1]
             bins = np.arange(n_samples)
 
@@ -136,9 +129,7 @@ def find_pulse_with_max(events):
 
 
 def find_pulse_gaussian_filter(events, threshold=2, **kwargs):
-
     for count, event in enumerate(events):
-
         c = event.data.adc_samples
         sigma = np.std(c)
         c = gaussian_filter1d(c, sigma=sigma, **kwargs)
@@ -156,13 +147,11 @@ def find_pulse_gaussian_filter(events, threshold=2, **kwargs):
 
 
 def fill_pulse_indices(events, pulse_indices):
-
     pulse_indices = pulse_indices.astype(np.int)
 
     for count, event in enumerate(events):
 
         if count == 0:
-
             data_shape = event.data.adc_samples.shape
             n_pixels = data_shape[0]
             pixel_ids = np.arange(n_pixels, dtype=np.int)

@@ -14,11 +14,11 @@ from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from astropy.wcs import WCS
 from astroquery.vizier import Vizier
-from digicampipe.image.lidccd.kernels import gauss, high_pass_filter_2525
-from digicampipe.image.lidccd.nova_client import Client
 from matplotlib.patches import Circle, Rectangle
 from scipy import signal
 
+from digicampipe.image.lidccd.kernels import gauss, high_pass_filter_2525
+from digicampipe.image.lidccd.nova_client import Client
 from digicampipe.image.lidccd.utils import CroppedImage
 
 
@@ -32,6 +32,7 @@ class SkyImage(object):
     The static_image is removed from the filtered image
     (to keep only moving stars) prior of using astrometry.
     """
+
     def __init__(self, image, image_static=None, threshold=None,
                  scale_low_deg=None, scale_high_deg=None, calculate=False,
                  guess_ra_dec=None, guess_radius=None):
@@ -101,8 +102,8 @@ class SkyImage(object):
                 '--depth', '60',
             ]
             if (
-                self.guess_ra_dec is not None and
-                self.guess_radius is not None
+                            self.guess_ra_dec is not None and
+                            self.guess_radius is not None
             ):
                 arguments.append('--ra')
                 arguments.append(str(self.guess_ra_dec[0]))
@@ -111,8 +112,8 @@ class SkyImage(object):
                 arguments.append('--radius')
                 arguments.append(str(self.guess_radius))
             if (
-                self.scale_low_deg is not None or
-                self.scale_high_deg is not None
+                            self.scale_low_deg is not None or
+                            self.scale_high_deg is not None
             ):
                 arguments.append('--scale-units')
                 arguments.append('degwidth')
@@ -157,7 +158,7 @@ class SkyImage(object):
         import time
         from photutils import DAOStarFinder
 
-        apiurl='http://nova.astrometry.net/api/'
+        apiurl = 'http://nova.astrometry.net/api/'
         # apiurl = 'http://supernova.astrometry.net/api/'
         c = Client(apiurl=apiurl)
         api_key = os.environ.get('NOVA_API_KEY', None)
@@ -193,15 +194,15 @@ class SkyImage(object):
                     x=self.sources_pixel[0, :],
                     y=self.sources_pixel[1, :])
                 if (
-                    self.guess_ra_dec is not None and
-                    self.guess_radius is not None
+                                self.guess_ra_dec is not None and
+                                self.guess_radius is not None
                 ):
                     kwargs['center_ra'] = str(self.guess_ra_dec[0])
                     kwargs['center_dec'] = str(self.guess_ra_dec[1])
                     kwargs['radius'] = str(self.guess_radius)
                 if (
-                    self.scale_low_deg is not None or
-                    self.scale_high_deg is not None
+                                self.scale_low_deg is not None or
+                                self.scale_high_deg is not None
                 ):
                     kwargs['scale_units'] = 'degwidth'
                     kwargs['scale_type'] = 'ul'
@@ -301,16 +302,17 @@ class SkyImage(object):
 
 class LidCCDImage(object):
     """creates SkyImages from an image and a list of areas of interest"""
+
     def __init__(
-        self,
-        filename,
-        rectangles,
-        image_static=None,
-        threshold=None,
-        scale_low_images_deg=None,
-        scale_high_images_deg=None,
-        guess_ra_dec=None,
-        guess_radius=None
+            self,
+            filename,
+            rectangles,
+            image_static=None,
+            threshold=None,
+            scale_low_images_deg=None,
+            scale_high_images_deg=None,
+            guess_ra_dec=None,
+            guess_radius=None
     ):
         if type(filename) is not str:
             raise AttributeError('filename must be a string.')
@@ -461,8 +463,8 @@ class LidCCDImage(object):
 
         for (sky_image, rect) in zip(self.sky_images, self.crop_rectangles):
             image_treated[
-                rect.bottom:rect.top, rect.left:rect.right
-            ] = np.log(1+sky_image.image_stars)
+            rect.bottom:rect.top, rect.left:rect.right
+            ] = np.log(1 + sky_image.image_stars)
             crop_origin = np.array([rect.left, rect.bottom])
             if sky_image.sources_pixel is not None:
                 for i in range(min(sky_image.sources_pixel.shape[1], 30)):
@@ -613,6 +615,7 @@ class LidCCDImage(object):
 class LidCCDObservation:
     """regroups several LidCCDImages. Useful to find moving stars.
     """
+
     def __init__(self, filenames, rectangles, threshold=None,
                  scale_low_images_deg=None, scale_high_images_deg=None,
                  guess_ra_dec=None, guess_radius=None, method='local'):

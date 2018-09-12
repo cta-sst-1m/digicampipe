@@ -38,14 +38,14 @@ from astropy.table import Table
 from ctapipe.core import Field
 from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.io.serializer import Serializer
-from digicampipe.calib import baseline, peak, charge, cleaning, image
 from docopt import docopt
 from histogram.histogram import Histogram1D
 
+from digicampipe.calib import baseline, peak, charge, cleaning, image
 from digicampipe.calib import filter
 from digicampipe.image.hillas import compute_alpha, compute_miss
-from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.instrument.camera import DigiCam
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
@@ -53,7 +53,6 @@ from digicampipe.visualization.plot import plot_array_camera
 
 
 class PipelineOutputContainer(HillasParametersContainer):
-
     local_time = Field(int, 'event time')
     event_id = Field(int, 'event identification number')
     event_type = Field(int, 'event type')
@@ -66,7 +65,6 @@ class PipelineOutputContainer(HillasParametersContainer):
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename):
-
     if compute:
 
         with open(parameters_filename) as file:
@@ -126,7 +124,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         for event in events:
 
             if debug:
-
                 print(event.hillas)
                 print(event.data.nsb_rate)
                 print(event.data.gain_drop)
@@ -148,7 +145,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data_to_store.border = event.data.border
 
             for key, val in event.hillas.items():
-
                 data_to_store[key] = val
 
             output_file.add_container(data_to_store)
@@ -164,7 +160,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         data = data.dropna()
 
         for key, val in data.items():
-
             plt.figure()
             plt.hist(val, bins='auto')
             plt.xlabel(key)
@@ -177,7 +172,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
     max_events = convert_max_events_args(args['--max_events'])

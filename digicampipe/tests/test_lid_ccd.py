@@ -25,7 +25,7 @@ def test_find_stars(method='nova'):
         guess_ra_dec=(83.2, 26.2),
         guess_radius=10,
         method=method
-        )
+    )
     nsolved = 0
     for lidccd_image in lidccd_obs.lidccd_images:
         if lidccd_image.wcs is not None:

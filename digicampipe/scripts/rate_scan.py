@@ -17,12 +17,11 @@ from docopt import docopt
 
 from digicampipe.calib import filter
 from digicampipe.calib import trigger, baseline
-from digicampipe.io.event_stream import event_stream
 from digicampipe.calib.trigger import compute_bias_curve
+from digicampipe.io.event_stream import event_stream
 
 
 def compute(files, output_filename):
-
     n_bins = 1024
     thresholds = np.arange(0, 100, 2)
 
@@ -48,17 +47,14 @@ def compute(files, output_filename):
 
 
 def entry():
-
     args = docopt(__doc__)
     input_files = args['<INPUT>']
     output_file = args['--output']
 
     if args['--compute']:
-
         compute(input_files, output_file)
 
     if args['--display']:
-
         output = np.load(output_file)
 
         thresholds = output['thresholds']
@@ -76,5 +72,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()

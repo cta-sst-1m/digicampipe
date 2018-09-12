@@ -1,13 +1,11 @@
-from astropy.stats import sigma_clipped_stats
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-from skimage.draw import polygon
-import matplotlib.pyplot as plt
-import cv2
-from scipy import signal
-
-
+from astropy.stats import sigma_clipped_stats
 from photutils import DAOStarFinder
+from scipy import signal
+from skimage.draw import polygon
 
 
 class Rectangle:
@@ -46,15 +44,15 @@ class CroppedImage:
         npixel_y, npixel_x = image.shape
         if strict_limit:
             if not (
-                0 <= rectangle.left < npixel_x and
-                0 <= rectangle.bottom < npixel_y
+                                0 <= rectangle.left < npixel_x and
+                                0 <= rectangle.bottom < npixel_y
             ):
                 raise AttributeError(
                     "invalid crop_pixel position:", rectangle,
                     "image size is: ", image.shape)
             if not (
-                0 < rectangle.right < npixel_x and
-                0 < rectangle.top < npixel_y
+                                0 < rectangle.right < npixel_x and
+                                0 < rectangle.top < npixel_y
             ):
                 raise AttributeError(
                     "invalid crop_pixel position:", rectangle,
@@ -65,17 +63,17 @@ class CroppedImage:
             rectangle.right = min((npixel_x - 1, rectangle.right))
             rectangle.top = min((npixel_y - 1, rectangle.top))
             if (
-                rectangle.left == rectangle.right or
-                rectangle.bottom == rectangle.top
+                            rectangle.left == rectangle.right or
+                            rectangle.bottom == rectangle.top
             ):
                 raise AttributeError(
                     "empty crop region:", rectangle,
                     "image size is: ", image.shape
                 )
         self.image = image[
-            rectangle.bottom:rectangle.top,
-            rectangle.left:rectangle.right
-        ]
+                     rectangle.bottom:rectangle.top,
+                     rectangle.left:rectangle.right
+                     ]
         self.rectangle = rectangle
 
 
@@ -94,8 +92,8 @@ def set_circle(image, center=(0, 0), radius=10, value=1):
             if not (0 <= ix < image.shape[1] and 0 <= iy < image.shape[0]):
                 continue  # out of image border
             if np.sqrt(
-                (ix - center[0]) * (ix - center[0]) +
-                (iy - center[1]) * (iy - center[1])
+                                    (ix - center[0]) * (ix - center[0]) +
+                                    (iy - center[1]) * (iy - center[1])
             ) < radius:
                 image[iy, ix] = value
     return image
@@ -103,8 +101,8 @@ def set_circle(image, center=(0, 0), radius=10, value=1):
 
 def make_repetitive_mask(shape, radius, v1, v2, center, nrepetition=100):
     mask = np.zeros(shape)
-    for nv1 in range(-int(nrepetition/2), int(nrepetition/2)):
-        for nv2 in range(-int(nrepetition/2), int(nrepetition/2)):
+    for nv1 in range(-int(nrepetition / 2), int(nrepetition / 2)):
+        for nv2 in range(-int(nrepetition / 2), int(nrepetition / 2)):
             center_circle = center + nv1 * v1 + nv2 * v2
             mask = set_circle(
                 mask,
@@ -118,9 +116,11 @@ def make_repetitive_mask(shape, radius, v1, v2, center, nrepetition=100):
 def set_parallelogram(image, center=(0, 0), k1=(1, 0), k2=(0, 1), value=1):
     origin = center - k1 / 2 - k2 / 2
     r = np.array(
-        (origin[0], origin[0]+k1[0], origin[0]+k1[0]+k2[0], origin[0]+k2[0]))
+        (origin[0], origin[0] + k1[0], origin[0] + k1[0] + k2[0],
+         origin[0] + k2[0]))
     c = np.array(
-        (origin[1], origin[1]+k1[1], origin[1]+k1[1]+k2[1], origin[1]+k2[1]))
+        (origin[1], origin[1] + k1[1], origin[1] + k1[1] + k2[1],
+         origin[1] + k2[1]))
     rr, cc = polygon(r, c, (image.shape[1], image.shape[0]))
     image[cc, rr] = value
     return image
@@ -137,9 +137,9 @@ def get_consecutive_hex_radius(r1, r2):
     angle_diff = np.mod(angle_r2 - angle_r1, 2 * np.pi)
     resol = 1e-2
     if (
-        np.abs(angle_diff) < resol or
-        np.abs(angle_diff - np.pi) < resol or
-        np.abs(angle_diff) > 2 * np.pi - resol
+                        np.abs(angle_diff) < resol or
+                        np.abs(angle_diff - np.pi) < resol or
+                    np.abs(angle_diff) > 2 * np.pi - resol
     ):
         raise AttributeError('r1 and r2 are collinear')
     if np.pi / 2 < angle_diff < np.pi:
@@ -152,11 +152,11 @@ def get_consecutive_hex_radius(r1, r2):
 
 
 def set_hexagon(
-    image,
-    center=(0, 0),
-    r1=(1, 0),
-    r2=(0.5, np.sqrt(3) / 2),
-    value=1,
+        image,
+        center=(0, 0),
+        r1=(1, 0),
+        r2=(0.5, np.sqrt(3) / 2),
+        value=1,
 ):
     r1, r2 = get_consecutive_hex_radius(r1, r2)
     # set of hexagon's vertexes
@@ -186,7 +186,7 @@ def plot_image(image, wait=True, vmin=None, vmax=None):
         mngr = plt.get_current_fig_manager()
         geom = mngr.window.geometry()
         x, y, dx, dy = geom.getRect()
-        mngr.window.setGeometry(dx/2, 0, dx/2, dy)
+        mngr.window.setGeometry(dx / 2, 0, dx / 2, dy)
         fig_plot.canvas.flush_events()
     if vmin is None:
         vmin = np.min(image)
@@ -207,7 +207,7 @@ def plot_points(x, y, wait=True):
         mngr = plt.get_current_fig_manager()
         geom = mngr.window.geometry()
         x0, y0, dx, dy = geom.getRect()
-        mngr.window.setGeometry(dx/2, 0, dx/2, dy)
+        mngr.window.setGeometry(dx / 2, 0, dx / 2, dy)
         fig_plot.canvas.flush_events()
     if type(x) is not np.array:
         x = np.array(x)
@@ -217,11 +217,11 @@ def plot_points(x, y, wait=True):
     min_x = np.min(x)
     max_x = np.max(x)
     width_x = max_x - min_x + 1
-    plt.xlim((min_x - width_x/10, max_x + width_x/10))
+    plt.xlim((min_x - width_x / 10, max_x + width_x / 10))
     min_y = np.min(y)
     max_y = np.max(y)
     width_y = max_y - min_y + 1
-    plt.xlim((min_y - width_y/10, max_y + width_y/10))
+    plt.xlim((min_y - width_y / 10, max_y + width_y / 10))
     plt.show(block=False)
     fig_plot.canvas.flush_events()
     if wait:
@@ -229,10 +229,10 @@ def plot_points(x, y, wait=True):
 
 
 def get_peaks_separation(
-    fft_image_shifted,
-    center=None,
-    crop_range=None,
-    radius_removed=20,
+        fft_image_shifted,
+        center=None,
+        crop_range=None,
+        radius_removed=20,
 ):
     if center is None:
         center = (np.array(fft_image_shifted.shape[::-1]) - 1) / 2
@@ -248,10 +248,10 @@ def get_peaks_separation(
         min_crop_y = 0
         max_crop_y = fft_image_shifted.shape[0]
     else:
-        min_crop_x = int(center[1] - crop_range/2)
-        max_crop_x = int(center[1] + crop_range/2)
-        min_crop_y = int(center[0] - crop_range/2)
-        max_crop_y = int(center[0] + crop_range/2)
+        min_crop_x = int(center[1] - crop_range / 2)
+        max_crop_x = int(center[1] + crop_range / 2)
+        min_crop_y = int(center[0] - crop_range / 2)
+        max_crop_y = int(center[0] + crop_range / 2)
     crop_fft = fft_image_shifted[min_crop_x:max_crop_x, min_crop_y:max_crop_y]
     # plot_image(crop_fft)
     auto_correlation = signal.fftconvolve(
@@ -275,14 +275,15 @@ def get_peaks_separation(
     short_to_long = np.argsort(lengths)
     ks_base = np.empty((2, 2))
     ks_base[0, :] = ks[short_to_long[0], :]
-    angles = angles - np.angle(ks_base[0, 0]+1j*(ks_base[0, 1]))
-    factors = np.abs(ks_complex/(ks_base[0, 0]+1j*(ks_base[0, 1])))
+    angles = angles - np.angle(ks_base[0, 0] + 1j * (ks_base[0, 1]))
+    factors = np.abs(ks_complex / (ks_base[0, 0] + 1j * (ks_base[0, 1])))
 
     # less than 1 deg from 0
-    is_collinear = (np.abs(np.mod(angles+np.pi, 2*np.pi)-np.pi) < 1*np.pi/180)
+    is_collinear = (
+    np.abs(np.mod(angles + np.pi, 2 * np.pi) - np.pi) < 1 * np.pi / 180)
 
     # less than 1 deg from pi
-    is_anti_collinear = np.abs(np.abs(angles)-np.pi) < 1*np.pi/180
+    is_anti_collinear = np.abs(np.abs(angles) - np.pi) < 1 * np.pi / 180
     factors[is_anti_collinear] *= -1
     is_multiple = np.abs(np.mod(factors + 0.5, 1) - 0.5) < 1e-2
     is_used = is_multiple & (is_collinear | is_anti_collinear)
@@ -337,11 +338,11 @@ def get_image_hexagonalicity(image, rotations=(60, 300)):
 
 
 def get_neg_hexagonalicity_with_mask(
-    center,
-    image,
-    r1,
-    r2,
-    rotations=(60, 300)
+        center,
+        image,
+        r1,
+        r2,
+        rotations=(60, 300)
 ):
     """return the negative of hexagonalicity of the image
 
@@ -367,11 +368,11 @@ def get_neg_hexagonalicity_with_mask(
     """
     image_center = (np.array(image.shape[::-1]) - 1) / 2
     displacement = image_center - center
-#    plot_image(image)
+    #    plot_image(image)
     M = np.float32([[1, 0, displacement[0]], [0, 1, displacement[1]]])
     image = cv2.warpAffine(image, M, image.shape[::-1])
-#    print("displacement=", displacement, "in", end - init)
-#    plot_image(image)
+    #    print("displacement=", displacement, "in", end - init)
+    #    plot_image(image)
     # vectors defining the hexagonal mask used
     r3 = -r1 + r2
     points = np.array((image_center + r1,
@@ -393,14 +394,14 @@ def get_neg_hexagonalicity_with_mask(
     elif (pixels_y_max + pixels_y_min - 1) / 2 > image_center[1]:
         pixels_y_min = int(2 * image_center[1] - pixels_y_max + 1)
     image_crop = image[pixels_y_min:pixels_y_max, pixels_x_min:pixels_x_max]
-#    plot_image(image_crop, wait=False)
+    #    plot_image(image_crop, wait=False)
     center_crop = np.array(image_center) - np.array(
         (pixels_x_min, pixels_y_min))
-#    init = clock()
+    #    init = clock()
     mask_hexa = np.zeros_like(image_crop)
     mask_hexa = set_hexagon(mask_hexa, center=center_crop, r1=r1, r2=r2)
-#    plot_image(image_crop * mask_hexa, wait=False)
-#    print("mask in", end - init)
+    #    plot_image(image_crop * mask_hexa, wait=False)
+    #    print("mask in", end - init)
     return -get_image_hexagonalicity(
         image_crop * mask_hexa, rotations=rotations)
 
@@ -434,27 +435,28 @@ def moments2D(inpData):
     bkg = np.median(np.hstack(
         (inpData[0, :], inpData[-1, :], inpData[:, 0], inpData[:, -1])))
     # Removing the background for calculating moments of pure 2D gaussian
-    Data = np.ma.masked_less(inpData-bkg, 0)
+    Data = np.ma.masked_less(inpData - bkg, 0)
     # We also masked any negative values before measuring moments
     amplitude = Data.max()
     total = float(Data.sum())
     Xcoords, Ycoords = np.indices(Data.shape)
-    xcenter = (Xcoords*Data).sum()/total
-    ycenter = (Ycoords*Data).sum()/total
+    xcenter = (Xcoords * Data).sum() / total
+    ycenter = (Ycoords * Data).sum() / total
     # Cut along the row of data near center of gaussian
     RowCut = Data[int(xcenter), :]
     # Cut along the column of data near center of gaussian
     ColumnCut = Data[:, int(ycenter)]
     xsigma = np.sqrt(np.ma.sum(
-        ColumnCut * (np.arange(len(ColumnCut))-xcenter)**2)/ColumnCut.sum())
+        ColumnCut * (
+        np.arange(len(ColumnCut)) - xcenter) ** 2) / ColumnCut.sum())
     ysigma = np.sqrt(np.ma.sum(
-        RowCut * (np.arange(len(RowCut))-ycenter)**2)/RowCut.sum())
+        RowCut * (np.arange(len(RowCut)) - ycenter) ** 2) / RowCut.sum())
     # Ellipcity and position angle calculation
-    Mxx = np.ma.sum((Xcoords-xcenter)*(Xcoords-xcenter) * Data) / total
-    Myy = np.ma.sum((Ycoords-ycenter)*(Ycoords-ycenter) * Data) / total
-    Mxy = np.ma.sum((Xcoords-xcenter)*(Ycoords-ycenter) * Data) / total
-    e = np.sqrt((Mxx - Myy)**2 + (2*Mxy)**2) / (Mxx + Myy)
-    pa = 0.5 * np.arctan(2*Mxy / (Mxx - Myy))
+    Mxx = np.ma.sum((Xcoords - xcenter) * (Xcoords - xcenter) * Data) / total
+    Myy = np.ma.sum((Ycoords - ycenter) * (Ycoords - ycenter) * Data) / total
+    Mxy = np.ma.sum((Xcoords - xcenter) * (Ycoords - ycenter) * Data) / total
+    e = np.sqrt((Mxx - Myy) ** 2 + (2 * Mxy) ** 2) / (Mxx + Myy)
+    pa = 0.5 * np.arctan(2 * Mxy / (Mxx - Myy))
     rot = np.rad2deg(pa)
     return amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg, e
 
@@ -467,8 +469,8 @@ def gaussian_2d(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
     # Now lets define the 2D gaussian function
     rot = np.deg2rad(rot)  # Converting to radians
     # Centers in rotated coordinates
-    Xc = xcenter*np.cos(rot) - ycenter*np.sin(rot)
-    Yc = xcenter*np.sin(rot) + ycenter*np.cos(rot)
+    Xc = xcenter * np.cos(rot) - ycenter * np.sin(rot)
+    Yc = xcenter * np.sin(rot) + ycenter * np.cos(rot)
 
     # Now lets define the 2D gaussian function
     def Gauss2D(x, y):
@@ -481,7 +483,8 @@ def gaussian_2d(amplitude, xcenter, ycenter, xsigma, ysigma, rot, bkg):
             -(
                 ((xr - Xc) / xsigma) ** 2 +
                 ((yr - Yc) / ysigma) ** 2) / 2
-            ) + bkg
+        ) + bkg
+
     return Gauss2D
 
 
@@ -527,5 +530,6 @@ def fit_gauss_2d(data, initial_param=None):
             (gaussian_2d(*ip)(*np.indices(data.shape)) - data) /
             np.sqrt(Weights)
         )
+
     p, success = scipy.optimize.leastsq(errfun, initial_param, maxfev=1000)
     return p, success

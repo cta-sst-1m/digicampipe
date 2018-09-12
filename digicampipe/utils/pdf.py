@@ -2,9 +2,8 @@ import numpy as np
 
 
 def gaussian(x, mean, sigma, amplitude):
-
     x = np.atleast_1d(x)
-    pdf = (x[:, np.newaxis] - mean)**2 / (2 * sigma**2)
+    pdf = (x[:, np.newaxis] - mean) ** 2 / (2 * sigma ** 2)
     pdf = np.exp(-pdf)
     pdf /= np.sqrt(2 * np.pi) * sigma
     pdf *= amplitude
@@ -13,7 +12,6 @@ def gaussian(x, mean, sigma, amplitude):
 
 
 def generalized_poisson(k, mu, mu_xt, amplitude=1):
-
     if mu_xt < 0 or mu < 0:
 
         if isinstance(k, int):
@@ -36,7 +34,8 @@ def generalized_poisson(k, mu, mu_xt, amplitude=1):
         log_k = np.sum(temp, axis=-1)
 
         pdf = log_amplitude + log_mu
-        pdf = pdf + np.log(mu + k * mu_xt)*(k - 1) + (-mu - k * mu_xt) - log_k
+        pdf = pdf + np.log(mu + k * mu_xt) * (k - 1) + (
+        -mu - k * mu_xt) - log_k
         pdf = np.exp(pdf)
 
         pdf[k < 0] = 0
@@ -46,13 +45,12 @@ def generalized_poisson(k, mu, mu_xt, amplitude=1):
 
 def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
                              mu, mu_xt, amplitude, n_peaks=30):
-
     if n_peaks > 0:
 
         x = x - baseline
         photoelectron_peak = np.arange(n_peaks, dtype=np.int)
-        sigma_n = sigma_e**2 + photoelectron_peak * sigma_s**2
-        sigma_n = sigma_n + bin_width**2 / 12
+        sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
+        sigma_n = sigma_n + bin_width ** 2 / 12
         sigma_n = np.sqrt(sigma_n)
 
         pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
@@ -70,7 +68,6 @@ def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
 
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,
                 a_2=0, a_3=0, a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
-
     # sigma_e = np.sqrt(sigma_e**2 - 2**2 / 12)
 
     params = {'baseline': baseline,
@@ -92,7 +89,6 @@ def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,
 
 
 def fmpe_pdf(x, bin_width, **params):
-
     baseline = params['baseline']
     sigma_e = params['sigma_e']
     sigma_s = params['sigma_s']
@@ -103,7 +99,6 @@ def fmpe_pdf(x, bin_width, **params):
     for key, val in params.items():
 
         if key[:2] == 'a_':
-
             id = int(key[2:])
             ids.append(id)
 
@@ -114,15 +109,14 @@ def fmpe_pdf(x, bin_width, **params):
     for key, val in params.items():
 
         if key[:2] == 'a_':
-
             id = int(key[2:])
             amplitudes[id] = val
 
     N = np.arange(0, n_peaks, 1)
-    sigma = sigma_e**2 + N * sigma_s**2 + bin_width**2 / 12
+    sigma = sigma_e ** 2 + N * sigma_s ** 2 + bin_width ** 2 / 12
 
     value = x - (N * gain + baseline)[..., np.newaxis]
-    value = value**2
+    value = value ** 2
     value /= 2 * sigma[..., np.newaxis]
     temp = np.exp(-value) * (amplitudes / np.sqrt(sigma))[..., np.newaxis]
     temp = np.sum(temp, axis=0)
@@ -134,7 +128,6 @@ def fmpe_pdf(x, bin_width, **params):
 def single_photoelectron_pdf(x, baseline, gain,
                              sigma_e, sigma_s,
                              a_1, a_2, a_3, a_4):
-
     amplitudes = np.array([a_1, a_2, a_3, a_4])
     n = np.arange(1, amplitudes.shape[0] + 1, 1)
     sigma = sigma_e ** 2 + n * sigma_s ** 2
@@ -150,7 +143,6 @@ def single_photoelectron_pdf(x, baseline, gain,
 
 
 def log_spe(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
-
     return np.log(single_photoelectron_pdf(x,
                                            baseline,
                                            gain,
@@ -164,7 +156,6 @@ def log_spe(x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
 
 
 if __name__ == '__main__':
-
     import matplotlib.pyplot as plt
 
     n = np.arange(10)
@@ -187,4 +178,3 @@ if __name__ == '__main__':
     plt.plot(x, pdf, label='area : {}'.format(np.sum(pdf) * x_width))
     plt.legend()
     plt.show()
-

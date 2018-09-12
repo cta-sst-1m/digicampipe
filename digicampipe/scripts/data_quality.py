@@ -32,30 +32,30 @@ Options:
                                 [Default: none]
   --template=FILE               Pulse template file path
 """
-from docopt import docopt
+import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
-from numpy import ndarray
+from astropy.table import Table
+from ctapipe.core import Field
 from ctapipe.io.containers import Container
 from ctapipe.io.serializer import Serializer
-from ctapipe.core import Field
-from astropy.table import Table
-import astropy.units as u
+from docopt import docopt
 from histogram.histogram import Histogram1D
-from digicampipe.instrument.camera import DigiCam
-from digicampipe.io.event_stream import calibration_event_stream
+from numpy import ndarray
+
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
     compute_baseline_shift, fill_dark_baseline
 from digicampipe.calib.charge import compute_sample_photo_electron
 from digicampipe.calib.cleaning import compute_3d_cleaning
+from digicampipe.instrument.camera import DigiCam
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 
 class DataQualityContainer(Container):
-
     time = Field(ndarray, 'time')
     baseline = Field(ndarray, 'baseline average over the camera')
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
@@ -66,7 +66,6 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
           histo_filename, rate_plot_filename, baseline_plot_filename,
           parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
           cell_capacitance=5e-14 * u.Farad):
-
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -101,7 +100,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
         container = DataQualityContainer()
         file = Serializer(fits_filename, mode='w', format='fits')
         baseline_histo = Histogram1D(
-            data_shape=(n_pixels, ),
+            data_shape=(n_pixels,),
             bin_edges=np.arange(4096)
         )
         for i, event in enumerate(events):
@@ -137,8 +136,8 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
 
     if rate_plot_filename != "none":
         fig1 = plt.figure()
-        plt.plot(data['trigger_rate']*1E9)
-        plt.plot(data['shower_rate']*1E9)
+        plt.plot(data['trigger_rate'] * 1E9)
+        plt.plot(data['shower_rate'] * 1E9)
         plt.ylabel('rate [Hz]')
         plt.legend('trigger rate', 'shower_rate')
         if rate_plot_filename == "show":

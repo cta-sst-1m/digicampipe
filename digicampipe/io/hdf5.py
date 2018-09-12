@@ -1,17 +1,18 @@
-from digicampipe.io.containers import DataContainer
-from digicampipe.instrument.camera import DigiCam
 import h5py
 import numpy as np
 from tqdm import tqdm
+
+from digicampipe.instrument.camera import DigiCam
+from digicampipe.io.containers import DataContainer
 
 __all__ = ['digicamtoy_event_source']
 
 
 def digicamtoy_event_source(
-    url,
-    camera=DigiCam,
-    max_events=None,
-    chunk_size=150,
+        url,
+        camera=DigiCam,
+        max_events=None,
+        chunk_size=150,
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
@@ -31,7 +32,6 @@ def digicamtoy_event_source(
     n_events, n_pixels, n_samples = full_data_set.shape
 
     if max_events is None:
-
         max_events = n_events
 
     max_events = min(max_events, n_events)
@@ -44,7 +44,6 @@ def digicamtoy_event_source(
         for tel_id in data.r0.tels_with_data:
 
             if event_id == 0:
-
                 data.inst.num_channels[tel_id] = 1
                 data.inst.num_pixels[tel_id] = n_pixels
                 data.inst.geom[tel_id] = camera.geometry
@@ -54,7 +53,6 @@ def digicamtoy_event_source(
                 data.inst.num_samples[tel_id] = n_samples
 
             if (event_id % chunk_size) == 0:
-
                 index_in_chunk = 0
                 chunk_start = (event_id // chunk_size) * chunk_size
                 chunk_end = chunk_start + chunk_size
@@ -67,7 +65,8 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].camera_event_type = None
             data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
-            baseline = np.ones(data.r0.tel[tel_id].adc_samples.shape[:-1]) * np.nan
+            baseline = np.ones(
+                data.r0.tel[tel_id].adc_samples.shape[:-1]) * np.nan
             data.r0.tel[tel_id].digicam_baseline = baseline
             index_in_chunk += 1
 

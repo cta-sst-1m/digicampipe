@@ -18,23 +18,23 @@ Options:
   --n_samples=N               Number of samples per waveform
 '''
 import os
-from docopt import docopt
-from tqdm import tqdm
-import numpy as np
-import matplotlib.pyplot as plt
-from histogram.histogram import Histogram1D
 
+import matplotlib.pyplot as plt
+import numpy as np
+from docopt import docopt
+from histogram.histogram import Histogram1D
+from tqdm import tqdm
+
+from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args,\
+from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.visualization.plot import plot_array_camera, plot_parameter
-from digicampipe.calib.time import compute_time_from_max
 
 
 def compute(files, max_events, pixel_id, n_samples,
             filename='timing_histo.pk', save=True,
             time_method=compute_time_from_max):
-
     if os.path.exists(filename) and save:
         raise IOError('The file {} already exists \n'.
                       format(filename))
@@ -50,23 +50,20 @@ def compute(files, max_events, pixel_id, n_samples,
     events = time_method(events)
 
     timing_histo = Histogram1D(
-        data_shape=(n_pixels, ),
+        data_shape=(n_pixels,),
         bin_edges=np.arange(0, n_samples * 4, 1),
     )
 
     for i, event in enumerate(events):
-
         timing_histo.fill(event.data.reconstructed_time)
 
     if save:
-
         timing_histo.save(filename)
 
     return timing_histo
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
 
@@ -79,17 +76,14 @@ def entry():
     results_filename = os.path.join(output_path, 'timing_results.npz')
 
     if not os.path.exists(output_path):
-
         raise IOError('Path for output does not exists \n')
 
     if args['--compute']:
-
         compute(files, max_events, pixel_id, n_samples,
                 timing_histo_filename, save=True,
-                time_method=compute_time_from_max) # compute_time_from_leading_edge)
+                time_method=compute_time_from_max)  # compute_time_from_leading_edge)
 
     if args['--fit']:
-
         timing_histo = Histogram1D.load(timing_histo_filename)
 
         timing = timing_histo.mode()
@@ -130,10 +124,9 @@ def entry():
             axis.remove()
 
     if args['--display']:
-
         path = os.path.join(output_path, timing_histo_filename)
         timing_histo = Histogram1D.load(path)
-        timing_histo.draw(index=(0, ), log=True, legend=False)
+        timing_histo.draw(index=(0,), log=True, legend=False)
 
         pulse_time = timing_histo.mode()
 
@@ -157,5 +150,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()

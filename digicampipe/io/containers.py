@@ -8,22 +8,21 @@ Please keep in mind that the data level definition and the associated fields
 might change rapidly as there is no final data level definition.
 """
 
+import pickle
+from gzip import open as gzip_open
+from os import remove
+from os.path import isfile
+
+import numpy as np
 from astropy import units as u
 from astropy.time import Time
 from ctapipe.core import Container, Map
+from ctapipe.core import Field
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io.containers import HillasParametersContainer
-from matplotlib import pyplot as plt
-
-from ctapipe.core import Field
-
-from numpy import ndarray
-from gzip import open as gzip_open
-import pickle
-from os.path import isfile
 from ctapipe.io.serializer import Serializer
-from os import remove
-import numpy as np
+from matplotlib import pyplot as plt
+from numpy import ndarray
 
 __all__ = ['InstrumentContainer',
            'R0Container',
@@ -67,13 +66,13 @@ class InstrumentContainer(Container):
     optics = Field(Map(None), 'map of tel_id to CameraOptics')
     cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
     cluster_matrix_19 = Field(
-                              Map(ndarray),
-                              'map of tel_id of cluster 19 matrix'
-                             )
+        Map(ndarray),
+        'map of tel_id of cluster 19 matrix'
+    )
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
     mirror_dish_area = Field(Map(float),
                              "map of tel_id to the area of the mirror dish",
-                             unit=u.m**2)
+                             unit=u.m ** 2)
     mirror_numtiles = Field(Map(int),
                             "map of tel_id to the number of \
                             tiles for the mirror")
@@ -146,7 +145,7 @@ class R0CameraContainer(Container):
                         "numpy array containing ADC samples"
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
-                     "(n_channels, x n_pixels)")
+                              "(n_channels, x n_pixels)")
     baseline = Field(None, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
@@ -263,12 +262,12 @@ class MCEventContainer(Container):
     )
 
     mc_event_offset_fov = Field(
-                                Map(ndarray),
-                                "offset of pointing direction in camera \
-                                f.o.v. divided by focal length, i.e. \
-                                converted to radians: [0] = Camera x \
-                                (downwards in normal pointing, i.e. \
-                                increasing Alt) [1] = Camera y -> Az.")
+        Map(ndarray),
+        "offset of pointing direction in camera \
+        f.o.v. divided by focal length, i.e. \
+        converted to radians: [0] = Camera x \
+        (downwards in normal pointing, i.e. \
+        increasing Alt) [1] = Camera y -> Az.")
 
 
 class MCHeaderContainer(Container):
@@ -286,7 +285,6 @@ class MCHeaderContainer(Container):
 
 
 class CentralTriggerContainer(Container):
-
     gps_time = Field(Time, "central average time stamp")
     tels_with_trigger = Field([], "list of telescopes with data")
 
@@ -325,9 +323,9 @@ class ReconstructedEnergyContainer(Container):
     """
     energy = Field(-1.0, 'reconstructed energy', unit=u.TeV)
     energy_uncertainty = Field(
-                               -1.0, 'reconstructed energy uncertainty',
-                               unit=u.TeV
-                               )
+        -1.0, 'reconstructed energy uncertainty',
+        unit=u.TeV
+    )
     is_valid = Field(False,
                      ('energy reconstruction validity flag. True if '
                       'the energy was properly reconstructed by the '
@@ -470,7 +468,6 @@ class CalibrationEventContainer(Container):
 
 
 class CalibrationContainerMeta(Container):
-
     time = Field(float, 'time of the event')
     event_id = Field(int, 'event id')
     type = Field(int, 'event type')

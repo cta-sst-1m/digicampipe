@@ -1,12 +1,13 @@
-import tempfile
 import os
+import tempfile
+
 import numpy as np
-from pkg_resources import resource_filename
 from astropy.io import fits
+from pkg_resources import resource_filename
+
 from digicampipe.scripts.data_quality import entry as data_quality
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args
-
 
 example_file1_path = resource_filename(
     'digicampipe',
@@ -32,7 +33,6 @@ parameters_filename = resource_filename(
         'calibration_20180814.yml'
     )
 )
-
 
 template_filename = resource_filename(
     'digicampipe',

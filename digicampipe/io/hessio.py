@@ -12,8 +12,8 @@ from astropy.time import Time
 from ctapipe.core import Provenance
 from ctapipe.instrument import TelescopeDescription, SubarrayDescription
 
-from digicampipe.io.containers import DataContainer
 from digicampipe.instrument.camera import DigiCam
+from digicampipe.io.containers import DataContainer
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ try:
 except ImportError as err:
     logger.fatal(
         "the `pyhessio` python module is required to access MC data: {}"
-        .format(err))
+            .format(err))
     raise err
 
 __all__ = [

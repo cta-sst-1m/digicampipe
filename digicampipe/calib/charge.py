@@ -1,10 +1,11 @@
-import numpy as np
-from scipy.ndimage.filters import convolve1d
-from iminuit import Minuit
-import matplotlib.pyplot as plt
-from probfit import Chi2Regression
-from pkg_resources import resource_filename
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
+from iminuit import Minuit
+from pkg_resources import resource_filename
+from probfit import Chi2Regression
+from scipy.ndimage.filters import convolve1d
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
@@ -34,7 +35,6 @@ def compute_charge(events, integral_width, shift):
     # bins = np.arange(-maximum_width, maximum_width + 1, 1)
 
     for count, event in enumerate(events):
-
         adc_samples = event.data.adc_samples
         pulse_mask = event.data.pulse_mask
 
@@ -54,9 +54,7 @@ def compute_charge(events, integral_width, shift):
 
 
 def compute_amplitude(events):
-
     for count, event in enumerate(events):
-
         adc_samples = event.data.adc_samples
         pulse_indices = event.data.pulse_mask
 
@@ -68,9 +66,7 @@ def compute_amplitude(events):
 
 
 def compute_full_waveform_charge(events):
-
     for count, event in enumerate(events):
-
         adc_samples = event.data.adc_samples
         charges = np.sum(adc_samples, axis=-1)
         event.data.reconstructed_charge = charges.reshape(-1, 1)
@@ -80,7 +76,6 @@ def compute_full_waveform_charge(events):
 
 def fit_template(events, pulse_width=(4, 5), rise_time=12,
                  template=PULSE_TEMPLATE):
-
     for event in events:
 
         adc_samples = event.data.adc_samples.copy()
@@ -94,7 +89,6 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12,
         plt.figure()
 
         for pulse_index in pulse_indices:
-
             left = pulse_index[-1] - int(pulse_width[0])
             left = max(0, left)
             right = pulse_index[-1] + int(pulse_width[1]) + 1
@@ -140,9 +134,7 @@ def fit_template(events, pulse_width=(4, 5), rise_time=12,
 
 
 def compute_photo_electron(events, gains):
-
     for event in events:
-
         charge = event.data.reconstructed_charge
 
         gain_drop = event.data.gain_drop

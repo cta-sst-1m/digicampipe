@@ -1,10 +1,12 @@
-from digicampipe.io import zfits, hdf5, hessio
-from .auxservice import AuxService
-from collections import namedtuple
-from digicampipe.io.containers import CalibrationContainer
-from tqdm import tqdm
-import numpy as np
 import os
+from collections import namedtuple
+
+import numpy as np
+from tqdm import tqdm
+
+from digicampipe.io import zfits, hdf5, hessio
+from digicampipe.io.containers import CalibrationContainer
+from .auxservice import AuxService
 
 
 def event_stream(filelist, source=None, max_events=None, **kwargs):
@@ -36,11 +38,9 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
     for file in filelist:
 
         if not os.path.exists(file):
-
             raise FileNotFoundError('File {} does not exists'.format(file))
 
     if max_events is None:
-
         max_events = np.inf
 
     if n_files == 1:
@@ -98,15 +98,15 @@ def guess_source_from_path(path):
 
 
 def add_slow_data(
-    data_stream,
-    aux_services=[
-        'DigicamSlowControl',
-        'MasterSST1M',
-        'PDPSlowControl',
-        'SafetyPLC',
-        'DriveSystem',
-    ],
-    basepath=None
+        data_stream,
+        aux_services=[
+            'DigicamSlowControl',
+            'MasterSST1M',
+            'PDPSlowControl',
+            'SafetyPLC',
+            'DriveSystem',
+        ],
+        basepath=None
 ):
     services = {
         name: AuxService(name, basepath)

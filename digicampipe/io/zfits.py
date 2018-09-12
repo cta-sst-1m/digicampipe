@@ -4,45 +4,46 @@ Components to read ZFITS data.
 This requires the protozfits python library to be installed
 """
 import logging
-from tqdm import tqdm
-import numpy as np
 import warnings
-from digicampipe.io.containers import DataContainer
-from digicampipe.instrument import camera
-from protozfits import File
-logger = logging.getLogger(__name__)
 
+import numpy as np
+from protozfits import File
+from tqdm import tqdm
+
+from digicampipe.instrument import camera
+from digicampipe.io.containers import DataContainer
+
+logger = logging.getLogger(__name__)
 
 __all__ = ['zfits_event_source']
 
 
 def _binary_search(file, item):
-
     first = 0
     last = len(file.Events) - 1
     found = False
 
     while first <= last and not found:
 
-            mid_point = (first + last) // 2
+        mid_point = (first + last) // 2
 
-            if file.Events[mid_point].eventNumber == item:
-                found = True
+        if file.Events[mid_point].eventNumber == item:
+            found = True
+        else:
+            if item < file.Events[mid_point].eventNumber:
+                last = mid_point - 1
             else:
-                if item < file.Events[mid_point].eventNumber:
-                    last = mid_point-1
-                else:
-                    first = mid_point+1
+                first = mid_point + 1
 
     return mid_point
 
 
 def zfits_event_source(
-    url,
-    camera=camera.DigiCam,
-    max_events=None,
-    allowed_tels=None,
-    event_id=None,
+        url,
+        camera=camera.DigiCam,
+        max_events=None,
+        allowed_tels=None,
+        event_id=None,
 ):
     """A generator that streams data from an ZFITs data file
     Parameters
@@ -78,7 +79,6 @@ def zfits_event_source(
             first_event_id = file.Events[0].eventNumber
             last_event_id = file.Events[n_events_in_file - 1].eventNumber
             if not first_event_id <= event_id <= last_event_id:
-
                 raise IndexError('Cannot find event ID {} in File {}\n'
                                  'First event ID : {}\n'
                                  'Last event ID : {}'.format(event_id, url,
@@ -88,11 +88,11 @@ def zfits_event_source(
             events = events[max(index_of_event, 0):]
 
         for event_counter, event in tqdm(
-            enumerate(events),
-            desc='Events',
-            leave=True,
-            initial=index_of_event,
-            total=n_events_in_file,
+                enumerate(events),
+                desc='Events',
+                leave=True,
+                initial=index_of_event,
+                total=n_events_in_file,
         ):
             if max_events is not None and event_counter > max_events:
                 break
@@ -126,7 +126,7 @@ def zfits_event_source(
                         "Could not read `hiGain.waveforms.baselines`"
                         "for event:{}\n"
                         "of file:{}\n".format(event_counter, url)
-                        ))
+                    ))
                     return np.ones(n_pixels) * np.nan
 
                 if tel_id not in loaded_telescopes:
@@ -279,5 +279,5 @@ def _prepare_trigger_output(_a):
 
     _a = np.unpackbits(_a.reshape(-1, A, B, 1), axis=-1)
     _a = _a[..., ::-1]
-    _a = _a.reshape(-1, A*B*C).T
+    _a = _a.reshape(-1, A * B * C).T
     return _a[PATCH_ID_OUTPUT_SORT_IDS]

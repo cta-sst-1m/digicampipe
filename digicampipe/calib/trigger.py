@@ -1,13 +1,12 @@
 import numpy as np
+
 from digicampipe.instrument.camera import DigiCam
 
 
 def fill_digicam_baseline(event_stream):
-
     for count, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
-
             baseline = event.r0.tel[telescope_id].digicam_baseline
             event.r0.tel[telescope_id].baseline = baseline
 
@@ -16,7 +15,6 @@ def fill_digicam_baseline(event_stream):
 
 def compute_trigger_patch(adc_samples, baseline,
                           patch_matrix=DigiCam.patch_matrix):
-
     # baseline = np.floor(baseline)
     # trigger_patch = patch_matrix.dot(adc_samples)
     # baseline = patch_matrix.dot(baseline)
@@ -37,7 +35,6 @@ def compute_trigger_patch(adc_samples, baseline,
 
 def compute_trigger_input_7(trigger_patch,
                             cluster_matrix=DigiCam.cluster_7_matrix):
-
     trigger_input_7 = cluster_matrix.dot(trigger_patch)
     trigger_input_7 = np.clip(trigger_input_7, 0, 1785)
 
@@ -45,16 +42,13 @@ def compute_trigger_input_7(trigger_patch,
 
 
 def compute_trigger_output_7(trigger_input_7, threshold):
-
     return trigger_input_7 > threshold
 
 
 def fill_trigger_patch(event_stream):
-
     for count, event in enumerate(event_stream):
 
         for telescope_id in event.r0.tels_with_data:
-
             matrix_patch = event.inst.patch_matrix[telescope_id]
             data = event.r0.tel[telescope_id].adc_samples
             baseline = event.r0.tel[telescope_id].baseline
@@ -65,11 +59,9 @@ def fill_trigger_patch(event_stream):
 
 
 def fill_trigger_input_7(event_stream):
-
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
-
             matrix_patch_7 = event.inst.cluster_matrix_7[telescope_id]
 
             trigger_patch = event.r0.tel[telescope_id].trigger_input_traces
@@ -81,11 +73,9 @@ def fill_trigger_input_7(event_stream):
 
 
 def fill_trigger_input_19(event_stream):
-
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
-
             matrix_19 = event.inst.cluster_matrix_19[telescope_id]
 
             trigger_in = event.r0.tel[telescope_id].trigger_input_traces
@@ -97,11 +87,9 @@ def fill_trigger_input_19(event_stream):
 
 
 def fill_trigger_output_patch_19(event_stream, threshold):
-
     for event in event_stream:
 
         for tel_id, r0_container in event.r0.tel.items():
-
             trigger_input_19 = r0_container.trigger_input_19
             r0_container.trigger_output_patch_19 = trigger_input_19 > threshold
 
@@ -109,11 +97,9 @@ def fill_trigger_output_patch_19(event_stream, threshold):
 
 
 def fill_trigger_output_patch_7(event_stream, threshold):
-
     for event in event_stream:
 
         for tel_id, r0_container in event.r0.tel.items():
-
             trigger_input_7 = r0_container.trigger_input_7
             out = compute_trigger_output_7(trigger_input_7, threshold)
             r0_container.trigger_output_patch_7 = out
@@ -122,21 +108,19 @@ def fill_trigger_output_patch_7(event_stream, threshold):
 
 
 def fill_event_type(event_stream, flag):
-
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
-
             event.r0.tel[telescope_id].camera_event_type = flag
 
         yield event
 
 
 def compute_bias_curve(
-    data_stream,
-    thresholds,
-    blinding=True,
-    by_cluster=True,
+        data_stream,
+        thresholds,
+        blinding=True,
+        by_cluster=True,
 ):
     """
     :param data_stream:
@@ -181,7 +165,6 @@ def compute_bias_curve(
                     n_triggers = np.sum(comp)
 
                     if n_triggers > r0.trigger_input_7.shape[-1] - 1:
-
                         rate[0:-threshold_id] += n_triggers
                         break
 
@@ -203,7 +186,6 @@ def init_cluster_rate(r0, n_thresholds):
 
 
 def compute_bias_curve_v2(data_stream, thresholds):
-
     n_thresholds = len(thresholds)
     n_clusters = 432
     cluster_rate = np.zeros((n_clusters, n_thresholds))
@@ -212,7 +194,6 @@ def compute_bias_curve_v2(data_stream, thresholds):
     for count, event in enumerate(data_stream):
 
         for tel_id, r0 in event.r0.tel.items():
-
             trigger_input = r0.trigger_input_7
 
             comp = trigger_input[..., np.newaxis] > thresholds

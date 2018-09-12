@@ -1,21 +1,20 @@
-from cts_core import camera as cam
-import numpy as np
 import astropy.units as u
+import numpy as np
 from ctapipe.instrument.camera import CameraGeometry
 from ctapipe.instrument.camera import _find_neighbor_pixels
+from cts_core import camera as cam
 
 
 def find_pixel_positions(
-    camera_config_file,
-    source_x=0.*u.mm,
-    source_y=0.*u.mm
+        camera_config_file,
+        source_x=0. * u.mm,
+        source_y=0. * u.mm
 ):
     camera = cam.Camera(_config_file=camera_config_file)
 
     x, y = [], []
 
     for pixel in camera.Pixels:
-
         x.append(pixel.center[0])
         y.append(pixel.center[1])
 
@@ -26,7 +25,8 @@ def find_pixel_positions(
     return r
 
 
-def generate_geometry_from_camera(camera, source_x=0.*u.mm, source_y=0.*u.mm):
+def generate_geometry_from_camera(camera, source_x=0. * u.mm,
+                                  source_y=0. * u.mm):
     """
     Generate the SST-1M geometry from the CTS configuration
     :param camera: a CTS instance
@@ -57,7 +57,6 @@ def generate_geometry_from_camera(camera, source_x=0.*u.mm, source_y=0.*u.mm):
 
 
 def compute_patch_matrix(camera):
-
     n_pixels = len(camera.Pixels)
     n_patches = len(camera.Patches)
     patch_matrix = np.zeros((n_patches, n_pixels), dtype=int)
@@ -65,14 +64,12 @@ def compute_patch_matrix(camera):
     for patch in camera.Patches:
 
         for pixel in patch.pixelsID:
-
             patch_matrix[patch.ID, pixel] = 1
 
     return patch_matrix
 
 
 def compute_cluster_matrix_7(camera):
-
     n_clusters = len(camera.Clusters_7)
     cluster_matrix = np.zeros((n_clusters, n_clusters), dtype=int)
 
@@ -85,7 +82,6 @@ def compute_cluster_matrix_7(camera):
 
 
 def compute_cluster_matrix_19(camera):
-
     n_clusters = len(camera.Clusters_19)
     cluster_matrix = np.zeros((n_clusters, n_clusters), dtype=int)
 

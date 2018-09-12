@@ -4,7 +4,6 @@ from ctapipe.image import cleaning
 
 
 def compute_cleaning_1(events, snr=3, overwrite=True):
-
     for event in events:
 
         baseline_std = event.data.baseline_std
@@ -22,7 +21,6 @@ def compute_cleaning_1(events, snr=3, overwrite=True):
 
 
 def compute_tailcuts_clean(events, geom, overwrite=True, **kwargs):
-
     for event in events:
 
         image = event.data.reconstructed_number_of_pe
@@ -39,14 +37,12 @@ def compute_tailcuts_clean(events, geom, overwrite=True, **kwargs):
 
 
 def compute_boarder_cleaning(events, geom, boundary_threshold, skip=False):
-
     pixel_id = np.array(geom.pix_id)
 
     for event in events:
 
         mask = event.data.cleaning_mask
         if not np.any(mask):
-
             continue
 
         image = event.data.reconstructed_number_of_pe
@@ -60,7 +56,6 @@ def compute_boarder_cleaning(events, geom, boundary_threshold, skip=False):
                 for j in pixel_id[geom.neighbor_matrix[i] & (~mask)]:
 
                     if image[j] > boundary_threshold:
-
                         mask[j] = True
                         recursion = True
 
@@ -80,9 +75,7 @@ def compute_boarder_cleaning(events, geom, boundary_threshold, skip=False):
 
 
 def compute_dilate(events, geom):
-
     for event in events:
-
         mask = event.data.cleaning_mask
         mask = cleaning.dilate(geom, mask)
         event.data.cleaning_mask = mask

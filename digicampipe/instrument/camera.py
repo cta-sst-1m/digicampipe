@@ -22,6 +22,7 @@ class Camera(camera.Camera):
     of type: ctapipe.instrument.camera.CameraGeometry
     which is created immediateyl on construction.
     '''
+
     def __init__(self, *args, **kwargs):
         if not args and kwargs.get('_config_file', None) is None:
             kwargs['_config_file'] = pkg_resources.resource_filename(

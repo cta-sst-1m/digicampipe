@@ -10,6 +10,7 @@ Options:
                     [Default: None]
 '''
 from docopt import docopt
+
 from digicampipe.io import event_stream
 from digicampipe.visualization import EventViewer
 
@@ -22,7 +23,6 @@ def entry():
     data_stream = event_stream.event_stream(args['<INPUT>'],
                                             event_id=event_id)
     for _, i in zip(data_stream, range(int(args['--start']))):
-
         pass
     display = EventViewer(data_stream)
     display.draw()
