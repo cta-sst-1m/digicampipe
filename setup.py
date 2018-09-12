@@ -14,7 +14,7 @@ setup(
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
-        'digicampipe.image.lidccd'
+        'digicampipe.image.lidccd',
         'digicampipe.instrument',
         'digicampipe.scripts',
     ],
