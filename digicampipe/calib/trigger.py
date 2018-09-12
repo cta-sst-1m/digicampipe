@@ -1,6 +1,17 @@
 import numpy as np
-
 from digicampipe.instrument.camera import DigiCam
+
+
+def fill_digicam_baseline(event_stream):
+
+    for count, event in enumerate(event_stream):
+
+        for telescope_id in event.r0.tels_with_data:
+
+            baseline = event.r0.tel[telescope_id].digicam_baseline
+            event.r0.tel[telescope_id].baseline = baseline
+
+        yield event
 
 
 def compute_trigger_patch(adc_samples, baseline,
@@ -106,6 +117,17 @@ def fill_trigger_output_patch_7(event_stream, threshold):
             trigger_input_7 = r0_container.trigger_input_7
             out = compute_trigger_output_7(trigger_input_7, threshold)
             r0_container.trigger_output_patch_7 = out
+
+        yield event
+
+
+def fill_event_type(event_stream, flag):
+
+    for event in event_stream:
+
+        for telescope_id in event.r0.tels_with_data:
+
+            event.r0.tel[telescope_id].camera_event_type = flag
 
         yield event
 
