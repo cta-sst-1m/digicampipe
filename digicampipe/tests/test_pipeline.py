@@ -30,6 +30,14 @@ calibration_filename = resource_filename(
         'calibration_20180814.yml'
     )
 )
+template_filename = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_SST-1M_pixel_0.dat'
+    )
+)
 expected_columns = ['phi', 'y', 'skewness', 'intensity', 'x', 'event_id',
                     'local_time', 'psi', 'width', 'miss', 'alpha', 'length',
                     'r', 'kurtosis', 'event_type']
@@ -55,11 +63,12 @@ def test_pipeline():
             integral_width=7,
             debug=False,
             hillas_filename=hillas_filename,
+            template_filename=template_filename,
             parameters_filename=calibration_filename,
             compute=True,
             display=False,
-            picture_threshold=1,  # unusual value, so events pass cuts
-            boundary_threshold=1  # unusual value, so events pass cuts
+            picture_threshold=50,  # unusual value, so events pass cuts
+            boundary_threshold=20,  # unusual value, so events pass cuts
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]

@@ -46,6 +46,8 @@ class CalibrationEventContainer(Container):
                                         'for each adc sample')
     cleaning_mask = Field(ndarray, 'cleaning mask, pixel bool array')
     shower = Field(bool, 'is the event considered as a shower')
+    border = Field(bool, 'is the event after cleaning touchin the camera '
+                         'borders')
 
     def plot(self, pixel_id):
         plt.figure()
