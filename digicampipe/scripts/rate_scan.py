@@ -16,9 +16,9 @@ import numpy as np
 from docopt import docopt
 
 from digicampipe.calib import filter
-from digicampipe.calib.camera import r0, random_triggers
+from digicampipe.calib import trigger
 from digicampipe.io.event_stream import event_stream
-from digicampipe.io.save_bias_curve import compute_bias_curve
+from digicampipe.calib.trigger import compute_bias_curve
 
 
 def compute(files, output_filename):
@@ -27,12 +27,12 @@ def compute(files, output_filename):
     thresholds = np.arange(0, 100, 2)
 
     data_stream = event_stream(files)
-    data_stream = r0.fill_event_type(data_stream, flag=8)
-    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
+    data_stream = trigger.fill_event_type(data_stream, flag=8)
+    data_stream = trigger.fill_baseline_r0(data_stream, n_bins=n_bins)
     data_stream = filter.filter_missing_baseline(data_stream)
-    data_stream = r0.fill_trigger_patch(data_stream)
-    data_stream = r0.fill_trigger_input_7(data_stream)
-    data_stream = r0.fill_trigger_input_19(data_stream)
+    data_stream = trigger.fill_trigger_patch(data_stream)
+    data_stream = trigger.fill_trigger_input_7(data_stream)
+    data_stream = trigger.fill_trigger_input_19(data_stream)
     output = compute_bias_curve(
         data_stream,
         thresholds=thresholds,
@@ -59,13 +59,11 @@ def entry():
 
     if args['--display']:
 
-
         output = np.load(output_file)
 
         thresholds = output['thresholds']
         rate = output['rate']
         rate_error = output['rate_error']
-
 
         fig = plt.figure()
         axes = fig.add_subplot(111)

@@ -1,9 +1,8 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from ctapipe.visualization import CameraDisplay
 from scipy.stats import norm
 
-
-from ctapipe.visualization import CameraDisplay
 import digicampipe.utils as utils
 
 

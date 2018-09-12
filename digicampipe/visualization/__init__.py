@@ -6,7 +6,7 @@ from matplotlib.widgets import Button, RadioButtons, CheckButtons
 import matplotlib
 
 from ctapipe.visualization import CameraDisplay
-from ..utils import DigiCam
+from digicampipe.utils import DigiCam
 
 
 class EventViewer():

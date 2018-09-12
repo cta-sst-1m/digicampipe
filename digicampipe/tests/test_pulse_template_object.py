@@ -2,7 +2,7 @@ from pkg_resources import resource_filename
 import os
 import numpy as np
 
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+from digicampipe.utils import NormalizedPulseTemplate
 
 template_filename = resource_filename(
     'digicampipe',

@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 from histogram.histogram import Histogram1D
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args,\
+from digicampipe.utils import convert_max_events_args,\
     convert_pixel_args
 from digicampipe.visualization.plot import plot_array_camera, plot_parameter
 from digicampipe.calib.camera.time import compute_time_from_max, \

@@ -46,9 +46,9 @@ from digicampipe.calib import filter
 from digicampipe.image.hillas import compute_alpha, compute_miss
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils import DigiCam
-from digicampipe.utils.docopt import convert_max_events_args, \
+from digicampipe.utils import convert_max_events_args, \
     convert_pixel_args
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+from digicampipe.utils import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
 
 

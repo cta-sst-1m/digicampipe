@@ -51,7 +51,7 @@ from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
     compute_baseline_shift, fill_dark_baseline
 from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+from digicampipe.utils import NormalizedPulseTemplate
 
 
 class DataQualityContainer(Container):

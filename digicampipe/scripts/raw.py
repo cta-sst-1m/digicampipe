@@ -20,14 +20,15 @@ Options:
                               [Default: None]
 """
 import os
-from docopt import docopt
-from tqdm import tqdm
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+from docopt import docopt
 from histogram.histogram import Histogram1D
+from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args,\
+from digicampipe.utils import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 

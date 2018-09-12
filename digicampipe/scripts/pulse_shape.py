@@ -18,7 +18,7 @@ from tqdm import tqdm
 from docopt import docopt
 
 from digicampipe.calib.camera.time import estimate_arrival_time
-from digicampipe.utils.hist2d import Histogram2dChunked
+from digicampipe.utils import Histogram2dChunked
 
 
 def main(outfile_path, input_files=[]):

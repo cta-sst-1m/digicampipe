@@ -8,7 +8,7 @@ from tqdm import tqdm
 import numpy as np
 import warnings
 from digicampipe.io.containers import DataContainer
-import digicampipe.utils as utils
+from digicampipe.instrument import camera
 from protozfits import File
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def _binary_search(file, item):
 
 def zfits_event_source(
     url,
-    camera=utils.DigiCam,
+    camera=camera.DigiCam,
     max_events=None,
     allowed_tels=None,
     event_id=None,
