@@ -11,7 +11,6 @@ setup(
         'digicampipe',
         'digicampipe.io',
         'digicampipe.calib',
-        'digicampipe.calib.camera',
         'digicampipe.utils',
         'digicampipe.visualization',
         'digicampipe.image',
