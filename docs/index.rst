@@ -11,7 +11,7 @@ Welcome to digicampipe's documentation!
    :caption: Contents:
 
    install/index
-   containers/index
+   io/index
 
 Indices and tables
 ==================
