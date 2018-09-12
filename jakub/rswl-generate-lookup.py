@@ -8,20 +8,31 @@ from fill_lookup import fill_lookup
 from jakub.shower_geometry import impact_parameter
 
 if __name__ == '__main__':
-
     parser = OptionParser()
-    parser.add_option('-g', '--hillas', dest='hillas_gamma',
-                      help='path to a file with hillas parameters of gamma',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
-    parser.add_option('-m', '--mc', dest='mc_gamma',
-                      help='path to a file with shower MC parameters of gamma',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
-    parser.add_option('-w', '--output_width', dest='output_width',
-                      help='path to an output RSW lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-lookup-ze00-az000-offset00')
-    parser.add_option('-l', '--output_length', dest='output_length',
-                      help='path to an output RSL lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsl-lookup-ze00-az000-offset00')
+    parser.add_option(
+        '-g',
+        '--hillas',
+        dest='hillas_gamma',
+        help='path to a file with hillas parameters of gamma',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
+    parser.add_option(
+        '-m',
+        '--mc',
+        dest='mc_gamma',
+        help='path to a file with shower MC parameters of gamma',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
+    parser.add_option(
+        '-w',
+        '--output_width',
+        dest='output_width',
+        help='path to an output RSW lookup table',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-lookup-ze00-az000-offset00')
+    parser.add_option(
+        '-l',
+        '--output_length',
+        dest='output_length',
+        help='path to an output RSL lookup table',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsl-lookup-ze00-az000-offset00')
     (options, args) = parser.parse_args()
 
     hillas_gamma = np.load(options.hillas_gamma)
@@ -44,10 +55,11 @@ if __name__ == '__main__':
 
     width_gamma = hillas_gamma['width'][mask_g]
     length_gamma = hillas_gamma['length'][mask_g]
-    size_gamma = np.log10(hillas_gamma['size'][mask_g])   # log size
+    size_gamma = np.log10(hillas_gamma['size'][mask_g])  # log size
 
     # Impact parameter
-    telpos = np.array([0., 0., 4.])  # not optimal, tel. coordinates should be loaded from somewhere..
+    # not optimal, tel. coordinates should be loaded from somewhere..
+    telpos = np.array([0., 0., 4.])
     impact_parameter_gamma = impact_parameter(x_core_gamma, y_core_gamma,
                                               telpos, theta_gamma, phi_gamma)
 

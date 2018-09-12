@@ -25,23 +25,22 @@ table for selected equation.
   --modification    Turn on modified DISP method.
 '''
 
-import numpy as np
-from docopt import docopt
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.patches import Circle
-from digicampipe.utils.events_image import load_image
+import numpy as np
+import pandas as pd
+from docopt import docopt
 from lmfit import Parameters
+from matplotlib.patches import Circle
 from scipy.interpolate import interp2d
 from scipy.optimize import curve_fit
-import pandas as pd
-from digicampipe.utils.disp import disp_eval, leak_pixels, plot_2d, extents, \
+
+from digicampipe.utils.disp import disp_eval, leak_pixels, extents, \
     arrival_distribution, res_gaussian, r68, r68mod
+from digicampipe.utils.events_image import load_image
 
 
 def main(hillas_file, lookup_file, pixel_file,
          event_image_file, equation, modification):
-
     hillas = np.load(hillas_file[0])
     lookup = np.load(lookup_file)
     pixels, image = load_image(pixel_file, event_image_file)
@@ -60,7 +59,7 @@ def main(hillas_file, lookup_file, pixel_file,
 
     min_size = 200
 
-    mask1 = hillas['length']/hillas['width'] > 1e-3
+    mask1 = hillas['length'] / hillas['width'] > 1e-3
     mask2 = hillas['size'] > min_size
 
     # Border flaged events are masked for method 1 and 3 only.
@@ -92,14 +91,14 @@ def main(hillas_file, lookup_file, pixel_file,
     # are dl1_camera.pe_samples values that survived cleaning
     image = image[mask, 1:]
 
-    x_offset = 0*np.ones(len(cog_x))    # MC event source position in deg
-    y_offset = -float(data_offset)*np.ones(len(cog_x))
+    x_offset = 0 * np.ones(len(cog_x))  # MC event source position in deg
+    y_offset = -float(data_offset) * np.ones(len(cog_x))
 
     # conversion of coordinates in mm to deg.
     # Digicam: 0.24 deg/px, one SiPM is 24.3 mm wide
     mm_to_deg = 0.24 / 24.3
-    cog_x = cog_x * mm_to_deg   # conversion to degrees
-    cog_y = cog_y * mm_to_deg   # conversion to degrees
+    cog_x = cog_x * mm_to_deg  # conversion to degrees
+    cog_y = cog_y * mm_to_deg  # conversion to degrees
 
     # Outermost pixels
     (leakage2, image_mask,
@@ -146,7 +145,7 @@ def main(hillas_file, lookup_file, pixel_file,
 
     if modification:
         n_triples = 100  # number of randomly chosen triplets for each event
-        theta_squared_cut = 0.03    # 3*(maximal_distance)**2
+        theta_squared_cut = 0.03  # 3*(maximal_distance)**2
         x_minmax = x_offset[0] + [-1.0, 1.0]
         y_minmax = y_offset[0] + [-1.0, 1.0]
         (n_bin_values, n_bin,
@@ -169,8 +168,8 @@ def main(hillas_file, lookup_file, pixel_file,
     # - creation of a matrix
 
     # - coordinates of middle of each interval
-    x = n_bin[1][:-1] + (n_bin[1][1]-n_bin[1][0])/2.0
-    y = n_bin[2][:-1] + (n_bin[2][1]-n_bin[2][0])/2.0
+    x = n_bin[1][:-1] + (n_bin[1][1] - n_bin[1][0]) / 2.0
+    y = n_bin[2][:-1] + (n_bin[2][1] - n_bin[2][0]) / 2.0
     xx, yy = np.meshgrid(x, y)
 
     # [x0, y0, sigma, amplitude]
@@ -190,7 +189,6 @@ def main(hillas_file, lookup_file, pixel_file,
     print('R[deg] contains 99% (R99): ', res68[2])
 
     if modification:
-
         res68_mod = r68mod(xx.ravel(), yy.ravel(),
                            n_bin_values.ravel(), x_offset[0], y_offset[0])
 
@@ -245,7 +243,6 @@ def main(hillas_file, lookup_file, pixel_file,
 
 
 if __name__ == '__main__':
-
     args = docopt(__doc__)
     main(
         hillas_file=args['<file>'],

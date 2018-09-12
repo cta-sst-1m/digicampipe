@@ -34,12 +34,12 @@ import mc_shower
 import numpy as np
 from cts_core.camera import Camera
 from digicampipe.calib.camera import dl2, r1, dl1
+from digicampipe.io.save_hillas import save_hillas_parameters
 from docopt import docopt
 
 from digicampipe.calib import filter
 from digicampipe.instrument import geometry
 from digicampipe.io.event_stream import event_stream
-from digicampipe.io.save_hillas import save_hillas_parameters
 from digicampipe.utils import events_image
 from digicampipe.utils import utils
 from digicampipe.visualization import EventViewer
@@ -47,15 +47,14 @@ from jakub import simtel_baseline
 
 
 def main(
-    files,
-    outfile_path,
-    outfile_suffix,
-    picture_threshold=15,
-    boundary_threshold=7,
-    baseline0=9,
-    baseline1=15,
-    ):
-
+        files,
+        outfile_path,
+        outfile_suffix,
+        picture_threshold=15,
+        boundary_threshold=7,
+        baseline0=9,
+        baseline1=15,
+):
     # Input/Output files
     digicam_config_file = args['--camera_config']
 
@@ -69,9 +68,9 @@ def main(
     # (mapping, pixel, patch + x,y coordinates pixels)
     digicam = Camera(_config_file=digicam_config_file)
     digicam_geometry = geometry.generate_geometry_from_camera(
-                        camera=digicam,
-                        source_x=source_x,
-                        source_y=source_y)
+        camera=digicam,
+        source_x=source_x,
+        source_y=source_y)
 
     # Noisy pixels not taken into account in Hillas
     pixel_not_wanted = [
@@ -85,7 +84,8 @@ def main(
                                 'mask_edges': None,
                                 'peak': None,
                                 'window_start': 3,
-                                'window_width': 7,  # length of integration window
+                                'window_width': 7,
+                                # length of integration window
                                 'threshold_saturation': np.inf,
                                 'n_samples': 50,
                                 'timing_width': 6,
@@ -195,10 +195,10 @@ def main(
 
     # Save mean baseline in event pixels
     filename_baseline = (
-                         'baseline_' + outfile_suffix +
-                         '_bas' + str(baseline0).zfill(2) +
-                         str(baseline1).zfill(2) + '.txt'
-                         )
+        'baseline_' + outfile_suffix +
+        '_bas' + str(baseline0).zfill(2) +
+        str(baseline1).zfill(2) + '.txt'
+    )
     # data_stream = simtel_baseline.save_mean_event_baseline(
     #    data_stream, directory + filename_baseline)
 
@@ -281,7 +281,6 @@ def main(
 
 
 if __name__ == '__main__':
-
     args = docopt(__doc__)
     main(
         files=args['<files>'],

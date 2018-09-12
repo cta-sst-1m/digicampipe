@@ -10,7 +10,7 @@ digicampipe/tests/resources/stars_on_lid/*.png
 # Jupyter notebooks checkpoints
 notebooks/.pynb_checkpoints
 
-#Pycharm config
+# Pycharm config
 .idea/*
 
 # Byte-compiled / optimized / DLL files

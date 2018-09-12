@@ -1,12 +1,13 @@
-
-import numpy as np
 import sys
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_alpha2d(data):  # plot original data
 
-    N = data['N'].reshape((len(np.unique(data['y'])), len(np.unique(data['x']))))
+    N = data['N'].reshape(
+        (len(np.unique(data['y'])), len(np.unique(data['x']))))
     x, y = np.meshgrid(np.unique(data['x']), np.unique(data['y']))
 
     fig = plt.figure(figsize=(9, 8))
@@ -18,9 +19,11 @@ def plot_alpha2d(data):  # plot original data
     cbar.set_label('N of events')
 
 
-def plot_alpha2d_mod(data, floor_value, r_max):  # plot based on Etienne's histo_crab.py code
+def plot_alpha2d_mod(data, floor_value,
+                     r_max):  # plot based on Etienne's histo_crab.py code
 
-    N = data['N'].reshape((len(np.unique(data['y'])), len(np.unique(data['x']))))
+    N = data['N'].reshape(
+        (len(np.unique(data['y'])), len(np.unique(data['x']))))
     x, y = np.meshgrid(np.unique(data['x']), np.unique(data['y']))
 
     # mean threshold
@@ -32,7 +35,7 @@ def plot_alpha2d_mod(data, floor_value, r_max):  # plot based on Etienne's histo
     # circular fov
     for i in range(len(x)):
         for j in range(len(y)):
-            if x[0, i]**2.0 + y[j, 0]**2.0 > r_max**2.0:
+            if x[0, i] ** 2.0 + y[j, 0] ** 2.0 > r_max ** 2.0:
                 N[i, j] = floor_value
 
     fig = plt.figure(figsize=(9, 8))
@@ -45,7 +48,6 @@ def plot_alpha2d_mod(data, floor_value, r_max):  # plot based on Etienne's histo
 
 
 if __name__ == '__main__':
-
     data = np.load(sys.argv[1])
 
     plot_alpha2d(data)

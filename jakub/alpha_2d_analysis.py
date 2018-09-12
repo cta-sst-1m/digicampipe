@@ -7,27 +7,24 @@ from jakub.alpha_2d_plot import plot_alpha2d
 
 
 def plot_aperture(x0, y0, r, col):
-
-    phi = np.linspace(0, 2*np.pi, 1000)
-    x = r*np.cos(phi) + x0
-    y = r*np.sin(phi) + y0
+    phi = np.linspace(0, 2 * np.pi, 1000)
+    x = r * np.cos(phi) + x0
+    y = r * np.sin(phi) + y0
     ax1 = plt.gca()
     ax1.plot(x, y, '-', color=col)
 
 
 def plot_onoffcirc(x0, y0):
-
-    phi = np.linspace(0, 2*np.pi, 1000)
-    r = np.sqrt(x0**2.0 + y0**2.0)
-    x = r*np.cos(phi)
-    y = r*np.sin(phi)
+    phi = np.linspace(0, 2 * np.pi, 1000)
+    r = np.sqrt(x0 ** 2.0 + y0 ** 2.0)
+    x = r * np.cos(phi)
+    y = r * np.sin(phi)
     ax1 = plt.gca()
     ax1.plot(x, y, 'k--')
 
 
 def count_aperture(data, x0, y0, r):
-
-    N = data['N'][np.sqrt((data['x']-x0)**2 + (data['y']-y0)**2) <= r]
+    N = data['N'][np.sqrt((data['x'] - x0) ** 2 + (data['y'] - y0) ** 2) <= r]
     N = sum(N)
     return N
 
@@ -45,12 +42,12 @@ def off_aperture3(x0, y0):
 def lima_significance(N_on, N_off, alpha):  # Li and Ma, 1983
 
     sign_lima = np.sqrt(
-        2.0*(
-            N_on*np.log(
-                ((1.0+alpha)/alpha) * (N_on/(N_on+N_off))
+        2.0 * (
+            N_on * np.log(
+                ((1.0 + alpha) / alpha) * (N_on / (N_on + N_off))
             ) +
-            N_off*np.log(
-                (1.0+alpha) * (N_off/(N_on+N_off))
+            N_off * np.log(
+                (1.0 + alpha) * (N_off / (N_on + N_off))
             )
         )
     )
@@ -76,7 +73,7 @@ if __name__ == '__main__':
         # multiple N_off regions with respect to the image center
         N_off3 = N_off3 + count_aperture(data, x_off3[i], y_off3[i], r)
 
-    alpha = 1.0/3.0  # alpha = 1/number of OFF regions
+    alpha = 1.0 / 3.0  # alpha = 1/number of OFF regions
     sig = lima_significance(N_on, N_off3, alpha)
     # sig = lima_significance(N_on,N_off,1.0)
     print(sig)

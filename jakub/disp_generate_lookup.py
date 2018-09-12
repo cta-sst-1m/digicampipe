@@ -23,19 +23,19 @@ Options:
   -u <path>, --outpath=<path>   Path for saving lookup tables
 '''
 
+import os
 
 import numpy as np
-from docopt import docopt
-import os
-from digicampipe.utils.events_image import load_image
-from lmfit import minimize, Parameters, report_fit
-from digicampipe.utils.disp import disp_eval, leak_pixels
 import pandas as pd
+from docopt import docopt
+from lmfit import minimize, Parameters, report_fit
+
+from digicampipe.utils.disp import disp_eval, leak_pixels
+from digicampipe.utils.events_image import load_image
 
 
 def disp_minimize(A, width, length, cog_x, cog_y, x_offset, y_offset,
                   psi, skewness, size, leakage2, method):
-
     (disp_comp, x_source_comp,
      y_source_comp, residuals) = disp_eval(A, width, length, cog_x,
                                            cog_y, x_offset, y_offset,
@@ -45,7 +45,6 @@ def disp_minimize(A, width, length, cog_x, cog_y, x_offset, y_offset,
 
 
 def main(all_offsets, path, equation, outpath):
-
     # Create lists of files
     hillas_files = []
     events_image_files = []
@@ -70,7 +69,6 @@ def main(all_offsets, path, equation, outpath):
     zeniths = set()
     azimuths = set()
     for filename in hillas_files:
-
         zenith_file = filename.split('_')[-2][2:]
         azimuth_file = filename.split('_')[-1].split('.')[0][2:]
 
@@ -95,7 +93,8 @@ def main(all_offsets, path, equation, outpath):
                 except Exception:
                     print('WARNING: There are no input files in the path: '
                           + full_path + ' for the following zenith, azimuth, '
-                          'offset combination: ' + str(zenith) + ' '
+                                        'offset combination: ' + str(
+                                            zenith) + ' '
                           + str(azimuth) + ' ' + str(offset))
                     continue
                 try:
@@ -104,10 +103,12 @@ def main(all_offsets, path, equation, outpath):
                                in x and offset + 'deg' in x][0]
                     mc0 = np.loadtxt(mc_file)
                 except Exception:
-                    print('ERROR: MC file for hillas file '
-                          + hillas_file + ' wasn\'t found in the same path. '
-                          'Run simtel_pipeline again and make sure that MC '
-                          'files are successfuly saved.')
+                    print(
+                        'ERROR: MC file for hillas file ' +
+                        hillas_file +
+                        ' wasn\'t found in the same path. '
+                        'Run simtel_pipeline again and make sure that MC '
+                        'files are successfuly saved.')
                     continue
                 try:
                     image_file = [x for x in events_image_files if 'ze'
@@ -116,10 +117,12 @@ def main(all_offsets, path, equation, outpath):
                                   + 'deg' in x][0]
                     pixels, image = load_image(pixel_file, image_file)
                 except Exception:
-                    print('ERROR: Events_image file for hillas file '
-                          + hillas_file + ' wasn\'t found in the same path. '
-                          'Run simtel_pipeline again and make sure that image '
-                          'files are successfuly saved.')
+                    print(
+                        'ERROR: Events_image file for hillas file ' +
+                        hillas_file +
+                        ' wasn\'t found in the same path. '
+                        'Run simtel_pipeline again and make sure that image '
+                        'files are successfuly saved.')
                     continue
                 pix_x = pixels[0, :]
                 pix_y = pixels[1, :]
@@ -141,7 +144,8 @@ def main(all_offsets, path, equation, outpath):
                 if equation == 1 or equation == 3:
                     mask0 = hillas['border'] == 0
                     mask = (~np.isnan(hillas['width'])
-                            * ~np.isnan(hillas['cen_x']) * mask0 * mask1 * mask2)
+                            * ~np.isnan(
+                        hillas['cen_x']) * mask0 * mask1 * mask2)
                 else:
                     mask = (~np.isnan(hillas['width'])
                             * ~np.isnan(hillas['cen_x']) * mask1 * mask2)
@@ -180,8 +184,8 @@ def main(all_offsets, path, equation, outpath):
                 cog_x = cog_x * mm_to_deg
                 cog_y = cog_y * mm_to_deg
 
-                disp = np.sqrt((x_offset - cog_x)**2.0
-                               + (y_offset - cog_y)**2.0)
+                disp = np.sqrt((x_offset - cog_x) ** 2.0
+                               + (y_offset - cog_y) ** 2.0)
 
                 # Outermost pixels
                 (leakage2, image_mask,
@@ -283,7 +287,6 @@ def main(all_offsets, path, equation, outpath):
 
 
 if __name__ == '__main__':
-
     args = docopt(__doc__)
     main(
         all_offsets=args['--offset'],

@@ -8,17 +8,25 @@ from rswl_plot import energy_lookup2d
 from jakub.shower_geometry import impact_parameter
 
 if __name__ == '__main__':
-
     parser = OptionParser()
-    parser.add_option("-l", "--hillas", dest="hillas",
-                      help="path to a file with hillas parameters",
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
-    parser.add_option("-m", "--mc", dest="mc",
-                      help="path to a file with shower MC parameters",
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
-    parser.add_option('-o', '--output', dest='output',
-                      help='path to an output lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/energy-lookup-ze00-az000-offset00')
+    parser.add_option(
+        "-l",
+        "--hillas",
+        dest="hillas",
+        help="path to a file with hillas parameters",
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/hillas_gamma_ze00_az000_p13_b07.npz')
+    parser.add_option(
+        "-m",
+        "--mc",
+        dest="mc",
+        help="path to a file with shower MC parameters",
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
+    parser.add_option(
+        '-o',
+        '--output',
+        dest='output',
+        help='path to an output lookup table',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/energy-lookup-ze00-az000-offset00')
     (options, args) = parser.parse_args()
 
     hillas = np.load(options.hillas)
@@ -39,7 +47,8 @@ if __name__ == '__main__':
     phi = mc[:, 5]
 
     # Impact parameter
-    telpos = np.array([0., 0., 4.])  # not optimal, tel. coordinates should be loaded from somewhere..
+    # not optimal, tel. coordinates should be loaded from somewhere..
+    telpos = np.array([0., 0., 4.])
     impact_parameter = impact_parameter(x_core, y_core, telpos, theta, phi)
 
     # Binning in log10 size

@@ -9,22 +9,21 @@ from jakub.shower_geometry import impact_parameter
 
 
 def rswl(impact_parameter, size, width, length, rsw_lookup, rsl_lookup):
-
     wi = interpolate.griddata(
-         (rsw_lookup['impact'], rsw_lookup['size']),
-         rsw_lookup['mean'], (impact_parameter, size), method='linear'
-         )
+        (rsw_lookup['impact'], rsw_lookup['size']),
+        rsw_lookup['mean'], (impact_parameter, size), method='linear'
+    )
 
     sw = interpolate.griddata(
         (rsw_lookup['impact'], rsw_lookup['size']),
         rsw_lookup['std'], (impact_parameter, size), method='linear'
-        )
+    )
 
     le = interpolate.griddata(
-         (rsl_lookup['impact'], rsl_lookup['size']),
-         rsl_lookup['mean'], (impact_parameter, size),
-         method='linear'
-         )
+        (rsl_lookup['impact'], rsl_lookup['size']),
+        rsl_lookup['mean'], (impact_parameter, size),
+        method='linear'
+    )
 
     sl = interpolate.griddata(
         (rsl_lookup['impact'], rsl_lookup['size']),
@@ -32,43 +31,65 @@ def rswl(impact_parameter, size, width, length, rsw_lookup, rsl_lookup):
         method='linear')
 
     rsw = (width - wi) / sw
-    rsw = rsw[~np.isnan(rsw)*~np.isinf(rsw)]
+    rsw = rsw[~np.isnan(rsw) * ~np.isinf(rsw)]
     rsl = (length - le) / sl
-    rsl = rsl[~np.isnan(rsl)*~np.isinf(rsl)]
+    rsl = rsl[~np.isnan(rsl) * ~np.isinf(rsl)]
 
     return rsw, rsl
 
 
 def efficiency_comp(gamma_cut, rswl):
-
     bellow_gamma_cut = rswl < gamma_cut[..., np.newaxis]
     efficiency = np.sum(bellow_gamma_cut, axis=1)
-    efficiency = efficiency/rswl.shape[0]
+    efficiency = efficiency / rswl.shape[0]
 
     return efficiency
 
 
 if __name__ == '__main__':
-
     parser = OptionParser()
-    parser.add_option('-p', '--hillasp', dest='hillas_prot',
-                      help='path to a file with hillas parameters of protons',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data//hillas_proton_ze00_az000_p13_b07.npz')
-    parser.add_option('-g', '--hillasg', dest='hillas_gamma',
-                      help='path to a file with hillas parameters of gamma',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data//hillas_gamma_ze00_az000_p13_b07.npz')
-    parser.add_option('-m', '--mcg', dest='mc_gamma',
-                      help='path to a file with shower MC parameters of gamma',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_gamma_ze00_az000.txt')
-    parser.add_option('-c', '--mcp', dest='mc_prot',
-                      help='path to a file with shower MC param. of protons',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/shower_param_proton_ze00_az000.txt')
-    parser.add_option('-l', '--rsl', dest='rsl_lookup',
-                      help='path to a file with RSL lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsl-lookup-ze00-az000-offset00.npz')
-    parser.add_option('-w', '--rsw', dest='rsw_lookup',
-                      help='path to a file with RSW lookup table',
-                      default='../../../sst-1m_simulace/data_test/ryzen_testprod/0.0deg/Data/rsw-lookup-ze00-az000-offset00.npz')
+    parser.add_option(
+        '-p',
+        '--hillasp',
+        dest='hillas_prot',
+        help='path to a file with hillas parameters of protons',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/'
+                '0.0deg/Data//hillas_proton_ze00_az000_p13_b07.npz')
+    parser.add_option(
+        '-g',
+        '--hillasg',
+        dest='hillas_gamma',
+        help='path to a file with hillas parameters of gamma',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/'
+                '0.0deg/Data//hillas_gamma_ze00_az000_p13_b07.npz')
+    parser.add_option(
+        '-m',
+        '--mcg',
+        dest='mc_gamma',
+        help='path to a file with shower MC parameters of gamma',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/'
+                '0.0deg/Data/shower_param_gamma_ze00_az000.txt')
+    parser.add_option(
+        '-c',
+        '--mcp',
+        dest='mc_prot',
+        help='path to a file with shower MC param. of protons',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/'
+                '0.0deg/Data/shower_param_proton_ze00_az000.txt')
+    parser.add_option(
+        '-l',
+        '--rsl',
+        dest='rsl_lookup',
+        help='path to a file with RSL lookup table',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/'
+                '0.0deg/Data/rsl-lookup-ze00-az000-offset00.npz')
+    parser.add_option(
+        '-w',
+        '--rsw',
+        dest='rsw_lookup',
+        help='path to a file with RSW lookup table',
+        default='../../../sst-1m_simulace/data_test/ryzen_testprod/'
+                '0.0deg/Data/rsw-lookup-ze00-az000-offset00.npz')
     (options, args) = parser.parse_args()
 
     hillas_prot = np.load(options.hillas_prot)
@@ -103,13 +124,14 @@ if __name__ == '__main__':
 
     width_gamma = hillas_gamma['width'][mask_g]
     length_gamma = hillas_gamma['length'][mask_g]
-    size_gamma = np.log10(hillas_gamma['size'][mask_g])     # log size
+    size_gamma = np.log10(hillas_gamma['size'][mask_g])  # log size
     width_prot = hillas_prot['width'][mask_p]
     length_prot = hillas_prot['length'][mask_p]
-    size_prot = np.log10(hillas_prot['size'][mask_p])       # log size
+    size_prot = np.log10(hillas_prot['size'][mask_p])  # log size
 
     # Impact parameter
-    telpos = np.array([0., 0., 4.])  # not optimal, tel. coordinates should be loaded from somewhere..
+    # not optimal, tel. coordinates should be loaded from somewhere..
+    telpos = np.array([0., 0., 4.])
     impact_parameter_prot = impact_parameter(x_core_prot, y_core_prot,
                                              telpos, theta_prot, phi_prot)
     impact_parameter_gamma = impact_parameter(x_core_gamma, y_core_gamma,
@@ -136,8 +158,8 @@ if __name__ == '__main__':
     # Quality factor
     qualityw = efficiency_gammaw / np.sqrt(efficiency_protonw)
     qualityl = efficiency_gammal / np.sqrt(efficiency_protonl)
-    qualityw[np.isinf(qualityw)+np.isnan(qualityw)] = 0
-    qualityl[np.isinf(qualityl)+np.isnan(qualityl)] = 0
+    qualityw[np.isinf(qualityw) + np.isnan(qualityw)] = 0
+    qualityl[np.isinf(qualityl) + np.isnan(qualityl)] = 0
 
     print('\n     Quality factor     Efficiency gamma   Efficiency proton')
     print('RSW:', max(qualityw),
