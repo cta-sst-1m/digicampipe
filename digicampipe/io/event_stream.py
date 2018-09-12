@@ -1,7 +1,7 @@
 from digicampipe.io import zfits, hdf5, hessio_digicam
 from .auxservice import AuxService
 from collections import namedtuple
-from digicampipe.io.containers_calib import CalibrationContainer
+from digicampipe.io.containers import CalibrationContainer
 from tqdm import tqdm
 import numpy as np
 import os
