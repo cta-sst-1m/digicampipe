@@ -13,6 +13,7 @@ dependencies:
 - h5py
 - hdf5
 - iminuit
+- jupyter
 - matplotlib
 - numba
 - numpy
