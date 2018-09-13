@@ -27,9 +27,9 @@ for i, file in tqdm(enumerate(files), total=n_files):
     # events = compute_maximal_charge(events)
 
     charge_histo = Histogram1D(data_shape=(1296,),
-                           bin_edges=np.arange(-200, 4095 * 50, 1))
+                               bin_edges=np.arange(-200, 4095 * 50, 1))
     amplitude_histo = Histogram1D(data_shape=(1296,),
-                           bin_edges=np.arange(-200, 4095, 1/16))
+                                  bin_edges=np.arange(-200, 4095, 1/16))
 
     amplitude = np.zeros((n_files, n_pixels))
     amplitude_std = np.zeros((n_files, n_pixels))
