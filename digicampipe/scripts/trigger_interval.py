@@ -6,7 +6,7 @@ Usage:
   digicam-raw [options] [--] <INPUT>...
 
 Options:
-  -h --help                   Show this screen.
+  -h --help                   Show this help.
   --max_events=N              Maximum number of events to analyse
   -o FILE --output=FILE.      File where to store the results.
                               [Default: ./trigger_interval.pk]

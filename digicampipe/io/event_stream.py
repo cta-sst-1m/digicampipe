@@ -75,7 +75,7 @@ def calibration_event_stream(path,
     Event stream for the calibration of the camera based on the observation
     event_stream()
     """
-
+    pixel_id = tuple(pixel_id)
     container = CalibrationContainer()
     for event in event_stream(path, max_events=max_events, **kwargs):
         r0_event = list(event.r0.tel.values())[0]
