@@ -64,10 +64,8 @@ def compute_charge_with_saturation(events, integral_width,
     """
 
     for count, event in enumerate(events):
-        adc_samples = event.data.adc_samples
-        baseline = event.data.digicam_baseline
-        adc_samples = adc_samples - baseline[:, None]
 
+        adc_samples = event.data.adc_samples
         max_value = np.max(adc_samples, axis=-1)
         saturated_pulse = max_value > saturation_threshold
 
