@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-'''
+"""
 
 Example:
   ./disp_generate_lookup.py \
@@ -21,7 +21,7 @@ Options:
   -e <int>, --equation=<int>  Equation for the DISP parameter fit. [default: 5]
   -o <arg..>, --offset=<arg..>
   -u <path>, --outpath=<path>   Path for saving lookup tables
-'''
+"""
 
 import os
 
