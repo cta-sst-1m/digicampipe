@@ -49,7 +49,7 @@ for i, file in tqdm(enumerate(files), total=n_files):
 
 np.savez('test.npz', charge=charge, charge_std=charge_std,
          amplitude=amplitude,
-         amplitude_std=amplitude_std)
+         amplitude_std=amplitude_std, ac_levels=ac_levels)
 
 
 pixel = 0
