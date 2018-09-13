@@ -57,10 +57,13 @@ def compute_charge_with_saturation(events, integral_width,
                                    saturation_threshold=300,
                                    debug=False):
     """
-
     :param events: a stream of events
     :param integral_width: width of the integration window
-    :return:
+    :param saturation_threshold: if the maximum value of the waveform is above
+    this threshold the waveform charge will be treated as saturated
+    (type) float, ndarray
+    :param debug: for debugging purposes
+    :return yield events
     """
 
     for count, event in enumerate(events):
@@ -118,6 +121,7 @@ def compute_charge_with_saturation(events, integral_width,
 
             plt.figure()
             plt.plot(np.diff(adc_samples)[0])
+            plt.show()
 
         yield event
 
