@@ -53,6 +53,77 @@ def compute_charge(events, integral_width, shift):
         yield event
 
 
+def compute_charge_with_saturation(events, integral_width,
+                                   saturation_threshold=300,
+                                   debug=False):
+    """
+
+    :param events: a stream of events
+    :param integral_width: width of the integration window
+    :return:
+    """
+
+    for count, event in enumerate(events):
+        adc_samples = event.data.adc_samples
+        baseline = event.data.digicam_baseline
+        adc_samples = adc_samples - baseline[:, None]
+
+        max_value = np.max(adc_samples, axis=-1)
+        saturated_pulse = max_value > saturation_threshold
+
+        convolved_signal = convolve1d(
+            adc_samples,
+            np.ones(integral_width),
+            axis=-1
+        )
+
+        charge = np.max(convolved_signal, axis=-1)
+
+        if np.any(saturated_pulse):
+            adc_samples = adc_samples[saturated_pulse]
+
+            # cumulative_adc_samples = np.cumsum(adc_samples, axis=-1)
+            # diff2_adc_samples = np.diff(diff_adc_samples, axis=-1)
+            # start_bin[:, :-1] = (adc_samples[:, :-1] < threshold_rising)
+            #  * (adc_samples[:, 1:] >= threshold_rising)
+            # end_bin[:, 1:-1] = (cumulative_adc_samples[:, 1:-1]
+            #  >= threshold_falling) * (diff_adc_samples[:, :-1] < 0)
+            # end_bin[:, 1:-1] = end_bin[:, 1:-1]
+            #  * (adc_samples[:, :-2] > 0) * (adc_samples[:, 1:-1] <=0)
+            diff_adc_samples = np.diff(adc_samples, axis=-1)
+            samples = np.arange(adc_samples.shape[-1])
+            max_diff = np.argmax(diff_adc_samples, axis=-1)[:, None] - 1
+            start_bin = (samples <= max_diff)
+
+            min_diff = np.argmin(diff_adc_samples, axis=-1)[:, None]
+            end_bin = (samples >= min_diff)
+
+            window = start_bin + end_bin
+            window = ~window
+            temp = adc_samples[window]
+            temp = np.sum(temp, axis=-1)
+            charge[saturated_pulse] = temp
+
+        event.data.reconstructed_charge = charge
+
+        if debug:
+            pixel = 0
+            print(charge)
+            print(window[0], start_bin[0], end_bin[0])
+
+            plt.figure()
+            plt.plot(adc_samples[pixel])
+            plt.plot(adc_samples[window][0], marker='x')
+
+            plt.figure()
+            plt.plot(np.cumsum(adc_samples, axis=-1)[0])
+
+            plt.figure()
+            plt.plot(np.diff(adc_samples)[0])
+
+        yield event
+
+
 def compute_amplitude(events):
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
