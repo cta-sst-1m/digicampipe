@@ -48,10 +48,11 @@ from digicampipe.utils import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
-    compute_baseline_shift, fill_dark_baseline
+    compute_baseline_shift, fill_dark_baseline, tag_burst
 from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+import os
 
 
 class DataQualityContainer(Container):
@@ -60,12 +61,13 @@ class DataQualityContainer(Container):
     baseline = Field(ndarray, 'baseline average over the camera')
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
     shower_rate = Field(ndarray, 'shower rate')
+    burst = Field(bool, 'is there a burst')
 
 
 def entry(files, dark_filename, time_step, fits_filename, load_files,
           histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
-          cell_capacitance=5e-14 * u.Farad):
+          parameters_filename, template_filename,
+          bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad):
 
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
@@ -93,6 +95,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
         )
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
         events = compute_sample_photo_electron(events, gain_amplitude)
+        events = tag_burst(events, event_average=100, threshold_lsb=2)
         events = compute_3d_cleaning(events, geom=DigiCam.geometry)
         init_time = 0
         baseline = 0
@@ -104,6 +107,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
             data_shape=(n_pixels, ),
             bin_edges=np.arange(4096)
         )
+        burst = False
         for i, event in enumerate(events):
             new_time = event.data.local_time
             if init_time == 0:
@@ -113,6 +117,8 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
             time_diff = new_time - init_time
             if event.data.shower:
                 shower_count += 1
+            if event.data.burst:
+                burst = True
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
             if time_diff > time_step and i > 0:
                 trigger_rate = count / time_diff
@@ -120,15 +126,22 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
                 baseline = baseline / count
                 container.trigger_rate = trigger_rate
                 container.baseline = baseline
-                container.time = init_time
+                container.time = (new_time + init_time) / 2
                 container.shower_rate = shower_rate
+                container.burst = burst
                 baseline = 0
                 count = 0
                 init_time = 0
                 shower_count = 0
+                burst = False
                 file.add_container(container)
+        output_path = os.path.dirname(histo_filename)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         baseline_histo.save(histo_filename)
+        print(histo_filename, 'created.')
         file.close()
+        print(fits_filename, 'created.')
 
     data = Table.read(fits_filename, format='fits')
     data = data.to_pandas()
@@ -137,26 +150,35 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
 
     if rate_plot_filename != "none":
         fig1 = plt.figure()
-        plt.plot(data['trigger_rate']*1E9)
-        plt.plot(data['shower_rate']*1E9)
+        plt.plot(data['trigger_rate']*1E9, label='trigger rate')
+        plt.plot(data['shower_rate']*1E9, label='shower_rate')
         plt.ylabel('rate [Hz]')
-        plt.legend('trigger rate', 'shower_rate')
+        plt.legend()
         if rate_plot_filename == "show":
             plt.show()
         else:
+            output_path = os.path.dirname(rate_plot_filename)
+            if not (output_path == '' or os.path.exists(output_path)):
+                os.makedirs(output_path)
             plt.savefig(rate_plot_filename)
         plt.close(fig1)
 
     if baseline_plot_filename != "none":
-        fig2 = plt.figure()
-        plt.plot(data['baseline'])
+        fig2 = plt.figure(figsize=(8, 6))
+        data_burst = data[data['burst'] == True]
+        data_good = data[data['burst'] == False]
+        plt.plot(data_good['baseline'], '.', label='good', ms=2)
+        plt.plot(data_burst['baseline'], '.', label='burst', ms=2)
         plt.ylabel('Baseline [LSB]')
+        plt.legend()
         if rate_plot_filename == "show":
             plt.show()
         else:
+            output_path = os.path.dirname(baseline_plot_filename)
+            if not (output_path == '' or os.path.exists(output_path)):
+                os.makedirs(output_path)
             plt.savefig(baseline_plot_filename)
         plt.close(fig2)
-
     return
 
 
