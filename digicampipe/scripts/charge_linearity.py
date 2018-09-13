@@ -18,7 +18,7 @@ n_files = len(files)
 
 for i, file in tqdm(enumerate(files), total=n_files):
 
-    events = calibration_event_stream(file, max_events=1000)
+    events = calibration_event_stream(file)
     events = fill_digicam_baseline(events)
     events = subtract_baseline(events)
     events = compute_charge_with_saturation(events, integral_width=7)
