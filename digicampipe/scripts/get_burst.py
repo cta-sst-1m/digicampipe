@@ -103,11 +103,8 @@ for burst_idxs in bursts[1:]:
         merged_bursts.append([last_burst_begin, last_burst_end])
         last_burst_begin = begin_idx
         last_burst_end = end_idx
-merged_bursts.append([last_burst_begin, last_burst_end])
-print('bursts:')
-for i, burst in enumerate(bursts):
-    beg, end = burst
-    print(i, beg, end)
+if merged_bursts[-1][0] != last_burst_begin:
+    merged_bursts.append([last_burst_begin, last_burst_end])
 print('merged_burst:')
 for i, burst in enumerate(merged_bursts):
     beg, end = burst
@@ -124,7 +121,7 @@ date_format = '%Y-%m-%dT%H:%M:%S'
 for i, burst_idxs in enumerate(bursts):
 
     ts_begin = pd.to_datetime(timestamps[begin_idx]).strftime(date_format)
-    ts_end = pd.to_datetime(timestamps[begin_idx]).strftime(date_format)
+    ts_end = pd.to_datetime(timestamps[end_idx]).strftime(date_format)
     run_file.write(str(i) + " " + ts_begin + " " + ts_end)
     run_file.write(" " + str(event_ids[begin_idx]) + " ")
     run_file.write(str(event_ids[end_idx]) + "\n")
