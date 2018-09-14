@@ -16,7 +16,7 @@ ac_levels = np.hstack([np.arange(0, 20, 1), np.arange(20, 450, 5)])
 n_pixels = 1296
 n_files = len(files)
 
-debug = True
+debug = False
 
 for i, file in tqdm(enumerate(files), total=n_files):
 

@@ -168,7 +168,6 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         max_arg = np.argmax(convolved_signal, axis=-1)
         start_bin = (samples < (max_arg[:, None] - integral_width / 2))
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
-        print(max_arg)
         window = ~(start_bin + end_bin)
         charge = np.max(convolved_signal, axis=-1)
 
