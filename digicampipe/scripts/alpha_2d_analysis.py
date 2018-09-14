@@ -3,7 +3,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jakub.alpha_2d_plot import plot_alpha2d
+from digicampipe.scripts.alpha_2d_plot import plot_alpha2d
 
 
 def plot_aperture(x0, y0, r, col):

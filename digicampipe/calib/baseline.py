@@ -112,3 +112,50 @@ def fill_baseline_r0(event_stream, n_bins=10000):
                 r0_camera.baseline = np.mean(baselines, axis=0)
                 r0_camera.standard_deviation = np.mean(baselines_std, axis=0)
         yield event
+
+
+def compute_baseline_from_waveform(events, bin_left=5, bin_right=10):
+    """
+    This method will compute the baseline the waveform using the samples
+    defined in the region (0, bin_left) U (-bin_right, -1).
+    :param events: A stream of events
+    :param bin_left: int, Left sample up to which baseline is computed
+    :param bin_right: int, Number of samples from the end of the waveform from
+    which baseline is computed
+    :return:
+    """
+
+    for event in events:
+
+        adc_samples = event.data.adc_samples
+
+        adc_samples_first = adc_samples[:, 0:bin_left - 1]
+        adc_samples_last = adc_samples[:, -bin_right:]
+        adc_samples = np.concatenate((adc_samples_first,
+                                      adc_samples_last), axis=1)
+
+        baseline = np.mean(adc_samples, axis=-1)
+        std = np.std(adc_samples, axis=-1)
+
+        event.data.baseline = baseline
+        event.data.baseline_std = std
+
+        yield event
+
+
+def compute_baseline_simtel(event_stream):
+
+    for event in event_stream:
+
+        for telescope_id in event.r0.tels_with_data:
+            n_pixels = event.inst.num_pixels[telescope_id]
+            r0_camera = event.r0.tel[telescope_id]
+            r0_camera.baseline = (event.mc.tel[telescope_id].pedestal[0]
+                                  / event.r0.tel[telescope_id].num_samples
+                                  )
+            # standard_deviation should be set up manualy and it should be
+            # probably equal to value of 'fadc_noise' variable from simtel
+            # configuration file
+            r0_camera.standard_deviation = 1.5 * np.ones(n_pixels)
+
+        yield event

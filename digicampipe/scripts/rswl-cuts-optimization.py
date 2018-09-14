@@ -5,7 +5,7 @@ import numpy as np
 import rswl_plot
 from scipy import interpolate
 
-from jakub.shower_geometry import impact_parameter
+from digicampipe.utils.shower_geometry import impact_parameter
 
 
 def rswl(impact_parameter, size, width, length, rsw_lookup, rsl_lookup):

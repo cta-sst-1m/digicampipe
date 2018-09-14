@@ -34,8 +34,8 @@ def generalized_poisson(k, mu, mu_xt, amplitude=1):
         log_k = np.sum(temp, axis=-1)
 
         pdf = log_amplitude + log_mu
-        pdf = pdf + np.log(mu + k * mu_xt) * (k - 1) + (
-        -mu - k * mu_xt) - log_k
+        pdf = pdf + np.log(mu + k * mu_xt) * (k - 1)
+        pdf = pdf + (-mu - k * mu_xt) - log_k
         pdf = np.exp(pdf)
 
         pdf[k < 0] = 0

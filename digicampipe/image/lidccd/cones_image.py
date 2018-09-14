@@ -280,8 +280,8 @@ class ConesImage(object):
 
     def get_cone(self, radius_mask, output_filename=None, cone_filename=None):
         """find the center of a camera's pixel.
-        The pixel image along with important parameter can be save for future use
-        using the cone_filename parameter.
+        The pixel image along with important parameter can be save for future
+        use using the cone_filename parameter.
         Parameter
         ---------
         radius_mask :
@@ -351,8 +351,10 @@ class ConesImage(object):
         res = optimize.minimize(
             get_neg_hexagonalicity_with_mask,
             pos_results[np.argmax(hex_results)],
-            args=(
-            image_cones, 6 * self.r1, 6 * self.r2, (60, 120, 180, 240, 300)),
+            args=(image_cones,
+                  6 * self.r1,
+                  6 * self.r2,
+                  (60, 120, 180, 240, 300)),
             bounds=bounds,
             method='TNC',
             options={
