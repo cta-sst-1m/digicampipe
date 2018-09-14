@@ -1,24 +1,25 @@
-import numpy as np
 import sys
+
+import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+from ctapipe.visualization import CameraDisplay
 from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 from matplotlib.widgets import Button, RadioButtons, CheckButtons
-import matplotlib
 
-from ctapipe.visualization import CameraDisplay
-from ..utils import DigiCam
+from digicampipe.instrument.camera import DigiCam
 
 
 class EventViewer():
     def __init__(
-        self,
-        event_stream,
-        camera=DigiCam,
-        scale='lin',
-        limits_colormap=None,
-        limits_readout=None,
-        time_bin_start=0,
-        pixel_id_start=0
+            self,
+            event_stream,
+            camera=DigiCam,
+            scale='lin',
+            limits_colormap=None,
+            limits_readout=None,
+            time_bin_start=0,
+            pixel_id_start=0
     ):
 
         matplotlib.figure.autolayout = False
@@ -198,8 +199,7 @@ class EventViewer():
         self.draw_readout(self.pixel_id)
         self.draw_camera()
         self.button_next_event.label.set_text(
-            'Next : current event #%d' % (self.event_id)
-        )
+            'Next : current event {}'.format(self.event_id))
 
     def draw(self):
         self.next()
@@ -277,9 +277,9 @@ class EventViewer():
         if self.readout_view_type in self.readout_view_types:
             if self.readout_view_type == 'raw':
                 image = self.adc_samples
-            elif(
-                self.readout_view_type == 'trigger output' and
-                self.trigger_output is not None
+            elif (
+                            self.readout_view_type == 'trigger output' and
+                            self.trigger_output is not None
             ):
                 image = np.array(
                     [
@@ -287,9 +287,9 @@ class EventViewer():
                         for pixel in self.camera.Pixels
                     ]
                 )
-            elif(
-                self.readout_view_type == 'trigger input' and
-                self.trigger_input is not None
+            elif (
+                            self.readout_view_type == 'trigger input' and
+                            self.trigger_input is not None
             ):
                 image = np.array(
                     [
@@ -297,9 +297,9 @@ class EventViewer():
                         for pixel in self.camera.Pixels
                     ]
                 )
-            elif(
-                self.readout_view_type == 'cluster 7' and
-                self.trigger_input is not None
+            elif (
+                            self.readout_view_type == 'cluster 7' and
+                            self.trigger_input is not None
             ):
                 trigger_input_patch = np.dot(
                     self.cluster_matrix, self.trigger_input
@@ -310,20 +310,20 @@ class EventViewer():
                         for pixel in self.camera.Pixels
                     ]
                 )
-            elif(
-                self.readout_view_type == 'photon' and
-                self.dl1_container.pe_samples_trace is not None
+            elif (
+                            self.readout_view_type == 'photon' and
+                            self.dl1_container.pe_samples_trace is not None
             ):
                 image = self.dl1_container.pe_samples_trace
-            elif(
-                self.readout_view_type == 'baseline substracted' and
-                self.r1_container.adc_samples is not None
+            elif (
+                            self.readout_view_type == 'baseline substracted' and
+                            self.r1_container.adc_samples is not None
             ):
                 image = self.adc_samples - self.baseline[:, np.newaxis]
             elif (
-                self.readout_view_type == 'reconstructed charge' and
-                self.dl1_container.time_bin is not None or
-                self.dl1_container.pe_samples is not None
+                                self.readout_view_type == 'reconstructed charge' and
+                                self.dl1_container.time_bin is not None or
+                            self.dl1_container.pe_samples is not None
             ):
                 image = np.zeros((self.n_pixels, self.n_samples))
                 time_bins = self.dl1_container.time_bin
@@ -395,7 +395,8 @@ class EventViewer():
             elif self.camera_view_type == 'time':
                 self.image = image[:, self.time_bin]
         else:
-            print('Cannot compute for camera type : %s' % self.camera_view)
+            print('Cannot compute for camera type : %s' %
+                  self.camera_view_type)
         if self.limits_colormap is not None:
             mask = (self.image >= self.limits_colormap[0])
             if not self.limits_colormap[1] == np.inf:

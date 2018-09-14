@@ -1,25 +1,23 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 
 class NormalizedPulseTemplate:
-
     def __init__(self, amplitude, time):
 
         dt = np.diff(time)
 
         if not (dt == dt[0]).all():
-
             raise ValueError('time argument should be of constant sampling')
 
         self.time = time
         self.amplitude = amplitude
         self._template = self._interpolate()
 
-    def __call__(self, time, amplitude=1, t_0=0):
+    def __call__(self, time, amplitude=1, t_0=0, baseline=0):
 
-        y = amplitude * self._template(time - t_0)
+        y = amplitude * self._template(time - t_0) + baseline
 
         return np.array(y)
 
@@ -61,7 +59,6 @@ class NormalizedPulseTemplate:
         dt = self.time[1] - self.time[0]
 
         if not dt % dt_sampling:
-
             raise ValueError('Cannot use sampling rate {} for {}'.format(
                 1 / dt_sampling, dt))
         step = int(dt_sampling / dt)
@@ -75,12 +72,11 @@ class NormalizedPulseTemplate:
     def plot(self, axes=None, **kwargs):
 
         if axes is None:
-
             fig = plt.figure()
             axes = fig.add_subplot(111)
 
         t = np.linspace(self.time.min(), self.time.max(),
-                        num=len(self.time)*100)
+                        num=len(self.time) * 100)
 
         axes.plot(self.time, self.amplitude, label='Template data-points',
                   **kwargs)

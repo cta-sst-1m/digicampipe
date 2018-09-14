@@ -1,4 +1,4 @@
-'''
+"""
 Make a "Bias Curve" or perform a "Rate-scan",
 i.e. measure the trigger rate as a function of threshold.
 
@@ -10,29 +10,28 @@ Options:
   --compute   Computes the trigger rate vs threshold
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
   -i INPUT --input=INPUT.     Input files.
-'''
-from docopt import docopt
-import numpy as np
+"""
 import matplotlib.pyplot as plt
+import numpy as np
+from docopt import docopt
 
-from digicampipe.calib.camera import filter, r0, random_triggers
-from digicampipe.io.save_bias_curve import compute_bias_curve, \
-    compute_bias_curve_v2
+from digicampipe.calib import filters
+from digicampipe.calib import trigger, baseline
+from digicampipe.calib.trigger import compute_bias_curve
 from digicampipe.io.event_stream import event_stream
 
 
 def compute(files, output_filename):
-
     n_bins = 1024
     thresholds = np.arange(0, 100, 2)
 
     data_stream = event_stream(files)
-    data_stream = r0.fill_event_type(data_stream, flag=8)
-    data_stream = random_triggers.fill_baseline_r0(data_stream, n_bins=n_bins)
-    data_stream = filter.filter_missing_baseline(data_stream)
-    data_stream = r0.fill_trigger_patch(data_stream)
-    data_stream = r0.fill_trigger_input_7(data_stream)
-    data_stream = r0.fill_trigger_input_19(data_stream)
+    data_stream = trigger.fill_event_type(data_stream, flag=8)
+    data_stream = baseline.fill_baseline_r0(data_stream, n_bins=n_bins)
+    data_stream = filters.filter_missing_baseline(data_stream)
+    data_stream = trigger.fill_trigger_patch(data_stream)
+    data_stream = trigger.fill_trigger_input_7(data_stream)
+    data_stream = trigger.fill_trigger_input_19(data_stream)
     output = compute_bias_curve(
         data_stream,
         thresholds=thresholds,
@@ -48,24 +47,19 @@ def compute(files, output_filename):
 
 
 def entry():
-
     args = docopt(__doc__)
     input_files = args['<INPUT>']
     output_file = args['--output']
 
     if args['--compute']:
-
         compute(input_files, output_file)
 
     if args['--display']:
-
-
         output = np.load(output_file)
 
         thresholds = output['thresholds']
         rate = output['rate']
         rate_error = output['rate_error']
-
 
         fig = plt.figure()
         axes = fig.add_subplot(111)
@@ -78,5 +72,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()
