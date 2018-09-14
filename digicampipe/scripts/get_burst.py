@@ -103,12 +103,12 @@ for burst_idxs in bursts[1:]:
         merged_bursts.append([last_burst_begin, last_burst_end])
         last_burst_begin = begin_idx
         last_burst_end = end_idx
-if merged_bursts[-1][0] != last_burst_begin:
+if len(merged_bursts) == 0 or merged_bursts[-1][0] != last_burst_begin:
     merged_bursts.append([last_burst_begin, last_burst_end])
-print('merged_burst:')
-for i, burst in enumerate(merged_bursts):
-    beg, end = burst
-    print(i, beg, end)
+# print('merged_burst:')
+# for i, burst in enumerate(merged_bursts):
+#     beg, end = burst
+#     print(i, beg, end)
 bursts = merged_bursts
 
 # output result
