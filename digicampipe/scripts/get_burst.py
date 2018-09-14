@@ -1,9 +1,3 @@
-import numpy as np
-import sys
-import subprocess
-
-
-
 """
 Get a list of bursts
 Usage:
@@ -18,7 +12,7 @@ Options:
                                 average for the event to be taken as part of a 
                                 burst
                                 [Default: 2.0]
-  --ouptput=FILE                Path to the output text file listing the bursts
+  --output=FILE                Path to the output text file listing the bursts
                                 and giving the range of timetamps and event_ids
                                 for each. If "none", it goes to standard 
                                 outpout.
@@ -26,30 +20,39 @@ Options:
   --expand=INT                  Each burst get expended by the specified number
                                 of events
                                 [Default: 10]
+  --merge_sec=FLOAT             Merge bursts if they are closer than the
+                                specified amount of seconds
+                                [Default: 5]
 """
-
+import numpy as np
+import sys
+import pandas as pd
+from docopt import docopt
+from digicampipe.io.event_stream import calibration_event_stream
+from digicampipe.calib.camera.baseline import fill_digicam_baseline, tag_burst
 
 def expand_mask(input, iters=1):
-"""
-Expands the True area in an 1D array 'input'.
-Expansion occurs by one cell, and is repeated 'iters' times.
-"""
-xLen, = input.shape
-output = input.copy()
-for iter in xrange(iters):
-  for y in xrange(yLen):
-    if (x > 0 and input[x-1]) or (x < xLen - 1 and input[x+1]):
-      output[x] = True
-  input = output.copy()
-return output
+    """
+    Expands the True area in an 1D array 'input'.
+    Expansion occurs by one cell, and is repeated 'iters' times.
+    """
+    xLen, = input.shape
+    output = input.copy()
+    for iter in range(iters):
+        for x in range(xLen):
+            if (x > 0 and input[x-1]) or (x < xLen - 1 and input[x+1]):
+                output[x] = True
+        input = output.copy()
+    return output
 
 
 args = docopt(__doc__)
 files = args['<INPUT>']
 event_average = int(args['--event_average'])
-threshold_lsb = int(args['--threshold_lsb'])
-ouptput = int(args['--ouptput'])
+threshold_lsb = float(args['--threshold_lsb'])
+output = args['--output']
 expand = int(args['--expand'])
+merge_sec = float(args['--expand'])
 
 # get events info
 events = calibration_event_stream(files)
@@ -79,30 +82,52 @@ for event in range(n_event):
     if are_burst[event]:
         if not previous_is_burst:
             bursts.append([event])
-        else:
+        if event == n_event - 1 or (not are_burst[event + 1]):
             bursts[-1].append(event)
+        previous_is_burst = True
+    else:
+        previous_is_burst = False
+if np.all(~are_burst):
+    raise SystemExit('no burst identified')
+
+# merge bursts which are closer than merge_sec seconds
+last_burst_begin = bursts[0][0]
+last_burst_end = bursts[0][1]
+merged_bursts = []
+n_burst = len(bursts)
+for burst_idxs in bursts[1:]:
+    begin_idx, end_idx = burst_idxs
+    if (timestamps[begin_idx] - timestamps[last_burst_end]) < merge_sec * 1e9:
+        last_burst_end = end_idx
+    else:
+        merged_bursts.append([last_burst_begin, last_burst_end])
+        last_burst_begin = begin_idx
+        last_burst_end = end_idx
+merged_bursts.append([last_burst_begin, last_burst_end])
+print('bursts:')
+for i, burst in enumerate(bursts):
+    beg, end = burst
+    print(i, beg, end)
+print('merged_burst:')
+for i, burst in enumerate(merged_bursts):
+    beg, end = burst
+    print(i, beg, end)
+bursts = merged_bursts
 
 # output result
 if output == "none":
     run_file = sys.stdout
 else:
     run_file = open(output, 'w')
-# get info about digicampipe version
-digicampipe_branch = subprocess.check_output("cd /home/reniery/ctasoft/digicampipe; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
-digicampipe_commit = subprocess.check_output("cd /home/reniery/ctasoft/digicampipe; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
-# get info about the monitoring pipeline version
-pipeline_branch =  subprocess.check_output("cd /home/reniery/cron; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
-pipeline_commit = subprocess.check_output("cd /home/reniery/cron; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
-# write header
-run_file.write("#digicampipe branch " + digicampipe_branch+ " commit " + digicampipe_commit + "\n")
-run_file.write("#protozfits version " + protozfits.__version__ + '\n')
-run_file.write("#monitoring pipeline branch " + pipeline_branch + " commit " + pipeline_commit + "\n")
-run_file.write("#burst ts_start ts_end id_start id_end\n")
+run_file.write("#burst ts_start ts_end id_start id_end\n")  # write header
+date_format = '%Y-%m-%dT%H:%M:%S'
 for i, burst_idxs in enumerate(bursts):
-    begin_idx, end_idx = burst_idxs
-    run_file.write(i + " " + timestamps[begin_idx] + " " + timestamps[begin_idx])
-    run_file.write(" " + event_ids[begin_idx]+  " " + event_ids[end_idx])
-    run_file.write("\n")
+
+    ts_begin = pd.to_datetime(timestamps[begin_idx]).strftime(date_format)
+    ts_end = pd.to_datetime(timestamps[begin_idx]).strftime(date_format)
+    run_file.write(str(i) + " " + ts_begin + " " + ts_end)
+    run_file.write(" " + str(event_ids[begin_idx]) + " ")
+    run_file.write(str(event_ids[end_idx]) + "\n")
 
 if output != "none":
     run_file.close()
