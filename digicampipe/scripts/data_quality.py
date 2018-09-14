@@ -62,7 +62,7 @@ class DataQualityContainer(Container):
     shower_rate = Field(ndarray, 'shower rate')
 
 
-def entry(files, dark_filename, time_step, fits_filename, load_files,
+def main(files, dark_filename, time_step, fits_filename, load_files,
           histo_filename, rate_plot_filename, baseline_plot_filename,
           parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
           cell_capacitance=5e-14 * u.Farad):
@@ -159,7 +159,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
     return
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
     dark_filename = args['--dark_filename']
@@ -172,6 +172,9 @@ if __name__ == '__main__':
     parameters_filename = args['--parameters']
     template_filename = args['--template']
 
-    entry(files, dark_filename, time_step, fits_filename, load_files,
+    main(files, dark_filename, time_step, fits_filename, load_files,
           histo_filename, rate_plot_filename, baseline_plot_filename,
           parameters_filename, template_filename)
+
+if __name__ == '__main__':
+    entry()
