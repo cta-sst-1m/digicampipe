@@ -42,7 +42,7 @@ from docopt import docopt
 from histogram.histogram import Histogram1D
 
 from digicampipe.calib import baseline, peak, charge, cleaning, image
-from digicampipe.calib import filter
+from digicampipe.calib import filters
 from digicampipe.image.hillas import compute_alpha, compute_miss
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
@@ -95,7 +95,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = baseline.compute_baseline_shift(events)
         events = baseline.subtract_baseline(events)
         # events = baseline.compute_baseline_std(events, n_events=100)
-        events = filter.filter_clocked_trigger(events)
+        events = filters.filter_clocked_trigger(events)
         events = baseline.compute_nsb_rate(events, gain_amplitude,
                                            pulse_area, crosstalk,
                                            bias_resistance, cell_capacitance)

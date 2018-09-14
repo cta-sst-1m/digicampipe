@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
 
-from digicampipe.calib import filter
+from digicampipe.calib import filters
 from digicampipe.calib import trigger, baseline
 from digicampipe.calib.trigger import compute_bias_curve
 from digicampipe.io.event_stream import event_stream
@@ -28,7 +28,7 @@ def compute(files, output_filename):
     data_stream = event_stream(files)
     data_stream = trigger.fill_event_type(data_stream, flag=8)
     data_stream = baseline.fill_baseline_r0(data_stream, n_bins=n_bins)
-    data_stream = filter.filter_missing_baseline(data_stream)
+    data_stream = filters.filter_missing_baseline(data_stream)
     data_stream = trigger.fill_trigger_patch(data_stream)
     data_stream = trigger.fill_trigger_input_7(data_stream)
     data_stream = trigger.fill_trigger_input_19(data_stream)
