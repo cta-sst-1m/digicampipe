@@ -47,9 +47,12 @@ def plot_alpha2d_mod(data, floor_value,
     cbar.set_label('N of events (mean substracted)')
 
 
-if __name__ == '__main__':
+def entry():
     data = np.load(sys.argv[1])
 
     plot_alpha2d(data)
     plot_alpha2d_mod(data, floor_value=0, r_max=444.0)
     plt.show()
+
+if __name__ == '__main__':
+    entry()

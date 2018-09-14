@@ -1,23 +1,30 @@
-from setuptools import setup
+from setuptools import (
+    setup,
+    find_packages
+)
 
 with open('digicampipe/VERSION') as f:
     __version__ = f.read().strip()
 
 
+def make_console_scripts(glob_expr='digicampipe/scripts/*.py'):
+    import glob
+    import os.path
+
+    return [
+        'digicam-{call:22s}=digicampipe.scripts.{stub:22s}:entry'.format(
+            call=os.path.basename(path).split('.')[0].replace('_', '-'),
+            stub=os.path.basename(path).split('.')[0],
+        )
+        for path in sorted(glob.glob(glob_expr))
+        if not os.path.basename(path).startswith('__')
+    ]
+
+
 setup(
     name='digicampipe',
     version=__version__,
-    packages=[
-        'digicampipe',
-        'digicampipe.io',
-        'digicampipe.calib',
-        'digicampipe.utils',
-        'digicampipe.visualization',
-        'digicampipe.image',
-        'digicampipe.image.lidccd',
-        'digicampipe.instrument',
-        'digicampipe.scripts',
-    ],
+    packages=find_packages(),
     url='https://github.com/cta-sst-1m/digicampipe',
     license='GNU GPL 3.0',
     author='Cyril Alispach',
@@ -44,18 +51,6 @@ setup(
         ],
     },
     entry_points={
-        'console_scripts': [
-            'digicam-view=digicampipe.scripts.digicamview:entry',
-            'digicam-spe=digicampipe.scripts.spe:entry',
-            'digicam-fmpe=digicampipe.scripts.fmpe:entry',
-            'digicam-template=digicampipe.scripts.pulse_shape:entry',
-            'digicam-mpe=digicampipe.scripts.mpe:entry',
-            'digicam-raw=digicampipe.scripts.raw:entry',
-            'digicam-timing=digicampipe.scripts.timing:entry',
-            'digicam-rate-scan=digicampipe.scripts.rate_scan:entry',
-            'digicam-baseline-shift=digicampipe.scripts.baseline_shift:entry',
-            'digicam-pipeline=digicampipe.scripts.pipeline:entry',
-            'digicam-data-quality=digicampipe.scripts.data_quality:entry',
-        ],
+        'console_scripts': make_console_scripts(),
     }
 )

@@ -286,7 +286,7 @@ def main(all_offsets, path, equation, outpath):
             A2=lookup[:, 7], A2_ERR=lookup[:, 8])
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     main(
         all_offsets=args['--offset'],
@@ -294,3 +294,7 @@ if __name__ == '__main__':
         equation=int(args['--equation']),
         outpath=args['--outpath']
     )
+
+
+if __name__ == '__main__':
+    entry()
