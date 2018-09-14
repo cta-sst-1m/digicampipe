@@ -46,7 +46,7 @@ def efficiency_comp(gamma_cut, rswl):
     return efficiency
 
 
-if __name__ == '__main__':
+def entry():
     parser = OptionParser()
     parser.add_option(
         '-p',
@@ -191,3 +191,7 @@ if __name__ == '__main__':
     rswl_plot.quality(gamma_cut, qualityw, qualityl)
 
     plt.show()
+
+
+if __name__ == '__main__':
+    entry()
