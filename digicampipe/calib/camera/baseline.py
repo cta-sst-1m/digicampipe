@@ -3,7 +3,7 @@ import numpy as np
 __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_with_min', 'subtract_baseline',
            'compute_baseline_shift', 'compute_baseline_std',
-           'compute_nsb_rate', 'compute_gain_drop']
+           'compute_nsb_rate', 'compute_gain_drop', 'tag_burst']
 
 
 def fill_dark_baseline(events, dark_baseline):
@@ -120,7 +120,6 @@ def tag_burst(events, event_average=100, threshold_lsb=2):
             last_mean_baselines = last_mean_baselines[1:]
             last_mean_baselines.append(mean_baseline)
         moving_avg_baseline = np.mean(last_mean_baselines)
-        event.data.baseline_running_average = moving_avg_baseline
         if (mean_baseline - moving_avg_baseline) > threshold_lsb:
             event.data.burst = True
         else:
