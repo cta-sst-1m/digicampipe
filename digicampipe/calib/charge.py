@@ -126,6 +126,108 @@ def compute_charge_with_saturation(events, integral_width,
         yield event
 
 
+def compute_charge_with_saturation_and_threshold(events, integral_width,
+                                                 saturation_threshold=500,
+                                                 threshold_pulse=0.33,
+                                                 debug=False):
+    """
+
+        :param events: a stream of events
+        :param integral_width: width of the integration window
+        :return:
+        """
+    n_pixels = 1296
+    if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
+        threshold_pulse = np.ones(n_pixels) * threshold_pulse
+    if isinstance(saturation_threshold, float) or \
+            isinstance(saturation_threshold, int):
+        saturation_threshold = np.ones(n_pixels) * saturation_threshold
+
+    threshold_pulse = threshold_pulse * saturation_threshold
+
+    for count, event in enumerate(events):
+
+        adc_samples = event.data.adc_samples
+
+        n_pixels = len(adc_samples)
+        n_samples = adc_samples.shape[1]
+        samples = np.arange(n_samples)
+        samples = np.tile(samples, n_pixels).reshape(n_pixels, n_samples)
+
+        max_value = np.max(adc_samples, axis=-1)
+        saturated_pulse = max_value > saturation_threshold
+
+        convolved_signal = convolve1d(
+            adc_samples,
+            np.ones(integral_width),
+            axis=-1,
+            mode='constant',
+            cval=0,
+        )
+
+        max_arg = np.argmax(convolved_signal, axis=-1)
+        start_bin = (samples < (max_arg[:, None] - integral_width / 2))
+        end_bin = (samples > (max_arg[:, None] + integral_width / 2))
+        print(max_arg)
+        window = ~(start_bin + end_bin)
+        charge = np.max(convolved_signal, axis=-1)
+
+        if np.any(saturated_pulse):
+
+            adc = adc_samples[saturated_pulse]
+            samples = samples[saturated_pulse]
+            threshold = threshold_pulse[saturated_pulse]
+            threshold = threshold[:, None]
+
+            start_point = (adc[:, :-1] <= threshold) * \
+                          (adc[:, 1:] > threshold)
+            start_point = np.argmax(start_point, axis=-1)[:, None]
+            start_bin = (samples[..., :-1] < start_point)
+            end_point = (adc[:, :-1] >= threshold) * \
+                        (adc[:, 1:] < threshold)
+
+            end_point = np.argmax(end_point, axis=-1)[:, None]
+            end_bin = (samples[..., :-1] > end_point)
+            window[saturated_pulse, :-1] = ~(start_bin + end_bin)
+
+            temp = adc * window[saturated_pulse]
+            temp = np.sum(temp, axis=-1)
+
+            charge[saturated_pulse] = temp
+
+        event.data.reconstructed_charge = charge
+
+        if debug:
+
+            pixel = 0
+            time = np.arange(adc_samples.shape[-1]) * 4
+            lower = time[window[pixel]].min()
+            upper = time[window[pixel]].max()
+
+            plt.figure()
+            plt.step(time, np.cumsum(adc_samples, axis=-1)[pixel])
+            plt.xlabel('time [ns]')
+            plt.ylabel('[LSB]')
+
+            plt.figure()
+            plt.step(time[:-1], np.diff(adc_samples, axis=-1)[pixel])
+            plt.xlabel('time [ns]')
+            plt.ylabel('[LSB]')
+
+            plt.figure()
+            plt.step(time, adc_samples[pixel])
+            plt.step(time, convolved_signal[pixel])
+            plt.axhline(threshold_pulse[pixel], linestyle='--')
+            plt.axvspan(lower, upper, alpha=0.3)
+            plt.xlabel('time [ns]')
+            plt.ylabel('[LSB]')
+
+            plt.show()
+
+
+        yield event
+
+
 def compute_amplitude(events):
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
