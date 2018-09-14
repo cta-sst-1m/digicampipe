@@ -5,7 +5,7 @@ import numpy as np
 from astropy.io import fits
 from pkg_resources import resource_filename
 
-from digicampipe.scripts.data_quality import entry as data_quality
+from digicampipe.scripts.data_quality import main as data_quality
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args
 
