@@ -7,7 +7,8 @@ from digicampipe.utils.rswl_plot import energy_lookup2d
 
 from digicampipe.utils.shower_geometry import impact_parameter
 
-if __name__ == '__main__':
+
+def entry():
     parser = OptionParser()
     parser.add_option(
         "-l",
@@ -77,3 +78,7 @@ if __name__ == '__main__':
     # Plotting lookup tables
     energy_lookup2d(binned_energy)
     plt.show()
+
+
+if __name__ == '__main__':
+    entry()
