@@ -54,7 +54,7 @@ def lima_significance(N_on, N_off, alpha):  # Li and Ma, 1983
     return sign_lima
 
 
-if __name__ == '__main__':
+def entry():
 
     x0 = 20
     y0 = 43
@@ -85,3 +85,7 @@ if __name__ == '__main__':
     for i in range(3):
         plot_aperture(x_off3[i], y_off3[i], r, 'magenta')
     plt.show()
+
+
+if __name__ == '__main__':
+    entry()
