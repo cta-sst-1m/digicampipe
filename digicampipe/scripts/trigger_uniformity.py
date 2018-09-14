@@ -31,10 +31,11 @@ from digicampipe.io.event_stream import event_stream
 
 
 def entry(files, plot, event_type='none'):
+
     events = event_stream(files)
-    if not (event_type is None or
-                    event_type == 'none' or
-                    event_type == 'None'):
+
+    if event_type not in [None, 'None', 'none']:
+
         flags = [int(flag) for flag in event_type.strip(',').split(',')]
         events = filter_event_types(events, flags=flags)
     # patxh matrix is a bool of size n_patch x n_pixel

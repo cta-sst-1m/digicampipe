@@ -81,7 +81,8 @@ def entry():
     if args['--compute']:
         compute(files, max_events, pixel_id, n_samples,
                 timing_histo_filename, save=True,
-                time_method=compute_time_from_max)  # compute_time_from_leading_edge)
+                time_method=compute_time_from_max)
+        # or try to use compute_time_from_leading_edge)
 
     if args['--fit']:
         timing_histo = Histogram1D.load(timing_histo_filename)
