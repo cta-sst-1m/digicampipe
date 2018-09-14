@@ -33,15 +33,15 @@ def disp_eval(parameters, width, length, cog_x, cog_y,
     # Kranich and Stark, ICRC 2003
     elif method == 4:
         disp_comp = (parameter_values['A0']
-                     * (1 - width / (
-        length * (1 + parameter_values['A1'] * leakage2))))
+                     * (1 - width / (length *
+                                     (1 + parameter_values['A1'] * leakage2))))
     # (Luke Riley St Marie 2014) <-- simplified Domingo-Santamaria
     elif method == 5:
         fraction = width / (length + parameter_values['A2']
                             * leakage2 * np.log10(size))
         disp_comp = (np.log10(size)
-                     * (parameter_values['A0'] + parameter_values['A1'] * (
-        1 - fraction)))
+                     * (parameter_values['A0'] + parameter_values['A1'] *
+                        (1 - fraction)))
 
     x_source_comp0 = cog_x + disp_comp * np.cos(psi)  # Two possible solutions
     y_source_comp0 = cog_y + disp_comp * np.sin(psi)  #
