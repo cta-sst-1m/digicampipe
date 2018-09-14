@@ -24,8 +24,8 @@ try:
     from pyhessio import HessioGeneralError
 except ImportError as err:
     logger.fatal(
-        "the `pyhessio` python module is required to access MC data: {}"
-            .format(err))
+        "the `pyhessio` python module is "
+        "required to access MC data: {}".format(err))
     raise err
 
 __all__ = [
