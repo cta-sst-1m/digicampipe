@@ -1,4 +1,7 @@
-from setuptools import setup
+from setuptools import (
+    setup,
+    find_packages
+)
 
 with open('digicampipe/VERSION') as f:
     __version__ = f.read().strip()
@@ -7,17 +10,7 @@ with open('digicampipe/VERSION') as f:
 setup(
     name='digicampipe',
     version=__version__,
-    packages=[
-        'digicampipe',
-        'digicampipe.io',
-        'digicampipe.calib',
-        'digicampipe.utils',
-        'digicampipe.visualization',
-        'digicampipe.image',
-        'digicampipe.image.lidccd',
-        'digicampipe.instrument',
-        'digicampipe.scripts',
-    ],
+    packages=find_packages(),
     url='https://github.com/cta-sst-1m/digicampipe',
     license='GNU GPL 3.0',
     author='Cyril Alispach',
