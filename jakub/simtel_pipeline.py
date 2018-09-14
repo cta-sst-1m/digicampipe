@@ -37,6 +37,7 @@ from digicampipe.calib.camera import dl2, r1, dl1
 from digicampipe.io.save_hillas import save_hillas_parameters
 from docopt import docopt
 
+import digicampipe.calib.baseline
 from digicampipe.calib import filter
 from digicampipe.instrument import geometry
 from digicampipe.io.event_stream import event_stream
@@ -149,7 +150,7 @@ def main(
     #         n_bins1=baseline1
     # )
 
-    data_stream = simtel_baseline.baseline_simtel(data_stream)
+    data_stream = digicampipe.calib.baseline.baseline_simtel(data_stream)
 
     # Run the r1 calibration (i.e baseline substraction)
     data_stream = r1.calibrate_to_r1(data_stream, dark_baseline)
