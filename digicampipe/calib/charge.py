@@ -132,10 +132,10 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
                                                  debug=False):
     """
 
-        :param events: a stream of events
-        :param integral_width: width of the integration window
-        :return:
-        """
+    :param events: a stream of events
+    :param integral_width: width of the integration window
+    :return:
+    """
     n_pixels = 1296
     if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
         threshold_pulse = np.ones(n_pixels) * threshold_pulse
@@ -170,6 +170,7 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
         charge = np.max(convolved_signal, axis=-1)
+        amplitude = np.max(adc_samples, axis=-1)
 
         if np.any(saturated_pulse):
 
@@ -195,6 +196,7 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
             charge[saturated_pulse] = temp
 
         event.data.reconstructed_charge = charge
+        event.data.reconstructed_amplitude = amplitude
 
         if debug:
 
@@ -214,15 +216,22 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
             plt.ylabel('[LSB]')
 
             plt.figure()
-            plt.step(time, adc_samples[pixel])
-            plt.step(time, convolved_signal[pixel])
-            plt.axhline(threshold_pulse[pixel], linestyle='--')
-            plt.axvspan(lower, upper, alpha=0.3)
+            plt.step(time, adc_samples[pixel], color='b')
+            plt.axhline(amplitude[pixel], label='amplitude',
+                        linestyle='--', color='b')
+            plt.step(time, convolved_signal[pixel], color='r')
+
+            if threshold_pulse[pixel] <= amplitude[pixel]:
+
+                plt.axhline(threshold_pulse[pixel], linestyle='--',
+                            color='k', label='Threshold')
+
+            plt.axvspan(lower, upper, alpha=0.3, color='r')
             plt.xlabel('time [ns]')
             plt.ylabel('[LSB]')
+            plt.legend(loc='best')
 
             plt.show()
-
 
         yield event
 
