@@ -22,7 +22,7 @@ import numpy as np
 import os
 
 
-def entry(files, event_number_min, event_number_max, plot, burst):
+def entry(files, event_number_min, event_number_max, plot):
     events = event_stream(files)
     events_id = []
     events_ts = []
@@ -73,4 +73,4 @@ if __name__ == '__main__':
     print(files)
     print(event_number_min)
     print(plot)
-    entry(files, event_number_min, event_number_max, plot, burst)
+    entry(files, event_number_min, event_number_max, plot)
