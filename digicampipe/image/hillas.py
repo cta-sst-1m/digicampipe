@@ -44,7 +44,8 @@ def correct_alpha_2(data, source_x=0,
     for i in range(len(alpha)):
         if alpha[i] > np.pi / 2.0:
             alpha[i] = np.pi - alpha[i]
-    # delta_alpha=np.arctan2(source_y,source_x)-np.arctan2(-1.0*data['cen_y'],-1.0*data['cen_x']);
+    # delta_alpha = np.arctan2(source_y,source_x)
+    # delta_alpha -= np.arctan2(-1.0*data['cen_y'],-1.0*data['cen_x'])
     # alpha_r = alpha + delta_alpha;
     # miss_c = r*TMath::Sin(alpha_c);
     # miss_r = r*TMath::Sin(alpha_r);
@@ -58,15 +59,16 @@ def correct_alpha_2(data, source_x=0,
 def alpha_roland(datas, source_x=0, source_y=0): #roland from prod_alpha_plot.c
 
     alpha = np.sin(datas['miss']/datas['r'])
-    alpha2 = np.arctan2(-datas['cen_y'], -datas['cen_x']) - datas['psi'] + np.pi
-
+    alpha2 = np.arctan2(-datas['cen_y'], -datas['cen_x'])
+    alpha2 = alpha2 - datas['psi'] + np.pi
     for i in range(len(alpha2)):
         if (alpha2[i] > np.pi):
             alpha2[i] = alpha2[i] - 2*np.pi
         elif (alpha2[i] < -np.pi):
             alpha2[i] = alpha2[i] + 2*np.pi
 
-    delta_alpha2 = np.arctan2(source_y-datas['cen_y'],source_x-datas['cen_x'])-np.arctan2(-datas['cen_y'], -datas['cen_x'])
+    delta_alpha2 = np.arctan2(source_y-datas['cen_y'],source_x-datas['cen_x'])
+    delta_alpha2 -= np.arctan2(-datas['cen_y'], -datas['cen_x'])
     alpha2_crab = alpha2 + delta_alpha2
 
     for i in range(len(alpha2_crab)):
