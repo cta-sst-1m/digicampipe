@@ -7,7 +7,8 @@ from fill_lookup import fill_lookup
 
 from digicampipe.utils.shower_geometry import impact_parameter
 
-if __name__ == '__main__':
+
+def entry():
     parser = OptionParser()
     parser.add_option(
         '-g',
@@ -99,3 +100,7 @@ if __name__ == '__main__':
     rswl_plot.rswl_lookup2d(binned_rsw, z_axis_title='width')
     rswl_plot.rswl_lookup2d(binned_rsl, z_axis_title='length')
     plt.show()
+
+
+if __name__ == '__main__':
+    entry()
