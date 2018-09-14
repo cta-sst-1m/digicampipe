@@ -242,7 +242,7 @@ def main(hillas_file, lookup_file, pixel_file,
     plt.show()
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     main(
         hillas_file=args['<file>'],
@@ -252,3 +252,7 @@ if __name__ == '__main__':
         modification=args['--modification'],
         equation=int(args['--equation'])
     )
+
+
+if __name__ == '__main__':
+    entry()
