@@ -112,3 +112,38 @@ def fill_baseline_r0(event_stream, n_bins=10000):
                 r0_camera.baseline = np.mean(baselines, axis=0)
                 r0_camera.standard_deviation = np.mean(baselines_std, axis=0)
         yield event
+
+
+def compute_baseline_from_waveform(event_stream, bin_left=5, bin_right=10):
+    """
+    This method will compute the baseline the waveform using the samples
+    definded in the region (0, bin_left) U (-bin_right, -1).
+    :param event_stream: A stream of events
+    :param bin_left: int, Left sample up to which baseline is computed
+    :param bin_right: int, Number of samples from the end of the waveform from
+    which baseline is computed
+    :return:
+    """
+
+    for event in event_stream:
+
+        for telescope_id in event.r0.tels_with_data:
+
+            r0_camera = event.r0.tel[telescope_id]
+
+            adc_samples = r0_camera.adc_samples
+
+            # Selection of only n_bins0 first samples and
+            # n_bins1 last samples from given 50 samples
+            adc_samples_first = adc_samples[:, 0:bin_left - 1]
+            adc_samples_last = adc_samples[:, -bin_right:]
+            adc_samples = np.concatenate((adc_samples_first,
+                                          adc_samples_last), axis=1)
+
+            baseline = np.mean(adc_samples, axis=-1)
+            std = np.std(adc_samples, axis=-1)
+
+            r0_camera.baseline = baseline
+            r0_camera.standard_deviation = std
+
+        yield event

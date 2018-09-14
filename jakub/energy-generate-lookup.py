@@ -5,7 +5,7 @@ import numpy as np
 from fill_lookup import fill_lookup
 from rswl_plot import energy_lookup2d
 
-from jakub.shower_geometry import impact_parameter
+from digicampipe.utils.shower_geometry import impact_parameter
 
 if __name__ == '__main__':
     parser = OptionParser()
