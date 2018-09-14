@@ -9,14 +9,21 @@ from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
 
-files = ['/sst1m/raw/2018/06/28/SST1M_01/' \
-         'SST1M_01_20180628_{}.fits.fz'.format(i) for i in range(1420, 1454+1)]
-files = files
+files = ['/sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{}.fits.fz' \
+         ''.format(i) for i in range(1350, 1454+1, 1)]
+files = files[10:12]
 ac_levels = np.hstack([np.arange(0, 20, 1), np.arange(20, 450, 5)])
 n_pixels = 1296
 n_files = len(files)
+filename = 'charge_linearity.npz'
 
 debug = False
+
+shape = (n_files, n_pixels)
+amplitude_mean = np.zeros(shape)
+amplitude_std = np.zeros(shape)
+charge_mean = np.zeros(shape)
+charge_std = np.zeros(shape)
 
 for i, file in tqdm(enumerate(files), total=n_files):
 
@@ -27,38 +34,30 @@ for i, file in tqdm(enumerate(files), total=n_files):
     events = compute_charge_with_saturation_and_threshold(events,
                                                           integral_width=7,
                                                           debug=debug)
-    events = find_pulse_with_max(events)
-    events = compute_amplitude(events)
     # events = compute_maximal_charge(events)
 
-    charge_histo = Histogram1D(data_shape=(1296,),
-                               bin_edges=np.arange(-200, 4095 * 50, 1))
-    amplitude_histo = Histogram1D(data_shape=(1296,),
-                                  bin_edges=np.arange(-200, 4095, 1/16))
+    for n, event in enumerate(events):
 
-    amplitude = np.zeros((n_files, n_pixels))
-    amplitude_std = np.zeros((n_files, n_pixels))
-    charge = np.zeros((n_files, n_pixels))
-    charge_std = np.zeros((n_files, n_pixels))
-    for event in events:
+        charge_mean[i] = charge_mean[i] + event.data.reconstructed_charge
+        amplitude_mean[i] = amplitude_mean[i] + \
+                            event.data.reconstructed_amplitude
 
-        c = event.data.reconstructed_charge.reshape(-1, 1)
-        a = event.data.reconstructed_amplitude
-        charge_histo.fill(c)
-        amplitude_histo.fill(a)
+        charge_std[i] += charge_mean[i]**2
+        amplitude_std[i] += amplitude_mean[i]**2
 
-    charge[i] = charge_histo.mean()
-    charge_std[i] = charge_histo.std()
-    amplitude[i] = amplitude_histo.mean()
-    amplitude_std[i] = amplitude_histo.std()
+    charge_mean[i] = charge_mean[i] / (n + 1)
+    charge_std[i] = charge_std[i] / (n + 1)
+    charge_std[i] = np.sqrt(charge_std[i] - charge_mean[i]**2)
+    amplitude_mean[i] = amplitude_mean[i] / (n + 1)
+    amplitude_std[i] = amplitude_std[i] / (n + 1)
+    amplitude_std[i] = np.sqrt(amplitude_std[i] - amplitude_std[i]**2)
 
-np.savez('test.npz', charge=charge, charge_std=charge_std,
-         amplitude=amplitude,
+np.savez(filename, charge_mean=charge_mean, charge_std=charge_std,
+         amplitude_mean=amplitude_mean,
          amplitude_std=amplitude_std, ac_levels=ac_levels)
 
 
-pixel = 0
 plt.figure()
-plt.errorbar(charge[:, pixel], amplitude[:, pixel], xerr=charge_std[:, pixel],
-             yerr=amplitude_std[:, pixel])
+plt.scatter(charge_mean.ravel(), amplitude_mean.ravel())
+
 plt.show()
