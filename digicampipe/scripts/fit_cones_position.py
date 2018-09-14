@@ -81,7 +81,7 @@ def get_cones_position(filename):
     return cones_img.pixels_pos_predict
 
 
-if __name__ == '__main__':
+def entry():
     pos_predict, pos_true = get_cone_position_simu(
         output_filename='./tests/resources/cones-orig.png'
     )
@@ -91,3 +91,7 @@ if __name__ == '__main__':
     example_lid_CCD_image_file_path = resource_filename('digicampipe',
                                                         'tests/resources/cones_1509411741.fits')
     pos_predict = get_cones_position(example_lid_CCD_image_file_path)
+    return pos_predict
+
+if __name__ == '__main__':
+    pos_predict = entry()
