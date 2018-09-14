@@ -2,8 +2,8 @@ from optparse import OptionParser
 
 import matplotlib.pyplot as plt
 import numpy as np
-from fill_lookup import fill_lookup
-from rswl_plot import energy_lookup2d
+from digicampipe.utils.fill_lookup import fill_lookup
+from digicampipe.utils.rswl_plot import energy_lookup2d
 
 from digicampipe.utils.shower_geometry import impact_parameter
 

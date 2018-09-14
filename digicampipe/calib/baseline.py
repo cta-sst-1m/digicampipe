@@ -143,7 +143,8 @@ def compute_baseline_from_waveform(events, bin_left=5, bin_right=10):
         yield event
 
 
-def baseline_simtel(event_stream):
+def compute_baseline_simtel(event_stream):
+
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:
