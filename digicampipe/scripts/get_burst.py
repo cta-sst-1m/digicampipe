@@ -65,11 +65,6 @@ def expand_mask(input, iters=1):
 
 
 def animate_baseline(events, video, event_id_min=None, event_id_max=None):
-    fig = plt.figure()
-    ax = plt.gca()
-    display = CameraDisplay(DigiCam.geometry, ax=ax)
-    display.add_colorbar()
-    title = plt.title("")
     event_ids = []
     ts = []
     baselines = []
@@ -81,9 +76,20 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
         event_ids.append(event.event_id)
         ts.append(event.data.local_time)
         baselines.append(event.data.digicam_baseline)
+
+    fig = plt.figure()
+    ax = plt.gca()
+    display = CameraDisplay(DigiCam.geometry, ax=ax)
+    display.set_limits_minmax(250, 400)
+    display.add_colorbar()
+    title = plt.title("")
+
+    if len(ts) == 0:
+        print('WARNING: no event found for burst !')
+        return
     t0 = ts[0]
     title_text = 'Baseline evolution\n' + 'event: %i, t=%.3f s' % \
-                 (event_ids[0], np.round((ts[0] - t0) * 1e-9, 3))
+                 (event_ids[0], 0.000)
     title.set_text(title_text)
     display.image = baselines[0]
 
@@ -94,14 +100,13 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
                      %(event_id, np.round((t - t0) * 1e-9, 3))
         title.set_text(title_text)
         display.image = baselines[i]
-        plt.pause(.04)
         return display, title
 
     nframe = len(ts)
     print('creating animation with',nframe , 'frames')
-    anim = animation.FuncAnimation(fig, update, save_count=nframe + 1,
+    anim = animation.FuncAnimation(fig, update,
                                    frames=np.arange(1, nframe),
-                                   interval=100)
+                                   interval=200)
     print('saving...')
     # plt.rcParams['animation.ffmpeg_path'] = \
     #     u'/home/yves/anaconda3/envs/digicampipe/bin/ffmpeg'
@@ -202,8 +207,12 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
         run_file.write(str(i) + " " + ts_begin + " " + ts_end)
         run_file.write(" " + str(event_ids[begin_idx]) + " ")
         run_file.write(str(event_ids[end_idx]) + "\n")
-        if video_prefix != "none":
-            first_event_id = event_ids[begin_idx]
+    if output != "none":
+        run_file.close()
+
+    if video_prefix != "none":
+        for i, burst_idxs in enumerate(bursts):
+            begin_idx, end_idx = burst_idxs
             events = calibration_event_stream(files)
             events = fill_digicam_baseline(events)
             if video_prefix != "show":
@@ -212,8 +221,6 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
                 video = "show"
             animate_baseline(events, video, event_id_min=event_ids[begin_idx],
                              event_id_max=event_ids[end_idx])
-    if output != "none":
-        run_file.close()
 
 
 if __name__ == '__main__':
