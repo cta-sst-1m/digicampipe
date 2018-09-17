@@ -103,8 +103,8 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
                                    frames=np.arange(1, nframe),
                                    interval=100)
     print('saving...')
-    plt.rcParams['animation.ffmpeg_path'] = \
-        u'/home/yves/anaconda3/envs/digicampipe/bin/ffmpeg'
+    # plt.rcParams['animation.ffmpeg_path'] = \
+    #     u'/home/yves/anaconda3/envs/digicampipe/bin/ffmpeg'
     if video != "show":
         # import logging
         # logger = logging.getLogger('matplotlib.animation')
@@ -204,7 +204,7 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
         run_file.write(str(event_ids[end_idx]) + "\n")
         if video_prefix != "none":
             first_event_id = event_ids[begin_idx]
-            events = calibration_event_stream(files, event_id=first_event_id)
+            events = calibration_event_stream(files)
             events = fill_digicam_baseline(events)
             if video_prefix != "show":
                 video = video_prefix + "_" + str(i) + ".mp4"
