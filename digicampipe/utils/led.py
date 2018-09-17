@@ -4,10 +4,10 @@ import numpy as np
 
 class ACLEDInterpolator:
 
-    def __init__(self, ac_level, photoelectrons):
+    def __init__(self, ac_level, photo_electrons):
 
         self.ac_level = ac_level
-        self.photoelectrons = photoelectrons
+        self.photo_electrons = photo_electrons
         self._template = self._interpolate()
 
     def __call__(self, ac_level, pixel=None):
@@ -19,7 +19,7 @@ class ACLEDInterpolator:
     def __getitem__(self, item):
 
         return ACLEDInterpolator(ac_level=self.ac_level,
-                                 photoelectrons=self.photoelectrons[item])
+                                 photo_electrons=self.photo_electrons[item])
 
     @classmethod
     def load(cls, filename):
@@ -31,7 +31,7 @@ class ACLEDInterpolator:
     def _interpolate(self):
 
         ac_level = self.ac_level
-        pe = self.photoelectrons
+        pe = self.photo_electrons
 
         mask = (pe > 1) * (pe < 200)
         pe = np.ma.masked_array(pe, mask=mask)
@@ -48,7 +48,7 @@ class ACLEDInterpolator:
         x_fit = np.arange(1000)
         y_fit = self(x_fit)[pixel]
 
-        axes.plot(self.ac_level, self.photoelectrons, label='Data points',
+        axes.plot(self.ac_level, self.photo_electrons, label='Data points',
                   linestyle='None', marker='o', color='k', **kwargs)
         axes.plot(x_fit, y_fit, label='Interpolated template', color='r')
         axes.legend(loc='best')
