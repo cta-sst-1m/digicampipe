@@ -1,17 +1,15 @@
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.charge import compute_charge_with_saturation, \
-    compute_amplitude, compute_charge_with_saturation_and_threshold
-from digicampipe.calib.peak import find_pulse_with_max
+from digicampipe.calib.charge import \
+    compute_charge_with_saturation_and_threshold
 from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
 import numpy as np
 import matplotlib.pyplot as plt
-from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
 
 files = ['/sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{}.fits.fz' \
-         ''.format(i) for i in range(1350, 1454+1, 1)]
-files = files[10:12]
+         ''.format(i) for i in range(1350, 1454 + 1, 1)]
+files = files
 ac_levels = np.hstack([np.arange(0, 20, 1), np.arange(20, 450, 5)])
 n_pixels = 1296
 n_files = len(files)
@@ -38,9 +36,8 @@ for i, file in tqdm(enumerate(files), total=n_files):
 
     for n, event in enumerate(events):
 
-        charge_mean[i] = charge_mean[i] + event.data.reconstructed_charge
-        amplitude_mean[i] = amplitude_mean[i] + \
-                            event.data.reconstructed_amplitude
+        charge_mean[i] += event.data.reconstructed_charge
+        amplitude_mean[i] += event.data.reconstructed_amplitude
 
         charge_std[i] += charge_mean[i]**2
         amplitude_std[i] += amplitude_mean[i]**2
