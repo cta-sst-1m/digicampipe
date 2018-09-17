@@ -12,9 +12,16 @@ class ACLEDInterpolator:
         self.photo_electrons_err = photo_electrons_err
         self._params = self._interpolate()
 
-    def __call__(self, ac_level, pixel=0):
+    def __call__(self, ac_level, pixel=None):
 
-        y = np.polyval(self._params[pixel], ac_level)
+        if pixel is None:
+
+            y = np.polyval(self._params.T, ac_level[:, np.newaxis]).T
+
+        else:
+
+            y = np.polyval(self._params[pixel], ac_level)
+
         return y
 
     def __getitem__(self, item):
@@ -25,9 +32,7 @@ class ACLEDInterpolator:
     @classmethod
     def load(cls, filename):
 
-        t, x = np.loadtxt(filename).T
-
-        return cls(amplitude=x, time=t)
+        raise NotImplementedError
 
     def _interpolate(self, deg=4):
 
@@ -108,4 +113,6 @@ if __name__ == '__main__':
     test = ACLEDInterpolator(ac_levels, pe, pe_err)
 
     test.plot(pixel=559)
+
+    print(test(ac_level=ac_levels, pixel=None).shape)
     plt.show()
