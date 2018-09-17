@@ -23,8 +23,6 @@ class NormalizedPulseTemplate:
 
     def __getitem__(self, item):
 
-        print(self.amplitude[item], item)
-
         return NormalizedPulseTemplate(amplitude=self.amplitude[item],
                                        time=self.time)
 
