@@ -28,7 +28,8 @@ Options:
                                 specified amount of seconds
                                 [Default: 5.0]
   --video_prefix=FILE           Prefix of the output video files. One video per
-                                burst (with path=prefix + "_" + str(burst_idx))
+                                burst (with path=prefix + "_" + str(burst_idx)
+                                + ".mp4")
                                 The videos show the baseline evolution during
                                 a burst. Set to "none" to not make any video or
                                 set to "show" to display them.
