@@ -81,7 +81,7 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
     fig = plt.figure()
     ax = plt.gca()
     display = CameraDisplay(DigiCam.geometry, ax=ax)
-    display.set_limits_minmax(250, 400)
+    display.set_limits_minmax(300, 400)
     display.add_colorbar()
     title = plt.title("")
 
