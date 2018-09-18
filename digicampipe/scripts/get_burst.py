@@ -47,6 +47,7 @@ from pandas import to_datetime
 from ctapipe.visualization import CameraDisplay
 from digicampipe.utils import DigiCam
 import matplotlib.animation as animation
+from matplotlib.dates import DateFormatter
 
 
 def expand_mask(input, iters=1):
@@ -150,8 +151,10 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
     # plot history of the baselines
     if plot_baseline.lower() != "none":
         fig1 = plt.figure(figsize=(8,6))
+        ax = plt.gca()
         plt.plot_date(to_datetime(timestamps), baselines, '.')
         plt.ylabel('mean baseline [LSB]')
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         if plot_baseline.lower() == "show":
             plt.show()
         else:
