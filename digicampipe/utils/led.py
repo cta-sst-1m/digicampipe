@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+from scipy.interpolate import interp1d
 
 
 class ACLEDInterpolator:
@@ -10,17 +11,28 @@ class ACLEDInterpolator:
         self.ac_level = ac_level
         self.photo_electrons = photo_electrons
         self.photo_electrons_err = photo_electrons_err
-        self._params = self._interpolate()
+        self._params, self._spline = self._interpolate()
+        self.interpolation_end_x = np.max(self.ac_level, axis=-1)
+        self.interpolation_start_x = np.min(self.ac_level, axis=-1)
 
     def __call__(self, ac_level, pixel=None):
 
-        if pixel is None:
+        y = self._spline(ac_level)
 
-            y = np.polyval(self._params.T, ac_level[:, np.newaxis]).T
+        y_extrapolated = np.polyval(self._params.T, ac_level[:, np.newaxis]).T
 
-        else:
+        if pixel is not None:
 
-            y = np.polyval(self._params[pixel], ac_level)
+            y = y[pixel]
+            y_extrapolated = y_extrapolated[pixel]
+
+        y_shape = y.shape
+        y = y.ravel()
+
+        extrapolated_values = np.isnan(y)
+        y_extrapolated = y_extrapolated.ravel()
+        y[extrapolated_values] = y_extrapolated[extrapolated_values]
+        y = y.reshape(y_shape)
 
         return y
 
@@ -38,6 +50,9 @@ class ACLEDInterpolator:
 
         pes = self.photo_electrons.copy()
         params = []
+
+        cubic_spline = interp1d(self.ac_level, pes.T, kind='quadratic',
+                                bounds_error=False,)
 
         for i, pe in enumerate(pes.T):
 
@@ -67,7 +82,7 @@ class ACLEDInterpolator:
             params.append(param)
 
         params = np.array(params)
-        return params
+        return params, cubic_spline
 
     def plot(self, axes=None, pixel=0, **kwargs):
 
