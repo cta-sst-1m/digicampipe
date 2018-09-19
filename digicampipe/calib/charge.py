@@ -127,8 +127,8 @@ def compute_charge_with_saturation(events, integral_width,
 
 
 def compute_charge_with_saturation_and_threshold(events, integral_width,
-                                                 saturation_threshold=500,
-                                                 threshold_pulse=0.33,
+                                                 saturation_threshold=3000,
+                                                 threshold_pulse=0.1,
                                                  debug=False):
     """
 
