@@ -154,8 +154,8 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         samples = np.arange(n_samples)
         samples = np.tile(samples, n_pixels).reshape(n_pixels, n_samples)
 
-        max_value = np.max(adc_samples, axis=-1)
-        saturated_pulse = max_value > saturation_threshold
+        amplitude = np.max(adc_samples, axis=-1)
+        saturated_pulse = amplitude > saturation_threshold
 
         convolved_signal = convolve1d(
             adc_samples,
@@ -170,7 +170,6 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
         charge = np.max(convolved_signal, axis=-1)
-        amplitude = np.max(adc_samples, axis=-1)
 
         if np.any(saturated_pulse):
 

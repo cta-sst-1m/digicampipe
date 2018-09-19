@@ -59,7 +59,8 @@ np.savez(filename, charge_mean=charge_mean, charge_std=charge_std,
 plt.figure()
 plt.scatter(charge_mean.ravel(), amplitude_mean.ravel())
 
-plt.show()
 
 plt.figure()
-plt.plot(charge_mean.ravel(), charge_mean.ravel()/charge_std.ravel())
+plt.scatter(charge_mean.ravel(), charge_mean.ravel()/charge_std.ravel())
+
+plt.show()
