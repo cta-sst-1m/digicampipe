@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 files = ['/sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{}.fits.fz' \
          ''.format(i) for i in range(1350, 1454 + 1, 1)]
-files = files[50:52]
+# files = files[50:52]
 ac_levels = np.hstack([np.arange(0, 20, 1), np.arange(20, 450, 5)])
 n_pixels = 1296
 n_files = len(files)
@@ -49,18 +49,21 @@ for i, file in tqdm(enumerate(files), total=n_files):
     amplitude_std[i] = amplitude_std[i] / (n + 1)
     amplitude_std[i] = np.sqrt(amplitude_std[i] - amplitude_mean[i]**2)
 
-print(charge_std, charge_mean)
-
 np.savez(filename, charge_mean=charge_mean, charge_std=charge_std,
          amplitude_mean=amplitude_mean, amplitude_std=amplitude_std,
          ac_levels=ac_levels)
-
 
 plt.figure()
 plt.scatter(charge_mean.ravel(), amplitude_mean.ravel())
 
 
+x = np.arange(1, charge_mean.max().astype(int))
 plt.figure()
-plt.scatter(charge_mean.ravel(), charge_mean.ravel()/charge_std.ravel())
+plt.scatter(charge_mean.ravel(), charge_std.ravel()/charge_mean.ravel())
+plt.scatter(amplitude_mean.ravel(),
+            amplitude_std.ravel()/amplitude_mean.ravel())
+plt.yscale('log')
+plt.xscale('log')
+plt.plot(x, 1/np.sqrt(x))
 
 plt.show()
