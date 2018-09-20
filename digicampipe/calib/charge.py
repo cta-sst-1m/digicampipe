@@ -127,15 +127,32 @@ def compute_charge_with_saturation(events, integral_width,
 
 
 def compute_charge_with_saturation_and_threshold(events, integral_width,
+                                                 linearity,
+                                                 true_charge,
+                                                 measured_charge,
                                                  saturation_threshold=3000,
                                                  threshold_pulse=0.1,
-                                                 debug=False):
+                                                 debug=False,
+                                                 ):
     """
 
     :param events: a stream of events
     :param integral_width: width of the integration window
     :return:
     """
+
+    X = measured_charge.T
+    Y = true_charge.T
+    dX = np.diff(X, axis=-1)
+    dY = np.diff(Y, axis=-1)
+
+    def interpolate_linearity(x):
+
+        w = np.clip((x[:, None] - X[:, :-1]) / dX[:, :], 0, 1)
+        y = Y[:, 0] + np.sum(w * dY[:, :], axis=1)
+
+        return y
+
     n_pixels = 1296
     if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
         threshold_pulse = np.ones(n_pixels) * threshold_pulse
@@ -197,9 +214,12 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         event.data.reconstructed_charge = charge
         event.data.reconstructed_amplitude = amplitude
 
+        pe = interpolate_linearity(charge)
+        event.data.reconstructed_number_of_pe = pe
+
         if debug:
 
-            pixel = 0
+            pixel = 4
             time = np.arange(adc_samples.shape[-1]) * 4
             lower = time[window[pixel]].min()
             upper = time[window[pixel]].max()
@@ -229,7 +249,7 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
             plt.xlabel('time [ns]')
             plt.ylabel('[LSB]')
             plt.legend(loc='best')
-
+            print(pe[pixel])
             plt.show()
 
         yield event
