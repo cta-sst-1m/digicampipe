@@ -2,6 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+
+
+def exponential(x, a, b, c):
+    y = a * np.exp(b * x) + c
+    return y
 
 
 class ACLEDInterpolator:
@@ -11,15 +17,24 @@ class ACLEDInterpolator:
         self.ac_level = ac_level
         self.photo_electrons = photo_electrons
         self.photo_electrons_err = photo_electrons_err
-        self._params, self._spline = self._interpolate()
-        self.interpolation_end_x = np.max(self.ac_level, axis=-1)
-        self.interpolation_start_x = np.min(self.ac_level, axis=-1)
+        self._interpolate()
+        self._extrapolate()
+        # self._extrapolate_exponential()
 
     def __call__(self, ac_level, pixel=None):
 
         y = self._spline(ac_level)
 
-        y_extrapolated = np.polyval(self._params.T, ac_level[:, np.newaxis]).T
+        y_extrapolated = []
+
+        # for p in self._params:
+
+        #     a = exponential(np.log(ac_level), p[0], p[1], p[2])
+        #    y_extrapolated.append(a)
+        # y_extrapolated = np.array(y_extrapolated)
+
+        y_extrapolated = np.polyval(self._params.T,
+                                    ac_level[:, np.newaxis]).T
 
         if pixel is not None:
 
@@ -29,7 +44,7 @@ class ACLEDInterpolator:
         y_shape = y.shape
         y = y.ravel()
 
-        extrapolated_values = np.isnan(y)
+        extrapolated_values = np.isnan(y) + (y > 500)
         y_extrapolated = y_extrapolated.ravel()
         y[extrapolated_values] = y_extrapolated[extrapolated_values]
         y = y.reshape(y_shape)
@@ -46,18 +61,15 @@ class ACLEDInterpolator:
 
         raise NotImplementedError
 
-    def _interpolate(self, deg=4):
+    def _extrapolate(self):
 
         pes = self.photo_electrons.copy()
         params = []
 
-        cubic_spline = interp1d(self.ac_level, pes.T, kind='quadratic',
-                                bounds_error=False,)
-
         for i, pe in enumerate(pes.T):
 
             ac_level = self.ac_level.copy()
-            mask = (pe > 0) * (pe < 200) * np.isfinite(pe)
+            mask = (pe > 10) * (pe < 500) * np.isfinite(pe)
 
             err = None
             if self.photo_electrons_err is not None:
@@ -69,20 +81,67 @@ class ACLEDInterpolator:
             pe = pe[mask]
             ac_level = ac_level[mask]
 
-            if len(pe) <= deg+1:
+            if len(pe) <= 1:
 
-                param = [np.nan] * (deg + 1)
+                param = [np.nan] * 7
 
                 warnings.warn('Could not interpolate pixel {}'.format(i),
                               UserWarning)
 
             else:
-                param = np.polyfit(ac_level, pe, deg=deg, w=err)
+                param = np.polyfit(ac_level, pe, deg=6, w=err)
 
             params.append(param)
 
         params = np.array(params)
-        return params, cubic_spline
+        self._params = params
+
+    def _extrapolate_exponential(self):
+
+        pes = self.photo_electrons.copy()
+        params = []
+
+        for i, pe in enumerate(pes.T):
+
+            print(i)
+
+            ac_level = self.ac_level.copy()
+            mask = (pe > 10) * (pe < 500) * np.isfinite(pe)
+
+            err = None
+            if self.photo_electrons_err is not None:
+                err = self.photo_electrons_err[:, i]
+                mask = mask * (np.isfinite(err))
+                err = err[mask]
+                err = 1 / err
+
+            pe = pe[mask]
+            ac_level = ac_level[mask]
+
+            if len(pe) <= 1:
+
+                param = [np.nan] * 3
+
+                warnings.warn('Could not interpolate pixel {}'.format(i),
+                              UserWarning)
+
+            else:
+                param = curve_fit(exponential, np.log(ac_level),
+                                  pe, maxfev=10000)[0]
+
+            params.append(param)
+
+        params = np.array(params)
+        self._params = params
+
+    def _interpolate(self):
+
+        pes = self.photo_electrons.copy()
+        cubic_spline = interp1d(self.ac_level, pes.T,
+                                kind='linear',
+                                bounds_error=False,)
+
+        self._spline = cubic_spline
 
     def plot(self, axes=None, pixel=0, **kwargs):
 
@@ -118,7 +177,7 @@ class ACLEDInterpolator:
 
 if __name__ == '__main__':
 
-    data = np.load('/home/alispach/ctasoft/digicampipe/charge_linearity.npz')
+    data = np.load('/home/alispach/ctasoft/digicampipe/charge_linearity_final.npz')
     ac_leds = np.load('/home/alispach/data/tests/mpe/mpe_fit_results.npz')
 
     ac_levels = ac_leds['ac_levels']
