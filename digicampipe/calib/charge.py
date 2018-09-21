@@ -127,7 +127,6 @@ def compute_charge_with_saturation(events, integral_width,
 
 
 def compute_charge_with_saturation_and_threshold(events, integral_width,
-                                                 linearity,
                                                  true_charge,
                                                  measured_charge,
                                                  saturation_threshold=3000,
@@ -234,18 +233,24 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
             plt.xlabel('time [ns]')
             plt.ylabel('[LSB]')
 
-            plt.figure()
-            plt.step(time, adc_samples[pixel], color='b')
-            plt.axhline(amplitude[pixel], label='amplitude',
-                        linestyle='--', color='b')
-            plt.step(time, convolved_signal[pixel], color='r')
+            baseline = event.data.baseline[pixel]
+            wvf = adc_samples[pixel] + baseline
+
+            fig = plt.figure()
+
+            ax = fig.add_subplot(111)
+            ax.step(time, wvf,
+                     color='k', label='Waveform')
+            ax.axhline(baseline, xmax=1, label='DigiCam Baseline',
+                        linestyle='--', color='k')
+            # plt.step(time, convolved_signal[pixel], color='r')
 
             if threshold_pulse[pixel] <= amplitude[pixel]:
 
-                plt.axhline(threshold_pulse[pixel], linestyle='--',
-                            color='k', label='Threshold')
+                ax.axhline(threshold_pulse[pixel], linestyle='--',
+                           color='b', label='Threshold')
 
-            plt.axvspan(lower, upper, alpha=0.3, color='r')
+            ax.axvspan(lower, upper, alpha=0.3, color='k', label='Integration ')
             plt.xlabel('time [ns]')
             plt.ylabel('[LSB]')
             plt.legend(loc='best')
