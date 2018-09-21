@@ -24,57 +24,26 @@ def compute_linearity(measured_pe, true_pe):
     return linearity_func
 
 
-data = np.load('charge_linearity_final.npz')
-charge = data['charge_mean'] - data['charge_mean'][0]
-amplitude = data['amplitude_mean'] - data['amplitude_mean'][0]
-std_charge = data['charge_std']
-std_amplitude = data['amplitude_std']
+data = np.load('charge_linearity_final_final.npz')
+measured_charge = data['charge_mean']
 ac_leds = np.load('/home/alispach/data/tests/mpe/mpe_fit_results.npz')
 ac_levels = ac_leds['ac_levels']
-gain = np.nanmean(ac_leds['gain'], axis=0)
-pe = ac_leds['mu'] - ac_leds['mu'][0]
-xt = np.nanmean(ac_leds['mu_xt'], axis=0)
+pe = ac_leds['mu']
 pe_err = ac_leds['mu_error']
 
-template = NormalizedPulseTemplate.load('/home/alispach/ctasoft/digicampipe/'
-                                        'digicampipe/tests/resources/'
-                                        'pulse_SST-1M_pixel_0.dat')
-ratio = template.compute_charge_amplitude_ratio(7, 4)
-print(ratio)
-pe_charge = charge / gain * (1 - xt)
-pe_amplitude = amplitude / (gain * ratio) * (1 - xt)
-
-pe_for_calib = pe_amplitude.copy()
-pe_for_calib[pe_for_calib < 100] = pe[pe_for_calib < 100]
-pe_for_calib[pe_for_calib > 500] = np.nan
-ac_led = ACLEDInterpolator(ac_levels, pe_for_calib)
+ac_led = ACLEDInterpolator(ac_levels, pe, pe_err)
 
 true_pe = ac_led(ac_levels).T
 
-pe_std_charge = std_charge / gain * (1 - xt)
-pe_std_amplitude = std_amplitude / (gain * ratio) * (1 - xt)
-
-linearity_charge = compute_linearity(charge, true_pe)
-linearity_amplitude = compute_linearity(amplitude, true_pe)
-
-plt.figure()
-plt.plot(true_pe[:, 0], 1 / linearity_charge[0](pe_charge[:, 0]))
-plt.plot(true_pe[:, 0], 1 / linearity_amplitude[0](pe_amplitude[:, 0]))
-plt.xscale('log')
-plt.yscale('log')
-plt.xlim(10, 2000)
-plt.xlabel('Number of p.e.')
-plt.ylabel('Gain [LSB / p.e.]')
-plt.show()
-
+print(measured_charge.shape, true_pe.shape)
 files = ['/sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{}.fits.fz' \
          ''.format(i) for i in range(1350, 1454 + 1, 1)]
-files = files[100:102]
+files = files[104:]
 ac_levels = np.hstack([np.arange(0, 20, 1), np.arange(20, 450, 5)])
 n_pixels = 1296
 n_files = len(files)
-filename = 'charge_linearity_final_final.npz'
-debug = False
+filename = 'charge_linearity_final_final_final.npz'
+debug = True
 shape = (n_files, n_pixels)
 amplitude_mean = np.zeros(shape)
 amplitude_std = np.zeros(shape)
@@ -92,8 +61,7 @@ for i, file in tqdm(enumerate(files), total=n_files):
     events = compute_charge_with_saturation_and_threshold(events,
                                                           integral_width=7,
                                                           debug=debug,
-                                                          linearity=linearity_charge,
-                                                          measured_charge=charge,
+                                                          measured_charge=measured_charge,
                                                           true_charge=true_pe)
     # events = compute_maximal_charge(events)
 
