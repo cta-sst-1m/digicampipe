@@ -152,9 +152,11 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
     if plot_baseline.lower() != "none":
         fig1 = plt.figure(figsize=(8,6))
         ax = plt.gca()
+        plt.xticks(rotation=70)
         plt.plot_date(to_datetime(timestamps), baselines, '.')
         plt.ylabel('mean baseline [LSB]')
         ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        plt.tight_layout()
         if plot_baseline.lower() == "show":
             plt.show()
         else:
