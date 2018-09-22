@@ -167,10 +167,13 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
         fig2 = plt.figure(figsize=(8, 6))
         data_burst = data[data['burst'] == True]
         data_good = data[data['burst'] == False]
+        plt.xticks(rotation=70)
         plt.plot(data_good['baseline'], '.', label='good', ms=2)
         plt.plot(data_burst['baseline'], '.', label='burst', ms=2)
         plt.ylabel('Baseline [LSB]')
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         plt.legend()
+        plt.tight_layout()
         if rate_plot_filename == "show":
             plt.show()
         else:
