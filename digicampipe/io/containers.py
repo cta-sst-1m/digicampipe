@@ -7,7 +7,10 @@ In general each major pipeline step is associated with a given data level.
 Please keep in mind that the data level definition and the associated fields
 might change rapidly as there is no final data level definition.
 """
-import enum
+try:
+    from enum import IntFlag
+except ImportError:
+    from .enum_flags import IntFlag
 import pickle
 from gzip import open as gzip_open
 from os import remove
@@ -44,7 +47,7 @@ __all__ = ['InstrumentContainer',
            'DataContainer']
 
 
-class CameraEventType(enum.IntFlag):
+class CameraEventType(IntFlag):
     '''
     I do not know where this comes from, but I found it here:
     https://github.com/cta-sst-1m/digicampipe/issues/244
