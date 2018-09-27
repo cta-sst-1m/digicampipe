@@ -7,7 +7,7 @@ In general each major pipeline step is associated with a given data level.
 Please keep in mind that the data level definition and the associated fields
 might change rapidly as there is no final data level definition.
 """
-
+import enum
 import pickle
 from gzip import open as gzip_open
 from os import remove
@@ -42,6 +42,37 @@ __all__ = ['InstrumentContainer',
            'ReconstructedEnergyContainer',
            'ParticleClassificationContainer',
            'DataContainer']
+
+
+class CameraEventType(enum.IntFlag):
+    '''
+    I do not know where this comes from, but I found it here:
+    https://github.com/cta-sst-1m/digicampipe/issues/244
+
+    #define EVTYPE_DIGICAM_ALG0     (0x1)           /* algorithm 0 trigger - PATCH7 */
+    #define EVTYPE_DIGICAM_ALG1     (0x2)           /* algorithm 1 trigger - PATCH19 */
+    #define EVTYPE_DIGICAM_ALG2     (0x4)           /* algorithm 2 trigger - MUON */
+    #define EVTYPE_DIGICAM_INTRNL   (0x8)           /* internal or external  */
+    #define EVTYPE_DIGICAM_EXTMSTR  (0x10)          /* unused (0) / external (on master only)  */
+    #define EVTYPE_DIGICAM_BIT5     (0x20)          /* unused (0)  */
+    #define EVTYPE_DIGICAM_BIT6     (0x40)          /* unused (0)  */
+    #define EVTYPE_DIGICAM_CONT     (0x80)          /* continuous readout marker  */
+    #define EVTYPE_CSP_MUON         (0x10000)       /* camera server detected muon*/
+    #define EVTYPE_CSP_HILLAS       (0x20000)       /* camera server computed Hillas parametrs */
+
+    I removed the EVTTYPE, since this is clear from the class name
+    I removed DIGICAM since this is clear from the project.
+    '''
+    ALG0 = 0x1
+    ALG1 = 0x2
+    ALG2 = 0x4
+    INTRNL = 0x8
+    EXTMSTR = 0x10
+    BIT5 = 0x20
+    BIT6 = 0x40
+    CONT = 0x80
+    CSP_MUON = 0x10000
+    CSP_HILLAS = 0x20000
 
 
 class InstrumentContainer(Container):
@@ -156,7 +187,16 @@ class R0CameraContainer(Container):
     local_camera_clock = Field(np.int64, "camera timestamp")
     gps_time = Field(np.int64, "gps timestamp")
     white_rabbit_time = Field(float, "precise white rabbit based timestamp")
-    camera_event_type = Field(int, "camera event type")
+    _camera_event_type = Field(CameraEventType, "camera event type")
+
+    @property
+    def camera_event_type(self):
+        return self._camera_event_type
+
+    @camera_event_type.setter
+    def camera_event_type(self, value):
+        self._camera_event_type = CameraEventType(value)
+
     array_event_type = Field(int, "array event type")
     trigger_input_traces = Field(ndarray, "trigger patch trace (n_patches)")
     trigger_input_offline = Field(ndarray, "trigger patch trace (n_patches)")
@@ -484,6 +524,6 @@ class CalibrationContainer(Container):
     pixel_id = Field(ndarray, 'pixel ids')
     data = CalibrationEventContainer()
     event_id = Field(int, 'event_id')
-    event_type = Field(int, 'Event type')
+    event_type = Field(CameraEventType, 'Event type')
     hillas = Field(HillasParametersContainer, 'Hillas parameters')
     info = CalibrationContainerMeta()
