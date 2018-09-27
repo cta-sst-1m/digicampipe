@@ -1,3 +1,11 @@
+'''This module contains the classes `enum.Flag` and `enum.IntFlag` from
+here:
+
+https://github.com/python/cpython/blob/master/Lib/enum.py#L671
+
+They were missing in Py3.5 but existed in Py3.6
+'''
+
 from enum import Enum
 
 
