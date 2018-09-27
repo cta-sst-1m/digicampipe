@@ -9,7 +9,7 @@ might change rapidly as there is no final data level definition.
 """
 try:
     from enum import IntFlag
-except ImportError:
+except ImportError:  # Py3.5 did not have enum.IntFlag
     from .enum_flags import IntFlag
 import pickle
 from gzip import open as gzip_open
