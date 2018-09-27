@@ -5,10 +5,13 @@ from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 from digicampipe.utils.led import ACLEDInterpolator
 from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
+from digicampipe.visualization.plot import plot_histo, plot_array_camera
+
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.interpolate import interp1d
+from histogram.histogram import Histogram1D
 
 
 def compute_linearity(measured_pe, true_pe):
@@ -24,7 +27,7 @@ def compute_linearity(measured_pe, true_pe):
     return linearity_func
 
 
-data = np.load('charge_linearity_final_final.npz')
+data = np.load('charge_linearity_calib.npz')
 measured_charge = data['charge_mean']
 ac_leds = np.load('/home/alispach/data/tests/mpe/mpe_fit_results.npz')
 ac_levels = ac_leds['ac_levels']
@@ -38,12 +41,12 @@ true_pe = ac_led(ac_levels).T
 print(measured_charge.shape, true_pe.shape)
 files = ['/sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{}.fits.fz' \
          ''.format(i) for i in range(1350, 1454 + 1, 1)]
-files = files[104:]
+# files = files[80:]
 ac_levels = np.hstack([np.arange(0, 20, 1), np.arange(20, 450, 5)])
 n_pixels = 1296
 n_files = len(files)
-filename = 'charge_linearity_final_final_final.npz'
-debug = True
+filename = 'charge_linearity_final_final_final_final_final.npz'
+debug = False
 shape = (n_files, n_pixels)
 amplitude_mean = np.zeros(shape)
 amplitude_std = np.zeros(shape)
@@ -52,9 +55,21 @@ charge_std = np.zeros(shape)
 pe_mean = np.zeros(shape)
 pe_std = np.zeros(shape)
 
+
+timing_histo = Histogram1D.load('/home/alispach/data/tests/'
+                                'timing/timing_histo.pk')
+timing_histo.draw(index=100)
+timing = timing_histo.mode() // 4
+plot_array_camera(timing)
+plot_histo(timing)
+
+plt.figure()
+plt.scatter(true_pe, measured_charge, s=1)
+plt.show()
+
 for i, file in tqdm(enumerate(files), total=n_files):
 
-    events = calibration_event_stream(file)
+    events = calibration_event_stream(file, max_events=100)
     events = fill_digicam_baseline(events)
     events = subtract_baseline(events)
     # events = compute_charge_with_saturation(events, integral_width=7)
@@ -62,7 +77,9 @@ for i, file in tqdm(enumerate(files), total=n_files):
                                                           integral_width=7,
                                                           debug=debug,
                                                           measured_charge=measured_charge,
-                                                          true_charge=true_pe)
+                                                          true_charge=true_pe,
+                                                          trigger_bin=timing,
+                                                          saturation_threshold=3000)
     # events = compute_maximal_charge(events)
 
     for n, event in enumerate(events):
@@ -104,9 +121,9 @@ plt.xscale('log')
 plt.plot(x, 1/np.sqrt(x))
 
 plt.figure()
-plt.scatter(pe_mean.ravel(), pe_std.ravel()/pe_mean.ravel(), s=1, color='k')
+plt.scatter(pe_mean, pe_std.ravel()/pe_mean.ravel(), s=1, color='k')
 plt.yscale('log')
 plt.xscale('log')
 plt.plot(x, 1/np.sqrt(x))
-
+plt.xlim(1, 10000)
 plt.show()
