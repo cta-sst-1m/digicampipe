@@ -4,6 +4,17 @@ here:
 https://github.com/python/cpython/blob/master/Lib/enum.py#L671
 
 They were missing in Py3.5 but existed in Py3.6
+
+In case we decide to drop Py3.5 support this can be removed and
+
+    try:
+        from enum import IntFlag
+    except ImportError:  # Py3.5 did not have enum.IntFlag
+        from .enum_flags import IntFlag
+
+in containers.py
+
+can be replaced by: `from enum import IntFlag`
 '''
 
 from enum import Enum
