@@ -49,16 +49,16 @@ class CameraEventType(enum.IntFlag):
     I do not know where this comes from, but I found it here:
     https://github.com/cta-sst-1m/digicampipe/issues/244
 
-    #define EVTYPE_DIGICAM_ALG0     (0x1)           /* algorithm 0 trigger - PATCH7 */
-    #define EVTYPE_DIGICAM_ALG1     (0x2)           /* algorithm 1 trigger - PATCH19 */
-    #define EVTYPE_DIGICAM_ALG2     (0x4)           /* algorithm 2 trigger - MUON */
-    #define EVTYPE_DIGICAM_INTRNL   (0x8)           /* internal or external  */
-    #define EVTYPE_DIGICAM_EXTMSTR  (0x10)          /* unused (0) / external (on master only)  */
-    #define EVTYPE_DIGICAM_BIT5     (0x20)          /* unused (0)  */
-    #define EVTYPE_DIGICAM_BIT6     (0x40)          /* unused (0)  */
-    #define EVTYPE_DIGICAM_CONT     (0x80)          /* continuous readout marker  */
-    #define EVTYPE_CSP_MUON         (0x10000)       /* camera server detected muon*/
-    #define EVTYPE_CSP_HILLAS       (0x20000)       /* camera server computed Hillas parametrs */
+    ALG0       (0x1)     /* algorithm 0 trigger - PATCH7 */
+    ALG1       (0x2)     /* algorithm 1 trigger - PATCH19 */
+    ALG2       (0x4)     /* algorithm 2 trigger - MUON */
+    INTRNL     (0x8)     /* internal or external  */
+    EXTMSTR    (0x10)    /* unused (0) / external (on master only)  */
+    BIT5       (0x20)    /* unused (0)  */
+    BIT6       (0x40)    /* unused (0)  */
+    CONT       (0x80)    /* continuous readout marker  */
+    CSP_MUON   (0x10000) /* camera server detected muon*/
+    CSP_HILLAS (0x20000) /* camera server computed Hillas parametrs */
 
     I removed the EVTTYPE, since this is clear from the class name
     I removed DIGICAM since this is clear from the project.
