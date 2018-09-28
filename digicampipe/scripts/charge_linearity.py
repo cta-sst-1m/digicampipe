@@ -1,17 +1,15 @@
-from digicampipe.io.event_stream import calibration_event_stream
+import matplotlib.pyplot as plt
+import numpy as np
+from digicampipe.utils.led import ACLEDInterpolator
+from histogram.histogram import Histogram1D
+from scipy.interpolate import interp1d
+from tqdm import tqdm
+
+from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
 from digicampipe.calib.charge import \
     compute_charge_with_saturation_and_threshold
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
-
-from digicampipe.utils.led import ACLEDInterpolator
-from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
-
-import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-from scipy.interpolate import interp1d
-from histogram.histogram import Histogram1D
 
 
 def compute_linearity(measured_pe, true_pe):
