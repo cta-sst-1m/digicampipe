@@ -225,17 +225,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         plt.figure(figsize=(9, 9))
         subplot = 0
         for key, val in data.items():
-            if key == 'border':
-                continue
-            if key == 'intensity':
-                continue
-            if key == 'kurtosis':
-                continue
-            if key == 'event_id':
-                continue
-            if key == 'event_type':
-                continue
-            if key == 'miss':
+            if key in ['border', 'intensity', 'kurtosis', 'event_id',
+                       'event_type', 'miss']:
                 continue
             subplot += 1
             print(subplot, '/', 9, 'plotting', key)
