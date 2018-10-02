@@ -71,7 +71,7 @@ class PipelineOutputContainer(HillasParametersContainer):
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename,
-         burst_filename):
+         burst_filename="none"):
     if compute:
 
         with open(parameters_filename) as file:
