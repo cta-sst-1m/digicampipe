@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-concatenate the input fits files to one output
+concatenate the input fits files to one output.
+Useful to merge the output of several runs (f.e. hillas.fits from pipeline.py)
 
 Usage:
   digicam-concatenate <OUTPUT> <INPUTS>...
