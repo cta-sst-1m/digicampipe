@@ -1,5 +1,5 @@
 """
-plot event_id function of the time
+plot event_id function of the time for the selected events
 Usage:
   plot_event_id_vs_time [options] [--] <INPUT>...
 

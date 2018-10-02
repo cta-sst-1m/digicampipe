@@ -185,7 +185,6 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
     last_burst_begin = bursts[0][0]
     last_burst_end = bursts[0][1]
     merged_bursts = []
-    n_burst = len(bursts)
     for burst_idxs in bursts[1:]:
         begin_idx, end_idx = burst_idxs
         interval = (timestamps[begin_idx] - timestamps[last_burst_end])
