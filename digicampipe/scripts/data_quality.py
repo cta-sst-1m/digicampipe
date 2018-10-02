@@ -31,6 +31,7 @@ Options:
                                 creating a file.
                                 [Default: none]
   --template=FILE               Pulse template file path
+  --threshold_sample_pe=INT     threshold used in the shower rate estimation.
 """
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -69,7 +70,7 @@ def main(
         files, dark_filename, time_step, fits_filename, load_files,
         histo_filename, rate_plot_filename, baseline_plot_filename,
         parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
-        cell_capacitance=5e-14 * u.Farad
+        cell_capacitance=5e-14 * u.Farad, threshold_sample_pe=20
 ):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
@@ -99,7 +100,7 @@ def main(
         events = compute_sample_photo_electron(events, gain_amplitude)
         events = tag_burst(events, event_average=100, threshold_lsb=5)
         events = compute_3d_cleaning(events, geom=DigiCam.geometry,
-                                     threshold_sample_pe=20)
+                                     threshold_sample_pe=threshold_sample_pe)
         init_time = 0
         baseline = 0
         count = 0
@@ -204,10 +205,11 @@ def entry():
     baseline_plot_filename = args['--baseline_plot']
     parameters_filename = args['--parameters']
     template_filename = args['--template']
+    threshold_sample_pe = args['--threshold_sample_pe']
 
     main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
-         parameters_filename, template_filename)
+         parameters_filename, template_filename, threshold_sample_pe)
 
 
 if __name__ == '__main__':
