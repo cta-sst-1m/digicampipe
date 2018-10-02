@@ -32,16 +32,7 @@ Options:
 """
 import matplotlib
 matplotlib.use("Agg")
-from digicampipe.io.event_stream import calibration_event_stream
-from ctapipe.io.serializer import Serializer
-from ctapipe.io.containers import HillasParametersContainer
-from ctapipe.core import Field
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args
-from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
-    filter
 import os
-
 import astropy.units as u
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -57,7 +48,6 @@ from histogram.histogram import Histogram1D
 
 from digicampipe.calib import baseline, peak, charge, cleaning, image
 from digicampipe.calib import filters
-from digicampipe.image.hillas import compute_alpha, compute_miss
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
@@ -65,7 +55,7 @@ from digicampipe.utils.docopt import convert_max_events_args, \
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils import DigiCam
 from digicampipe.visualization.plot import plot_array_camera
-from digicampipe.utils.hillas import compute_alpha, compute_miss, \
+from digicampipe.image.hillas import compute_alpha, compute_miss, \
     correct_alpha_3
 
 
