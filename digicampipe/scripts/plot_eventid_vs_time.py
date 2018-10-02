@@ -22,6 +22,7 @@ import numpy as np
 import os
 from pandas import to_datetime
 
+
 def entry(files, event_number_min, event_number_max, plot):
     events = event_stream(files)
     events_id = []
@@ -78,6 +79,6 @@ if __name__ == '__main__':
     args = docopt(__doc__)
     files = args['<INPUT>']
     event_number_min = args['--event_number_min']
-    event_number_max =args['--event_number_max']
+    event_number_max = args['--event_number_max']
     plot = args['--plot']
     entry(files, event_number_min, event_number_max, plot)

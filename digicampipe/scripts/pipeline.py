@@ -318,8 +318,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
                     [0, 0, 0, -100],
                     [200, 100, 10, 500]
                 )):
-                    # print('creating', label_y, 'vs', label_x, 'plot for', title)
-                    subplot+=1
+                    subplot += 1
                     plt.subplot(2, 4, subplot)
                     plt.hist2d(x, y, bins=(100, np.linspace(ymin, ymax, 100)),
                                norm=LogNorm())
@@ -336,7 +335,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         # 2D scan of spike in alpha
         data['burst'] = is_burst
         bin_size = 4  # binning in degrees
-        num_steps = 160 #60  # number of binning in the FoV
+        num_steps = 160  # number of binning in the FoV
         x_fov_start = -400  # limits of the FoV
         y_fov_start = -400  # limits of the FoV
         x_fov_end = 400  # limits of the FoV
@@ -354,9 +353,9 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         dx = x_fov[1] - x_fov[0]
         dy = y_fov[1] - y_fov[0]
         x_fov_bins = np.linspace(x_fov_start - dx / 2, x_fov_end + dx / 2,
-                                  num_steps + 1)
-        y_fov_bins = np.linspace(y_fov_start - dy/ 2, y_fov_end + dy / 2,
-                                  num_steps + 1)
+                                 num_steps + 1)
+        y_fov_bins = np.linspace(y_fov_start - dy / 2, y_fov_end + dy / 2,
+                                 num_steps + 1)
         N = np.zeros([num_steps, num_steps], dtype=int)
         i = 0
         print('2D scan calculation:')

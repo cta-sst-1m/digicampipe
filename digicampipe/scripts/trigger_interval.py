@@ -36,7 +36,6 @@ def compute(files, max_events, filename):
             # bin_edges=np.arange(150, 400, 4),  # in ns
         )
         previous_time = np.zeros(9) * np.nan
-        #skipped = np.zeros(9)
         for event in events:
             typ = event.event_type
             local_time = event.data.local_time # in ns
@@ -44,9 +43,6 @@ def compute(files, max_events, filename):
             if np.isfinite(previous_time[typ]):
                 dt_histo.fill(dt, indices=(event.event_type,))
             previous_time[typ] = local_time
-        #for typ in range(9):
-        #    if skipped[typ] > 0:
-        #        print('skipped', skipped[typ], 'events for type', typ)
         dt_histo.save(filename)
         print(filename, 'saved')
         return dt_histo
