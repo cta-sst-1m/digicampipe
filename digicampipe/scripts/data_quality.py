@@ -173,8 +173,8 @@ def main(
     if baseline_plot_filename != "none":
         fig2 = plt.figure(figsize=(8, 6))
         ax = plt.gca()
-        data_burst = data[data['burst'] == True]
-        data_good = data[data['burst'] == False]
+        data_burst = data[data['burst']]
+        data_good = data[~data['burst']]
         plt.xticks(rotation=70)
         plt.plot(data_good['baseline'], '.', label='good', ms=2)
         plt.plot(data_burst['baseline'], '.', label='burst', ms=2)

@@ -30,12 +30,8 @@ Options:
                               get_burst.py). If none, no bursts are considered.
                               [Default: none]
 """
-import matplotlib
-matplotlib.use("Agg")
 import os
 import astropy.units as u
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 import numpy as np
 import pandas as pd
 import yaml
@@ -44,6 +40,10 @@ from ctapipe.core import Field
 from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.io.serializer import Serializer
 from docopt import docopt
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 from histogram.histogram import Histogram1D
 
 from digicampipe.calib import baseline, peak, charge, cleaning, image
@@ -232,8 +232,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             print(subplot, '/', 9, 'plotting', key)
             plt.subplot(3, 3, subplot)
             val_split = [
-                val[(is_burst == False) & (is_cutted == False)],
-                val[(is_burst == False) & (is_cutted == True)]
+                val[(~is_burst) & (~is_cutted)],
+                val[(~is_burst) & is_cutted]
             ]
             plt.hist(val_split, bins='auto', stacked=True)
             plt.xlabel(key)
@@ -254,7 +254,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         cb.set_label('Number of events')
         plt.axis('equal')
         plt.subplot(2, 2, 2)
-        data_ok = data[(is_burst == False)]
+        data_ok = data[(~is_burst)]
         plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
         plt.ylabel('shower center Y [mm]')
         plt.xlabel('shower center X [mm]')
@@ -263,7 +263,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         cb.set_label('Number of events')
         plt.axis('equal')
         plt.subplot(2, 2, 3)
-        data_ok = data[(is_cutted == False)]
+        data_ok = data[(~is_cutted)]
         plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
         plt.ylabel('shower center Y [mm]')
         plt.xlabel('shower center X [mm]')
@@ -272,7 +272,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         cb.set_label('Number of events')
         plt.axis('equal')
         plt.subplot(2, 2, 4)
-        data_ok = data[(is_burst == False) & (is_cutted == False)]
+        data_ok = data[(~is_burst) & (~is_cutted)]
         plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
         plt.ylabel('shower center Y [mm]')
         plt.xlabel('shower center X [mm]')
@@ -390,7 +390,6 @@ def entry():
     shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
-    # args['--min_photon'] = int(args['--min_photon'])
     template_filename = args['--template']
     burst_filename = args['--burst']
     main(files=files,
