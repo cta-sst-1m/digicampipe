@@ -5,23 +5,23 @@ Usage:
 
 Options:
   --help                        Show this
-  --event_average=INT           Number of events on which the moving average 
+  --event_average=INT           Number of events on which the moving average
                                 of the baselines are calculated
                                 [Default: 100]
   --threshold_lsb=FLOAT         How much the baseline must be above the moving
-                                average for the event to be taken as part of a 
+                                average for the event to be taken as part of a
                                 burst
                                 [Default: 2.0]
   --output=FILE                 Path to the output text file listing the bursts
                                 and giving the range of timetamps and event_ids
-                                for each. If "none", it goes to standard 
+                                for each. If "none", it goes to standard
                                 outpout.
                                 [Default: none]
   --expand=INT                  Each burst get expended by the specified number
                                 of events
                                 [Default: 10]
-  --plot_baseline=FILE          Path to the outpout plot of the histroy of the 
-                                mean baseline. Set to "none" to not make that 
+  --plot_baseline=FILE          Path to the outpout plot of the histroy of the
+                                mean baseline. Set to "none" to not make that
                                 plot or to "show" to display it.
                                 [Default: show]
   --merge_sec=FLOAT             Merge bursts if they are closer than the
@@ -41,11 +41,11 @@ import sys
 import pandas as pd
 from docopt import docopt
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.camera.baseline import fill_digicam_baseline, tag_burst
+from digicampipe.calib.baseline import fill_digicam_baseline, tag_burst
 from matplotlib import pyplot as plt
 from pandas import to_datetime
 from ctapipe.visualization import CameraDisplay
-from digicampipe.utils import DigiCam
+from digicampipe.instrument.camera import DigiCam
 import matplotlib.animation as animation
 from matplotlib.dates import DateFormatter
 
@@ -98,13 +98,13 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
         event_id = event_ids[i]
         t = ts[i]
         title_text = 'Baseline evolution\n' + 'event: %i, t=%.3f s' \
-                     %(event_id, np.round((t - t0) * 1e-9, 3))
+                     % (event_id, np.round((t - t0) * 1e-9, 3))
         title.set_text(title_text)
         display.image = baselines[i]
         return display, title
 
     nframe = len(ts)
-    print('creating animation with',nframe , 'frames')
+    print('creating animation with', nframe, 'frames')
     anim = animation.FuncAnimation(fig, update,
                                    frames=np.arange(1, nframe),
                                    interval=200)
@@ -125,12 +125,12 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
     plt.close(fig)
 
 
-def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2., 
+def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
           output="none", expand=10, merge_sec=5., video_prefix="none"):
     # get events info
     events = calibration_event_stream(files)
     events = fill_digicam_baseline(events)
-    events = tag_burst(events, event_average=event_average, 
+    events = tag_burst(events, event_average=event_average,
                        threshold_lsb=threshold_lsb)
     n_event = 0
     timestamps = []
@@ -147,10 +147,10 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
     event_ids = np.array(event_ids)
     are_burst = np.array(are_burst)
     baselines = np.array(baselines)
-    
+
     # plot history of the baselines
     if plot_baseline.lower() != "none":
-        fig1 = plt.figure(figsize=(8,6))
+        fig1 = plt.figure(figsize=(8, 6))
         ax = plt.gca()
         plt.xticks(rotation=70)
         plt.plot_date(to_datetime(timestamps), baselines, '.')
@@ -188,7 +188,8 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
     n_burst = len(bursts)
     for burst_idxs in bursts[1:]:
         begin_idx, end_idx = burst_idxs
-        if (timestamps[begin_idx] - timestamps[last_burst_end]) < merge_sec * 1e9:
+        interval = (timestamps[begin_idx] - timestamps[last_burst_end])
+        if interval < merge_sec * 1e9:
             last_burst_end = end_idx
         else:
             merged_bursts.append([last_burst_begin, last_burst_end])
@@ -238,6 +239,5 @@ if __name__ == '__main__':
     merge_sec = float(args['--merge_sec'])
     plot_baseline = args['--plot_baseline']
     video_prefix = args['--video_prefix']
-    entry(files, plot_baseline, event_average, threshold_lsb, output, expand, 
+    entry(files, plot_baseline, event_average, threshold_lsb, output, expand,
           merge_sec, video_prefix)
-

@@ -65,10 +65,12 @@ class DataQualityContainer(Container):
     burst = Field(bool, 'is there a burst')
 
 
-def main(files, dark_filename, time_step, fits_filename, load_files,
-          histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
-          cell_capacitance=5e-14 * u.Farad):
+def main(
+        files, dark_filename, time_step, fits_filename, load_files,
+        histo_filename, rate_plot_filename, baseline_plot_filename,
+        parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
+        cell_capacitance=5e-14 * u.Farad
+):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -96,7 +98,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
         events = compute_sample_photo_electron(events, gain_amplitude)
         events = tag_burst(events, event_average=100, threshold_lsb=5)
-        events = compute_3d_cleaning(events, geom=DigiCam.geometry, threshold_sample_pe=20)
+        events = compute_3d_cleaning(events, geom=DigiCam.geometry,
+                                     threshold_sample_pe=20)
         init_time = 0
         baseline = 0
         count = 0
@@ -203,8 +206,8 @@ def entry():
     template_filename = args['--template']
 
     main(files, dark_filename, time_step, fits_filename, load_files,
-          histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename, template_filename)
+         histo_filename, rate_plot_filename, baseline_plot_filename,
+         parameters_filename, template_filename)
 
 if __name__ == '__main__':
     entry()

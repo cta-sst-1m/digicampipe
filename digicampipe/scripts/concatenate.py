@@ -15,10 +15,11 @@ from glob import glob
 import os
 import re
 
+
 def tryint(s):
     try:
         return int(s)
-    except:
+    except ValueError:
         return s
 
 

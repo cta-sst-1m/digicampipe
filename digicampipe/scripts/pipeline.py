@@ -58,7 +58,6 @@ from digicampipe.image.hillas import compute_alpha, compute_miss, \
     correct_alpha_3
 
 
-
 class PipelineOutputContainer(HillasParametersContainer):
     local_time = Field(int, 'event time')
     event_id = Field(int, 'event identification number')
@@ -296,7 +295,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 
         # correlation plot
         fig = plt.figure(figsize=(12, 9))
-        for title, data_pl in zip(['all','pass cuts'], [data, data_ok]):
+        for title, data_pl in zip(['all', 'pass cuts'], [data, data_ok]):
             fig.clear()
             subplot = 0
             for i, (label_x, x) in enumerate(zip(
@@ -304,15 +303,26 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
                 [data_pl['x'], data_pl['y']]
             )):
                 for j, (label_y, y, ymin, ymax) in enumerate(zip(
-                    ['shower length [mm]', 'shower width [mm]', 'length/width', 'r - l/2 [mm]'],
-                    [data_pl['length'], data_pl['width'], data_pl['length']/data_pl['width'], data_pl['r'] - data_pl['length']/2],
+                    [
+                        'shower length [mm]',
+                        'shower width [mm]',
+                        'length/width',
+                        'r - l/2 [mm]'
+                    ],
+                    [
+                        data_pl['length'],
+                        data_pl['width'],
+                        data_pl['length']/data_pl['width'],
+                        data_pl['r'] - data_pl['length']/2
+                    ],
                     [0, 0, 0, -100],
                     [200, 100, 10, 500]
                 )):
                     # print('creating', label_y, 'vs', label_x, 'plot for', title)
                     subplot+=1
                     plt.subplot(2, 4, subplot)
-                    plt.hist2d(x, y, bins=(100, np.linspace(ymin, ymax, 100)), norm=LogNorm())
+                    plt.hist2d(x, y, bins=(100, np.linspace(ymin, ymax, 100)),
+                               norm=LogNorm())
                     plt.ylim(ymin, ymax)
                     plt.xlabel(label_x)
                     plt.ylabel(label_y)
