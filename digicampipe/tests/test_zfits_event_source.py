@@ -1,9 +1,10 @@
-from digicampipe.io.zfits import zfits_event_source
-from digicampipe.io.zfits import count_number_events
-from digicampipe.io.event_stream import event_stream
+import os
 
 import pkg_resources
-import os
+
+from digicampipe.io.event_stream import event_stream
+from digicampipe.io.zfits import count_number_events
+from digicampipe.io.zfits import zfits_event_source
 
 example_file_path = pkg_resources.resource_filename(
     'digicampipe',
@@ -20,7 +21,6 @@ EVENTS_IN_EXAMPLE_FILE = 100
 
 
 def test_and_benchmark_event_source(benchmark):
-
     @benchmark
     def loop():
         for _ in zfits_event_source(example_file_path):
@@ -28,7 +28,6 @@ def test_and_benchmark_event_source(benchmark):
 
 
 def test_count_number_event():
-
     n_files = 10
     files = [example_file_path] * n_files  # create a list of files
 
@@ -36,7 +35,6 @@ def test_count_number_event():
 
 
 def test_event_id():
-
     event_id = LAST_EVENT_ID - 3
 
     for data in zfits_event_source(example_file_path,
@@ -60,5 +58,4 @@ def test_event_id():
 
 
 if __name__ == '__main__':
-
     test_event_id()

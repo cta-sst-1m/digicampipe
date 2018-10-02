@@ -1,15 +1,16 @@
-from digicampipe.io import zfits, hdf5, hessio_digicam
-from .auxservice import AuxService
-from collections import namedtuple
-from digicampipe.io.containers_calib import CalibrationContainer
-from tqdm import tqdm
-import numpy as np
 import os
+from collections import namedtuple
+
+import numpy as np
+from tqdm import tqdm
+
+from digicampipe.io import zfits, hdf5, hessio
+from digicampipe.io.containers import CalibrationContainer
+from .auxservice import AuxService
 
 
 def event_stream(filelist, source=None, max_events=None, **kwargs):
-    """
-    Iterable of events in the form of `DataContainer`.
+    """Iterable of events in the form of `DataContainer`.
 
     Parameters
     ----------
@@ -21,7 +22,7 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
             * digicampipe.io.zfits.zfits_event_source
             * digicampipe.io.hdf5.digicamtoy_event_source
             * digicampipe.io.hessio_digicam.hessio_event_source
-
+    max_events: max_events to iterate over
     kwargs: parameters for event_source
         Some event_sources need special parameters to work, c.f. their doc.
     """
@@ -37,11 +38,9 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
     for file in filelist:
 
         if not os.path.exists(file):
-
             raise FileNotFoundError('File {} does not exists'.format(file))
 
     if max_events is None:
-
         max_events = np.inf
 
     if n_files == 1:
@@ -94,19 +93,19 @@ def guess_source_from_path(path):
     elif path.endswith('.h5') or path.endswith('.hdf5'):
         return hdf5.digicamtoy_event_source
     else:
-        return hessio_digicam.hessio_event_source
+        return hessio.hessio_event_source
 
 
 def add_slow_data(
-    data_stream,
-    aux_services=[
-        'DigicamSlowControl',
-        'MasterSST1M',
-        'PDPSlowControl',
-        'SafetyPLC',
-        'DriveSystem',
-    ],
-    basepath=None
+        data_stream,
+        aux_services=[
+            'DigicamSlowControl',
+            'MasterSST1M',
+            'PDPSlowControl',
+            'SafetyPLC',
+            'DriveSystem',
+        ],
+        basepath=None
 ):
     services = {
         name: AuxService(name, basepath)

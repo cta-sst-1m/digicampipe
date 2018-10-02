@@ -40,25 +40,37 @@ from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.calib.camera import baseline, peak, charge, cleaning, image, \
     filter
-from digicampipe.utils.pulse_template import NormalizedPulseTemplate
-from digicampipe.utils import DigiCam
 import os
-import yaml
-from docopt import docopt
-from histogram.histogram import Histogram1D
-from astropy.table import Table
+
 import astropy.units as u
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+import numpy as np
 import pandas as pd
+import yaml
+from astropy.table import Table
+from ctapipe.core import Field
+from ctapipe.io.containers import HillasParametersContainer
+from ctapipe.io.serializer import Serializer
+from docopt import docopt
+from histogram.histogram import Histogram1D
+
+from digicampipe.calib import baseline, peak, charge, cleaning, image
+from digicampipe.calib import filters
+from digicampipe.image.hillas import compute_alpha, compute_miss
+from digicampipe.instrument.camera import DigiCam
+from digicampipe.io.event_stream import calibration_event_stream
+from digicampipe.utils.docopt import convert_max_events_args, \
+    convert_pixel_args
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+from digicampipe.utils import DigiCam
 from digicampipe.visualization.plot import plot_array_camera
 from digicampipe.utils.hillas import compute_alpha, compute_miss, \
     correct_alpha_3
 
 
-class PipelineOutputContainer(HillasParametersContainer):
 
+class PipelineOutputContainer(HillasParametersContainer):
     local_time = Field(int, 'event time')
     event_id = Field(int, 'event identification number')
     event_type = Field(int, 'event type')
@@ -72,7 +84,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename,
          burst_filename):
-
     if compute:
 
         with open(parameters_filename) as file:
@@ -103,7 +114,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = baseline.compute_baseline_shift(events)
         events = baseline.subtract_baseline(events)
         # events = baseline.compute_baseline_std(events, n_events=100)
-        events = filter.filter_clocked_trigger(events)
+        events = filters.filter_clocked_trigger(events)
         events = baseline.compute_nsb_rate(events, gain_amplitude,
                                            pulse_area, crosstalk,
                                            bias_resistance, cell_capacitance)
@@ -132,7 +143,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         for event in events:
 
             if debug:
-
                 print(event.hillas)
                 print(event.data.nsb_rate)
                 print(event.data.gain_drop)
@@ -154,7 +164,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data_to_store.border = event.data.border
 
             for key, val in event.hillas.items():
-
                 data_to_store[key] = val
 
             output_file.add_container(data_to_store)
@@ -371,8 +380,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         cbar.set_label('N of events')
         plt.savefig('2d_alpha_scan.png')
 
-def entry():
 
+def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
     max_events = convert_max_events_args(args['--max_events'])

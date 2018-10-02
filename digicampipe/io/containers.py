@@ -8,21 +8,21 @@ Please keep in mind that the data level definition and the associated fields
 might change rapidly as there is no final data level definition.
 """
 
+import pickle
+from gzip import open as gzip_open
+from os import remove
+from os.path import isfile
+
+import numpy as np
 from astropy import units as u
 from astropy.time import Time
 from ctapipe.core import Container, Map
+from ctapipe.core import Field
 from ctapipe.instrument import SubarrayDescription
-try:
-    from ctapipe.core import Field
-except ImportError:
-    from ctapipe.core import Item as Field
-from numpy import ndarray
-from gzip import open as gzip_open
-import pickle
-from os.path import isfile
+from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.io.serializer import Serializer
-from os import remove
-import numpy as np
+from matplotlib import pyplot as plt
+from numpy import ndarray
 
 __all__ = ['InstrumentContainer',
            'R0Container',
@@ -66,13 +66,13 @@ class InstrumentContainer(Container):
     optics = Field(Map(None), 'map of tel_id to CameraOptics')
     cluster_matrix_7 = Field(Map(ndarray), 'map of tel_id of cluster 7 matrix')
     cluster_matrix_19 = Field(
-                              Map(ndarray),
-                              'map of tel_id of cluster 19 matrix'
-                             )
+        Map(ndarray),
+        'map of tel_id of cluster 19 matrix'
+    )
     patch_matrix = Field(Map(ndarray), 'map of tel_id of patch matrix')
     mirror_dish_area = Field(Map(float),
                              "map of tel_id to the area of the mirror dish",
-                             unit=u.m**2)
+                             unit=u.m ** 2)
     mirror_numtiles = Field(Map(int),
                             "map of tel_id to the number of \
                             tiles for the mirror")
@@ -145,7 +145,7 @@ class R0CameraContainer(Container):
                         "numpy array containing ADC samples"
                         "(n_channels x n_pixels, n_samples)")
     adc_sums = Field(ndarray, "numpy array containing integrated ADC data"
-                     "(n_channels, x n_pixels)")
+                              "(n_channels, x n_pixels)")
     baseline = Field(None, "number of time samples for telescope")
     digicam_baseline = Field(ndarray, 'Baseline computed by DigiCam')
     standard_deviation = Field(ndarray, "number of time samples for telescope")
@@ -262,12 +262,12 @@ class MCEventContainer(Container):
     )
 
     mc_event_offset_fov = Field(
-                                Map(ndarray),
-                                "offset of pointing direction in camera \
-                                f.o.v. divided by focal length, i.e. \
-                                converted to radians: [0] = Camera x \
-                                (downwards in normal pointing, i.e. \
-                                increasing Alt) [1] = Camera y -> Az.")
+        Map(ndarray),
+        "offset of pointing direction in camera \
+        f.o.v. divided by focal length, i.e. \
+        converted to radians: [0] = Camera x \
+        (downwards in normal pointing, i.e. \
+        increasing Alt) [1] = Camera y -> Az.")
 
 
 class MCHeaderContainer(Container):
@@ -285,7 +285,6 @@ class MCHeaderContainer(Container):
 
 
 class CentralTriggerContainer(Container):
-
     gps_time = Field(Time, "central average time stamp")
     tels_with_trigger = Field([], "list of telescopes with data")
 
@@ -324,9 +323,9 @@ class ReconstructedEnergyContainer(Container):
     """
     energy = Field(-1.0, 'reconstructed energy', unit=u.TeV)
     energy_uncertainty = Field(
-                               -1.0, 'reconstructed energy uncertainty',
-                               unit=u.TeV
-                               )
+        -1.0, 'reconstructed energy uncertainty',
+        unit=u.TeV
+    )
     is_valid = Field(False,
                      ('energy reconstruction validity flag. True if '
                       'the energy was properly reconstructed by the '
@@ -410,3 +409,81 @@ def save_to_pickle_gz(event_stream, file, overwrite=False, max_events=None):
             break
 
     writer.close()
+
+
+class CalibrationEventContainer(Container):
+    """
+    description test
+    """
+    # Raw
+
+    adc_samples = Field(ndarray, 'the raw data')
+    digicam_baseline = Field(ndarray, 'the baseline computed by the camera')
+    local_time = Field(ndarray, 'timestamps')
+    gps_time = Field(ndarray, 'time')
+
+    # Processed
+
+    dark_baseline = Field(ndarray, 'the baseline computed in dark')
+    baseline_shift = Field(ndarray, 'the baseline shift')
+    nsb_rate = Field(ndarray, 'Night sky background rate')
+    gain_drop = Field(ndarray, 'Gain drop')
+    baseline = Field(ndarray, 'the reconstructed baseline')
+    baseline_std = Field(ndarray, 'Baseline std')
+    pulse_mask = Field(ndarray, 'mask of adc_samples. True if the adc sample'
+                                'contains a pulse  else False')
+    reconstructed_amplitude = Field(ndarray, 'array of the same shape as '
+                                             'adc_samples giving the'
+                                             ' reconstructed pulse amplitude'
+                                             ' for each adc sample')
+    reconstructed_charge = Field(ndarray, 'array of the same shape as '
+                                          'adc_samples giving the '
+                                          'reconstructed charge for each adc '
+                                          'sample')
+    reconstructed_number_of_pe = Field(ndarray, 'estimated number of photon '
+                                                'electrons for each adc sample'
+                                       )
+    sample_pe = Field(
+        ndarray,
+        'array of the same shape as adc_samples giving the estimated fraction '
+        'of photon electrons for each adc sample'
+    )
+    reconstructed_time = Field(ndarray, 'reconstructed time '
+                                        'for each adc sample')
+    cleaning_mask = Field(ndarray, 'cleaning mask, pixel bool array')
+    shower = Field(bool, 'is the event considered as a shower')
+    border = Field(bool, 'is the event after cleaning touchin the camera '
+                         'borders')
+
+    def plot(self, pixel_id):
+        plt.figure()
+        plt.title('pixel : {}'.format(pixel_id))
+        plt.plot(self.adc_samples[pixel_id], label='raw')
+        plt.plot(self.pulse_mask[pixel_id], label='peak position')
+        plt.plot(self.reconstructed_charge[pixel_id], label='charge',
+                 linestyle='None', marker='o')
+        plt.plot(self.reconstructed_amplitude[pixel_id], label='amplitude',
+                 linestyle='None', marker='o')
+        plt.legend()
+
+
+class CalibrationContainerMeta(Container):
+    time = Field(float, 'time of the event')
+    event_id = Field(int, 'event id')
+    type = Field(int, 'event type')
+
+
+class CalibrationContainer(Container):
+    """
+    This Container() is used for the camera calibration pipeline.
+    It is meant to save each step of the calibration pipeline
+    """
+
+    config = Field(list, 'List of the input parameters'
+                         ' of the calibration analysis')  # Should use dict?
+    pixel_id = Field(ndarray, 'pixel ids')
+    data = CalibrationEventContainer()
+    event_id = Field(int, 'event_id')
+    event_type = Field(int, 'Event type')
+    hillas = Field(HillasParametersContainer, 'Hillas parameters')
+    info = CalibrationContainerMeta()

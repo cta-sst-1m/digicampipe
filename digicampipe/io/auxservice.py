@@ -1,12 +1,13 @@
-from datetime import timedelta
-import numpy as np
 from collections import OrderedDict, namedtuple
-import pandas as pd
-from warnings import warn
+from datetime import timedelta
 from functools import lru_cache
 from glob import glob
-from astropy import table
 from os import path
+from warnings import warn
+
+import numpy as np
+import pandas as pd
+from astropy import table
 
 
 class AuxService:
@@ -56,7 +57,7 @@ class AuxService:
         # we've just read a new day, so we update the format of our
         # return value
         self.namedtuple_klass = namedtuple(
-            self.name+"Row",
+            self.name + "Row",
             combined_table.colnames
         )
         return combined_table

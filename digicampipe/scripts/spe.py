@@ -26,41 +26,36 @@ Options:
 
 '''
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 from docopt import docopt
+from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
-import numpy as np
-import matplotlib.pyplot as plt
-
+from digicampipe.calib.baseline import fill_baseline, subtract_baseline
+from digicampipe.calib.charge import compute_charge
+from digicampipe.calib.peak import find_pulse_with_max, \
+    find_pulse_fast
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.pdf import gaussian, single_photoelectron_pdf
-from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.docopt import convert_pixel_args, \
-    convert_max_events_args
-from histogram.histogram import Histogram1D
-from digicampipe.calib.camera.baseline import fill_baseline, subtract_baseline
-from digicampipe.calib.camera.peak import find_pulse_with_max, \
-    find_pulse_wavelets, find_pulse_correlate, find_pulse_fast
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
-from digicampipe.calib.camera.charge import compute_full_waveform_charge
 from digicampipe.scripts import raw
 from digicampipe.scripts.fmpe import FMPEFitter
+from digicampipe.utils.docopt import convert_pixel_args, \
+    convert_max_events_args
 from digicampipe.utils.pdf import fmpe_pdf_10
 
 
 class MaxHistoFitter(FMPEFitter):
-
     def __init__(self, histogram, estimated_gain, **kwargs):
-
         n_peaks = 2
         super(MaxHistoFitter, self).__init__(histogram, estimated_gain,
                                              n_peaks, **kwargs)
         self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                            'sigma_e': '$\sigma_e$', 'sigma_s': '$\sigma_s$',
-                            'a_0': None, 'a_1': None}
+                                     'sigma_e': '$\sigma_e$',
+                                     'sigma_s': '$\sigma_s$',
+                                     'a_0': None, 'a_1': None}
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1):
-
         params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
                   'sigma_s': sigma_s, 'a_0': a_0, 'a_1': a_1, 'bin_width': 0}
 
@@ -68,20 +63,17 @@ class MaxHistoFitter(FMPEFitter):
 
 
 class SPEFitter(FMPEFitter):
-
     def __init__(self, histogram, estimated_gain, **kwargs):
-
         n_peaks = 4
         super(SPEFitter, self).__init__(histogram, estimated_gain, n_peaks,
                                         **kwargs)
         self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                                'sigma_e': '$\sigma_e$',
-                                'sigma_s': '$\sigma_s$',
-                                'a_1': None, 'a_2': None, 'a_3': None,
-                                'a_4': None}
+                                     'sigma_e': '$\sigma_e$',
+                                     'sigma_s': '$\sigma_s$',
+                                     'a_1': None, 'a_2': None, 'a_3': None,
+                                     'a_4': None}
 
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
-
         params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
                   'sigma_s': sigma_s, 'a_0': 0, 'a_1': a_1, 'a_2': a_2,
                   'a_3': a_3, 'a_4': a_4, 'bin_width': 0}
@@ -89,7 +81,6 @@ class SPEFitter(FMPEFitter):
         return fmpe_pdf_10(x, **params)
 
     def initialize_fit(self):
-
         init_params = super(SPEFitter, self).initialize_fit()
 
         init_params['a_4'] = init_params['a_3']
@@ -107,7 +98,6 @@ class SPEFitter(FMPEFitter):
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
-
     p_0 = number_of_zeros / total_number_of_events
     rate = - np.log(p_0)
     rate /= time
@@ -117,7 +107,6 @@ def compute_dark_rate(number_of_zeros, total_number_of_events, time):
 
 def compute_max_histo(files, histo_filename, pixel_id, max_events,
                       integral_width, shift, baseline):
-
     n_pixels = len(pixel_id)
 
     if not os.path.exists(histo_filename):
@@ -151,7 +140,6 @@ def compute_max_histo(files, histo_filename, pixel_id, max_events,
 
 def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
                 integral_width, shift, pulse_finder_threshold, debug=False):
-
     if not os.path.exists(histo_filename):
 
         n_pixels = len(pixel_id)
@@ -201,9 +189,8 @@ def compute_spe(files, histo_filename, pixel_id, baseline, max_events,
 
 
 def entry():
-
     args = docopt(__doc__)
-    
+
     files = args['<INPUT>']
     debug = args['--debug']
 
@@ -211,7 +198,6 @@ def entry():
     output_path = args['--output']
 
     if not os.path.exists(output_path):
-
         raise IOError('Path for output does not exists \n')
 
     pixel_id = convert_pixel_args(args['--pixel'])
@@ -231,7 +217,6 @@ def entry():
     ncall = int(args['--ncall'])
 
     if args['--compute']:
-
         raw_histo = raw.compute(files, max_events=max_events,
                                 pixel_id=pixel_id, filename=raw_histo_filename)
         baseline = raw_histo.mode()
@@ -372,9 +357,9 @@ def entry():
                                                   raw_histo_filename))
         max_histo = Histogram1D.load(max_histo_filename)
 
-        spe_histo.draw(index=(0, ), log=True, legend=False)
-        raw_histo.draw(index=(0, ), log=True, legend=False)
-        max_histo.draw(index=(0, ), log=True, legend=False)
+        spe_histo.draw(index=(0,), log=True, legend=False)
+        raw_histo.draw(index=(0,), log=True, legend=False)
+        max_histo.draw(index=(0,), log=True, legend=False)
 
         try:
 
@@ -419,5 +404,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()
