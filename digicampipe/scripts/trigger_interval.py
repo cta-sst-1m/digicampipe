@@ -38,8 +38,8 @@ def compute(files, max_events, filename):
         previous_time = np.zeros(9) * np.nan
         for event in events:
             typ = event.event_type
-            local_time = event.data.local_time # in ns
-            dt = local_time - previous_time[typ] # in ns
+            local_time = event.data.local_time  # in ns
+            dt = local_time - previous_time[typ]  # in ns
             if np.isfinite(previous_time[typ]):
                 dt_histo.fill(dt, indices=(event.event_type,))
             previous_time[typ] = local_time

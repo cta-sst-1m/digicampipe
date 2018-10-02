@@ -209,5 +209,6 @@ def entry():
          histo_filename, rate_plot_filename, baseline_plot_filename,
          parameters_filename, template_filename)
 
+
 if __name__ == '__main__':
     entry()
