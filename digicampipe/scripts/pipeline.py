@@ -331,11 +331,10 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         y_fov_start = -400  # limits of the FoV
         x_fov_end = 400  # limits of the FoV
         y_fov_end = 400  # limits of the FoV
-        mask = (data['border'] == False) & (data['length'] > 25) & (
-                data['length']/data['width'] > 2) & (
+        mask = (~data['border']) & (~data['burst']) & (
+                data['length']/data['width'] > 1.5) & (
                 data['length']/data['width'] < 10) & (
-                data['burst'] == False) & (
-                data['width'] > 15)
+                data['length'] > 25) & (data['width'] > 15)
         data_cor = dict()
         for key, val in data.items():
             data_cor[key] = val[mask]
