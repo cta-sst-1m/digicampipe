@@ -53,6 +53,7 @@ from digicampipe.calib.camera.charge import compute_sample_photo_electron
 from digicampipe.calib.camera.cleaning import compute_3d_cleaning
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 import os
+from matplotlib.dates import DateFormatter
 
 
 class DataQualityContainer(Container):
@@ -95,8 +96,8 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
         )
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
         events = compute_sample_photo_electron(events, gain_amplitude)
-        events = tag_burst(events, event_average=100, threshold_lsb=2)
-        events = compute_3d_cleaning(events, geom=DigiCam.geometry)
+        events = tag_burst(events, event_average=100, threshold_lsb=5)
+        events = compute_3d_cleaning(events, geom=DigiCam.geometry, threshold_sample_pe=20)
         init_time = 0
         baseline = 0
         count = 0
@@ -150,9 +151,12 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
 
     if rate_plot_filename != "none":
         fig1 = plt.figure()
-        plt.plot(data['trigger_rate']*1E9, label='trigger rate')
-        plt.plot(data['shower_rate']*1E9, label='shower_rate')
+        ax = plt.gca()
+        plt.xticks(rotation=70)
+        plt.plot(data['trigger_rate']*1E9, '.', label='trigger rate')
+        plt.plot(data['shower_rate']*1E9, '.', label='shower_rate')
         plt.ylabel('rate [Hz]')
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         plt.legend()
         if rate_plot_filename == "show":
             plt.show()
@@ -165,6 +169,7 @@ def entry(files, dark_filename, time_step, fits_filename, load_files,
 
     if baseline_plot_filename != "none":
         fig2 = plt.figure(figsize=(8, 6))
+        ax = plt.gca()
         data_burst = data[data['burst'] == True]
         data_good = data[data['burst'] == False]
         plt.xticks(rotation=70)
