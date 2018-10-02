@@ -454,6 +454,7 @@ class CalibrationEventContainer(Container):
     shower = Field(bool, 'is the event considered as a shower')
     border = Field(bool, 'is the event after cleaning touchin the camera '
                          'borders')
+    burst = Field(bool, 'is the event during a burst')
 
     def plot(self, pixel_id):
         plt.figure()
