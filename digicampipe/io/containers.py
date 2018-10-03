@@ -7,10 +7,7 @@ In general each major pipeline step is associated with a given data level.
 Please keep in mind that the data level definition and the associated fields
 might change rapidly as there is no final data level definition.
 """
-try:
-    from enum import IntFlag
-except ImportError:
-    from .enum_flags import IntFlag
+from aenum import IntFlag
 import pickle
 from gzip import open as gzip_open
 from os import remove
