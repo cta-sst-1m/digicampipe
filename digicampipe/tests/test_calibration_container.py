@@ -45,4 +45,5 @@ def test_calibration_event_stream():
 
 def test_event_type_enum_behavior():
     for event in calibration_event_stream(example_file_path):
-        assert event.event_type.ALG0 in event.event_type
+        assert event.event_type in [event.event_type.ALG0,
+                                    event.event_type.INTRNL]
