@@ -27,8 +27,9 @@ def test_get_burst():
         no_burst = False
         try:
             get_burst(
-                files, plot_baseline="none", event_average=100, threshold_lsb=2.,
-                output=output1, expand=10, merge_sec=5., video_prefix="none"
+                files, plot_baseline="none", event_average=100,
+                threshold_lsb=2., output=output1, expand=10, merge_sec=5.,
+                video_prefix="none"
             )
         except SystemExit:
             no_burst = True
@@ -39,8 +40,8 @@ def test_get_burst():
         try:
             get_burst(
                 files, plot_baseline="none", event_average=100,
-                threshold_lsb= 1e-4,
-                output=output2, expand=10, merge_sec=5., video_prefix="none"
+                threshold_lsb=1e-4, output=output2, expand=10, merge_sec=5.,
+                video_prefix="none"
             )
         except SystemExit:
             no_burst = True
@@ -48,6 +49,7 @@ def test_get_burst():
 
         assert os.path.isfile(output1) is False  # no file created if no burst
         assert os.path.isfile(output2)
+
 
 if __name__ == '__main__':
     test_get_burst()
