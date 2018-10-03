@@ -45,4 +45,4 @@ def test_calibration_event_stream():
 
 def test_event_type_enum_behavior():
     for event in calibration_event_stream(example_file_path):
-        assert event.camera_event_type.INTRNL in event.camera_event_type
+        assert event.event_type.INTRNL in event.event_type
