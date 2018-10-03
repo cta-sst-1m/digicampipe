@@ -66,6 +66,7 @@ class CameraEventType(IntFlag):
     I removed the EVTTYPE, since this is clear from the class name
     I removed DIGICAM since this is clear from the project.
     '''
+    UNKNOWN = 0x0
     ALG0 = 0x1
     ALG1 = 0x2
     ALG2 = 0x4
