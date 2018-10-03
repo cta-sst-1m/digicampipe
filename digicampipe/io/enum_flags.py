@@ -1,56 +1,27 @@
+'''This module contains the classes `enum.Flag` and `enum.IntFlag` from
+here:
+
+https://github.com/python/cpython/blob/master/Lib/enum.py#L671
+
+They were missing in Py3.5 but existed in Py3.6
+
+In case we decide to drop Py3.5 support this can be removed and
+
+    try:
+        from enum import IntFlag
+    except ImportError:  # Py3.5 did not have enum.IntFlag
+        from .enum_flags import IntFlag
+
+in containers.py
+
+can be replaced by: `from enum import IntFlag`
+'''
+
 from enum import Enum
 
 
 class Flag(Enum):
     """Support for flags"""
-
-    def _generate_next_value_(name, start, count, last_values):
-        """
-        Generate the next value when not given.
-        name: the name of the member
-        start: the initital start value or None
-        count: the number of existing members
-        last_value: the last value assigned or None
-        """
-        if not count:
-            return start if start is not None else 1
-        for last_value in reversed(last_values):
-            try:
-                high_bit = _high_bit(last_value)
-                break
-            except Exception:
-                raise TypeError('Invalid Flag value: %r' % last_value) from None
-        return 2 ** (high_bit+1)
-
-    @classmethod
-    def _missing_(cls, value):
-        original_value = value
-        if value < 0:
-            value = ~value
-        possible_member = cls._create_pseudo_member_(value)
-        if original_value < 0:
-            possible_member = ~possible_member
-        return possible_member
-
-    @classmethod
-    def _create_pseudo_member_(cls, value):
-        """
-        Create a composite member iff value contains only members.
-        """
-        pseudo_member = cls._value2member_map_.get(value, None)
-        if pseudo_member is None:
-            # verify all bits are accounted for
-            _, extra_flags = _decompose(cls, value)
-            if extra_flags:
-                raise ValueError("%r is not a valid %s" % (value, cls.__name__))
-            # construct a singleton enum pseudo-member
-            pseudo_member = object.__new__(cls)
-            pseudo_member._name_ = None
-            pseudo_member._value_ = value
-            # use setdefault in case another thread already created a composite
-            # with this value
-            pseudo_member = cls._value2member_map_.setdefault(value, pseudo_member)
-        return pseudo_member
 
     def __contains__(self, other):
         if not isinstance(other, self.__class__):
@@ -112,43 +83,6 @@ class Flag(Enum):
 
 class IntFlag(int, Flag):
     """Support for integer-based Flags"""
-
-    @classmethod
-    def _missing_(cls, value):
-        if not isinstance(value, int):
-            raise ValueError("%r is not a valid %s" % (value, cls.__name__))
-        new_member = cls._create_pseudo_member_(value)
-        return new_member
-
-    @classmethod
-    def _create_pseudo_member_(cls, value):
-        pseudo_member = cls._value2member_map_.get(value, None)
-        if pseudo_member is None:
-            need_to_create = [value]
-            # get unaccounted for bits
-            _, extra_flags = _decompose(cls, value)
-            # timer = 10
-            while extra_flags:
-                # timer -= 1
-                bit = _high_bit(extra_flags)
-                flag_value = 2 ** bit
-                if (flag_value not in cls._value2member_map_ and
-                        flag_value not in need_to_create
-                        ):
-                    need_to_create.append(flag_value)
-                if extra_flags == -flag_value:
-                    extra_flags = 0
-                else:
-                    extra_flags ^= flag_value
-            for value in reversed(need_to_create):
-                # construct singleton pseudo-members
-                pseudo_member = int.__new__(cls, value)
-                pseudo_member._name_ = None
-                pseudo_member._value_ = value
-                # use setdefault in case another thread already created a composite
-                # with this value
-                pseudo_member = cls._value2member_map_.setdefault(value, pseudo_member)
-        return pseudo_member
 
     def __or__(self, other):
         if not isinstance(other, (self.__class__, int)):
