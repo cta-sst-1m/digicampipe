@@ -4,7 +4,7 @@ import warnings
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.special import lambertw
-
+from abc import ABC, abstractclassmethod, abstractmethod
 
 def exponential(x, a, b):
 
@@ -15,7 +15,70 @@ def exponential(x, a, b):
     return y
 
 
-class ACLEDInterpolator:
+class LightSource(ABC):
+
+    def __init__(self, x, y, y_err=None):
+
+        self.x = x
+        self.y = y
+        self.y_err = y_err
+        self._interpolator = self._interpolate()
+
+    def __call__(self, x, *args, **kwargs):
+
+        y_interpolated = self._interpolator(x, *args, **kwargs)
+
+        return y_interpolated
+
+    def __getitem__(self, item):
+
+        return self.__class__(x=self.x, y=self.y[item],
+                              y_err=self.y_err[item])
+
+    @abstractclassmethod
+    def load(cls, filename):
+
+        pass
+
+    @abstractmethod
+    def save(self, filename):
+
+        pass
+
+    def plot(self, axes=None, pixel=0, **kwargs):
+
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(111)
+
+        x_fit = np.arange(1000)
+        y_fit = self(x_fit, pixel=pixel)
+
+        mask = (y_fit > 0) * (y_fit <= 2000)
+        x_fit = x_fit[mask]
+        y_fit = y_fit[mask]
+
+        if self.photo_electrons_err is not None:
+
+            y_err = self.photo_electrons_err[:, pixel]
+        else:
+
+            y_err = None
+
+        axes.errorbar(self.ac_level, self.photo_electrons[:, pixel],
+                      yerr=y_err,
+                      label='Data points, pixel : {}'.format(pixel),
+                      linestyle='None', marker='o', color='k', **kwargs)
+        axes.plot(x_fit, y_fit, label='Interpolated data', color='r')
+        axes.set_xlabel('AC DAC level')
+        axes.set_ylabel('Number of p.e.')
+        axes.set_yscale('log')
+        axes.legend(loc='best')
+
+        return axes
+
+
+class ACLED(LightSource):
 
     def __init__(self, ac_level, photo_electrons, photo_electrons_err=None):
 
@@ -63,8 +126,8 @@ class ACLEDInterpolator:
 
     def __getitem__(self, item):
 
-        return ACLEDInterpolator(ac_level=self.ac_level,
-                                 photo_electrons=self.photo_electrons[item])
+        return ACLED(ac_level=self.ac_level,
+                     photo_electrons=self.photo_electrons[item])
 
     @classmethod
     def load(cls, filename):
@@ -208,6 +271,10 @@ class ACLEDInterpolator:
 
         self._spline = cubic_spline
 
+    def save(self, filename):
+
+        pass
+
     def plot(self, axes=None, pixel=0, **kwargs):
 
         if axes is None:
@@ -240,6 +307,40 @@ class ACLEDInterpolator:
         return axes
 
 
+class DCLED(LightSource):
+
+    def __init__(self, dc_level, nsb_rate, nsb_rate_error=None):
+
+        self.dc_level = dc_level
+        self.nsb_rate = nsb_rate
+        self.nsb_rate_error = nsb_rate_error
+        self._interpolate()
+
+    def __call__(self, *args, **kwargs):
+
+        pass
+
+    def __getitem__(self, item):
+
+        return DCLED(dc_level=self.dc_level, nsb_rate=self.nsb_rate[item],
+                     nsb_rate_error=self.nsb_rate_error[item])
+
+    def load(cls, filename):
+
+        pass
+
+    def save(self, filename):
+
+        pass
+
+    def plot(self):
+
+        plt.figure()
+
+
+
+
+
 if __name__ == '__main__':
 
     data = np.load('/home/alispach/ctasoft/digicampipe/charge_linearity_final.npz')
@@ -249,7 +350,7 @@ if __name__ == '__main__':
     pe = ac_leds['mu']
     pe_err = ac_leds['mu_error']
 
-    test = ACLEDInterpolator(ac_levels, pe, pe_err)
+    test = ACLED(ac_levels, pe, pe_err)
 
     test.plot(pixel=1295)
 
