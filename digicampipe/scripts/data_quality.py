@@ -139,7 +139,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         plt.plot(data['trigger_rate'] * 1E9)
         plt.plot(data['shower_rate'] * 1E9)
         plt.ylabel('rate [Hz]')
-        plt.legend('trigger rate', 'shower_rate')
+        plt.legend({'trigger rate', 'shower rate'})
         if rate_plot_filename == "show":
             plt.show()
         else:
