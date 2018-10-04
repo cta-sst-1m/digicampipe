@@ -60,7 +60,7 @@ def compute(files, max_events, pixel_id, n_samples, ac_levels,
         bin_edges=np.arange(0, n_samples * 4, 1),
     )
 
-    for i, file in tqdm(enumerate(files), total=n_files):
+    for i, file in tqdm(enumerate(files), total=n_ac_levels, desc='DAC level'):
 
         events = calibration_event_stream(file, pixel_id=pixel_id,
                                           max_events=max_events)
