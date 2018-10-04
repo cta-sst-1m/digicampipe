@@ -48,22 +48,26 @@ def compute(files, max_events, pixel_id, n_samples, ac_levels,
 
     n_pixels = len(pixel_id)
     n_ac_levels = len(ac_levels)
+    n_files = len(files)
 
-    assert n_ac_levels == len(files)
+    if n_ac_levels != n_files:
+
+        raise IOError('Number of files = {} does not match number of DAC level'
+                      ' {}'.format(n_files, n_ac_levels))
 
     timing_histo = Histogram1D(
         data_shape=(n_ac_levels, n_pixels,),
         bin_edges=np.arange(0, n_samples * 4, 1),
     )
 
-    for i, file in enumerate(files):
+    for i, file in tqdm(enumerate(files), total=n_files):
 
         events = calibration_event_stream(file, pixel_id=pixel_id,
                                           max_events=max_events)
 
         events = time_method(events)
 
-        for i, event in enumerate(events):
+        for event in events:
             timing_histo.fill(event.data.reconstructed_time, indices=(i, ))
 
     if save:
@@ -100,7 +104,7 @@ def entry():
         timing = timing_histo.mode()
         timing = timing // 4
 
-        timing[timing <= 4] = np.mean(timing).astype(int)
+        timing[timing <= 4] = np.mean(timing, axis=-1).astype(int)
         timing = timing * 4
 
         np.savez(results_filename, time=timing)
@@ -135,9 +139,10 @@ def entry():
             axis.remove()
 
     if args['--display']:
+
         path = os.path.join(output_path, timing_histo_filename)
         timing_histo = Histogram1D.load(path)
-        timing_histo.draw(index=(0,), log=True, legend=False)
+        timing_histo.draw(index=(len(ac_levels)-1, 0, ), log=True, legend=False)
 
         pulse_time = timing_histo.mode()
 
