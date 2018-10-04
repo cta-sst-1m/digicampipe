@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''
+"""
 Do the Multiple Photoelectron anaylsis
 
 Usage:
@@ -23,9 +23,13 @@ Options:
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
+  --adc_min=N                 Lowest LSB value for the histogram
+                              [default: -10]
+  --adc_max=N                 Highest LSB value for the histogram
+                              [default: 2000]
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
   --timing=<TIMING_HISTO>     Timing histogram
-'''
+"""
 import os
 
 import matplotlib.pyplot as plt
@@ -239,6 +243,8 @@ def entry():
     ac_levels = convert_dac_level(args['--ac_levels'])
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
+    adc_min = int(args['-adc_min'])
+    adc_max = int(args['--adc_max'])
 
     timing_filename = args['--timing']
     timing = np.load(timing_filename)['time']
@@ -264,13 +270,13 @@ def entry():
         time = np.zeros((n_ac_levels, n_pixels))
 
         charge_histo = Histogram1D(
-            bin_edges=np.arange(- 40 * integral_width,
-                                2000, bin_width),
+            bin_edges=np.arange(adc_min * integral_width,
+                                adc_max * integral_width, bin_width),
             data_shape=(n_ac_levels, n_pixels,))
 
         amplitude_histo = Histogram1D(
-            bin_edges=np.arange(- 40,
-                                500, bin_width),
+            bin_edges=np.arange(adc_min,
+                                adc_max, bin_width),
             data_shape=(n_ac_levels, n_pixels,))
 
         if os.path.exists(charge_histo_filename):
