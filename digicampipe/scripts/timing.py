@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-'''
-Do a raw data histogram
+"""
+Do histogram of the pulse reconstructed time. In each bin is represented the
+number of times the reconstructed time within time bin.
 
 Usage:
   digicam-timing [options] [--] <INPUT>...
@@ -16,7 +17,8 @@ Options:
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the OUTPUT folder
   --n_samples=N               Number of samples per waveform
-'''
+"""
+
 import os
 
 import matplotlib.pyplot as plt
