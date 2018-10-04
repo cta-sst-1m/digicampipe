@@ -131,7 +131,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
 
     data = Table.read(fits_filename, format='fits')
     data = data.to_pandas()
-    data['time'] = pd.to_datetime(data['time'])
+    data['time'] = pd.to_datetime(data['time'], utc=True)
     data = data.set_index('time')
 
     if rate_plot_filename != "none":
