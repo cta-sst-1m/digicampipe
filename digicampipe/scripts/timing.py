@@ -10,6 +10,7 @@ Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+  --ac_levels=<DAC>           LED AC DAC level
   -c --compute                Compute the data.
   -f --fit                    Fit the timing histo.
   -d --display                Display.
@@ -30,11 +31,11 @@ from tqdm import tqdm
 from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args
+    convert_pixel_args, convert_dac_level
 from digicampipe.visualization.plot import plot_array_camera, plot_parameter
 
 
-def compute(files, max_events, pixel_id, n_samples,
+def compute(files, max_events, pixel_id, n_samples, ac_levels,
             filename='timing_histo.pk', save=True,
             time_method=compute_time_from_max):
     if os.path.exists(filename) and save:
@@ -46,18 +47,24 @@ def compute(files, max_events, pixel_id, n_samples,
         return Histogram1D.load(filename)
 
     n_pixels = len(pixel_id)
-    events = calibration_event_stream(files, pixel_id=pixel_id,
-                                      max_events=max_events)
+    n_ac_levels = len(ac_levels)
 
-    events = time_method(events)
+    assert n_ac_levels == len(files)
 
     timing_histo = Histogram1D(
-        data_shape=(n_pixels,),
+        data_shape=(n_ac_levels, n_pixels,),
         bin_edges=np.arange(0, n_samples * 4, 1),
     )
 
-    for i, event in enumerate(events):
-        timing_histo.fill(event.data.reconstructed_time)
+    for i, file in enumerate(files):
+
+        events = calibration_event_stream(file, pixel_id=pixel_id,
+                                          max_events=max_events)
+
+        events = time_method(events)
+
+        for i, event in enumerate(events):
+            timing_histo.fill(event.data.reconstructed_time, indices=(i, ))
 
     if save:
         timing_histo.save(filename)
@@ -73,6 +80,7 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     n_samples = int(args['--n_samples'])
     output_path = args['--output']
+    ac_levels = convert_dac_level(args['--ac_levels'])
     timing_histo_filename = 'timing_histo.pk'
     timing_histo_filename = os.path.join(output_path, timing_histo_filename)
     results_filename = os.path.join(output_path, 'timing_results.npz')
@@ -81,7 +89,7 @@ def entry():
         raise IOError('Path for output does not exists \n')
 
     if args['--compute']:
-        compute(files, max_events, pixel_id, n_samples,
+        compute(files, max_events, pixel_id, n_samples, ac_levels,
                 timing_histo_filename, save=True,
                 time_method=compute_time_from_max)
         # or try to use compute_time_from_leading_edge)
