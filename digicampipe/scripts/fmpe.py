@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''
+"""
 Do Full Multiple Photoelectron anaylsis
 
 Usage:
@@ -25,7 +25,7 @@ Options:
   --timing=PATH               Timing filename
   --n_samples=N               Number of samples in readout window
   --estimated_gain=N          Estimated gain for the fit
-'''
+"""
 import os
 
 import matplotlib.pyplot as plt
