@@ -27,6 +27,7 @@ import numpy as np
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
+from scipy.stats import mode
 
 from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
@@ -102,10 +103,7 @@ def entry():
         timing_histo = Histogram1D.load(timing_histo_filename)
 
         timing = timing_histo.mode()
-        timing = timing // 4
-
-        timing[timing <= 4] = np.mean(timing, axis=-1).astype(int)
-        timing = timing * 4
+        timing = mode(timing, axis=0)[0][0]
 
         np.savez(results_filename, time=timing)
 
@@ -146,11 +144,10 @@ def entry():
 
         pulse_time = timing_histo.mode()
 
-        plot_array_camera(pulse_time, label='most probable time [ns]',
-                          allow_pick=True)
-
-        plot_parameter(pulse_time, 'most probable time', '[ns]',
-                       bins=20)
+        plt.figure()
+        plt.plot(ac_levels, pulse_time)
+        plt.xlabel('DAC level')
+        plt.ylabel('Reconstructed pulse time [ns]')
 
         pulse_time = np.load(results_filename)['time']
 
