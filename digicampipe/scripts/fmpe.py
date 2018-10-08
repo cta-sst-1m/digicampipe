@@ -27,7 +27,6 @@ Options:
   --estimated_gain=N          Estimated gain for the fit
 """
 import os
-import inspect
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,6 +37,7 @@ from tqdm import tqdm
 import pandas as pd
 from iminuit.util import describe
 import fitsio
+from astropy.table import Table
 
 from digicampipe.scripts import mpe
 from digicampipe.utils.docopt import convert_max_events_args, \
@@ -106,7 +106,8 @@ class FMPEFitter(HistogramFitter):
         x_peak = x[peak_indices]
         y_peak = y[peak_indices]
         gain = np.diff(x_peak)
-        gain = np.average(gain, weights=y_peak[:-1] ** 2)
+        weights = y_peak[:-1] ** 2
+        gain = np.average(gain, weights=weights)
 
         sigma = np.zeros(len(peak_indices))
         mean_peak_x = np.zeros(len(peak_indices))
@@ -137,7 +138,9 @@ class FMPEFitter(HistogramFitter):
             sigma[i] = np.sqrt(sigma[i] - bin_width ** 2 / 12)
 
         gain = np.diff(mean_peak_x)
-        gain = np.average(gain, weights=amplitudes[:-1] ** 2)
+        weights = None
+        # weights = amplitudes[:-1] ** 2
+        gain = np.average(gain, weights=weights)
 
         sigma_e = np.sqrt(sigma[0] ** 2)
         sigma_s = (sigma[1:] ** 2 - sigma_e ** 2) / np.arange(1, len(sigma), 1)
@@ -249,7 +252,9 @@ def compute(files, max_events, pixel_id, n_samples, timing_filename,
 
 def plot_results(results_filename, figure_path=None):
 
-    fit_results = np.load(results_filename)
+    fit_results = Table.read(results_filename, format='fits')
+    fit_results = fit_results.to_pandas()
+
     gain = fit_results['gain']
     sigma_e = fit_results['sigma_e']
     sigma_s = fit_results['sigma_s']
@@ -275,17 +280,29 @@ def plot_results(results_filename, figure_path=None):
 
 def plot_fit(histo, results_filename, pixel, figure_path=None):
 
-    fit_results = np.load(results_filename)
+    fit_results = Table.read(results_filename, format='fits')
+    fit_results = fit_results.to_pandas()
     hist = histo[pixel]
     fitter = FMPEFitter(hist, throw_nan=True,
                         estimated_gain=fit_results['gain'][pixel])
 
-    print(fit_results.__dict__)
     for key in fitter.parameters_name:
 
         fitter.parameters[key] = fit_results[key][pixel]
+        fitter.errors[key] = fit_results[key + '_error'][pixel]
 
-    fitter.draw_fit()
+    fitter.ndf = fit_results['ndf'][pixel]
+
+    x_label = 'Charge [LSB]'
+    label = 'Pixel {}'.format(pixel)
+    fig = fitter.draw_fit(x_label=x_label, label=label, legend=False,
+                          log=True)
+
+    if figure_path is not None:
+
+        figure_name = 'charge_fmpe_pixel_{}'.format(pixel)
+        figure_name = os.path.join(figure_path, figure_name)
+        fig.savefig(figure_name)
 
 
 def entry():
@@ -393,41 +410,23 @@ def entry():
 
     if args['--save_figures']:
 
-        amplitude_histo_path = os.path.join(output_path,
-                                            'amplitude_histo_fmpe.pk')
-        charge_histo_path = os.path.join(output_path, 'charge_histo_fmpe.pk')
-
-        charge_histo = Histogram1D.load(charge_histo_path)
-        amplitude_histo = Histogram1D.load(amplitude_histo_path)
+        charge_histo = Histogram1D.load(charge_histo_filename)
 
         figure_path = os.path.join(output_path, 'figures/')
-
-        plot_results(results_filename, figure_path)
 
         if not os.path.exists(figure_path):
             os.makedirs(figure_path)
 
-        figure_1 = plt.figure()
-        figure_2 = plt.figure()
-        figure_3 = plt.figure()
-        axis_1 = figure_1.add_subplot(111)
-        axis_2 = figure_2.add_subplot(111)
-        axis_3 = figure_3.add_subplot(111)
+        plot_results(results_filename, figure_path)
 
         for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
 
             try:
 
-                charge_histo.draw(index=(i,), axis=axis_1, log=True,
-                                  legend=False)
-                amplitude_histo.draw(index=(i,), axis=axis_2, log=True,
-                                     legend=False)
-                figure_1.savefig(figure_path +
-                                 'charge_fmpe_pixel_{}'.format(pixel))
-                figure_2.savefig(figure_path +
-                                 'amplitude_fmpe_pixel_{}'.format(pixel))
-                figure_3.savefig(figure_path +
-                                 'timing_fmpe_pixel_{}'.format(pixel))
+                plot_fit(charge_histo, results_filename, i,
+                         figure_path)
+
+                plt.close()
 
             except Exception as e:
 
@@ -435,27 +434,13 @@ def entry():
                       format(pixel, figure_path))
                 print(e)
 
-            axis_1.clear()
-            axis_2.clear()
-            axis_3.clear()
-
     if args['--display']:
 
         pixel = 0
-
-        amplitude_histo_path = os.path.join(output_path,
-                                            'amplitude_histo_fmpe.pk')
-        charge_histo_path = os.path.join(output_path,
-                                         'charge_histo_fmpe.pk')
-
-        charge_histo = Histogram1D.load(charge_histo_path)
-        charge_histo.draw(index=(pixel,), log=False, legend=False)
-
-        amplitude_histo = Histogram1D.load(amplitude_histo_path)
-        amplitude_histo.draw(index=(pixel,), log=False, legend=False)
+        charge_histo = Histogram1D.load(charge_histo_filename)
 
         plot_results(results_filename)
-        plot_fit(charge_histo, results_filename, pixel=0)
+        plot_fit(charge_histo, results_filename, pixel=pixel)
 
         plt.show()
 
