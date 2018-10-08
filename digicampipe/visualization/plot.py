@@ -63,7 +63,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
     mask = np.isfinite(data)
     data = np.ma.masked_array(data, mask=~mask)
 
-    plt.figure()
+    fig = plt.figure()
     cam = DigiCam
     geom = cam.geometry
     cam_display = CameraDisplay(geom, **kwargs)
@@ -88,7 +88,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
 
     cam_display.update()
 
-    return cam_display
+    return cam_display, fig
 
 
 def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
@@ -139,7 +139,7 @@ def plot_histo(data, x_label='', show_fit=False, limits=None, **kwargs):
     if not show_fit:
         label += label_fit
 
-    plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(10, 10))
     hist = plt.hist(data, **kwargs, label=label)
 
     if show_fit:
@@ -153,3 +153,5 @@ def plot_histo(data, x_label='', show_fit=False, limits=None, **kwargs):
     plt.xlabel(x_label)
     plt.ylabel('count')
     plt.legend(loc='best')
+
+    return fig
