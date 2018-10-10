@@ -64,9 +64,10 @@ def test_data_quality():
             filename=dark_filename
         )
         data_quality(
-            example_file_path, dark_filename, time_step, fits_filename, load_files,
-            histo_filename, rate_plot_filename, baseline_plot_filename,
-            nsb_plot_filename, parameters_filename, template_filename,
+            example_file_path, dark_filename, time_step, fits_filename,
+            load_files, histo_filename, rate_plot_filename,
+            baseline_plot_filename, nsb_plot_filename, parameters_filename,
+            template_filename,
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
