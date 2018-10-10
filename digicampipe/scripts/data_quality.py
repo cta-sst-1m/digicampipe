@@ -64,9 +64,9 @@ class DataQualityContainer(Container):
 
 
 def main(files, dark_filename, time_step, fits_filename, load_files,
-          histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
-          cell_capacitance=5e-14 * u.Farad):
+         histo_filename, rate_plot_filename, baseline_plot_filename,
+         parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
+         cell_capacitance=5e-14 * u.Farad):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -182,8 +182,10 @@ def entry():
     template_filename = args['--template']
 
     main(files, dark_filename, time_step, fits_filename, load_files,
-          histo_filename, rate_plot_filename, baseline_plot_filename,
-          parameters_filename, template_filename)
+         histo_filename, rate_plot_filename, baseline_plot_filename,
+         parameters_filename, template_filename)
+
 
 if __name__ == '__main__':
+
     entry()
