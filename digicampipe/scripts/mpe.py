@@ -213,6 +213,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
             bin_edges=np.arange(-40, 4096, 1))
 
         for event in events:
+
             charge_histo.fill(event.data.reconstructed_charge)
             amplitude_histo.fill(event.data.reconstructed_amplitude)
 
