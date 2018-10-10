@@ -30,6 +30,11 @@ Options:
                                 "show" to open an interactive plot instead of
                                 creating a file.
                                 [Default: none]
+  --nsb_plot=FILE               path to the output plot history of the mean
+                                Night Sky Background rate. Use "none" to not
+                                create the plot and "show" to open an
+                                interactive plot instead of creating a file.
+                                [Default: none]
   --template=FILE               Pulse template file path
 """
 import astropy.units as u
@@ -60,13 +65,13 @@ class DataQualityContainer(Container):
     baseline = Field(ndarray, 'Baseline average over the camera')
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
     shower_rate = Field(ndarray, 'Shower rate')
-    nsb_rate = Field(ndarray, 'Computed NSB rate')
+    nsb_rate = Field(ndarray, 'Averaged over the camera NSB rate')
 
 
 def main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
-         parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
-         cell_capacitance=5e-14 * u.Farad):
+         nsb_plot_filename, parameters_filename, template_filename,
+         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -129,7 +134,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                                              crosstalk=crosstalk,
                                              bias_resistance=bias_resistance,
                                              cell_capacitance=cell_capacitance)
-                container.nsb_rate = nsb_rate
+
+                container.nsb_rate = nsb_rate.mean().value
                 baseline = 0
                 count = 0
                 init_time = 0
@@ -165,6 +171,17 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
             plt.savefig(baseline_plot_filename)
         plt.close(fig2)
 
+    print(data['nsb_rate'])
+    if nsb_plot_filename != "none":
+        fig3 = plt.figure()
+        plt.plot(data['nsb_rate'])
+        plt.ylabel('$f_{NSB}$ [GHz]')
+        if nsb_plot_filename == "show":
+            plt.show()
+        else:
+            plt.savefig(nsb_plot_filename)
+        plt.close(fig3)
+
     return
 
 
@@ -178,12 +195,13 @@ def entry():
     load_files = args['--load']
     rate_plot_filename = args['--rate_plot']
     baseline_plot_filename = args['--baseline_plot']
+    nsb_plot_filename = args['--nsb_plot']
     parameters_filename = args['--parameters']
     template_filename = args['--template']
 
     main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
-         parameters_filename, template_filename)
+         nsb_plot_filename, parameters_filename, template_filename)
 
 
 if __name__ == '__main__':

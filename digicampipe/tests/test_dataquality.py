@@ -54,6 +54,7 @@ def test_data_quality():
         histo_filename = os.path.join(tmpdirname, 'ouptput.pk')
         rate_plot_filename = os.path.join(tmpdirname, 'rate.png')
         baseline_plot_filename = os.path.join(tmpdirname, 'baseline.png')
+        nsb_plot_filename = os.path.join(tmpdirname, 'nsb.png')
         load_files = False
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         compute_raw(
@@ -65,13 +66,15 @@ def test_data_quality():
         data_quality(
             files, dark_filename, time_step, fits_filename, load_files,
             histo_filename, rate_plot_filename, baseline_plot_filename,
-            parameters_filename, template_filename,
+            nsb_plot_filename, parameters_filename, template_filename,
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
         fits_columns = [c.name for c in hdul[1].columns]
         n_time = len(hdul[1].data[expected_columns[0]])
         assert n_time > 0
+
+        assert len(fits_columns) == len(expected_columns)
         for col in expected_columns:
             assert col in fits_columns
             assert n_time == len(hdul[1].data[col])
