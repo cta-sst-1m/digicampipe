@@ -127,7 +127,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 container.baseline = baseline
                 container.time = init_time
                 container.shower_rate = shower_rate
-                baseline_shift = baseline - dark_baseline
+                baseline_shift = baseline - dark_baseline.mean()
                 nsb_rate = _compute_nsb_rate(baseline_shift,
                                              gain=gain_amplitude,
                                              pulse_area=pulse_area,
@@ -171,7 +171,6 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
             plt.savefig(baseline_plot_filename)
         plt.close(fig2)
 
-    print(data['nsb_rate'])
     if nsb_plot_filename != "none":
         fig3 = plt.figure()
         plt.plot(data['nsb_rate'])
