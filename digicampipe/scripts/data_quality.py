@@ -46,7 +46,7 @@ from histogram.histogram import Histogram1D
 from numpy import ndarray
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
-    subtract_baseline, compute_gain_drop, compute_nsb_rate, \
+    subtract_baseline, compute_gain_drop, compute_nsb_rate, _compute_nsb_rate,\
     compute_baseline_shift, fill_dark_baseline
 from digicampipe.calib.charge import compute_sample_photo_electron
 from digicampipe.calib.cleaning import compute_3d_cleaning
@@ -56,10 +56,11 @@ from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 
 class DataQualityContainer(Container):
-    time = Field(ndarray, 'time')
-    baseline = Field(ndarray, 'baseline average over the camera')
+    time = Field(ndarray, 'Time')
+    baseline = Field(ndarray, 'Baseline average over the camera')
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
-    shower_rate = Field(ndarray, 'shower rate')
+    shower_rate = Field(ndarray, 'Shower rate')
+    nsb_rate = Field(ndarray, 'Computed NSB rate')
 
 
 def main(files, dark_filename, time_step, fits_filename, load_files,
@@ -121,6 +122,14 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 container.baseline = baseline
                 container.time = init_time
                 container.shower_rate = shower_rate
+                baseline_shift = baseline - dark_baseline
+                nsb_rate = _compute_nsb_rate(baseline_shift,
+                                             gain=gain_amplitude,
+                                             pulse_area=pulse_area,
+                                             crosstalk=crosstalk,
+                                             bias_resistance=bias_resistance,
+                                             cell_capacitance=cell_capacitance)
+                container.nsb_rate = nsb_rate
                 baseline = 0
                 count = 0
                 init_time = 0
