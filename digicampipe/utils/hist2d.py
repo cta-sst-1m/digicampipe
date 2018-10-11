@@ -6,6 +6,8 @@ class Histogram2d:
         self.histo = np.zeros(shape, dtype='u2')
         self.range = range
         self.extent = list(self.range[0]) + list(self.range[1])
+        self.xedges = None
+        self.yedges = None
 
     def fill(self, x, y):
         for pixel_id in range(len(x)):
@@ -16,10 +18,26 @@ class Histogram2d:
                 range=self.range
             )
             self.histo[pixel_id] += H.astype('u2')
+        self.xedges, self.yedges = xedges, yedges
 
     def contents(self):
         return self.histo
 
+    def fit_y(self):
+        _h = self.contents()
+        N = _h.sum(axis=-1)
+        x_bin_center = self.xedges[1:] - self.xedges[:-1]
+        y_bin_center = self.yedges[1:] - self.yedges[:-1]
+        mean_y = (_h * y_bin_center[None, :]).sum(axis=-1) / N
+        squared_sum_y = (y_bin_center[None, :] - mean_y[:, None])**2
+        std_y = np.sqrt((_h * squared_sum_y).sum(axis=-1) / (N-1))
+        return x_bin_center, mean_y, std_y
+
+    def __add__(self, other):
+        assert self.range == other.range
+        assert self.extent == other.extent
+        result = self
+        result.histo += other.contents
 
 class Histogram2dChunked(Histogram2d):
     def __init__(self, shape, range, buffer_size=1000):
@@ -66,6 +84,7 @@ class Histogram2dChunked(Histogram2d):
                 range=self.range
             )
             self.histo[pixel_id] += H.astype('u2')
+        self.xedges, self.yedges = xedges, yedges
         self.buffer_x = None
         self.buffer_y = None
         self.buffer_counter = 0

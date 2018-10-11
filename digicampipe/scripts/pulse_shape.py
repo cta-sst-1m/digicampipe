@@ -15,14 +15,13 @@ import numpy as np
 from docopt import docopt
 from tqdm import tqdm
 
-from digicampipe.calib.time import estimate_arrival_time
+from digicampipe.calib.time import estimate_time_from_leading_edge
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.hist2d import Histogram2dChunked
 
 
 def main(outfile_path, input_files=[]):
     events = calibration_event_stream(input_files)
-    Rough_factor_between_single_pe_amplitude_and_integral = 21 / 5.8
     histo = None
 
     for e in tqdm(events):
@@ -38,23 +37,23 @@ def main(outfile_path, input_files=[]):
         # so we clip at 1
         integral = integral.clip(1)
 
-        adc = (
+        adc_norm = (
                   adc / integral[:, None]
-              ) * Rough_factor_between_single_pe_amplitude_and_integral
+              )
 
-        arrival_time_in_ns = estimate_arrival_time(adc) * 4
+        arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
         time_in_ns = np.arange(adc.shape[1]) * 4
 
         # TODO: Would be nice to move this out of the loop
         if histo is None:
             histo = Histogram2dChunked(
                 shape=(adc.shape[0], 101, 101),
-                range=[[-10, 40], [-0.2, 1.5]]
+                range=[[-10, 40], [-0.1, 0.4]]
             )
 
         histo.fill(
             x=time_in_ns[None, :] - arrival_time_in_ns[:, None],
-            y=adc
+            y=adc_norm
         )
 
     outfile = h5py.File(outfile_path)

@@ -86,6 +86,8 @@ def test_charge_amplitude_ratio():
 
     assert RATIO_CHARGE_AMPLITUDE == ratio
 
+def test_pulse_template_from_datafiles:
+
 
 if __name__ == '__main__':
     test_pulse_template_plot()
