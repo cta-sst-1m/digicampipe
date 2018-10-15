@@ -6,7 +6,10 @@ from setuptools import (
 import glob
 import os.path
 
-with open('digicampipe/VERSION') as f:
+VERSION_PATH = os.path.dirname(os.path.abspath(__file__))
+VERSION_PATH = os.path.join(VERSION_PATH, 'digicampipe/VERSION')
+
+with open(VERSION_PATH) as f:
     __version__ = f.read().strip()
 
 
