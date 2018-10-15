@@ -61,6 +61,10 @@ def plot_parameter(parameter, name='', units='', axis=None, **kwargs):
 
 def plot_array_camera(data, label='', limits=None, **kwargs):
     mask = np.isfinite(data)
+
+    if limits is not None:
+
+        mask *= (data >= limits[0]) * (data <= limits[1])
     data = np.ma.masked_array(data, mask=~mask)
 
     fig = plt.figure()
