@@ -41,3 +41,9 @@ def test_calibration_event_stream():
         assert (values[i][1] == event.digicam_baseline).all()
 
         assert len(values[i][2]) == event.adc_samples.shape[0]
+
+
+def test_event_type_enum_behavior():
+    for event in calibration_event_stream(example_file_path):
+        assert event.event_type in [event.event_type.PATCH7,
+                                    event.event_type.INTERNAL]

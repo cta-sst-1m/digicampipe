@@ -146,7 +146,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
 
     data = Table.read(fits_filename, format='fits')
     data = data.to_pandas()
-    data['time'] = pd.to_datetime(data['time'])
+    data['time'] = pd.to_datetime(data['time'], utc=True)
     data = data.set_index('time')
 
     if rate_plot_filename != "none":
@@ -154,7 +154,9 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         plt.plot(data['trigger_rate'] * 1E9)
         plt.plot(data['shower_rate'] * 1E9)
         plt.ylabel('rate [Hz]')
-        plt.legend('trigger rate', 'shower_rate')
+        plt.legend({'trigger rate', 'shower rate'})
+        xlim = plt.xlim()
+        plt.xlim(xlim[0] - 1, xlim[1] + 1)
         if rate_plot_filename == "show":
             plt.show()
         else:
@@ -165,6 +167,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         fig2 = plt.figure()
         plt.plot(data['baseline'])
         plt.ylabel('Baseline [LSB]')
+        xlim = plt.xlim()
+        plt.xlim(xlim[0] - 1, xlim[1] + 1)
         if rate_plot_filename == "show":
             plt.show()
         else:
