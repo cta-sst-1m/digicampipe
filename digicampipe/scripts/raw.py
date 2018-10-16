@@ -62,7 +62,7 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename):
                                           max_events=max_events)
         baseline_histo = Histogram1D(
             data_shape=(n_pixels,),
-            bin_edges=np.arange(-4096, 4096, 1 / 16),
+            bin_edges=np.arange(0, 4096, 1 / 16),
         )
 
         for event in events:
