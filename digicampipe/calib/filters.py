@@ -108,5 +108,5 @@ def filter_period(event_stream, period):
 def filter_clocked_trigger(events):
     for event in events:
 
-        if not event.event_type == 8:
+        if event.event_type.INTERNAL not in event.event_type:
             yield event
