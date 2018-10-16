@@ -6,23 +6,30 @@ Usage:
   digicam-spe [options] [--] <INPUT>...
 
 Options:
-  -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
-  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
-  -c --compute                Compute the data.
-  -f --fit                    Fit.
-  -d --display                Display.
-  -v --debug                  Enter the debug mode.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
-  --shift=N                   number of bins to shift before integrating
-                              [default: 0].
-  --integral_width=N          number of bins to integrate over
-                              [default: 7].
-  --pulse_finder_threshold=F  threshold of pulse finder in arbitrary units
-                              [default: 2.0].
-  --save_figures              Save the plots to the OUTPUT folder
-  --ncall=N                   Number of calls for the fit [default: 10000]
-  --n_samples=N               Number of samples per waveform
+  -h --help                    Show this screen.
+  --max_events=N               Maximum number of events to analyse.
+  --max_histo_filename=FILE    File path of the max histogram.
+                               [Default: ./max_histo.pk]
+  --charge_histo_filename=FILE File path of the charge histogram
+                               [Default: ./charge_histo.pk]
+  --raw_histo_filename=FILE    File path of the raw histogram
+                               [Default: ./raw_histo.pk]
+  -o OUTPUT --output=OUTPUT    Output file path to store the results.
+                               [Default: ./results.npz]
+  -c --compute                 Compute the data.
+  -f --fit                     Fit.
+  -d --display                 Display.
+  -v --debug                   Enter the debug mode.
+  -p --pixel=<PIXEL>           Give a list of pixel IDs.
+  --shift=N                    Number of bins to shift before integrating
+                               [default: 0].
+  --integral_width=N           Number of bins to integrate over
+                               [default: 7].
+  --pulse_finder_threshold=F   Threshold of pulse finder in arbitrary units
+                               [default: 2.0].
+  --save_figures               Save the plots to the OUTPUT folder
+  --ncall=N                    Number of calls for the fit [default: 10000]
+  --n_samples=N                Number of samples per waveform
 
 """
 import os
@@ -195,18 +202,14 @@ def entry():
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['--output']
 
-    if not os.path.exists(output_path):
-        raise IOError('Path for output does not exists \n')
+    raw_histo_filename = args['--raw_histo_filename']
+    charge_histo_filename = args['--charge_histo_filename']
+    max_histo_filename = args['--max_histo_filename']
+    results_filename = args['--output']
 
     pixel_id = convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
-
-    raw_histo_filename = os.path.join(output_path, 'raw_histo.pk')
-    charge_histo_filename = os.path.join(output_path, 'charge_histo.pk')
-    max_histo_filename = os.path.join(output_path, 'max_histo.pk')
-    results_filename = os.path.join(output_path, 'results.npz')
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
