@@ -22,11 +22,11 @@ ghv_off_folder=$ghv_off_folder'raw_histo.pk'
 ghv_on_folder=$ghv_on_folder'raw_histo.pk'
 dark_folder=$dark_folder'raw_histo.pk'
 
-digicam-raw --compute --output=$ghv_off_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1292..1299}.fits.fz
+# digicam-raw --compute --output=$ghv_off_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1292..1299}.fits.fz
 # digicam-raw --display --output=$ghv_off_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1292..1299}.fits.fz
 # digicam-raw --compute --output=$ghv_on_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1286..1292}.fits.fz
 # digicam-raw --display --output=$ghv_on_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1286..1292}.fits.fz
-# digicam-raw --compute --output=$dark_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1276..1279}.fits.fz
+digicam-raw --compute --output=$dark_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1276..1279}.fits.fz
 # digicam-raw --display --output=$dark_folder /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1276..1279}.fits.fz
 
 # digicam-spe --compute --output=$dark_folder --integral_width=$integral_width --shift=$shift --n_samples=$n_samples /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1276..1279}.fits.fz
