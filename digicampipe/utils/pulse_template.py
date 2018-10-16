@@ -3,19 +3,17 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.baseline import fill_digicam_baseline, subtract_baseline
+from digicampipe.calib.baseline import fill_digicam_baseline, \
+    subtract_baseline, correct_wrong_baseline
 from digicampipe.calib.time import estimate_time_from_leading_edge
 from digicampipe.utils.hist2d import Histogram2dChunked
 
 
 class NormalizedPulseTemplate:
     def __init__(self, amplitude, time, amplitude_std=None):
-        dt = np.diff(time)
-        if not (dt == dt[0]).all():
-            raise ValueError('time argument should be of constant sampling')
         self.time = time
         self.amplitude = amplitude
-        if amplitude_std:
+        if amplitude_std is not None:
             assert len(amplitude_std) == len(amplitude)
             self.amplitude_std = amplitude_std
         else:
@@ -45,10 +43,13 @@ class NormalizedPulseTemplate:
     @classmethod
     def create_from_datafiles(
             cls, input_files, pixels=(0,), time_range_ns=(-10, 40),
-            amplitude_range=(-.1, 0.4), n_bin=101
+            amplitude_range=(-.1, 0.4), n_bin=100
     ):
         events = calibration_event_stream(input_files)
         events = fill_digicam_baseline(events)
+        if "SST1M_01_201805" in input_files[0]:  # fix data in May
+            print("WARNING: correction of the baselines applied.")
+            events = correct_wrong_baseline(events)
         events = subtract_baseline(events)
         histo = None
         n_sample = 0
@@ -56,24 +57,59 @@ class NormalizedPulseTemplate:
         for e in events:
             adc = e.data.adc_samples
             integral = adc[:, 10:30].sum(axis=1)
-            adc_norm = adc / integral[:, None]
-            assert np.all(adc_norm[:, 10:30].sum(axis=1) == 1)
+            adc_norm = adc[pixels, :] / integral[pixels, None]
             arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
             if histo is None:
-                n_pixel, n_sample = adc[pixels, :].shape
+                n_pixel, n_sample = adc_norm.shape
                 histo = Histogram2dChunked(
                     shape=(n_pixel, n_bin, n_bin),
                     range=[time_range_ns, amplitude_range]
                 )
             else:
-                assert adc.shape == n_pixel, n_sample
+                assert adc_norm.shape[0] == n_pixel
+                assert adc_norm.shape[1] == n_sample
             time_in_ns = np.arange(n_sample) * 4
+            # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
+            # 1 pe <=> 20 integral
+            bad_charge = np.logical_or(integral < 200, integral > 10000)
+            arrival_time_in_ns[bad_charge] = -np.inf # ignored by histo
             histo.fill(
                 x=time_in_ns[None, :] - arrival_time_in_ns[pixels, None],
-                y=adc_norm[pixels, :]
+                y=adc_norm
             )
-        t, x, dx = histo.fit_y()
-        return cls(amplitude=x, time=t, amplitude_std=dx)
+        t_pixels, ampl_pixels, ampl_std_pixels = histo.fit_y()
+        if n_pixel == 1:
+            return cls(amplitude=ampl_pixels[0], time=t_pixels[0],
+                       amplitude_std=ampl_std_pixels[0])
+        ts = np.unique(np.concatenate(t_pixels))
+        if len(ts) < 2:
+            raise RuntimeError('no charge passed the cuts')
+            return
+        ampl = np.zeros_like(ts)
+        ampl_std = np.zeros_like(ts)
+        for idx, t in enumerate(ts):
+            ampl_sum_t = 0
+            n_pixel_t = 0
+            for pixel in range(n_pixel):
+                bool_pos = t == t_pixels[pixel]
+                if np.any(bool_pos):
+                    n_pixel_t += 1
+                    ampl_sum_t += ampl_pixels[pixel][bool_pos]
+            ampl[idx] = ampl_sum_t / n_pixel_t
+            ampl_var1_t = 0
+            ampl_var2_t = 0
+            for pixel in range(n_pixel):
+                bool_pos = t == t_pixels[pixel]
+                if np.any(bool_pos):
+                    ampl_var1_t += ampl_std_pixels[pixel][bool_pos] ** 2
+                    ampl_var2_t += (ampl_pixels[pixel][bool_pos] - ampl[idx]) ** 2
+            if n_pixel_t > 1:
+                ampl_std[idx] = np.sqrt((ampl_var1_t + ampl_var2_t)/(n_pixel_t - 1))
+            elif n_pixel_t == 1:
+                ampl_std[idx] = np.sqrt(ampl_var1_t)
+            else:
+                raise RuntimeError('unexpected problem calulating std')
+        return cls(time=ts, amplitude=ampl, amplitude_std=ampl_std)
 
     def _interpolate(self):
         if abs(np.min(self.amplitude)) <= abs(np.max(self.amplitude)):
