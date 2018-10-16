@@ -1,10 +1,11 @@
-from pkg_resources import resource_filename
 import os
 import warnings
-import numpy as np
 
+import numpy as np
 from cts_core.camera import Camera
-from digicampipe.utils import geometry
+from pkg_resources import resource_filename
+
+from digicampipe.instrument import geometry
 from digicampipe.io.event_stream import event_stream, add_slow_data
 
 warnings.simplefilter("ignore")
@@ -28,7 +29,6 @@ digicam_config_file = resource_filename(
 )
 
 aux_basepath = resource_filename('digicampipe', 'tests/resources/')
-
 
 digicam = Camera(_config_file=digicam_config_file)
 digicam_geometry = geometry.generate_geometry_from_camera(camera=digicam)

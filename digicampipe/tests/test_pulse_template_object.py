@@ -1,6 +1,7 @@
-from pkg_resources import resource_filename
 import os
+
 import numpy as np
+from pkg_resources import resource_filename
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
@@ -18,7 +19,6 @@ RATIO_CHARGE_AMPLITUDE = 0.24164813864342138
 
 
 def test_pulse_template_creation_with_file():
-
     template = NormalizedPulseTemplate.load(template_filename)
 
     t, x = np.loadtxt(template_filename).T
@@ -27,21 +27,18 @@ def test_pulse_template_creation_with_file():
 
 
 def test_pulse_template_integral():
-
     template = NormalizedPulseTemplate.load(template_filename)
 
     assert template.integral() == PULSE_AREA
 
 
 def test_pulse_template_plot():
-
     template = NormalizedPulseTemplate.load(template_filename)
 
     template.plot()
 
 
 def test_pulse_template_normalization():
-
     template = NormalizedPulseTemplate.load(template_filename)
 
     assert np.max(template.amplitude) == 1
@@ -59,7 +56,6 @@ def test_pulse_template_normalization():
 
 
 def test_pulse_template_ndarray_amplitude():
-
     n_samples = 51
     time = np.linspace(0, 50, num=n_samples)
     amplitude = [np.ones(n_samples), np.ones(n_samples)]
@@ -73,7 +69,6 @@ def test_pulse_template_ndarray_amplitude():
 
 
 def test_pulse_template_object_get_sub_template():
-
     n_samples = 51
     time = np.linspace(0, 50, num=n_samples)
     amplitude = [np.ones(n_samples), np.arange(n_samples)]
@@ -86,7 +81,6 @@ def test_pulse_template_object_get_sub_template():
 
 
 def test_charge_amplitude_ratio():
-
     template = NormalizedPulseTemplate.load(template_filename)
     ratio = template.compute_charge_amplitude_ratio(7, 4)
 
@@ -94,7 +88,7 @@ def test_charge_amplitude_ratio():
 
 
 if __name__ == '__main__':
-
     test_pulse_template_plot()
     import matplotlib.pyplot as plt
+
     plt.show()

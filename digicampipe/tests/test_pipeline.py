@@ -1,7 +1,9 @@
-import tempfile
 import os
-from pkg_resources import resource_filename
+import tempfile
+
 from astropy.io import fits
+from pkg_resources import resource_filename
+
 from digicampipe.scripts.pipeline import main as main_pipeline
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args

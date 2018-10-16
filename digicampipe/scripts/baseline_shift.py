@@ -21,11 +21,12 @@ Options:
   --crosstalk=<CROSSTALK>     Calibration params to use in the fit
 """
 import os
-from docopt import docopt
-import numpy as np
+
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+import numpy as np
+from docopt import docopt
 from histogram.histogram import Histogram1D
+from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
@@ -33,16 +34,13 @@ from digicampipe.utils.docopt import convert_max_events_args, \
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
-    debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
     output_path = args['--output']
 
     if not os.path.exists(output_path):
-
         raise IOError('Path {} for output does not '
                       'exists \n'.format(output_path))
 
@@ -77,16 +75,15 @@ def entry():
                                               max_events=max_events)
 
             for count, event in enumerate(events):
-
                 baseline_mean[i] += event.data.digicam_baseline
-                baseline_std[i] += event.data.digicam_baseline**2
+                baseline_std[i] += event.data.digicam_baseline ** 2
 
-                histo.fill(event.data.adc_samples, indices=(i, ))
+                histo.fill(event.data.adc_samples, indices=(i,))
 
             count += 1
             baseline_mean[i] = baseline_mean[i] / count
             baseline_std[i] = baseline_std[i] / count
-            baseline_std[i] = baseline_std[i] - baseline_mean[i]**2
+            baseline_std[i] = baseline_std[i] - baseline_mean[i] ** 2
             baseline_std[i] = np.sqrt(baseline_std[i])
 
         histo.save(os.path.join(output_path, 'raw_histo.pk'))
@@ -94,7 +91,6 @@ def entry():
                  baseline_std=baseline_std, dc_levels=dc_levels)
 
     if args['--fit']:
-
         data = dict(np.load(results_filename))
         baseline_mean = data['baseline_mean']
         baseline_std = data['baseline_std']
@@ -107,8 +103,6 @@ def entry():
         cell_capacitance = 50 * 1E-15
 
         baseline_shift = baseline_mean - baseline_mean[0]
-        nsb_rate = baseline_shift / gain / template_area * (1 - crosstalk)
-
         nsb_rate = gain * template_area / (baseline_shift * (1 - crosstalk))
         nsb_rate = nsb_rate - cell_capacitance * bias_resistance
         nsb_rate = 1 / nsb_rate
@@ -118,11 +112,9 @@ def entry():
                  nsb_rate=nsb_rate, baseline_shift=baseline_shift)
 
     if args['--save_figures']:
-
         pass
 
     if args['--display']:
-
         data = dict(np.load(results_filename))
         histo = Histogram1D.load(os.path.join(output_path, 'raw_histo.pk'))
         baseline_mean = histo.mean()
@@ -166,5 +158,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()
