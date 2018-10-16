@@ -5,10 +5,12 @@ This requires the protozfits python library to be installed
 """
 import logging
 import warnings
+from datetime import datetime
 
 import numpy as np
 from protozfits import File
 from tqdm import tqdm
+from pandas import Timestamp
 
 from digicampipe.instrument import camera
 from digicampipe.io.containers import DataContainer
@@ -143,14 +145,19 @@ def zfits_event_source(
                 r0 = data.r0.tel[tel_id]
                 r0.camera_event_number = event.eventNumber
                 r0.pixel_flags = event.pixels_flags[_sort_ids]
-                r0.local_camera_clock = (
+                time = (
                     np.int64(event.local_time_sec * 1E9) +
                     np.int64(event.local_time_nanosec)
                 )
-                r0.gps_time = (
+
+                r0.local_camera_clock = Timestamp(time)
+
+                time = (
                     np.int64(event.trig.timeSec * 1E9) +
                     np.int64(event.trig.timeNanoSec)
                 )
+
+                r0.gps_time = Timestamp(time)
                 r0.camera_event_type = event.event_type
                 r0.array_event_type = event.eventType
                 r0.adc_samples = samples[_sort_ids]
