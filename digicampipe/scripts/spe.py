@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''
+"""
 Do the Single Photoelectron anaylsis
 
 Usage:
@@ -24,7 +24,7 @@ Options:
   --ncall=N                   Number of calls for the fit [default: 10000]
   --n_samples=N               Number of samples per waveform
 
-'''
+"""
 import os
 
 import matplotlib.pyplot as plt
