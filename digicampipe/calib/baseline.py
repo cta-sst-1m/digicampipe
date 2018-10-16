@@ -59,7 +59,7 @@ def compute_baseline_std(events, n_events):
 
         data = event.data.adc_samples
 
-        if event.event_type.INTRNL in event.event_type:
+        if event.event_type.INTERNAL in event.event_type:
             baselines_std.append(data.std(axis=1))
             baselines_std = baselines_std[-n_events:]
             event.data.baseline_std = np.mean(baselines_std, axis=0)

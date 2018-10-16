@@ -45,35 +45,18 @@ __all__ = ['InstrumentContainer',
 
 
 class CameraEventType(IntFlag):
-    '''
-    I do not know where this comes from, but I found it here:
-    https://github.com/cta-sst-1m/digicampipe/issues/244
-
-    ALG0       (0x1)     /* algorithm 0 trigger - PATCH7 */
-    ALG1       (0x2)     /* algorithm 1 trigger - PATCH19 */
-    ALG2       (0x4)     /* algorithm 2 trigger - MUON */
-    INTRNL     (0x8)     /* internal or external  */
-    EXTMSTR    (0x10)    /* unused (0) / external (on master only)  */
-    BIT5       (0x20)    /* unused (0)  */
-    BIT6       (0x40)    /* unused (0)  */
-    CONT       (0x80)    /* continuous readout marker  */
-    CSP_MUON   (0x10000) /* camera server detected muon*/
-    CSP_HILLAS (0x20000) /* camera server computed Hillas parametrs */
-
-    I removed the EVTTYPE, since this is clear from the class name
-    I removed DIGICAM since this is clear from the project.
-    '''
+    # from https://github.com/cta-sst-1m/digicampipe/issues/244
     UNKNOWN = 0x0
-    ALG0 = 0x1
-    ALG1 = 0x2
-    ALG2 = 0x4
-    INTRNL = 0x8
-    EXTMSTR = 0x10
-    BIT5 = 0x20
-    BIT6 = 0x40
-    CONT = 0x80
-    CSP_MUON = 0x10000
-    CSP_HILLAS = 0x20000
+    PATCH7 = 0x1  # algorithm 0 trigger - PATCH7
+    PATCH19 = 0x2  # algorithm 1 trigger - PATCH19
+    MUON_TRIGGER = 0x4  # algorithm 2 trigger - MUON
+    INTERNAL = 0x8  # internal or external trigger
+    EXTMSTR = 0x10  # unused (0) / external (on master only)
+    BIT5 = 0x20  # unused (0)
+    BIT6 = 0x40  # unused (0)
+    CONTINUOUS = 0x80  # continuous readout marker
+    MUON_DETECT = 0x10000  # camera server detected muon
+    HILLAS = 0x20000  # camera server computed Hillas parametrs
 
 
 class InstrumentContainer(Container):
