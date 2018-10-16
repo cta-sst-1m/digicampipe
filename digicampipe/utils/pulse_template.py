@@ -19,9 +19,14 @@ class NormalizedPulseTemplate:
         else:
             self.amplitude_std = self.amplitude * 0
         self._template = self._interpolate()
+        self._template_std = self._interpolate_std()
 
     def __call__(self, time, amplitude=1, t_0=0, baseline=0):
         y = amplitude * self._template(time - t_0) + baseline
+        return np.array(y)
+
+    def std(self, time, amplitude=1, t_0=0, baseline=0):
+        y = amplitude * self._template_std(time - t_0) + baseline
         return np.array(y)
 
     def __getitem__(self, item):
@@ -84,7 +89,6 @@ class NormalizedPulseTemplate:
         ts = np.unique(np.concatenate(t_pixels))
         if len(ts) < 2:
             raise RuntimeError('no charge passed the cuts')
-            return
         ampl = np.zeros_like(ts)
         ampl_std = np.zeros_like(ts)
         for idx, t in enumerate(ts):
@@ -121,9 +125,16 @@ class NormalizedPulseTemplate:
             normalization = np.min(self.amplitude)
 
         self.amplitude = self.amplitude / normalization
+        self.amplitude_std = self.amplitude_std / normalization
 
         return interp1d(self.time, self.amplitude, kind='cubic',
                         bounds_error=False, fill_value=0., assume_sorted=True)
+
+    def _interpolate_std(self):
+        return interp1d(self.time, self.amplitude_std, kind='cubic',
+                        bounds_error=False, fill_value=np.inf,
+                        assume_sorted=True)
+
 
     def integral(self):
 
