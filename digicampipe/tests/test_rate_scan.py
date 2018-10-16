@@ -1,8 +1,8 @@
-import pkg_resources
 import os
 
-from digicampipe.scripts import rate_scan
+import pkg_resources
 
+from digicampipe.scripts import rate_scan
 
 example_file_path = pkg_resources.resource_filename(
     'digicampipe',
@@ -16,5 +16,4 @@ example_file_path = pkg_resources.resource_filename(
 
 
 def test_compute_rate_scan():
-
     rate_scan.compute(example_file_path, 'test')

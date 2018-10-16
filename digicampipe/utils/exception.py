@@ -1,3 +1,2 @@
-
 class PeakNotFound(Exception):
     pass
