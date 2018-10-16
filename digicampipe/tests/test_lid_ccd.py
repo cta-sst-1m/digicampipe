@@ -1,6 +1,7 @@
+from glob import glob
+
 import pytest
 from pkg_resources import resource_filename
-from glob import glob
 
 example_lid_CCD_image_file_paths = glob(
     resource_filename('digicampipe', 'tests/resources/stars_on_lid/*.fits')
@@ -9,8 +10,8 @@ example_lid_CCD_image_file_paths = glob(
 
 @pytest.mark.deselect
 def test_find_stars(method='nova'):
-    from digicampipe.image.sky_image import LidCCDObservation
-    from digicampipe.image.utils import Rectangle
+    from digicampipe.image.lidccd.sky_image import LidCCDObservation
+    from digicampipe.image.lidccd.utils import Rectangle
     # find stars in lid CCD images:
     rectangles = [
         Rectangle(350, 900, 770, 1550),
@@ -24,7 +25,7 @@ def test_find_stars(method='nova'):
         guess_ra_dec=(83.2, 26.2),
         guess_radius=10,
         method=method
-        )
+    )
     nsolved = 0
     for lidccd_image in lidccd_obs.lidccd_images:
         if lidccd_image.wcs is not None:

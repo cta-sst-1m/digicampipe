@@ -4,23 +4,46 @@ Components to read ZFITS data.
 This requires the protozfits python library to be installed
 """
 import logging
-from tqdm import tqdm
-import numpy as np
 import warnings
-from digicampipe.io.containers import DataContainer
-import digicampipe.utils as utils
-from protozfits import File
-logger = logging.getLogger(__name__)
 
+import numpy as np
+from protozfits import File
+from tqdm import tqdm
+
+from digicampipe.instrument import camera
+from digicampipe.io.containers import DataContainer
+
+logger = logging.getLogger(__name__)
 
 __all__ = ['zfits_event_source']
 
 
+def _binary_search(file, item):
+    first = 0
+    last = len(file.Events) - 1
+    found = False
+
+    while first <= last and not found:
+
+        mid_point = (first + last) // 2
+
+        if file.Events[mid_point].eventNumber == item:
+            found = True
+        else:
+            if item < file.Events[mid_point].eventNumber:
+                last = mid_point - 1
+            else:
+                first = mid_point + 1
+
+    return mid_point
+
+
 def zfits_event_source(
-    url,
-    camera=utils.DigiCam,
-    max_events=None,
-    allowed_tels=None,
+        url,
+        camera=camera.DigiCam,
+        max_events=None,
+        allowed_tels=None,
+        event_id=None,
 ):
     """A generator that streams data from an ZFITs data file
     Parameters
@@ -34,17 +57,42 @@ def zfits_event_source(
         be used for example emulate the final CTA data format, where there
         would be 1 telescope per file (whereas in current monte-carlo,
         they are all interleaved into one file)
-    camera : utils.Camera(), default DigiCam
+    camera : digicampipe.instrument.Camera(), default DigiCam
+    event_id: int
+        Event id to start at. If the exact event ID does not exists
+        it will return the closest past event. If the event ID is out of the
+        range of the file it will raise an IndexError
     """
     data = DataContainer()
 
     with File(url) as file:
         loaded_telescopes = []
+
+        n_events_in_file = len(file.Events)
+        events = file.Events
+        index_of_event = 0
+
+        if event_id is not None:
+
+            index_of_event = _binary_search(file, event_id)
+
+            first_event_id = file.Events[0].eventNumber
+            last_event_id = file.Events[n_events_in_file - 1].eventNumber
+            if not first_event_id <= event_id <= last_event_id:
+                raise IndexError('Cannot find event ID {} in File {}\n'
+                                 'First event ID : {}\n'
+                                 'Last event ID : {}'.format(event_id, url,
+                                                             first_event_id,
+                                                             last_event_id))
+
+            events = events[max(index_of_event, 0):]
+
         for event_counter, event in tqdm(
-            enumerate(file.Events),
-            desc='Events',
-            leave=True,
-            total=len(file.Events),
+                enumerate(events),
+                desc='Events',
+                leave=True,
+                initial=index_of_event,
+                total=n_events_in_file,
         ):
             if max_events is not None and event_counter > max_events:
                 break
@@ -76,9 +124,9 @@ def zfits_event_source(
                 except AttributeError:
                     warnings.warn((
                         "Could not read `hiGain.waveforms.baselines`"
-                        " for event:{0}"
-                        "of file:{url}".format(event_counter, url)
-                        ))
+                        "for event:{}\n"
+                        "of file:{}\n".format(event_counter, url)
+                    ))
                     return np.ones(n_pixels) * np.nan
 
                 if tel_id not in loaded_telescopes:
@@ -231,5 +279,5 @@ def _prepare_trigger_output(_a):
 
     _a = np.unpackbits(_a.reshape(-1, A, B, 1), axis=-1)
     _a = _a[..., ::-1]
-    _a = _a.reshape(-1, A*B*C).T
+    _a = _a.reshape(-1, A * B * C).T
     return _a[PATCH_ID_OUTPUT_SORT_IDS]

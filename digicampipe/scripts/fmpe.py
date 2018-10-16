@@ -27,19 +27,17 @@ Options:
   --estimated_gain=N          Estimated gain for the fit
 '''
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 from docopt import docopt
+from histogram.fit import HistogramFitter
+from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-from histogram.histogram import Histogram1D
-from histogram.fit import HistogramFitter
+from digicampipe.scripts import mpe
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
-
-from digicampipe.scripts import timing
-from digicampipe.scripts import mpe
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.pdf import fmpe_pdf_10
 
@@ -231,7 +229,6 @@ class FMPEFitter(HistogramFitter):
 def compute(files, max_events, pixel_id, n_samples, timing_filename,
             charge_histo_filename, amplitude_histo_filename, save,
             integral_width, shift, bin_width):
-
     pulse_indices = np.load(timing_filename)['time'] // 4
 
     amplitude_histo, charge_histo = mpe.compute(
@@ -246,7 +243,6 @@ def compute(files, max_events, pixel_id, n_samples, timing_filename,
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
     debug = args['--debug']
@@ -274,7 +270,6 @@ def entry():
     estimated_gain = float(args['--estimated_gain'])
 
     if args['--compute']:
-
         compute(files,
                 max_events=max_events,
                 pixel_id=pixel_id,

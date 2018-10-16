@@ -27,21 +27,20 @@ Options:
   --timing=<TIMING_HISTO>     Timing histogram
 '''
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 from docopt import docopt
+from histogram.fit import HistogramFitter
+from histogram.histogram import Histogram1D
+from iminuit import describe
 from tqdm import tqdm
 
-import numpy as np
-import matplotlib.pyplot as plt
-from iminuit import describe
-
-from histogram.histogram import Histogram1D
-from histogram.fit import HistogramFitter
-
-from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.camera.baseline import fill_digicam_baseline, \
+from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline
-from digicampipe.calib.camera.peak import fill_pulse_indices
-from digicampipe.calib.camera.charge import compute_charge, compute_amplitude
+from digicampipe.calib.charge import compute_charge, compute_amplitude
+from digicampipe.calib.peak import fill_pulse_indices
+from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args, convert_dac_level
 from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
@@ -49,7 +48,6 @@ from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
 
 
 class MPEFitter(HistogramFitter):
-
     def __init__(self, histogram, fixed_params, **kwargs):
 
         super(MPEFitter, self).__init__(histogram, **kwargs)
@@ -121,7 +119,7 @@ class MPEFitter(HistogramFitter):
         n_peaks = init_params['n_peaks']
 
         limit_params['limit_baseline'] = (
-        baseline - sigma_e, baseline + sigma_e)
+            baseline - sigma_e, baseline + sigma_e)
         limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
         limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
         limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
@@ -157,9 +155,7 @@ class MPEFitter(HistogramFitter):
 
 
 def plot_event(events, pixel_id):
-
     for event in events:
-
         event.data.plot(pixel_id=pixel_id)
         plt.show()
 
@@ -170,7 +166,6 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
             shift, bin_width, charge_histo_filename='charge_histo.pk',
             amplitude_histo_filename='amplitude_histo.pk',
             save=True):
-
     if os.path.exists(charge_histo_filename) and save:
 
         raise IOError('File {} already exists'.format(charge_histo_filename))
@@ -181,7 +176,8 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
 
     if os.path.exists(amplitude_histo_filename) and save:
 
-        raise IOError('File {} already exists'.format(amplitude_histo_filename))
+        raise IOError(
+            'File {} already exists'.format(amplitude_histo_filename))
 
     elif os.path.exists(amplitude_histo_filename):
 
@@ -193,7 +189,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
         n_pixels = len(pixel_id)
 
         events = calibration_event_stream(files, pixel_id=pixel_id,
-                                      max_events=max_events)
+                                          max_events=max_events)
         # events = compute_baseline_with_min(events)
         events = fill_digicam_baseline(events)
         events = subtract_baseline(events)
@@ -217,7 +213,6 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
             amplitude_histo.fill(event.data.reconstructed_amplitude)
 
         if save:
-
             charge_histo.save(charge_histo_filename)
             amplitude_histo.save(amplitude_histo_filename)
 
@@ -225,7 +220,6 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
 
 
 def entry():
-
     args = docopt(__doc__)
     files = args['<INPUT>']
     debug = args['--debug']
@@ -234,7 +228,6 @@ def entry():
     output_path = args['--output']
 
     if not os.path.exists(output_path):
-
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
 
@@ -273,7 +266,7 @@ def entry():
         charge_histo = Histogram1D(
             bin_edges=np.arange(- 40 * integral_width,
                                 2000, bin_width),
-            data_shape=(n_ac_levels, n_pixels, ))
+            data_shape=(n_ac_levels, n_pixels,))
 
         amplitude_histo = Histogram1D(
             bin_edges=np.arange(- 40,
@@ -307,9 +300,9 @@ def entry():
 
             for event in events:
                 charge_histo.fill(event.data.reconstructed_charge,
-                                  indices=(i, ))
+                                  indices=(i,))
                 amplitude_histo.fill(event.data.reconstructed_amplitude,
-                                     indices=(i, ))
+                                     indices=(i,))
 
         charge_histo.save(charge_histo_filename)
         amplitude_histo.save(amplitude_histo_filename)
@@ -337,7 +330,7 @@ def entry():
         chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
         ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
-        ac_limit = [np.inf]*n_pixels
+        ac_limit = [np.inf] * n_pixels
 
         charge_histo = Histogram1D.load(charge_histo_filename)
         amplitude_histo = Histogram1D.load(amplitude_histo_filename)
@@ -352,7 +345,6 @@ def entry():
                 histo = charge_histo[i, pixel_id]
 
                 if histo.data[-1] > 0 or histo.data.sum() == 0:
-
                     continue
 
                 fit_params_names = describe(mpe_distribution_general)
@@ -394,7 +386,6 @@ def entry():
                     fitter.fit(ncall=ncall)
 
                     if debug:
-
                         x_label = '[LSB]'
                         label = 'Pixel {}'.format(pixel_id)
                         fitter.draw(legend=False, x_label=x_label, label=label)
@@ -447,11 +438,9 @@ def entry():
                  )
 
     if args['--save_figures']:
-
         pass
 
     if args['--display']:
-
         charge_histo = Histogram1D.load(charge_histo_filename)
         charge_histo.draw(index=(0, 0), log=False, legend=False)
 
@@ -465,5 +454,4 @@ def entry():
 
 
 if __name__ == '__main__':
-
     entry()
