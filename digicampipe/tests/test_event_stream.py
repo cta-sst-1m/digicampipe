@@ -22,4 +22,4 @@ def test_event_source_new_style():
 def test_event_type_enum_behavior():
     for event in event_stream(example_file_path):
         for _, r0 in event.r0.tel.items():
-            assert r0.camera_event_type.INTRNL in r0.camera_event_type
+            assert r0.camera_event_type.INTERNAL in r0.camera_event_type
