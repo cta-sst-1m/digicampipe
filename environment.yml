@@ -5,6 +5,7 @@ channels:
 - cta-observatory
 - defaults
 dependencies:
+- aenum
 - astropy
 - astroquery
 - ctapipe-extra=0.2.*
