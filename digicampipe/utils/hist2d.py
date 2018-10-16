@@ -24,20 +24,25 @@ class Histogram2d:
         return self.histo
 
     def fit_y(self):
-        _h = self.contents()
-        N = _h.sum(axis=-1)
-        x_bin_center = self.xedges[1:] - self.xedges[:-1]
-        y_bin_center = self.yedges[1:] - self.yedges[:-1]
-        mean_y = (_h * y_bin_center[None, :]).sum(axis=-1) / N
-        squared_sum_y = (y_bin_center[None, :] - mean_y[:, None])**2
-        std_y = np.sqrt((_h * squared_sum_y).sum(axis=-1) / (N-1))
-        return x_bin_center, mean_y, std_y
+        h = self.contents()
+        n = h.sum(axis=-1)
+        x_bin_center = 0.5 * (self.xedges[1:] + self.xedges[:-1])
+        y_bin_center = 0.5 * (self.yedges[1:] + self.yedges[:-1])
+        x_bin_centers = []
+        means_y = []
+        stds_y = []
+        for pixel in range(h.shape[0]):
+            x_bin_non_empty = n[pixel, :] > 10
+            h_pix = h[pixel, x_bin_non_empty, :]
+            n_pix = n[pixel, x_bin_non_empty]
+            x_bin_centers.append(x_bin_center[x_bin_non_empty])
+            mean_y = (h_pix * y_bin_center[None, :]).sum(axis=-1) / n_pix
+            means_y.append(mean_y)
+            squared_sum_y = (y_bin_center[None, :] - mean_y[:, None]) ** 2
+            std_y = np.sqrt((h_pix * squared_sum_y).sum(axis=-1) / (n_pix - 1))
+            stds_y.append(std_y)
+        return x_bin_centers, means_y, stds_y
 
-    def __add__(self, other):
-        assert self.range == other.range
-        assert self.extent == other.extent
-        result = self
-        result.histo += other.contents
 
 class Histogram2dChunked(Histogram2d):
     def __init__(self, shape, range, buffer_size=1000):
