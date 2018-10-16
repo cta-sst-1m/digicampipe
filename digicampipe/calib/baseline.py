@@ -23,7 +23,13 @@ def fill_baseline(events, baseline):
 def fill_digicam_baseline(events):
     for event in events:
         event.data.baseline = event.data.digicam_baseline
+        yield event
 
+
+def correct_wrong_baseline(events):
+    "In May 2018 the data was recorded with a baseline 16 time too small."
+    for event in events:
+        event.data.baseline *= 16
         yield event
 
 
