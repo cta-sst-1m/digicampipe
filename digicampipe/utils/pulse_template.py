@@ -77,7 +77,7 @@ class NormalizedPulseTemplate:
             # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
             # 1 pe <=> 20 integral
             bad_charge = np.logical_or(integral < 200, integral > 10000)
-            arrival_time_in_ns[bad_charge] = -np.inf # ignored by histo
+            arrival_time_in_ns[bad_charge] = -np.inf  # ignored by histo
             histo.fill(
                 x=time_in_ns[None, :] - arrival_time_in_ns[pixels, None],
                 y=adc_norm
@@ -106,9 +106,12 @@ class NormalizedPulseTemplate:
                 bool_pos = t == t_pixels[pixel]
                 if np.any(bool_pos):
                     ampl_var1_t += ampl_std_pixels[pixel][bool_pos] ** 2
-                    ampl_var2_t += (ampl_pixels[pixel][bool_pos] - ampl[idx]) ** 2
+                    diff_mean = ampl_pixels[pixel][bool_pos] - ampl[idx]
+                    ampl_var2_t += diff_mean ** 2
             if n_pixel_t > 1:
-                ampl_std[idx] = np.sqrt((ampl_var1_t + ampl_var2_t)/(n_pixel_t - 1))
+                ampl_std[idx] = np.sqrt(
+                    (ampl_var1_t + ampl_var2_t) / (n_pixel_t - 1)
+                )
             elif n_pixel_t == 1:
                 ampl_std[idx] = np.sqrt(ampl_var1_t)
             else:
@@ -134,7 +137,6 @@ class NormalizedPulseTemplate:
         return interp1d(self.time, self.amplitude_std, kind='cubic',
                         bounds_error=False, fill_value=np.inf,
                         assume_sorted=True)
-
 
     def integral(self):
 

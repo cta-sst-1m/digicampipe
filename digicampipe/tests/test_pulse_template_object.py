@@ -115,7 +115,8 @@ def test_charge_amplitude_ratio():
 
 @pytest.mark.deselect  # deselected as it currently requires a large dataset
 def test_pulse_template_from_datafiles():
-    template = NormalizedPulseTemplate.create_from_datafiles(data_filenames, pixels=range(1296))
+    template = NormalizedPulseTemplate.create_from_datafiles(data_filenames,
+                                                             pixels=range(1296))
     template_load = NormalizedPulseTemplate.load(template_filename_2)
     time = np.linspace(-10, 30, num=101)
 
