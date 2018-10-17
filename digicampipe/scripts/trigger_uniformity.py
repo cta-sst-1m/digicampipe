@@ -11,7 +11,7 @@ Options:
                                 saved.
                                 If set to "none", no plot is done.
                                 [Default: show]
-  --event_type=LIST             comma separated list of the event type which
+  --event_types=LIST            comma separated list of the event type which
                                 will be used to calculate the rate:
                                 1: patch7 trigger
                                 8: clocked trigger
@@ -19,7 +19,6 @@ Options:
                                 [Default: none]
 """
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from ctapipe.visualization import CameraDisplay
@@ -29,13 +28,13 @@ from digicampipe.calib.filters import filter_event_types
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.instrument.geometry import compute_patch_matrix
 from digicampipe.io.event_stream import event_stream
+from digicampipe.utils.docopt import convert_text, convert_event_types_args
 
 
-def entry(files, plot="show", event_type='none'):
+def entry(files, plot="show", event_types=None):
     events = event_stream(files)
-    if event_type not in [None, 'None', 'none']:
-        flags = [int(flag) for flag in event_type.strip(',').split(',')]
-        events = filter_event_types(events, flags=flags)
+    if event_types is not None:
+        events = filter_event_types(events, flags=event_types)
     # patxh matrix is a bool of size n_patch x n_pixel
     patch_matrix = compute_patch_matrix(camera=DigiCam)
     n_patch, n_pixel = patch_matrix.shape
@@ -49,7 +48,7 @@ def entry(files, plot="show", event_type='none'):
     pixels_rate = patches_rate.reshape([1, -1]).dot(patch_matrix).flatten()
     print('pixels_rate from', np.min(pixels_rate), 'to', np.max(pixels_rate),
           'trigger/event')
-    if plot is None or plot.lower() == "none":
+    if plot is None:
         return pixels_rate
     fig1 = plt.figure()
     ax = plt.gca()
@@ -72,6 +71,6 @@ def entry(files, plot="show", event_type='none'):
 if __name__ == '__main__':
     args = docopt(__doc__)
     files = args['<INPUT>']
-    plot = args['--plot']
-    event_type = args['--event_type']
-    entry(files, plot, event_type)
+    plot = convert_text(args['--plot'])
+    event_types = convert_event_types_args(args['--event_types'])
+    entry(files, plot, event_types)

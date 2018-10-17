@@ -19,10 +19,12 @@ Options:
 """
 from docopt import docopt
 import matplotlib.pyplot as plt
-from digicampipe.io.event_stream import event_stream
 import numpy as np
 import os
 from pandas import to_datetime
+
+from digicampipe.io.event_stream import event_stream
+from digicampipe.utils.docopt import convert_text
 
 
 def entry(files, event_id_start, event_id_end, plot):
@@ -45,7 +47,7 @@ def entry(files, event_id_start, event_id_end, plot):
     events_ts = events_ts[order]
     events_id = events_id[order]
     baselines_mean = baselines_mean[order]
-    if plot.lower() != "none":
+    if plot.lower() is not None:
         print('plotted with respect to t=', to_datetime(events_ts[0]))
         fig1 = plt.figure(figsize=(8, 8))
         plt.subplot(2, 2, 1)
@@ -78,5 +80,5 @@ if __name__ == '__main__':
     files = args['<INPUT>']
     event_id_start = args['--event_id_start']
     event_id_end = args['--event_id_end']
-    plot = args['--plot']
+    plot = convert_text(args['--plot'])
     entry(files, event_id_start, event_id_end, plot)

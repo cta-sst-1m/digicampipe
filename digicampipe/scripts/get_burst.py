@@ -40,9 +40,6 @@ import numpy as np
 import sys
 import pandas as pd
 from docopt import docopt
-from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.baseline import fill_digicam_baseline
-from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
 from matplotlib import pyplot as plt
 from pandas import to_datetime
 from ctapipe.visualization import CameraDisplay
@@ -50,6 +47,10 @@ from digicampipe.instrument.camera import DigiCam
 import matplotlib.animation as animation
 from matplotlib.dates import DateFormatter
 
+from digicampipe.io.event_stream import calibration_event_stream
+from digicampipe.calib.baseline import fill_digicam_baseline
+from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
+from digicampipe.utils.docopt import convert_text
 
 def expand_mask(input, iters=1):
     """
@@ -127,7 +128,7 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
 
 
 def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
-          output="none", expand=10, merge_sec=5., video_prefix="none"):
+          output=None, expand=10, merge_sec=5., video_prefix=None):
     # get events info
     events = calibration_event_stream(files)
     events = fill_digicam_baseline(events)
@@ -152,7 +153,7 @@ def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
     baselines = np.array(baselines)
 
     # plot history of the baselines
-    if plot_baseline.lower() != "none":
+    if plot_baseline is not None:
         fig1 = plt.figure(figsize=(8, 6))
         ax = plt.gca()
         plt.xticks(rotation=70)
@@ -202,7 +203,7 @@ def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
     bursts = merged_bursts
 
     # output result
-    if output == "none":
+    if output is None:
         run_file = sys.stdout
     else:
         run_file = open(output, 'w')
@@ -215,10 +216,10 @@ def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
         run_file.write(str(i) + " " + ts_begin + " " + ts_end)
         run_file.write(" " + str(event_ids[begin_idx]) + " ")
         run_file.write(str(event_ids[end_idx]) + "\n")
-    if output != "none":
+    if output is not None:
         run_file.close()
 
-    if video_prefix != "none":
+    if video_prefix is not None:
         for i, burst_idxs in enumerate(bursts):
             begin_idx, end_idx = burst_idxs
             events = calibration_event_stream(files)
@@ -236,10 +237,10 @@ if __name__ == '__main__':
     files = args['<INPUT>']
     n_previous_events = int(args['--n_previous_events'])
     threshold_lsb = float(args['--threshold_lsb'])
-    output = args['--output']
+    output = convert_text(args['--output'])
     expand = int(args['--expand'])
     merge_sec = float(args['--merge_sec'])
-    plot_baseline = args['--plot_baseline']
-    video_prefix = args['--video_prefix']
+    plot_baseline = convert_text(args['--plot_baseline'])
+    video_prefix = convert_text(args['--video_prefix'])
     entry(files, plot_baseline, n_previous_events, threshold_lsb, output, expand,
           merge_sec, video_prefix)

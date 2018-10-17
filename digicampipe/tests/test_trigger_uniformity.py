@@ -18,7 +18,7 @@ example_file2_path = resource_filename(
 
 def test_data_quality():
     files = [example_file2_path]
-    pixels_rate = trigger_uniformity(files, plot=None, event_type=None)
+    pixels_rate = trigger_uniformity(files, plot=None, event_types=None)
     # the events in the example files are dark event, so no trigger is expected
     assert np.all(pixels_rate == 0)
 

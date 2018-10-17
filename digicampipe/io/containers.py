@@ -24,7 +24,8 @@ from ctapipe.io.serializer import Serializer
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
-__all__ = ['InstrumentContainer',
+__all__ = ['CameraEventType',
+           'InstrumentContainer',
            'R0Container',
            'R0CameraContainer',
            'R1Container',

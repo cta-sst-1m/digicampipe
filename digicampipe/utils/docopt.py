@@ -39,3 +39,10 @@ def convert_event_types_args(text):
         return None
     else:
         return [int(t) for t in text.split(',')]
+
+
+def convert_text(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        return text

@@ -45,6 +45,7 @@ from ctapipe.io.serializer import Serializer
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from numpy import ndarray
+import os
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
@@ -55,8 +56,7 @@ from digicampipe.calib.cleaning import compute_3d_cleaning
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
-import os
-from matplotlib.dates import DateFormatter
+from digicampipe.utils.docopt import convert_text
 
 
 class DataQualityContainer(Container):
@@ -70,8 +70,8 @@ class DataQualityContainer(Container):
 def main(
         files, dark_filename, time_step, fits_filename, load_files,
         histo_filename, rate_plot_filename, baseline_plot_filename,
-        parameters_filename, template_filename, bias_resistance=1e4 * u.Ohm,
-        cell_capacitance=5e-14 * u.Farad, threshold_sample_pe=20
+        parameters_filename, template_filename, threshold_sample_pe=20,
+        bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
@@ -151,7 +151,7 @@ def main(
     data['time'] = pd.to_datetime(data['time'], utc=True)
     data = data.set_index('time')
 
-    if rate_plot_filename != "none":
+    if rate_plot_filename is not None:
         fig1 = plt.figure()
         ax = plt.gca()
         plt.xticks(rotation=70)
@@ -170,7 +170,7 @@ def main(
             plt.savefig(rate_plot_filename)
         plt.close(fig1)
 
-    if baseline_plot_filename != "none":
+    if baseline_plot_filename is not None:
         fig2 = plt.figure(figsize=(8, 6))
         ax = plt.gca()
         data_burst = data[data['burst']]
@@ -200,11 +200,11 @@ def entry():
     fits_filename = args['--output-fits']
     histo_filename = args['--output-hist']
     load_files = args['--load']
-    rate_plot_filename = args['--rate_plot']
-    baseline_plot_filename = args['--baseline_plot']
+    rate_plot_filename = convert_text(args['--rate_plot'])
+    baseline_plot_filename = convert_text(args['--baseline_plot'])
     parameters_filename = args['--parameters']
     template_filename = args['--template']
-    threshold_sample_pe = args['--threshold_sample_pe']
+    threshold_sample_pe = float(args['--threshold_sample_pe'])
 
     main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
