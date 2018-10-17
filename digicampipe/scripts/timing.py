@@ -9,7 +9,7 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
-  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+  --timing_histo_filename=FILE.  Folder where to store the results.
   --ac_levels=<DAC>           LED AC DAC level
   -c --compute                Compute the data.
   -f --fit                    Fit the timing histo.
@@ -84,11 +84,11 @@ def entry():
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     n_samples = int(args['--n_samples'])
-    output_path = args['--output']
+    timing_histo_filename = args['--output']
     ac_levels = convert_dac_level(args['--ac_levels'])
-    timing_histo_filename = 'timing_histo.pk'
-    timing_histo_filename = os.path.join(output_path, timing_histo_filename)
-    results_filename = os.path.join(output_path, 'timing_results.npz')
+
+    output_path = os.path.dirname(timing_histo_filename)
+    results_filename = os.path.join(output_path, 'timing.npz')
 
     if not os.path.exists(output_path):
         raise IOError('Path for output does not exists \n')
@@ -109,8 +109,7 @@ def entry():
 
     if args['--save_figures']:
 
-        histo_path = os.path.join(output_path, timing_histo_filename)
-        raw_histo = Histogram1D.load(histo_path)
+        raw_histo = Histogram1D.load(timing_histo_filename)
 
         path = os.path.join(output_path, 'figures/', 'timing_histo/')
 
@@ -138,8 +137,7 @@ def entry():
 
     if args['--display']:
 
-        path = os.path.join(output_path, timing_histo_filename)
-        timing_histo = Histogram1D.load(path)
+        timing_histo = Histogram1D.load(timing_histo_filename)
         timing_histo.draw(index=(len(ac_levels)-1, 0, ), log=True, legend=False)
 
         pulse_time = timing_histo.mode()
