@@ -48,8 +48,8 @@ from numpy import ndarray
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
-    compute_baseline_shift, fill_dark_baseline, \
-    tag_burst_from_moving_average_baseline
+    compute_baseline_shift, fill_dark_baseline
+from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
 from digicampipe.calib.charge import compute_sample_photo_electron
 from digicampipe.calib.cleaning import compute_3d_cleaning
 from digicampipe.instrument.camera import DigiCam
@@ -114,7 +114,6 @@ def main(
             data_shape=(n_pixels,),
             bin_edges=np.arange(4096)
         )
-        burst = False
         for i, event in enumerate(events):
             new_time = event.data.local_time
             if init_time == 0:
@@ -124,8 +123,6 @@ def main(
             time_diff = new_time - init_time
             if event.data.shower:
                 shower_count += 1
-            if event.data.burst:
-                burst = True
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
             if time_diff > time_step and i > 0:
                 trigger_rate = count / time_diff
@@ -135,12 +132,11 @@ def main(
                 container.baseline = baseline
                 container.time = (new_time + init_time) / 2
                 container.shower_rate = shower_rate
-                container.burst = burst
+                container.burst = event.data.burst
                 baseline = 0
                 count = 0
                 init_time = 0
                 shower_count = 0
-                burst = False
                 file.add_container(container)
         output_path = os.path.dirname(histo_filename)
         if not os.path.exists(output_path):

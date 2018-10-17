@@ -41,8 +41,8 @@ import sys
 import pandas as pd
 from docopt import docopt
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.baseline import fill_digicam_baseline, \
-    tag_burst_from_moving_average_baseline
+from digicampipe.calib.baseline import fill_digicam_baseline
+from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
 from matplotlib import pyplot as plt
 from pandas import to_datetime
 from ctapipe.visualization import CameraDisplay
