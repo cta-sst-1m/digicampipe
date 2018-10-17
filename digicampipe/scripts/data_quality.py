@@ -48,7 +48,8 @@ from numpy import ndarray
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline, compute_gain_drop, compute_nsb_rate, \
-    compute_baseline_shift, fill_dark_baseline, tag_burst
+    compute_baseline_shift, fill_dark_baseline, \
+    tag_burst_from_moving_average_baseline
 from digicampipe.calib.charge import compute_sample_photo_electron
 from digicampipe.calib.cleaning import compute_3d_cleaning
 from digicampipe.instrument.camera import DigiCam
@@ -98,7 +99,9 @@ def main(
         )
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
         events = compute_sample_photo_electron(events, gain_amplitude)
-        events = tag_burst(events, event_average=100, threshold_lsb=5)
+        events = tag_burst_from_moving_average_baseline(
+            events, event_average=100, threshold_lsb=5
+        )
         events = compute_3d_cleaning(events, geom=DigiCam.geometry,
                                      threshold_sample_pe=threshold_sample_pe)
         init_time = 0

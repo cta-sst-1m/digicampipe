@@ -41,7 +41,8 @@ import sys
 import pandas as pd
 from docopt import docopt
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.baseline import fill_digicam_baseline, tag_burst
+from digicampipe.calib.baseline import fill_digicam_baseline, \
+    tag_burst_from_moving_average_baseline
 from matplotlib import pyplot as plt
 from pandas import to_datetime
 from ctapipe.visualization import CameraDisplay
@@ -130,8 +131,9 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
     # get events info
     events = calibration_event_stream(files)
     events = fill_digicam_baseline(events)
-    events = tag_burst(events, event_average=event_average,
-                       threshold_lsb=threshold_lsb)
+    events = tag_burst_from_moving_average_baseline(
+        events, event_average=event_average, threshold_lsb=threshold_lsb
+    )
     n_event = 0
     timestamps = []
     event_ids = []

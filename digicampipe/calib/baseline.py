@@ -3,7 +3,8 @@ import numpy as np
 __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_with_min', 'subtract_baseline',
            'compute_baseline_shift', 'compute_baseline_std',
-           'compute_nsb_rate', 'compute_gain_drop', 'tag_burst']
+           'compute_nsb_rate', 'compute_gain_drop',
+           'tag_burst_from_moving_average_baseline']
 
 
 def fill_dark_baseline(events, dark_baseline):
@@ -82,11 +83,11 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
         yield event
 
 
-def tag_burst(events, event_average=100, threshold_lsb=2):
+def tag_burst_from_moving_average_baseline(events, n_previous_events=100, threshold_lsb=2):
     last_mean_baselines = []
     for event in events:
         mean_baseline = np.mean(event.data.digicam_baseline)
-        if len(last_mean_baselines) != event_average:
+        if len(last_mean_baselines) != n_previous_events:
             last_mean_baselines.append(mean_baseline)
         else:
             last_mean_baselines = last_mean_baselines[1:]
