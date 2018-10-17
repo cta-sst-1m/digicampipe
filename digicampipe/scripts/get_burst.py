@@ -52,6 +52,7 @@ from digicampipe.calib.baseline import fill_digicam_baseline
 from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
 from digicampipe.utils.docopt import convert_text
 
+
 def expand_mask(input, iters=1):
     """
     Expands the True area in an 1D array 'input'.
@@ -242,5 +243,5 @@ if __name__ == '__main__':
     merge_sec = float(args['--merge_sec'])
     plot_baseline = convert_text(args['--plot_baseline'])
     video_prefix = convert_text(args['--video_prefix'])
-    entry(files, plot_baseline, n_previous_events, threshold_lsb, output, expand,
-          merge_sec, video_prefix)
+    entry(files, plot_baseline, n_previous_events, threshold_lsb, output,
+          expand, merge_sec, video_prefix)

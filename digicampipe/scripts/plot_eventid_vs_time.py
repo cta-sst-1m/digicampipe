@@ -28,7 +28,10 @@ from digicampipe.utils.docopt import convert_text
 
 
 def entry(files, event_id_start, event_id_end, plot):
-    events = event_stream(files, event_id_range=(int(event_id_start), int(event_id_end)))
+    events = event_stream(
+        files,
+        event_id_range=(int(event_id_start), int(event_id_end))
+    )
     events_id = []
     events_ts = []
     baselines_mean = []
