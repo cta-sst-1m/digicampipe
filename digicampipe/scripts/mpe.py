@@ -244,7 +244,7 @@ def entry():
     ac_levels = convert_dac_level(args['--ac_levels'])
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
-    adc_min = int(args['-adc_min'])
+    adc_min = int(args['--adc_min'])
     adc_max = int(args['--adc_max'])
 
     timing_filename = args['--timing']
@@ -340,7 +340,6 @@ def entry():
         ac_limit = [np.inf] * n_pixels
 
         charge_histo = Histogram1D.load(charge_histo_filename)
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
         for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
                                 desc='DAC level', leave=False):
@@ -351,7 +350,7 @@ def entry():
 
                 histo = charge_histo[i, pixel_id]
 
-                if histo.data[-1] > 0 or histo.data.sum() == 0:
+                if histo.overflow > 0 or histo.data.sum() == 0:
                     continue
 
                 fit_params_names = describe(mpe_distribution_general)
