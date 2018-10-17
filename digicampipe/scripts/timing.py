@@ -84,7 +84,7 @@ def entry():
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     n_samples = int(args['--n_samples'])
-    timing_histo_filename = args['--output']
+    timing_histo_filename = args['--timing_histo_filename']
     ac_levels = convert_dac_level(args['--ac_levels'])
 
     output_path = os.path.dirname(timing_histo_filename)
