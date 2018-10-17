@@ -83,23 +83,6 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
         yield event
 
 
-def tag_burst_from_moving_average_baseline(events, n_previous_events=100, threshold_lsb=2):
-    last_mean_baselines = []
-    for event in events:
-        mean_baseline = np.mean(event.data.digicam_baseline)
-        if len(last_mean_baselines) != n_previous_events:
-            last_mean_baselines.append(mean_baseline)
-        else:
-            last_mean_baselines = last_mean_baselines[1:]
-            last_mean_baselines.append(mean_baseline)
-        moving_avg_baseline = np.mean(last_mean_baselines)
-        if (mean_baseline - moving_avg_baseline) > threshold_lsb:
-            event.data.burst = True
-        else:
-            event.data.burst = False
-        yield event
-
-
 def fill_baseline_r0(event_stream, n_bins=10000):
     n_events = None
     baselines = []
