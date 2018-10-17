@@ -27,9 +27,9 @@ def test_get_burst():
         no_burst = False
         try:
             get_burst(
-                files, plot_baseline="none", n_previous_events=100,
+                files, plot_baseline=None, n_previous_events=100,
                 threshold_lsb=2., output=output1, expand=10, merge_sec=5.,
-                video_prefix="none"
+                video_prefix=None
             )
         except SystemExit:
             no_burst = True
@@ -39,9 +39,9 @@ def test_get_burst():
         no_burst = False
         try:
             get_burst(
-                files, plot_baseline="none", n_previous_events=100,
+                files, plot_baseline=None, n_previous_events=100,
                 threshold_lsb=1e-4, output=output2, expand=10, merge_sec=5.,
-                video_prefix="none"
+                video_prefix=None
             )
         except SystemExit:
             no_burst = True
