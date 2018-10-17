@@ -34,7 +34,7 @@ from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args
+    convert_pixel_args, convert_event_types_args
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
@@ -89,11 +89,7 @@ def entry():
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
-    event_types_str = args['--event_types']
-    if event_types_str is None or event_types_str.lower() == 'none':
-        event_types = None
-    else:
-        event_types = [int(t) for t in event_types_str.split(',')]
+    event_types = convert_event_types_args(args['--event_types'])
     baseline_filename = args['--baseline_filename']
     if baseline_filename.lower() == 'none':
         baseline_filename = None

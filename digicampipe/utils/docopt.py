@@ -28,11 +28,14 @@ def convert_dac_level(text):
 
 def convert_max_events_args(text):
     if text is not None:
-
         max_events = int(text)
-
     else:
-
         max_events = text
-
     return max_events
+
+
+def convert_event_types_args(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        return [int(t) for t in text.split(',')]
