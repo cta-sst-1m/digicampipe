@@ -65,8 +65,7 @@ class PipelineOutputContainer(HillasParametersContainer):
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
-         picture_threshold, boundary_threshold, template_filename,
-         burst_filename="none"):
+         picture_threshold, boundary_threshold, template_filename):
     if compute:
 
         with open(parameters_filename) as file:
@@ -288,7 +287,6 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         plt.close(fig)
 
         # 2D scan of spike in alpha
-        data['burst']
         bin_size = 4  # binning in degrees
         num_steps = 40  # number of binning in the FoV
         x_fov_start = -400  # limits of the FoV
@@ -354,7 +352,6 @@ def entry():
     debug = args['--debug']
     parameters_filename = args['--parameters']
     template_filename = args['--template']
-    burst_filename = args['--burst']
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
@@ -369,7 +366,6 @@ def entry():
          picture_threshold=picture_threshold,
          boundary_threshold=boundary_threshold,
          template_filename=template_filename,
-         burst_filename=burst_filename
          )
 
 
