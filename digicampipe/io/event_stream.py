@@ -9,7 +9,8 @@ from digicampipe.io.containers import CalibrationContainer
 from .auxservice import AuxService
 
 
-def event_stream(filelist, source=None, max_events=None, **kwargs):
+def event_stream(filelist, source=None, max_events=None,
+                 event_id_range=(None, None), **kwargs):
     """Iterable of events in the form of `DataContainer`.
 
     Parameters
@@ -23,6 +24,8 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
             * digicampipe.io.hdf5.digicamtoy_event_source
             * digicampipe.io.hessio_digicam.hessio_event_source
     max_events: max_events to iterate over
+    event_id_range: minimum and maximum event id to be returned. Set one of
+    them to None to disable that limit.
     kwargs: parameters for event_source
         Some event_sources need special parameters to work, c.f. their doc.
     """
@@ -56,6 +59,12 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
         data_stream = source(url=file, **kwargs)
         try:
             for event in data_stream:
+                tel = event.r0.tels_with_data[0]
+                event_id = event.r0.tel[tel].camera_event_number
+                if event_id_range[0] and event_id <= event_id_range[0]:
+                    continue
+                if event_id_range[1] and event_id > event_id_range[1]:
+                    raise StopIteration
                 if count >= max_events:
                     raise StopIteration
                 count += 1
@@ -69,13 +78,15 @@ def event_stream(filelist, source=None, max_events=None, **kwargs):
 def calibration_event_stream(path,
                              pixel_id=[...],
                              max_events=None,
+                             event_id_range=(None, None),
                              **kwargs):
     """
     Event stream for the calibration of the camera based on the observation
     event_stream()
     """
     container = CalibrationContainer()
-    for event in event_stream(path, max_events=max_events, **kwargs):
+    for event in event_stream(path, max_events=max_events,
+                              event_id_range=event_id_range, **kwargs):
         r0_event = list(event.r0.tel.values())[0]
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
         container.event_type = r0_event.camera_event_type

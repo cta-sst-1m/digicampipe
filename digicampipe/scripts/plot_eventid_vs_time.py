@@ -5,9 +5,11 @@ Usage:
 
 Options:
   --help                        Show this help.
-  --event_number_min=INT        path to histogram of the dark files.
+  --event_id_start=INT          minimum event id to plot. If none, no
+                                minimum id is considered.
                                 [Default: none]
-  --event_number_max=INT        Calibration parameters file path.
+  --event_id_end=INT            maximum event id to plot. If none, no
+                                maximum id is considered.
                                 [Default: none]
   --plot=FILE                   Path of the image to be created.
                                 Use "show" to open an interactive plot instead
@@ -23,8 +25,8 @@ import os
 from pandas import to_datetime
 
 
-def entry(files, event_number_min, event_number_max, plot):
-    events = event_stream(files)
+def entry(files, event_id_start, event_id_end, plot):
+    events = event_stream(files, event_id_range=(int(event_id_start), int(event_id_end)))
     events_id = []
     events_ts = []
     baselines_mean = []
@@ -33,10 +35,6 @@ def entry(files, event_number_min, event_number_max, plot):
         clock_ns = event.r0.tel[tel].local_camera_clock
         event_id = event.r0.tel[tel].camera_event_number
         baseline_mean = np.mean(event.r0.tel[tel].digicam_baseline)
-        if event_number_min != "none" and event_id <= int(event_number_min):
-            continue
-        if event_number_max != "none" and event_id > int(event_number_max):
-            break
         events_ts.append(clock_ns)
         events_id.append(event_id)
         baselines_mean.append(baseline_mean)
@@ -78,7 +76,7 @@ def entry(files, event_number_min, event_number_max, plot):
 if __name__ == '__main__':
     args = docopt(__doc__)
     files = args['<INPUT>']
-    event_number_min = args['--event_number_min']
-    event_number_max = args['--event_number_max']
+    event_id_start = args['--event_id_start']
+    event_id_end = args['--event_id_end']
     plot = args['--plot']
-    entry(files, event_number_min, event_number_max, plot)
+    entry(files, event_id_start, event_id_end, plot)
