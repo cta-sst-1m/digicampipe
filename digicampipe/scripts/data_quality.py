@@ -100,7 +100,7 @@ def main(
         events = compute_gain_drop(events, bias_resistance, cell_capacitance)
         events = compute_sample_photo_electron(events, gain_amplitude)
         events = tag_burst_from_moving_average_baseline(
-            events, event_average=100, threshold_lsb=5
+            events, n_previous_events=100, threshold_lsb=5
         )
         events = compute_3d_cleaning(events, geom=DigiCam.geometry,
                                      threshold_sample_pe=threshold_sample_pe)

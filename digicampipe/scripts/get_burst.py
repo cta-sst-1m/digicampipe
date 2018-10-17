@@ -5,7 +5,7 @@ Usage:
 
 Options:
   --help                        Show this
-  --event_average=INT           Number of events on which the moving average
+  --n_previous_events=INT       Number of events on which the moving average
                                 of the baselines are calculated
                                 [Default: 100]
   --threshold_lsb=FLOAT         How much the baseline must be above the moving
@@ -126,13 +126,14 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
     plt.close(fig)
 
 
-def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
+def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
           output="none", expand=10, merge_sec=5., video_prefix="none"):
     # get events info
     events = calibration_event_stream(files)
     events = fill_digicam_baseline(events)
     events = tag_burst_from_moving_average_baseline(
-        events, event_average=event_average, threshold_lsb=threshold_lsb
+        events, n_previous_events=n_previous_events,
+        threshold_lsb=threshold_lsb
     )
     n_event = 0
     timestamps = []
@@ -233,12 +234,12 @@ def entry(files, plot_baseline="show", event_average=100, threshold_lsb=2.,
 if __name__ == '__main__':
     args = docopt(__doc__)
     files = args['<INPUT>']
-    event_average = int(args['--event_average'])
+    n_previous_events = int(args['--n_previous_events'])
     threshold_lsb = float(args['--threshold_lsb'])
     output = args['--output']
     expand = int(args['--expand'])
     merge_sec = float(args['--merge_sec'])
     plot_baseline = args['--plot_baseline']
     video_prefix = args['--video_prefix']
-    entry(files, plot_baseline, event_average, threshold_lsb, output, expand,
+    entry(files, plot_baseline, n_previous_events, threshold_lsb, output, expand,
           merge_sec, video_prefix)

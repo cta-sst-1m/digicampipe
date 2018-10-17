@@ -3,7 +3,8 @@ import numpy as np
 __all__ = ['tag_burst_from_moving_average_baseline']
 
 
-def tag_burst_from_moving_average_baseline(events, n_previous_events=100, threshold_lsb=2):
+def tag_burst_from_moving_average_baseline(events, n_previous_events=100,
+                                           threshold_lsb=2):
     last_mean_baselines = []
     for event in events:
         mean_baseline = np.mean(event.data.digicam_baseline)
