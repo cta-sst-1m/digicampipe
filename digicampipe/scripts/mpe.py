@@ -39,6 +39,7 @@ from histogram.fit import HistogramFitter
 from histogram.histogram import Histogram1D
 from iminuit import describe
 from tqdm import tqdm
+from astropy.table import Table
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline
@@ -254,9 +255,7 @@ def entry():
     results_filename = os.path.join(output_path, results_filename)
 
     charge_histo_filename = 'charge_histo_ac_level.pk'
-    amplitude_histo_filename = 'amplitude_histo_ac_level.pk'
-    amplitude_histo_filename = os.path.join(output_path,
-                                            amplitude_histo_filename)
+
     charge_histo_filename = os.path.join(output_path,
                                          charge_histo_filename)
 
@@ -275,18 +274,9 @@ def entry():
                                 adc_max * integral_width, bin_width),
             data_shape=(n_ac_levels, n_pixels,))
 
-        amplitude_histo = Histogram1D(
-            bin_edges=np.arange(adc_min,
-                                adc_max, bin_width),
-            data_shape=(n_ac_levels, n_pixels,))
-
         if os.path.exists(charge_histo_filename):
             raise IOError(
                 'File {} already exists'.format(charge_histo_filename))
-
-        if os.path.exists(amplitude_histo_filename):
-            raise IOError(
-                'File {} already exists'.format(amplitude_histo_filename))
 
         for i, (file, ac_level) in tqdm(enumerate(zip(files, ac_levels)),
                                         total=n_ac_levels, desc='DAC level',
@@ -307,16 +297,14 @@ def entry():
 
             for event in events:
                 charge_histo.fill(event.data.reconstructed_charge,
-                                  indices=(i,))
-                amplitude_histo.fill(event.data.reconstructed_amplitude,
-                                     indices=(i,))
+                                  indices=i)
 
-        charge_histo.save(charge_histo_filename)
-        amplitude_histo.save(amplitude_histo_filename)
+        charge_histo.save(charge_histo_filename, )
 
     if args['--fit']:
 
-        input_parameters = dict(np.load(fmpe_results_filename))
+        input_parameters = Table.read(fmpe_results_filename, format='fits')
+        input_parameters = input_parameters.to_pandas()
 
         gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
         sigma_e = np.zeros((n_ac_levels, n_pixels)) * np.nan
