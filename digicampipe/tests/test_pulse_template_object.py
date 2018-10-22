@@ -18,7 +18,7 @@ template_filename_2 = resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'template_all.txt'
+        'pulse_template_all_pixels.txt'
     )
 )
 
