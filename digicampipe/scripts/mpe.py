@@ -41,8 +41,8 @@ from digicampipe.calib.baseline import fill_digicam_baseline, \
 from digicampipe.calib.charge import compute_charge, compute_amplitude
 from digicampipe.calib.peak import fill_pulse_indices
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args, convert_dac_level
+from digicampipe.utils.docopt import convert_int, \
+    convert_pixel_args, convert_list_int
 from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
     generalized_poisson
 
@@ -224,7 +224,7 @@ def entry():
     files = args['<INPUT>']
     debug = args['--debug']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     output_path = args['--output']
 
     if not os.path.exists(output_path):
@@ -236,7 +236,7 @@ def entry():
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
     ncall = int(args['--ncall'])
-    ac_levels = convert_dac_level(args['--ac_levels'])
+    ac_levels = convert_list_int(args['--ac_levels'])
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
 

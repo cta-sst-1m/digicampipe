@@ -41,7 +41,7 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.scripts import raw
 from digicampipe.scripts.fmpe import FMPEFitter
 from digicampipe.utils.docopt import convert_pixel_args, \
-    convert_max_events_args
+    convert_int
 from digicampipe.utils.pdf import fmpe_pdf_10
 
 
@@ -194,7 +194,7 @@ def entry():
     files = args['<INPUT>']
     debug = args['--debug']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     output_path = args['--output']
 
     if not os.path.exists(output_path):

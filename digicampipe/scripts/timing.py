@@ -27,7 +27,7 @@ from tqdm import tqdm
 
 from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
+from digicampipe.utils.docopt import convert_int, \
     convert_pixel_args
 from digicampipe.visualization.plot import plot_array_camera, plot_parameter
 
@@ -67,7 +67,7 @@ def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     n_samples = int(args['--n_samples'])
     output_path = args['--output']
