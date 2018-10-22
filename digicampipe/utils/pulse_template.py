@@ -14,7 +14,7 @@ class NormalizedPulseTemplate:
         self.time = time
         self.amplitude = amplitude
         if amplitude_std is not None:
-            assert len(amplitude_std) == len(amplitude)
+            assert amplitude_std.shape == amplitude.shape
             self.amplitude_std = amplitude_std
         else:
             self.amplitude_std = self.amplitude * 0
