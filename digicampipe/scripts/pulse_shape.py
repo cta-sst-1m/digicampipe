@@ -14,15 +14,16 @@ Options:
                             normalised in integrated charge [default: -.1,0.4].
   --integration_range=LIST  Minimum and maximum indexes of samples used in the
                             integration for normalization of the pulse charge
-                            [default: 10,30].
+                            [default: 8,20].
   --charge_range=LIST       Minimum and maximum integrated charge in LSB used
-                            to build the histogram [default: 200,10000].
+                            to build the histogram [default: 1000,10000].
   --n_bin=INT               Number of bins for the 2d histograms
                             [default: 100].
 
 """
 import numpy as np
 from docopt import docopt
+import os
 
 from digicampipe.calib.time import estimate_time_from_leading_edge
 from digicampipe.io.event_stream import calibration_event_stream
@@ -38,10 +39,14 @@ def main(
         input_files,
         time_range_ns=(-10., 40.),
         amplitude_range=(-0.1, 0.4),
-        integration_range=(10, 30),
-        charge_range=(200., 10000.),
+        integration_range=(8, 20),
+        # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
+        # 1 pe <=> 20 integral
+        charge_range=(1000., 10000.),
         n_bin=100,
 ):
+    if os.path.exists(output_hist):
+        os.remove(output_hist)
     charge_min = np.min(charge_range)
     charge_max = np.max(charge_range)
     integration_min = np.min(integration_range)
@@ -87,15 +92,24 @@ def main(
 
 def entry():
     args = docopt(__doc__)
-    output_hist = args['--output_hist']
     inputs = args['<input_files>']
+    output_hist = args['--output_hist']
     time_range_ns = convert_list_float(args['--time_range_ns'])
     amplitude_range = convert_list_float(args['--amplitude_range'])
     integration_range = convert_list_int(args['--integration_range'])
     charge_range = convert_list_float(args['--charge_range'])
     n_bin = convert_int(args['--n_bin'])
+
     if output_hist is None:
         output_hist = inputs[0] + '.npz'
+    print('options selected:')
+    print('input_files:', inputs)
+    print('output_hist:', output_hist)
+    print('time_range_ns:', time_range_ns)
+    print('amplitude_range:', amplitude_range)
+    print('integration_range:', integration_range)
+    print('charge_range:', charge_range)
+    print('n_bin:', n_bin)
     main(
         output_hist=output_hist,
         input_files=inputs,
