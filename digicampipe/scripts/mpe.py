@@ -8,7 +8,10 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse.
-  -o OUTPUT --output=OUTPUT   Folder where to store the results.
+  --fit_output=OUTPUT         File where to store the fit results.
+                              [default: ./fit_results.npz]
+  --compute_output=OUTPUT     File where to store the compute results.
+                              [default: ./charge_histo_ac_level.pk]
   -c --compute                Compute the data.
   -f --fit                    Fit.
   --ncall=N                   ncall for fit [default: 10000].
@@ -231,11 +234,12 @@ def entry():
     debug = args['--debug']
 
     max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['--output']
+    results_filename = args['--fit_output']
+    dir_output = os.path.dirname(results_filename)
 
-    if not os.path.exists(output_path):
+    if not os.path.exists(dir_output):
         raise IOError('Path {} for output '
-                      'does not exists \n'.format(output_path))
+                      'does not exists \n'.format(dir_output))
 
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
@@ -251,14 +255,7 @@ def entry():
     timing_filename = args['--timing']
     timing = np.load(timing_filename)['time']
 
-    results_filename = 'mpe_fit_results.npz'
-    results_filename = os.path.join(output_path, results_filename)
-
-    charge_histo_filename = 'charge_histo_ac_level.pk'
-
-    charge_histo_filename = os.path.join(output_path,
-                                         charge_histo_filename)
-
+    charge_histo_filename = args['--compute_output']
     fmpe_results_filename = args['--gain']
 
     if args['--compute']:
@@ -432,15 +429,13 @@ def entry():
                  )
 
     if args['--save_figures']:
+
         pass
 
     if args['--display']:
+
         charge_histo = Histogram1D.load(charge_histo_filename)
         charge_histo.draw(index=(0, 0), log=False, legend=False)
-
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
-        amplitude_histo.draw(index=(0, 0), log=False, legend=False)
-        plt.show()
 
         pass
 
