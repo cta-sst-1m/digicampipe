@@ -7,11 +7,11 @@ from digicampipe.utils.hist2d import Histogram2d
 
 class NormalizedPulseTemplate:
     def __init__(self, amplitude, time, amplitude_std=None):
-        self.time = time
-        self.amplitude = amplitude
+        self.time = np.array(time)
+        self.amplitude = np.array(amplitude)
         if amplitude_std is not None:
-            assert amplitude_std.shape == amplitude.shape
-            self.amplitude_std = amplitude_std
+            assert np.array(amplitude_std).shape == self.amplitude.shape
+            self.amplitude_std = np.array(amplitude_std)
         else:
             self.amplitude_std = self.amplitude * 0
         self._template = self._interpolate()
@@ -47,44 +47,10 @@ class NormalizedPulseTemplate:
         Create a template from the 2D histogram file obtained by the
         pulse_shape.py script.
         """
-        histo = Histogram2d.load(input_file)
-        t_pixels, ampl_pixels, ampl_std_pixels = histo.fit_y()
-        n_pixel = len(ampl_pixels)
-        assert len(ampl_std_pixels) == n_pixel
-        if n_pixel == 1:
-            return cls(amplitude=ampl_pixels[0], time=t_pixels[0],
-                       amplitude_std=ampl_std_pixels[0])
-        ts = np.unique(np.concatenate(t_pixels))
-        if len(ts) < 2:
-            raise RuntimeError('no charge passed the cuts')
-        ampl = np.zeros_like(ts)
-        ampl_std = np.zeros_like(ts)
-        for idx, t in enumerate(ts):
-            ampl_sum_t = 0
-            n_pixel_t = 0
-            for pixel in range(n_pixel):
-                bool_pos = t == t_pixels[pixel]
-                if np.any(bool_pos):
-                    n_pixel_t += 1
-                    ampl_sum_t += ampl_pixels[pixel][bool_pos]
-            ampl[idx] = ampl_sum_t / n_pixel_t
-            ampl_var1_t = 0
-            ampl_var2_t = 0
-            for pixel in range(n_pixel):
-                bool_pos = t == t_pixels[pixel]
-                if np.any(bool_pos):
-                    ampl_var1_t += ampl_std_pixels[pixel][bool_pos] ** 2
-                    diff_mean = ampl_pixels[pixel][bool_pos] - ampl[idx]
-                    ampl_var2_t += diff_mean ** 2
-            if n_pixel_t > 1:
-                ampl_std[idx] = np.sqrt(
-                    (ampl_var1_t + ampl_var2_t) / (n_pixel_t - 1)
-                )
-            elif n_pixel_t == 1:
-                ampl_std[idx] = np.sqrt(ampl_var1_t)
-            else:
-                raise RuntimeError('unexpected problem calulating std')
-        return cls(time=ts, amplitude=ampl, amplitude_std=ampl_std)
+        histo_pixels = Histogram2d.load(input_file)
+        histo = histo_pixels.stack_all()
+        ts, ampl, ampl_std = histo.fit_y(min_entries=100)
+        return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
     def _interpolate(self):
         if abs(np.min(self.amplitude)) <= abs(np.max(self.amplitude)):
