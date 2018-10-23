@@ -138,16 +138,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 container.time = (new_time + init_time) / 2
                 container.shower_rate = shower_rate
                 container.burst = event.data.burst
-
-                baseline_shift = baseline - dark_baseline.mean()
-                print(baseline_shift)
-                nsb_rate = _compute_nsb_rate(baseline_shift,
-                                             gain=gain_amplitude,
-                                             pulse_area=pulse_area,
-                                             crosstalk=crosstalk,
-                                             bias_resistance=bias_resistance,
-                                             cell_capacitance=cell_capacitance)
-
+                nsb_rate = event.data.nsb_rate
                 container.nsb_rate = np.nanmean(nsb_rate).value
 
                 baseline = 0
