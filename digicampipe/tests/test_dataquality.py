@@ -23,7 +23,7 @@ example_file2_path = resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'example_100_evts.000.fits.fz'
+        'SST1M_01_20181010_469.fits.fz'
     )
 )
 
@@ -78,7 +78,7 @@ def test_data_quality():
             files, dark_filename, time_step, fits_filename, load_files,
             histo_filename, rate_plot_filename, baseline_plot_filename,
             nsb_plot_filename,
-            parameters_filename, template_filename, threshold_sample=0.02,
+            parameters_filename, template_filename, threshold_sample_pe=0.02,
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)

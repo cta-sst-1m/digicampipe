@@ -208,12 +208,20 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
 
     if nsb_plot_filename is not None:
         fig3 = plt.figure()
-        plt.plot(data['nsb_rate'])
-        plt.ylabel('$f_{NSB}$ [GHz]')
+        ax = fig3.add_subplot(111)
+        print(data['nsb_rate'])
+
+        data.plot(y='nsb_rate', ax=ax)
+        # plt.plot(data['nsb_rate'])
+        ax.set_ylabel('$f_{NSB}$ [GHz]')
+        # xlim = plt.xlim()
+        # plt.xlim(xlim[0] - 1, xlim[1] + 1)
+        plt.show()
+
         if nsb_plot_filename == "show":
             plt.show()
         else:
-            plt.savefig(nsb_plot_filename)
+            fig3.savefig(nsb_plot_filename)
         plt.close(fig3)
 
     return
