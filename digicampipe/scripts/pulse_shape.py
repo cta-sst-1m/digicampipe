@@ -7,7 +7,7 @@ Usage:
 Options:
   -h --help                 Show this screen.
   --output_hist=PATH        Output histogram file, if not given, we just append
-                            ".h5" to the path of the 1st input file.
+                            ".npz" to the path of the 1st input file.
   --time_range_ns=LIST      Minimum and maximum time in ns w.r.t. half maximum
                             of the pulse during rise time [default: -10,40].
   --amplitude_range=LIST    Minimum and maximum amplitude of the template
@@ -17,11 +17,10 @@ Options:
                             [default: 10,30].
   --charge_range=LIST       Minimum and maximum integrated charge in LSB used
                             to build the histogram [default: 200,10000].
-  --nbin=INT                Number of bins for the 2d histograms [default 100].
+  --n_bin=INT               Number of bins for the 2d histograms
+                            [default: 100].
 
 """
-
-import h5py
 import numpy as np
 from docopt import docopt
 
@@ -30,7 +29,8 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.hist2d import Histogram2dChunked
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline, correct_wrong_baseline
-from digicampipe.utils.docopt import convert_list_float, convert_int
+from digicampipe.utils.docopt import convert_list_float, convert_list_int, \
+    convert_int
 
 
 def main(
@@ -38,9 +38,9 @@ def main(
         input_files,
         time_range_ns=(-10., 40.),
         amplitude_range=(-0.1, 0.4),
-        integration_range=(10., 30.),
+        integration_range=(10, 30),
         charge_range=(200., 10000.),
-        n_bin=100
+        n_bin=100,
 ):
     charge_min = np.min(charge_range)
     charge_max = np.max(charge_range)
@@ -57,7 +57,7 @@ def main(
     n_pixel = 0
     for e in events:
         adc = e.data.adc_samples
-        integral = adc[:, integration_min:integration_max].sum(axis=1)
+        integral = adc[:, slice(integration_min,integration_max)].sum(axis=1)
         adc_norm = adc / integral[:, None]
         arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
         if histo is None:
@@ -72,20 +72,17 @@ def main(
         time_in_ns = np.arange(n_sample) * 4
         # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
         # 1 pe <=> 20 integral
-        bad_charge = np.logical_or(integral < charge_min, integral > charge_max)
+        bad_charge = np.logical_or(
+            integral < charge_min,
+            integral > charge_max
+        )
         arrival_time_in_ns[bad_charge] = -np.inf  # ignored by histo
         histo.fill(
             x=time_in_ns[None, :] - arrival_time_in_ns[:, None],
             y=adc_norm
         )
-
-    with h5py.File(output_hist) as outfile:
-        dset = outfile.create_dataset(
-            name='adc_count_histo',
-            data=histo.contents(),
-            compression='gzip'
-        )
-        dset.attrs['extent'] = histo.extent
+    histo.save(output_hist)
+    print('2D histogram of pulse shape for all pixel saved as', output_hist)
 
 
 def entry():
@@ -94,11 +91,11 @@ def entry():
     inputs = args['<input_files>']
     time_range_ns = convert_list_float(args['--time_range_ns'])
     amplitude_range = convert_list_float(args['--amplitude_range'])
-    integration_range = convert_list_float(args['--integration_range'])
+    integration_range = convert_list_int(args['--integration_range'])
     charge_range = convert_list_float(args['--charge_range'])
-    nbin = convert_int(args['--nbin'])
+    n_bin = convert_int(args['--n_bin'])
     if output_hist is None:
-        output_hist = inputs[0] + '.h5'
+        output_hist = inputs[0] + '.npz'
     main(
         output_hist=output_hist,
         input_files=inputs,
@@ -106,7 +103,7 @@ def entry():
         amplitude_range=amplitude_range,
         integration_range=integration_range,
         charge_range=charge_range,
-        nbin=nbin
+        n_bin=n_bin
     )
 
 

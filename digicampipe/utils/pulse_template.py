@@ -2,11 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 
-from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.baseline import fill_digicam_baseline, \
-    subtract_baseline, correct_wrong_baseline
-from digicampipe.calib.time import estimate_time_from_leading_edge
-from digicampipe.utils.hist2d import Histogram2dChunked
+from digicampipe.utils.hist2d import Histogram2d
 
 
 class NormalizedPulseTemplate:
@@ -46,43 +42,15 @@ class NormalizedPulseTemplate:
             return cls(amplitude=x, time=t, amplitude_std=dx)
 
     @classmethod
-    def create_from_datafiles(
-            cls, input_files, pixels=(0,), time_range_ns=(-10, 40),
-            amplitude_range=(-.1, 0.4), n_bin=100
-    ):
-        events = calibration_event_stream(input_files)
-        events = fill_digicam_baseline(events)
-        if "SST1M_01_201805" in input_files[0]:  # fix data in May
-            print("WARNING: correction of the baselines applied.")
-            events = correct_wrong_baseline(events)
-        events = subtract_baseline(events)
-        histo = None
-        n_sample = 0
-        n_pixel = 0
-        for e in events:
-            adc = e.data.adc_samples
-            integral = adc[:, 10:30].sum(axis=1)
-            adc_norm = adc[pixels, :] / integral[pixels, None]
-            arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
-            if histo is None:
-                n_pixel, n_sample = adc_norm.shape
-                histo = Histogram2dChunked(
-                    shape=(n_pixel, n_bin, n_bin),
-                    range=[time_range_ns, amplitude_range]
-                )
-            else:
-                assert adc_norm.shape[0] == n_pixel
-                assert adc_norm.shape[1] == n_sample
-            time_in_ns = np.arange(n_sample) * 4
-            # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
-            # 1 pe <=> 20 integral
-            bad_charge = np.logical_or(integral < 200, integral > 10000)
-            arrival_time_in_ns[bad_charge] = -np.inf  # ignored by histo
-            histo.fill(
-                x=time_in_ns[None, :] - arrival_time_in_ns[pixels, None],
-                y=adc_norm
-            )
+    def create_from_datafile(cls, input_file):
+        """
+        Create a template from the 2D histogram file obtained by the
+        pulse_shape.py script.
+        """
+        histo = Histogram2d.load(input_file)
         t_pixels, ampl_pixels, ampl_std_pixels = histo.fit_y()
+        n_pixel = len(ampl_pixels)
+        assert len(ampl_std_pixels) == n_pixel
         if n_pixel == 1:
             return cls(amplitude=ampl_pixels[0], time=t_pixels[0],
                        amplitude_std=ampl_std_pixels[0])

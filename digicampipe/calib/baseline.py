@@ -3,7 +3,7 @@ import numpy as np
 __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_with_min', 'subtract_baseline',
            'compute_baseline_shift', 'compute_baseline_std',
-           'compute_nsb_rate', 'compute_gain_drop']
+           'compute_nsb_rate', 'compute_gain_drop', 'correct_wrong_baseline']
 
 
 def fill_dark_baseline(events, dark_baseline):

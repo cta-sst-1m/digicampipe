@@ -1,11 +1,11 @@
 import numpy as np
+from astropy.io import fits
 
 
 class Histogram2d:
     def __init__(self, shape, range):
         self.histo = np.zeros(shape, dtype='u2')
         self.range = range
-        self.extent = list(self.range[0]) + list(self.range[1])
         self.xedges = None
         self.yedges = None
 
@@ -42,6 +42,25 @@ class Histogram2d:
             std_y = np.sqrt((h_pix * squared_sum_y).sum(axis=-1) / (n_pix - 1))
             stds_y.append(std_y)
         return x_bin_centers, means_y, stds_y
+
+    def save(self, path, **kwargs):
+        hdu_histo = fits.PrimaryHDU(data=self.contents())
+        hdu_range = fits.ImageHDU(data=self.range)
+        hdu_xedges = fits.ImageHDU(data=self.xedges)
+        hdu_yedges = fits.ImageHDU(data=self.yedges)
+        hdul = fits.HDUList([hdu_histo, hdu_range, hdu_xedges, hdu_yedges])
+        hdul.writeto(path)
+
+    @classmethod
+    def load(cls, path):
+        with fits.open(path) as hdul:
+            histo = hdul[0].data
+            range = hdul[1].data
+            obj = Histogram2d(histo.shape, range)
+            obj.histo = histo
+            obj.xedges = hdul[2].data
+            obj.yedges = hdul[3].data
+        return obj
 
 
 class Histogram2dChunked(Histogram2d):
