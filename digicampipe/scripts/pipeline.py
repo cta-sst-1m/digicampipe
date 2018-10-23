@@ -28,9 +28,7 @@ Options:
   --template=FILE             Pulse template file path
 """
 import os
-
 import astropy.units as u
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
@@ -39,17 +37,19 @@ from ctapipe.core import Field
 from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.io.serializer import Serializer
 from docopt import docopt
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 from histogram.histogram import Histogram1D
-
-from digicampipe.calib import baseline, peak, charge, cleaning, image
+from digicampipe.calib import baseline, peak, charge, cleaning, image, tagging
 from digicampipe.calib import filters
-from digicampipe.image.hillas import compute_alpha, compute_miss
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
     convert_pixel_args
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
+from digicampipe.image.hillas import compute_alpha, compute_miss, \
+    correct_alpha_3
 
 
 class PipelineOutputContainer(HillasParametersContainer):
@@ -60,6 +60,7 @@ class PipelineOutputContainer(HillasParametersContainer):
     alpha = Field(float, 'Alpha parameter of the shower')
     miss = Field(float, 'Miss parameter of the shower')
     border = Field(bool, 'Is the event touching the camera borders')
+    burst = Field(bool, 'Is the event during a burst')
 
 
 def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
@@ -92,6 +93,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
                                           max_events=max_events)
         events = baseline.fill_dark_baseline(events, dark_baseline)
         events = baseline.fill_digicam_baseline(events)
+        events = tagging.tag_burst_from_moving_average_baseline(events)
         events = baseline.compute_baseline_shift(events)
         events = baseline.subtract_baseline(events)
         # events = baseline.compute_baseline_std(events, n_events=100)
@@ -143,6 +145,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data_to_store.event_type = event.event_type
             data_to_store.event_id = event.event_id
             data_to_store.border = event.data.border
+            data_to_store.burst = event.data.burst
 
             for key, val in event.hillas.items():
                 data_to_store[key] = val
@@ -159,16 +162,173 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         data = data.set_index('local_time')
         data = data.dropna()
 
+        n_event = len(data['event_id'])
+
+        is_cutted = np.logical_or(
+            data['length'] / data['width'] >= 10.,
+            data['length'] / data['width'] <= 2.
+        )
+        print('tagged', np.sum(data['is_burst']), '/', n_event,
+              'events as of bad quality')
+        print('tagged', np.sum(is_cutted), '/', n_event,
+              'events cut by l/w')
+        is_cutted = np.logical_or(
+            is_cutted,
+            data['length'] < 25
+        )
+        print('tagged', np.sum(is_cutted), '/', n_event,
+              'events cut by 2 < l/w < 10 and l > 25 mm')
+        is_cutted = np.logical_or(
+            is_cutted,
+            data['width'] < 15
+        )
+        print('tagged', np.sum(is_cutted), '/', n_event,
+              'events cut by 2 < l/w < 10 and l > 25 mm and w > 15 mm')
+
+        plt.figure(figsize=(9, 9))
+        subplot = 0
         for key, val in data.items():
-            plt.figure()
-            plt.hist(val, bins='auto')
+            if key in ['border', 'intensity', 'kurtosis', 'event_id',
+                       'event_type', 'miss']:
+                continue
+            subplot += 1
+            print(subplot, '/', 9, 'plotting', key)
+            plt.subplot(3, 3, subplot)
+            val_split = [
+                val[(~data['burst']) & (~is_cutted)],
+                val[(~data['burst']) & is_cutted]
+            ]
+            plt.hist(val_split, bins='auto', stacked=True)
             plt.xlabel(key)
+            if subplot == 1:
+                plt.legend(['2 < l/w < 10', 'l/w cut'])
+        plt.tight_layout()
+        plt.savefig('hillas.png')
+        plt.close()
 
-            plt.figure()
-            plt.plot(val)
-            plt.ylabel(key)
+        # 2d histogram of shower centers
+        fig = plt.figure(figsize=(8, 8))
+        plt.subplot(2, 2, 1)
+        plt.hist2d(data['x'], data['y'], bins=100, norm=LogNorm())
+        plt.ylabel('shower center Y [mm]')
+        plt.xlabel('shower center X [mm]')
+        plt.title('all events')
+        cb = plt.colorbar()
+        cb.set_label('Number of events')
+        plt.axis('equal')
+        plt.subplot(2, 2, 2)
+        data_ok = data[(~data['burst'])]
+        plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
+        plt.ylabel('shower center Y [mm]')
+        plt.xlabel('shower center X [mm]')
+        plt.title('not burst')
+        cb = plt.colorbar()
+        cb.set_label('Number of events')
+        plt.axis('equal')
+        plt.subplot(2, 2, 3)
+        data_ok = data[(~is_cutted)]
+        plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
+        plt.ylabel('shower center Y [mm]')
+        plt.xlabel('shower center X [mm]')
+        plt.title('2 < l/w < 10')
+        cb = plt.colorbar()
+        cb.set_label('Number of events')
+        plt.axis('equal')
+        plt.subplot(2, 2, 4)
+        data_ok = data[(~data['burst']) & (~is_cutted)]
+        plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
+        plt.ylabel('shower center Y [mm]')
+        plt.xlabel('shower center X [mm]')
+        plt.title('pass all')
+        cb = plt.colorbar()
+        cb.set_label('Number of events')
+        plt.axis('equal')
+        plt.tight_layout()
+        plt.savefig('shower_center_map.png')
+        plt.close(fig)
 
-        plt.show()
+        # correlation plot
+        fig = plt.figure(figsize=(12, 9))
+        for title, data_pl in zip(['all', 'pass cuts'], [data, data_ok]):
+            fig.clear()
+            subplot = 0
+            for i, (label_x, x) in enumerate(zip(
+                ['shower center X [mm]', 'shower center Y [mm]'],
+                [data_pl['x'], data_pl['y']]
+            )):
+                for j, (label_y, y, ymin, ymax) in enumerate(zip(
+                    [
+                        'shower length [mm]',
+                        'shower width [mm]',
+                        'length/width',
+                        'r - l/2 [mm]'
+                    ],
+                    [
+                        data_pl['length'],
+                        data_pl['width'],
+                        data_pl['length']/data_pl['width'],
+                        data_pl['r'] - data_pl['length']/2
+                    ],
+                    [0, 0, 0, -100],
+                    [200, 100, 10, 500]
+                )):
+                    subplot += 1
+                    plt.subplot(2, 4, subplot)
+                    plt.hist2d(x, y, bins=(100, np.linspace(ymin, ymax, 100)),
+                               norm=LogNorm())
+                    plt.ylim(ymin, ymax)
+                    plt.xlabel(label_x)
+                    plt.ylabel(label_y)
+                    plt.title(title)
+                    cb = plt.colorbar()
+                    cb.set_label('Number of events')
+            plt.tight_layout()
+            plt.savefig('correlation_{}.png'.format(title.replace(' ', '_')))
+        plt.close(fig)
+
+        # 2D scan of spike in alpha
+        bin_size = 4  # binning in degrees
+        num_steps = 40  # number of binning in the FoV
+        x_fov_start = -400  # limits of the FoV
+        y_fov_start = -400  # limits of the FoV
+        x_fov_end = 400  # limits of the FoV
+        y_fov_end = 400  # limits of the FoV
+        mask = (~data['border']) & (~data['burst']) & (
+                data['length']/data['width'] > 1.5) & (
+                data['length']/data['width'] < 10) & (
+                data['length'] > 25) & (data['width'] > 15)
+        data_cor = dict()
+        for key, val in data.items():
+            data_cor[key] = val[mask]
+        x_fov = np.linspace(x_fov_start, x_fov_end, num_steps)
+        y_fov = np.linspace(y_fov_start, y_fov_end, num_steps)
+        dx = x_fov[1] - x_fov[0]
+        dy = y_fov[1] - y_fov[0]
+        x_fov_bins = np.linspace(x_fov_start - dx / 2, x_fov_end + dx / 2,
+                                 num_steps + 1)
+        y_fov_bins = np.linspace(y_fov_start - dy / 2, y_fov_end + dy / 2,
+                                 num_steps + 1)
+        N = np.zeros([num_steps, num_steps], dtype=int)
+        i = 0
+        print('2D scan calculation:')
+        for xi, x in enumerate(x_fov):
+            print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
+            for yi, y in enumerate(y_fov):
+                data_cor2 = correct_alpha_3(data_cor, source_x=x, source_y=y)
+                mask2 = (data_cor2['alpha'] < bin_size) & (
+                        data_cor2['r'] - data_cor2['length'] / 2.0 > 0)
+                alpha_filtered = data_cor2['alpha'][mask2]
+                N[yi, xi] = alpha_filtered.shape[0]
+            i += 1
+        fig = plt.figure(figsize=(8, 6))
+        ax1 = fig.add_subplot(111)
+        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N,
+                             rasterized=True, cmap='nipy_spectral')
+        plt.ylabel('FOV Y [mm]')
+        plt.xlabel('FOV X [mm]')
+        cbar = fig.colorbar(pcm)
+        cbar.set_label('N of events')
+        plt.savefig('2d_alpha_scan.png')
 
 
 def entry():
@@ -191,7 +351,6 @@ def entry():
     shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
-    # args['--min_photon'] = int(args['--min_photon'])
     template_filename = args['--template']
     main(files=files,
          max_events=max_events,
@@ -206,7 +365,7 @@ def entry():
          display=display,
          picture_threshold=picture_threshold,
          boundary_threshold=boundary_threshold,
-         template_filename=template_filename
+         template_filename=template_filename,
          )
 
 
