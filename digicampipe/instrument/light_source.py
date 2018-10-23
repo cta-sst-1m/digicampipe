@@ -80,31 +80,33 @@ class LightSource(ABC):
 
 class ACLED(LightSource):
 
-    def __init__(self, ac_level, photo_electrons, photo_electrons_err=None):
+    def __init__(self, ac_level, photo_electrons, photo_electrons_err=None,
+                 saturation_threshold=300):
 
         self.ac_level = ac_level
         self.photo_electrons = photo_electrons
         self.photo_electrons_err = photo_electrons_err
+        self.saturation_threshold = saturation_threshold  # in p.e.
         self._interpolate()
-        # self._extrapolate()
-        self._extrapolate_exponential()
+        self._extrapolate()
+        # self._extrapolate_exponential()
 
     def __call__(self, ac_level, pixel=None):
 
         y = np.zeros((self.photo_electrons.shape[1], len(ac_level)))
         y_extrapolated = np.zeros((self.photo_electrons.shape[1], len(ac_level)))
+        print(self._params.shape)
 
         for i in range(len(y)):
 
             y[i] = self._spline[i](ac_level)
-            y_extrapolated[i] = exponential(ac_level,
-                                            self._params[i][0],
-                                            self._params[i][1])
+            # y_extrapolated[i] = exponential(ac_level,
+            #                                 self._params[i][0],
+             #                                self._params[i][1])
+            y_extrapolated[i] = np.polyval(self._params[i], ac_level).T
+
         # y = self._spline(ac_level)
         # y = splev(ac_level, self._spline[0])
-
-        # y_extrapolated = np.polyval(self._params.T,
-        # ac_level[:, np.newaxis]**5).T
 
         if pixel is not None:
 
@@ -114,7 +116,7 @@ class ACLED(LightSource):
         y_shape = y.shape
         y = y.ravel()
 
-        extrapolated_values = np.isnan(y) + (y > 500)
+        extrapolated_values = np.isnan(y) + (y > self.saturation_threshold)
         y_extrapolated = y_extrapolated.ravel()
         y[extrapolated_values] = y_extrapolated[extrapolated_values]
         y = y.reshape(y_shape)
@@ -138,11 +140,12 @@ class ACLED(LightSource):
 
         pes = self.photo_electrons.copy()
         params = []
+        deg = 4
 
         for i, pe in enumerate(pes.T):
 
             ac_level = self.ac_level.copy()
-            mask = (pe > 10) * (pe < 500) * np.isfinite(pe)
+            mask = (pe > 5) * (pe < self.saturation_threshold) * np.isfinite(pe)
 
             err = None
             if self.photo_electrons_err is not None:
@@ -158,13 +161,13 @@ class ACLED(LightSource):
 
             if len(pe) <= 1:
 
-                param = [np.nan] * 2
+                param = [np.nan] * (deg + 1)
 
                 warnings.warn('Could not interpolate pixel {}'.format(i),
                               UserWarning)
 
             else:
-                param = np.polyfit(ac_level**5, pe, deg=1, w=err)
+                param = np.polyfit(ac_level, pe, deg=deg, w=err)
 
             params.append(param)
 
@@ -275,7 +278,7 @@ class ACLED(LightSource):
 
         pass
 
-    def plot(self, axes=None, pixel=0, **kwargs):
+    def plot(self, axes=None, pixel=0, y_lim=(0, 2000), **kwargs):
 
         if axes is None:
             fig = plt.figure()
@@ -284,7 +287,7 @@ class ACLED(LightSource):
         x_fit = np.arange(1000)
         y_fit = self(x_fit, pixel=pixel)
 
-        mask = (y_fit > 0) * (y_fit <= 2000)
+        mask = (y_fit > y_lim[0]) * (y_fit <= y_lim[1])
         x_fit = x_fit[mask]
         y_fit = y_fit[mask]
 
