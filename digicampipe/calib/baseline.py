@@ -9,21 +9,18 @@ __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
 def fill_dark_baseline(events, dark_baseline):
     for event in events:
         event.data.dark_baseline = dark_baseline
-
         yield event
 
 
 def fill_baseline(events, baseline):
     for event in events:
         event.data.baseline = baseline
-
         yield event
 
 
 def fill_digicam_baseline(events):
     for event in events:
         event.data.baseline = event.data.digicam_baseline
-
         yield event
 
 
@@ -31,17 +28,14 @@ def compute_baseline_with_min(events):
     for event in events:
         adc_samples = event.data.adc_samples
         event.data.baseline = np.min(adc_samples, axis=-1)
-
         yield event
 
 
 def subtract_baseline(events):
     for event in events:
         baseline = event.data.baseline
-
         event.data.adc_samples = event.data.adc_samples.astype(baseline.dtype)
         event.data.adc_samples -= baseline[..., np.newaxis]
-
         yield event
 
 
@@ -49,7 +43,6 @@ def compute_baseline_shift(events):
     for event in events:
         event.data.baseline_shift = event.data.baseline \
                                     - event.data.dark_baseline
-
         yield event
 
 
@@ -59,7 +52,7 @@ def compute_baseline_std(events, n_events):
 
         data = event.data.adc_samples
 
-        if event.event_type == 8:
+        if event.event_type.INTERNAL in event.event_type:
             baselines_std.append(data.std(axis=1))
             baselines_std = baselines_std[-n_events:]
             event.data.baseline_std = np.mean(baselines_std, axis=0)
@@ -76,7 +69,6 @@ def compute_nsb_rate(events, gain, pulse_area, crosstalk, bias_resistance,
                                      crosstalk, bias_resistance,
                                      cell_capacitance)
         event.data.nsb_rate = nsb_rate
-
         yield event
 
 
@@ -96,7 +88,6 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
                           * bias_resistance)
         gain_drop = gain_drop.value
         event.data.gain_drop = gain_drop
-
         yield event
 
 

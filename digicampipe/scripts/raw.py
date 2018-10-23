@@ -15,9 +15,14 @@ Options:
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the same folder as output file.
   --baseline_filename=FILE    Output path for DigiCam calculated baseline
-                              histogram. If None the histogram will not be
+                              histogram. If "none" the histogram will not be
                               computed. FILE should end with '.pk'
-                              [Default: None]
+                              [Default: none]
+  --event_types=<TYPE>        Comma separated list of integers corresponding to
+                              the events types that are taken into the
+                              histogram (others are discarded).
+                              If set to "none", all events are included.
+                              [Default: none]
 """
 import os
 
@@ -29,11 +34,11 @@ from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args
+    convert_pixel_args, convert_event_types_args
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
-def compute(files, max_events, pixel_id, filename):
+def compute(files, max_events, pixel_id, filename, event_types=None):
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
@@ -47,12 +52,15 @@ def compute(files, max_events, pixel_id, filename):
         )
 
         for event in events:
+            if event_types and event.event_type not in event_types:
+                continue
             raw_histo.fill(event.data.adc_samples)
         raw_histo.save(filename)
         return raw_histo
 
 
-def compute_baseline_histogram(files, max_events, pixel_id, filename):
+def compute_baseline_histogram(files, max_events, pixel_id, filename,
+                               event_types=None):
     if os.path.exists(filename) and len(files) == 0:
         baseline_histo = Histogram1D.load(filename)
         return baseline_histo
@@ -66,6 +74,8 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename):
         )
 
         for event in events:
+            if event_types and event.event_type not in event_types:
+                continue
             baseline_histo.fill(event.data.digicam_baseline.reshape(-1, 1))
         baseline_histo.save(filename)
 
@@ -79,18 +89,18 @@ def entry():
     max_events = convert_max_events_args(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
-
+    event_types = convert_event_types_args(args['--event_types'])
     baseline_filename = args['--baseline_filename']
-    if baseline_filename == 'None':
+    if baseline_filename.lower() == 'none':
         baseline_filename = None
 
     output_path = os.path.dirname(raw_histo_filename)
-    if not os.path.exists(output_path):
+    if not os.path.exists(output_path) and output_path != "":
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
 
     if args['--compute']:
-        compute(files, max_events, pixel_id, raw_histo_filename)
+        compute(files, max_events, pixel_id, raw_histo_filename, event_types)
 
         if baseline_filename:
             compute_baseline_histogram(files, max_events, pixel_id,
