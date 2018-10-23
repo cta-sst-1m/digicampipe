@@ -140,6 +140,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 container.burst = event.data.burst
 
                 baseline_shift = baseline - dark_baseline.mean()
+                print(baseline_shift)
                 nsb_rate = _compute_nsb_rate(baseline_shift,
                                              gain=gain_amplitude,
                                              pulse_area=pulse_area,
@@ -147,7 +148,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                                              bias_resistance=bias_resistance,
                                              cell_capacitance=cell_capacitance)
 
-                container.nsb_rate = nsb_rate.mean().value
+                container.nsb_rate = np.nanmean(nsb_rate).value
 
                 baseline = 0
                 count = 0
@@ -209,14 +210,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
     if nsb_plot_filename is not None:
         fig3 = plt.figure()
         ax = fig3.add_subplot(111)
-        print(data['nsb_rate'])
-
         data.plot(y='nsb_rate', ax=ax)
-        # plt.plot(data['nsb_rate'])
         ax.set_ylabel('$f_{NSB}$ [GHz]')
-        # xlim = plt.xlim()
-        # plt.xlim(xlim[0] - 1, xlim[1] + 1)
-        plt.show()
 
         if nsb_plot_filename == "show":
             plt.show()

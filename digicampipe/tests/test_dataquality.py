@@ -23,7 +23,7 @@ example_file2_path = resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'SST1M_01_20181010_469.fits.fz'
+        'SST1M_01_20180918_261.fits.fz'
     )
 )
 
@@ -54,7 +54,8 @@ template_filename = resource_filename(
     )
 )
 
-expected_columns = ['time', 'baseline', 'trigger_rate']
+expected_columns = ['time', 'baseline', 'trigger_rate', 'shower_rate',
+                    'nsb_rate', 'burst']
 
 
 def test_data_quality():
