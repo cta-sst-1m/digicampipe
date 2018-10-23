@@ -72,11 +72,20 @@ def compute_nsb_rate(events, gain, pulse_area, crosstalk, bias_resistance,
                      cell_capacitance):
     for event in events:
         baseline_shift = event.data.baseline_shift
-        nsb_rate = baseline_shift / (gain * pulse_area * (1 + crosstalk) -
-                                     baseline_shift * bias_resistance *
+        nsb_rate = _compute_nsb_rate(baseline_shift, gain, pulse_area,
+                                     crosstalk, bias_resistance,
                                      cell_capacitance)
         event.data.nsb_rate = nsb_rate
         yield event
+
+
+def _compute_nsb_rate(baseline_shift, gain, pulse_area, crosstalk,
+                      bias_resistance, cell_capacitance):
+    nsb_rate = baseline_shift / (gain * pulse_area * (1 + crosstalk) -
+                                 baseline_shift * bias_resistance *
+                                 cell_capacitance)
+
+    return nsb_rate
 
 
 def compute_gain_drop(events, bias_resistance, cell_capacitance):
@@ -124,7 +133,6 @@ def compute_baseline_from_waveform(events, bin_left=5, bin_right=10):
     """
 
     for event in events:
-
         adc_samples = event.data.adc_samples
 
         adc_samples_first = adc_samples[:, 0:bin_left - 1]
@@ -142,7 +150,6 @@ def compute_baseline_from_waveform(events, bin_left=5, bin_right=10):
 
 
 def compute_baseline_simtel(event_stream):
-
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:

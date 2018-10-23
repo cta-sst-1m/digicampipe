@@ -30,6 +30,11 @@ Options:
                                 "show" to open an interactive plot instead of
                                 creating a file.
                                 [Default: none]
+  --nsb_plot=FILE               path to the output plot history of the mean
+                                Night Sky Background rate. Use "none" to not
+                                create the plot and "show" to open an
+                                interactive plot instead of creating a file.
+                                [Default: none]
   --template=FILE               Pulse template file path
   --threshold_sample_pe=INT     threshold used in the shower rate estimation.
 """
@@ -48,7 +53,7 @@ from numpy import ndarray
 import os
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
-    subtract_baseline, compute_gain_drop, compute_nsb_rate, \
+    subtract_baseline, compute_gain_drop, compute_nsb_rate, _compute_nsb_rate,\
     compute_baseline_shift, fill_dark_baseline
 from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
 from digicampipe.calib.charge import compute_sample_photo_electron
@@ -60,19 +65,19 @@ from digicampipe.utils.docopt import convert_text
 
 
 class DataQualityContainer(Container):
-    time = Field(ndarray, 'time')
-    baseline = Field(ndarray, 'baseline average over the camera')
+    time = Field(ndarray, 'Time')
+    baseline = Field(ndarray, 'Baseline average over the camera')
     trigger_rate = Field(ndarray, 'Digicam trigger rate')
-    shower_rate = Field(ndarray, 'shower rate')
-    burst = Field(bool, 'is there a burst')
+    shower_rate = Field(ndarray, 'Shower rate')
+    nsb_rate = Field(ndarray, 'Averaged over the camera NSB rate')
+    burst = Field(bool, 'Is there a burst')
 
 
-def main(
-        files, dark_filename, time_step, fits_filename, load_files,
-        histo_filename, rate_plot_filename, baseline_plot_filename,
-        parameters_filename, template_filename, threshold_sample_pe=20,
-        bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
-):
+def main(files, dark_filename, time_step, fits_filename, load_files,
+         histo_filename, rate_plot_filename, baseline_plot_filename,
+         nsb_plot_filename, parameters_filename, template_filename,
+         threshold_sample_pe=20,
+         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -133,6 +138,9 @@ def main(
                 container.time = (new_time + init_time) / 2
                 container.shower_rate = shower_rate
                 container.burst = event.data.burst
+                nsb_rate = event.data.nsb_rate
+                container.nsb_rate = np.nanmean(nsb_rate).value
+
                 baseline = 0
                 count = 0
                 init_time = 0
@@ -189,6 +197,19 @@ def main(
                 os.makedirs(output_path)
             plt.savefig(baseline_plot_filename)
         plt.close(fig2)
+
+    if nsb_plot_filename is not None:
+        fig3 = plt.figure()
+        ax = fig3.add_subplot(111)
+        data.plot(y='nsb_rate', ax=ax)
+        ax.set_ylabel('$f_{NSB}$ [GHz]')
+
+        if nsb_plot_filename == "show":
+            plt.show()
+        else:
+            fig3.savefig(nsb_plot_filename)
+        plt.close(fig3)
+
     return
 
 
@@ -202,12 +223,14 @@ def entry():
     load_files = args['--load']
     rate_plot_filename = convert_text(args['--rate_plot'])
     baseline_plot_filename = convert_text(args['--baseline_plot'])
+    nsb_plot_filename = convert_text(args['--nsb_plot'])
     parameters_filename = args['--parameters']
     template_filename = args['--template']
     threshold_sample_pe = float(args['--threshold_sample_pe'])
 
     main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
+         nsb_plot_filename,
          parameters_filename, template_filename, threshold_sample_pe)
 
 

@@ -17,12 +17,23 @@ example_file1_path = resource_filename(
         'example_10_evts.000.fits.fz'
     )
 )
+
 example_file2_path = resource_filename(
     'digicampipe',
     os.path.join(
         'tests',
         'resources',
-        'example_100_evts.000.fits.fz'
+        'SST1M_01_20180918_261.fits.fz'
+    )
+)
+
+example_file_path_dark = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'digicamtoy',
+        'events_digicamtoy_nsb_3_pe_0.hdf5'
     )
 )
 parameters_filename = resource_filename(
@@ -43,7 +54,8 @@ template_filename = resource_filename(
     )
 )
 
-expected_columns = ['time', 'baseline', 'trigger_rate']
+expected_columns = ['time', 'baseline', 'trigger_rate', 'shower_rate',
+                    'nsb_rate', 'burst']
 
 
 def test_data_quality():
@@ -54,10 +66,11 @@ def test_data_quality():
         histo_filename = os.path.join(tmpdirname, 'ouptput.pk')
         rate_plot_filename = os.path.join(tmpdirname, 'rate.png')
         baseline_plot_filename = os.path.join(tmpdirname, 'baseline.png')
+        nsb_plot_filename = os.path.join(tmpdirname, 'nsb.png')
         load_files = False
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         compute_raw(
-            files=[example_file1_path],
+            files=example_file_path_dark,
             max_events=None,
             pixel_id=convert_pixel_args(None),
             filename=dark_filename
@@ -65,14 +78,16 @@ def test_data_quality():
         data_quality(
             files, dark_filename, time_step, fits_filename, load_files,
             histo_filename, rate_plot_filename, baseline_plot_filename,
-            parameters_filename, template_filename,
-            threshold_sample_pe=0.02  # low threshold to keep test events
+            nsb_plot_filename,
+            parameters_filename, template_filename, threshold_sample_pe=0.02,
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
         fits_columns = [c.name for c in hdul[1].columns]
         n_time = len(hdul[1].data[expected_columns[0]])
         assert n_time > 0
+
+        assert len(fits_columns) == len(expected_columns)
         for col in expected_columns:
             assert col in fits_columns
             assert n_time == len(hdul[1].data[col])
