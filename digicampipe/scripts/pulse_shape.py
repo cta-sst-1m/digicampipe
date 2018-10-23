@@ -57,7 +57,7 @@ def main(
     n_pixel = 0
     for e in events:
         adc = e.data.adc_samples
-        integral = adc[:, slice(integration_min,integration_max)].sum(axis=1)
+        integral = adc[:, slice(integration_min, integration_max)].sum(axis=1)
         adc_norm = adc / integral[:, None]
         arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
         if histo is None:
