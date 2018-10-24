@@ -21,12 +21,28 @@ template_filename_2 = resource_filename(
         'pulse_template_all_pixels.txt'
     )
 )
-data_filename = resource_filename(
+data_filename1 = resource_filename(
     'digicampipe',
     os.path.join(
         'tests',
         'resources',
         'template_scan_dac_250.fits.gz'
+    )
+)
+data_filename2 = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'template_scan_dac_400.fits.gz'
+    )
+)
+data_filename3 = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'template_scan_dac_450.fits.gz'
     )
 )
 
@@ -105,15 +121,20 @@ def test_charge_amplitude_ratio():
     assert RATIO_CHARGE_AMPLITUDE == ratio
 
 
-def test_pulse_template_from_datafiles():
-    template = NormalizedPulseTemplate.create_from_datafile(data_filename)
+def test_pulse_template_from_datafile():
+    template1 = NormalizedPulseTemplate.create_from_datafile(data_filename1)
+    template2 = NormalizedPulseTemplate.create_from_datafile(data_filename2)
+    template3 = NormalizedPulseTemplate.create_from_datafile(data_filename3)
     template_load = NormalizedPulseTemplate.load(template_filename_2)
     time = np.linspace(-10, 30, num=101)
     std = template_load.std(time)
     assert np.all(
-        np.abs(template(time) - template_load(time)) < 5 * std)
+        np.abs(template1(time) - template_load(time)) < 5 * std)
+    assert np.all(
+        np.abs(template2(time) - template_load(time)) < 5 * std)
+    assert np.all(
+        np.abs(template3(time) - template_load(time)) < 5 * std)
 
 
 if __name__ == '__main__':
-    test_pulse_template_creation_with_file_with_std()
-    test_pulse_template_from_datafiles()
+    test_pulse_template_from_datafile()
