@@ -2,8 +2,9 @@ import numpy as np
 from astropy.io import fits
 from matplotlib import pyplot as plt
 
+
 class Histogram2d:
-    def __init__(self, shape, range):
+    def __init__(self, shape, range, dtype='u2'):
         """
         Create a 2D histogram
         :param shape: tuple describing the shape. The last 2 elements
@@ -12,7 +13,7 @@ class Histogram2d:
         :param range: 2-tuple (for 1st and 2nd dimension) of
         2-tuples (Lowermost and uppermost limits of the bins)
         """
-        self.histo = np.zeros(shape, dtype='u2')
+        self.histo = np.zeros(shape, dtype=dtype)
         self.range = range
         self.xedges = None
         self.yedges = None
@@ -80,20 +81,22 @@ class Histogram2d:
         with fits.open(path) as hdul:
             histo = hdul[0].data
             range = hdul[1].data
-            obj = Histogram2d(histo.shape, range)
+            obj = Histogram2d(histo.shape, range, histo.dtype)
             obj.histo = histo
             obj.xedges = hdul[2].data
             obj.yedges = hdul[3].data
         return obj
 
-    def stack_all(self):
+    def stack_all(self, dtype=None):
         """
         stack all 2D histograms together and return the result.
         :return: a simple histogram2D
         """
         _h = self.contents()
+        if not dtype:
+            dtype = _h.dtype
         shape_2d = _h.shape[-2:]
-        hist = Histogram2d(_h.shape[-2:], self.range)
+        hist = Histogram2d(_h.shape[-2:], self.range, dtype=dtype)
         hist.xedges = self.xedges
         hist.yedges = self.yedges
         n_2d_hist = np.sum(_h.shape[:-2])
@@ -102,16 +105,18 @@ class Histogram2d:
             hist.histo += h_2d
         return hist
 
-    def plot(self, filename):
+    def plot(self, filename="show"):
         """
         Plot 12 the first non empty 2d histograms.
         :param filename: filename of the plot. if "show", the plot is shown
         instead.
         """
         n_plotted = 0
-        plt.figure(figsize=[16, 12], dpi=100)
         fig, axes = plt.subplots(4, 3)
-        for i, h in enumerate(self.contents()):
+        hists = self.contents()
+        if len(hists.shape) == 2:
+            hists = hists.reshape([1, hists.shape[0], hists.shape[1]])
+        for i, h in enumerate(hists):
             if np.all(h == 0):
                 continue
             ax = axes[int(n_plotted / 3), n_plotted % 3]
@@ -121,13 +126,16 @@ class Histogram2d:
             if n_plotted == 12:
                 break
         plt.tight_layout()
-        plt.savefig('pulse_shape.png', dpi=200)
-        plt.close()
+        if filename.lower() != "show":
+            plt.savefig(filename, dpi=200)
+        else:
+            plt.show()
+        plt.close(fig)
 
 
 class Histogram2dChunked(Histogram2d):
-    def __init__(self, shape, range, buffer_size=1000):
-        super().__init__(shape=shape, range=range)
+    def __init__(self, shape, range, dtype='u2', buffer_size=1000):
+        super().__init__(shape=shape, range=range, dtype=dtype)
 
         self.buffer_size = buffer_size
         self.buffer_x = None

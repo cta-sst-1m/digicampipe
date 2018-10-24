@@ -48,8 +48,8 @@ class NormalizedPulseTemplate:
         pulse_shape.py script.
         """
         histo_pixels = Histogram2d.load(input_file)
-        histo = histo_pixels.stack_all()
-        ts, ampl, ampl_std = histo.fit_y(min_entries=100)
+        histo = histo_pixels.stack_all(dtype=np.int64)
+        ts, ampl, ampl_std = histo.fit_y(min_entries=10000)
         return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
     def _interpolate(self):
@@ -100,9 +100,8 @@ class NormalizedPulseTemplate:
         t = np.linspace(self.time.min(), self.time.max(),
                         num=len(self.time) * 100)
 
-        axes.plot(self.time, self.amplitude, label='Template data-points',
-                  **kwargs)
-        axes.plot(t, self(t), label='Interpolated template')
+        axes.errorbar(self.time, self.amplitude, self.amplitude_std,
+                      label='Template data-points', **kwargs)
+        axes.plot(t, self(t), '-', label='Interpolated template')
         axes.legend(loc='best')
-
         return axes
