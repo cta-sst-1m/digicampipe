@@ -40,8 +40,8 @@ def main(
         time_range_ns=(-10., 40.),
         amplitude_range=(-0.1, 0.4),
         integration_range=(8, 20),
-        # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
-        # 1 pe <=> 20 integral
+        # charge < 50 pe (noisy) or > 500 pe (saturation) => bad_charge
+        # 1 pe <=> 20 LSB integral
         charge_range=(1000., 10000.),
         n_bin=100,
 ):
@@ -75,8 +75,6 @@ def main(
             assert adc_norm.shape[0] == n_pixel
             assert adc_norm.shape[1] == n_sample
         time_in_ns = np.arange(n_sample) * 4
-        # charge < 10 pe (noisy) or > 500 pe (saturation) => bad_charge
-        # 1 pe <=> 20 integral
         bad_charge = np.logical_or(
             integral < charge_min,
             integral > charge_max

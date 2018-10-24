@@ -37,6 +37,7 @@ Options:
                                 [Default: none]
   --template=FILE               Pulse template file path
   --threshold_sample_pe=INT     threshold used in the shower rate estimation.
+                                [Default: 20.]
 """
 import astropy.units as u
 import matplotlib.pyplot as plt
