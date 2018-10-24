@@ -168,7 +168,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data['length'] / data['width'] >= 10.,
             data['length'] / data['width'] <= 2.
         )
-        print('tagged', np.sum(data['is_burst']), '/', n_event,
+        print('tagged', np.sum(data['burst']), '/', n_event,
               'events as of bad quality')
         print('tagged', np.sum(is_cutted), '/', n_event,
               'events cut by l/w')
@@ -189,7 +189,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         subplot = 0
         for key, val in data.items():
             if key in ['border', 'intensity', 'kurtosis', 'event_id',
-                       'event_type', 'miss']:
+                       'event_type', 'miss', 'burst']:
                 continue
             subplot += 1
             print(subplot, '/', 9, 'plotting', key)
@@ -340,8 +340,7 @@ def entry():
     compute = args['--compute']
     display = args['--display']
     output_path = os.path.dirname(output)
-
-    if not os.path.exists(output_path):
+    if output_path != "" and not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
                       'for output hillas does not exists \n')
     pixel_ids = convert_pixel_args(args['--pixel'])
