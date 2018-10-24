@@ -2,10 +2,11 @@ from setuptools import (
     setup,
     find_packages
 )
+from pkg_resources import resource_string
 
-with open('digicampipe/VERSION') as f:
-    __version__ = f.read().strip()
+PACKAGE_NAME = 'digicampipe'
 
+__version__ = resource_string(PACKAGE_NAME, 'VERSION').decode().strip()
 
 def make_console_scripts(glob_expr='digicampipe/scripts/*.py'):
     import glob
@@ -22,7 +23,7 @@ def make_console_scripts(glob_expr='digicampipe/scripts/*.py'):
 
 
 setup(
-    name='digicampipe',
+    name=PACKAGE_NAME,
     version=__version__,
     packages=find_packages(),
     url='https://github.com/cta-sst-1m/digicampipe',
