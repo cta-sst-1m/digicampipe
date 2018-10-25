@@ -44,6 +44,7 @@ def zfits_event_source(
         max_events=None,
         allowed_tels=None,
         event_id=None,
+        disable_bar=False
 ):
     """A generator that streams data from an ZFITs data file
     Parameters
@@ -62,6 +63,7 @@ def zfits_event_source(
         Event id to start at. If the exact event ID does not exists
         it will return the closest past event. If the event ID is out of the
         range of the file it will raise an IndexError
+    disable_bar: If set to true, the progress bar is not shown.
     """
     data = DataContainer()
 
@@ -93,6 +95,7 @@ def zfits_event_source(
                 leave=True,
                 initial=index_of_event,
                 total=n_events_in_file,
+                disable=disable_bar
         ):
             if max_events is not None and event_counter > max_events:
                 break

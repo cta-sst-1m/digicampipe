@@ -9,7 +9,7 @@ from digicampipe.io.containers import CalibrationContainer
 from .auxservice import AuxService
 
 
-def event_stream(filelist, source=None, max_events=None,
+def event_stream(filelist, source=None, max_events=None, disable_bar=False,
                  event_id_range=(None, None), **kwargs):
     """Iterable of events in the form of `DataContainer`.
 
@@ -26,6 +26,7 @@ def event_stream(filelist, source=None, max_events=None,
     max_events: max_events to iterate over
     event_id_range: minimum and maximum event id to be returned. Set one of
     them to None to disable that limit.
+    disable_bar: If set to true, the progress bar is not shown.
     kwargs: parameters for event_source
         Some event_sources need special parameters to work, c.f. their doc.
     """
@@ -52,11 +53,12 @@ def event_stream(filelist, source=None, max_events=None,
 
     else:
 
-        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=True)
+        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=True,
+                           disable=disable_bar)
     for file in file_stream:
         if source is None:
             source = guess_source_from_path(file)
-        data_stream = source(url=file, **kwargs)
+        data_stream = source(url=file, disable_bar=disable_bar, **kwargs)
         try:
             for event in data_stream:
                 tel = event.r0.tels_with_data[0]
