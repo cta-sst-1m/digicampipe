@@ -15,6 +15,13 @@ def convert_int(text):
         return int(text)
 
 
+def convert_float(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        return float(text)
+
+
 def convert_list_int(text):
     if text is None or text.lower() == 'none':
         return None
