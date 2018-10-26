@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from pkg_resources import resource_filename
-import pytest
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
