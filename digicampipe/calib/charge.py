@@ -53,6 +53,24 @@ def compute_charge(events, integral_width, shift):
         yield event
 
 
+def rescale_pulse(events, pde_func, xt_func, gain_func):
+
+    for event in events:
+
+        baseline_shift = event.data.baseline_shift
+        pde_drop = pde_func(baseline_shift)
+        xt_drop = xt_func(baseline_shift)
+        gain_drop = gain_func(baseline_shift)
+
+        scale = pde_drop * xt_drop * gain_drop
+
+        print(scale)
+
+        event.data.adc_samples = event.data.adc_samples / scale
+
+        yield event
+
+
 def compute_charge_with_saturation(events, integral_width,
                                    saturation_threshold=300,
                                    debug=False):
@@ -251,19 +269,16 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
                     color='k', label='Waveform', where='mid')
             ax.axhline(baseline, xmax=1, label='DigiCam Baseline',
                        linestyle='--', color='k')
-            # ax.step(time, convolved_signal[pixel] + baseline, color='r')
             ax.axhline(amplitude[pixel] + baseline)
 
             if threshold_pulse[pixel] <= amplitude[pixel]:
                 ax.axhline(threshold_pulse[pixel] + baseline, linestyle='--',
                            color='b', label='Threshold')
 
-            # ax.axvspan(time[signal_window].min(), time[signal_window].max(), color='b', alpha=0.2)
             ax.axvline(max_arg[pixel] * 4, label='Trigger bin')
 
             ax.fill_between(time, baseline, wvf, where=window,
                             color='k', alpha=0.3, step='mid')
-            # ax.axvspan(lower, upper, alpha=0.3, color='k', label='Integration ')
             plt.xlabel('time [ns]')
             plt.ylabel('[LSB]')
             plt.legend(loc='best')
