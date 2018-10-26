@@ -315,8 +315,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
             for yi, y in enumerate(y_fov):
                 data_cor2 = correct_alpha_3(data_cor, source_x=x, source_y=y)
-                mask2 = (data_cor2['alpha'] < bin_size) & (
-                        data_cor2['r'] - data_cor2['length'] / 2.0 > 0)
+                mask2 = data_cor2['alpha'] < bin_size
                 alpha_filtered = data_cor2['alpha'][mask2]
                 N[yi, xi] = alpha_filtered.shape[0]
             i += 1
