@@ -14,7 +14,7 @@ example_file1_path = resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'example_100_evts.000.fits.fz'
+        'example_10_evts.000.fits.fz'
     )
 )
 example_file2_path = resource_filename(
@@ -22,7 +22,7 @@ example_file2_path = resource_filename(
     os.path.join(
         'tests',
         'resources',
-        'example_10_evts.000.fits.fz'
+        'example_100_evts.000.fits.fz'
     )
 )
 parameters_filename = resource_filename(
@@ -47,7 +47,7 @@ expected_columns = ['time', 'baseline', 'trigger_rate']
 
 
 def test_data_quality():
-    files = [example_file1_path]
+    files = [example_file2_path]
     time_step = 1e8  # in ns, average history plot over 100 ms
     with tempfile.TemporaryDirectory() as tmpdirname:
         fits_filename = os.path.join(tmpdirname, 'ouptput.fits')
@@ -66,6 +66,7 @@ def test_data_quality():
             files, dark_filename, time_step, fits_filename, load_files,
             histo_filename, rate_plot_filename, baseline_plot_filename,
             parameters_filename, template_filename,
+            threshold_sample_pe=0.02  # low threshold to keep test events
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)

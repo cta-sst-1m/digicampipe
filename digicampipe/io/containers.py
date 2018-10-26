@@ -24,7 +24,8 @@ from ctapipe.io.serializer import Serializer
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
-__all__ = ['InstrumentContainer',
+__all__ = ['CameraEventType',
+           'InstrumentContainer',
            'R0Container',
            'R0CameraContainer',
            'R1Container',
@@ -478,6 +479,7 @@ class CalibrationEventContainer(Container):
     shower = Field(bool, 'is the event considered as a shower')
     border = Field(bool, 'is the event after cleaning touchin the camera '
                          'borders')
+    burst = Field(bool, 'is the event during a burst')
 
     def plot(self, pixel_id):
         plt.figure()
