@@ -83,46 +83,35 @@ class ACLED(LightSource):
     def __init__(self, ac_level, photo_electrons, photo_electrons_err=None,
                  saturation_threshold=300):
 
-        self.ac_level = ac_level
+        self.ac_level = ac_level - ac_level[0]
         self.photo_electrons = photo_electrons
         self.photo_electrons_err = photo_electrons_err
         self.saturation_threshold = saturation_threshold  # in p.e.
         self._interpolate()
         self._extrapolate()
-        # self._extrapolate_exponential()
+        self._extrapolate_exponential()
 
     def __call__(self, ac_level, pixel=None):
 
-        y = np.zeros((self.photo_electrons.shape[1], len(ac_level)))
-        y_extrapolated = np.zeros((self.photo_electrons.shape[1], len(ac_level)))
-        print(self._params.shape)
+        y = self.func_exponential(ac_level)
+        y_shape = y.shape
+        y = y.ravel()
+        y_spline = self.func_spline(ac_level).ravel()
+        y_poly = self.func_polynomial(ac_level).ravel()
 
-        for i in range(len(y)):
+        start_values = (y < 5)
+        end_values = (y > self.saturation_threshold)
 
-            y[i] = self._spline[i](ac_level)
-            # y_extrapolated[i] = exponential(ac_level,
-            #                                 self._params[i][0],
-             #                                self._params[i][1])
-            y_extrapolated[i] = np.polyval(self._params[i], ac_level).T
-
-        # y = self._spline(ac_level)
-        # y = splev(ac_level, self._spline[0])
+        y[~start_values] = y_spline[~start_values]
+        y[end_values] = y_poly[end_values]
+        y = y.reshape(y_shape)
 
         if pixel is not None:
 
             y = y[pixel]
-            y_extrapolated = y_extrapolated[pixel]
 
-        y_shape = y.shape
-        y = y.ravel()
-
-        extrapolated_values = np.isnan(y) + (y > self.saturation_threshold)
-        y_extrapolated = y_extrapolated.ravel()
-        y[extrapolated_values] = y_extrapolated[extrapolated_values]
-        y = y.reshape(y_shape)
-
-        # print(y.shape)
-        # print(self._spline.fill_value)
+        # mask = np.isfinite(y)
+        # assert (np.diff(y[mask]) > 0).all()
 
         return y
 
@@ -145,7 +134,7 @@ class ACLED(LightSource):
         for i, pe in enumerate(pes.T):
 
             ac_level = self.ac_level.copy()
-            mask = (pe > 5) * (pe < self.saturation_threshold) * np.isfinite(pe)
+            mask = (pe > 50) * (pe < self.saturation_threshold) * np.isfinite(pe)
 
             err = None
             if self.photo_electrons_err is not None:
@@ -182,7 +171,7 @@ class ACLED(LightSource):
         for i, pe in enumerate(pes.T):
 
             ac_level = self.ac_level.copy()
-            mask = (pe > 10) * (pe < 500) * np.isfinite(pe) * (ac_level >= 0)
+            mask = (pe > 0) * (pe < 100) * np.isfinite(pe) * (ac_level >= 0)
 
             if self.photo_electrons_err is not None:
                 err = self.photo_electrons_err[:, i]
@@ -230,11 +219,37 @@ class ACLED(LightSource):
             params.append(param)
 
         params = np.array(params)
-        self._params = params
+        self._params_exponential = params
+
+    def func_exponential(self, x):
+
+        y = np.zeros((self.photo_electrons.shape[1], len(x)))
+
+        for i in range(len(y)):
+            y[i] = exponential(x, self._params_exponential[i][0],
+                               self._params_exponential[i][1])
+
+        return y
+
+    def func_spline(self, x):
+
+        y = np.zeros((self.photo_electrons.shape[1], len(x)))
+
+        for i in range(len(y)):
+            y[i] = self._spline[i](x)
+
+        return y
+
+    def func_polynomial(self, x):
+
+        y = np.zeros((self.photo_electrons.shape[1], len(x)))
+
+        for i in range(len(y)):
+            y[i] = np.polyval(self._params[i], x).T
+
+        return y
 
     def _interpolate(self):
-
-        from scipy.interpolate import splprep, splev
 
         pes = self.photo_electrons.copy().T
         cubic_spline = []
@@ -302,6 +317,9 @@ class ACLED(LightSource):
                       yerr=y_err, label='Data points, pixel : {}'.format(pixel),
                       linestyle='None', marker='o', color='k', **kwargs)
         axes.plot(x_fit, y_fit, label='Interpolated data', color='r')
+        axes.plot(x_fit, self.func_spline(x_fit)[pixel], label='Spline')
+        axes.plot(x_fit, self.func_polynomial(x_fit)[pixel], label='Polynomial')
+        axes.plot(x_fit, self.func_exponential(x_fit)[pixel], label='Exponential')
         axes.set_xlabel('AC DAC level')
         axes.set_ylabel('Number of p.e.')
         axes.set_yscale('log')
@@ -341,20 +359,22 @@ class DCLED(LightSource):
         plt.figure()
 
 
-
-
-
 if __name__ == '__main__':
 
-    data = np.load('/home/alispach/ctasoft/digicampipe/charge_linearity_final.npz')
-    ac_leds = np.load('/home/alispach/data/tests/mpe/mpe_fit_results.npz')
+    # data = np.load('/home/alispach/Documents/PhD/ctasoft/digicampipe/charge_linearity_final.npz')
+    ac_leds = np.load('/sst1m/analyzed/calib/mpe/mpe_fit_results_combined.npz')
 
-    ac_levels = ac_leds['ac_levels']
+    ac_levels = ac_leds['ac_levels'][:, 0]
     pe = ac_leds['mu']
     pe_err = ac_leds['mu_error']
 
     test = ACLED(ac_levels, pe, pe_err)
 
-    test.plot(pixel=1295)
+    x = np.linspace(-100, 10000, num=1E3)
+    # X = np.zeros((1296, len(x)))
+    # X[:] = x
+    print(test(x))
+
+    test.plot(pixel=0, y_lim=(0, 1E4))
 
     plt.show()
