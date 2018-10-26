@@ -39,6 +39,8 @@ setup(
         'astropy',
         'h5py',
         'tqdm',
+        'docopt',
+        'yaml',
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
