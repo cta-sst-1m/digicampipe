@@ -81,6 +81,7 @@ def calibration_event_stream(path,
                              pixel_id=[...],
                              max_events=None,
                              event_id_range=(None, None),
+                             disable_bar=False,
                              **kwargs):
     """
     Event stream for the calibration of the camera based on the observation
@@ -88,7 +89,8 @@ def calibration_event_stream(path,
     """
     container = CalibrationContainer()
     for event in event_stream(path, max_events=max_events,
-                              event_id_range=event_id_range, **kwargs):
+                              event_id_range=event_id_range,
+                              disable_bar=disable_bar, **kwargs):
         r0_event = list(event.r0.tel.values())[0]
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
         container.event_type = r0_event.camera_event_type
