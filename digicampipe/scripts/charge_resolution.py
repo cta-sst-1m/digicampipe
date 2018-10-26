@@ -3,7 +3,7 @@ from digicampipe.instrument.light_source import ACLED
 from tqdm import tqdm
 import os
 
-from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline, fill_dark_baseline, compute_baseline_shift
+from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline, fill_dark_baseline, compute_baseline_shift, _crosstalk_drop_from_baseline_shift, _pde_drop_from_baseline_shift, _gain_drop_from_baseline_shift
 from digicampipe.calib.charge import \
     compute_charge_with_saturation_and_threshold, compute_number_of_pe_from_table, rescale_pulse
 from digicampipe.io.event_stream import calibration_event_stream
@@ -84,7 +84,9 @@ for i, file in tqdm(enumerate(files), total=n_files):
     events = compute_baseline_shift(events)
     events = fill_digicam_baseline(events)
     events = subtract_baseline(events)
-    events = rescale_pulse(events, )
+    events = rescale_pulse(events, gain_func=_gain_drop_from_baseline_shift,
+                           xt_func=_crosstalk_drop_from_baseline_shift,
+                           pde_func=_pde_drop_from_baseline_shift)
     # events = compute_charge_with_saturation(events, integral_width=7)
     events = compute_charge_with_saturation_and_threshold(events,
                                                           integral_width=integral_width,
