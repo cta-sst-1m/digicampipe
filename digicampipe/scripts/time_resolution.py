@@ -66,6 +66,15 @@ def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns
     std_charge_all = np.array(std_charge_all)
     mean_t_all = np.array(mean_t_all)
     std_t_all = np.array(std_t_all)
+    np.savez(
+        'time_resolution.npz',
+        ac_levels=ac_levels,
+        mean_charge=mean_charge_all,
+        std_charge_all=std_charge_all,
+        mean_t_all=mean_t_all,
+        std_t_all=std_t_all
+    )
+
     fig, axes = plt.subplots(2, 2)
     axes[0, 0].loglog(mean_charge_all.T, std_charge_all.T, '+')
     x_poisson = np.logspace(-3, 3)
@@ -96,7 +105,7 @@ def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns
     display.set_limits_minmax(61, 66)
     display.add_colorbar()
     plt.tight_layout()
-    plt.show()
+    plt.savefig('time_resolution.png')
 
 
 def analyse_AC_level(
