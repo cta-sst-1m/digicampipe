@@ -367,7 +367,8 @@ def entry():
 
 
 if __name__ == '__main__':
-    # entry()
+    entry()
+    """
     from glob import glob
     data_combined = 'time_resolution_test.npz'
     timing_level_files = glob(
@@ -376,9 +377,9 @@ if __name__ == '__main__':
             'time_ac*_dc200.npz'
         )
     )
-    #timing_level_files = glob('./time_ac*_dc*.npz')
     combine(
         timing_level_files,
         data_combined
     )
     plot(data_combined)
+    """
