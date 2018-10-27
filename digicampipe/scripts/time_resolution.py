@@ -34,6 +34,7 @@ Options:
                                 [default: none]
   --output=PATH                 Path to a directory where results will be
                                 stored.
+                                [default: ./]
 """
 from docopt import docopt
 from pkg_resources import resource_filename
@@ -141,16 +142,12 @@ def combine(acdc_level_files, output):
     dc_levels = []
     for data_file in acdc_level_files:
         data = np.load(data_file)
-        ac_level = data['ac_level']
-        dc_level = data['dc_level']
-        charge = data['charge']
-        t_fit = data['t_fit']
-        mean_charge_all.append(np.nanmean(charge, axis=0))
-        std_charge_all.append(np.nanstd(charge, axis=0))
-        mean_t_all.append(np.nanmean(t_fit, axis=0))
-        std_t_all.append(np.nanstd(t_fit, axis=0))
-        ac_levels.append(ac_level)
-        dc_levels.append(dc_level)
+        mean_charge_all.append(data['mean_charge'])
+        std_charge_all.append(data['std_charge'])
+        mean_t_all.append(data['mean_t'])
+        std_t_all.append(data['std_t'])
+        ac_levels.append(data['ac_level'])
+        dc_levels.append( data['dc_level'])
     mean_charge_all = np.array(mean_charge_all)
     std_charge_all = np.array(std_charge_all)
     mean_t_all = np.array(mean_t_all)
@@ -316,10 +313,16 @@ def main(files, ac_levels, dc_levels, max_events, delay_step_ns, time_range_ns,
             output,
             'time_ac{}_dc{}.npz'.format(ac_level, dc_level)
         )
+        mean_charge = np.nanmean(charge)
+        std_charge = np.nanstd(charge)
+        mean_t = np.nanmean(t_fit)
+        std_t = np.nanstd(t_fit)
         np.savez(
             filename,
-            charge=charge,
-            t_fit=t_fit,
+            mean_charge=mean_charge,
+            std_charge=std_charge,
+            mean_t=mean_t,
+            std_t=std_t,
             ac_level=ac_level,
             dc_level=dc_level
         )
@@ -345,8 +348,6 @@ def entry():
         parameters = parameters_default
     if template is None:
         template = template_default
-    if output is None:
-        output='./'
     main(
         files=files,
         ac_levels=ac_levels,
