@@ -44,36 +44,16 @@ from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.instrument.camera import DigiCam
 
 
-def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns,
-         normalize_range, parameters, template, adc_noise):
-    mean_charge_all = []
-    std_charge_all = []
-    mean_t_all = []
-    std_t_all = []
+def plot(data_file):
+    data = np.load(data_file)
+    ac_levels = data['ac_levels']
+    mean_charge_all = data['mean_charge_all']
+    std_charge_all = data['std_charge_all']
+    mean_t_all = data['mean_t_all']
+    std_t_all = data['std_t_all']
     legend_txt = []
-    for ac_level, file in zip(ac_levels, files):
-        print('analyze file with AC DAC =', ac_level)
-        charge, t_fit = analyse_AC_level(
-            [file], max_events, delay_step_ns, time_range_ns, sampling_ns,
-            normalize_range, parameters, template, adc_noise
-        )
-        mean_charge_all.append(np.nanmean(charge, axis=0))
-        std_charge_all.append(np.nanstd(charge, axis=0))
-        mean_t_all.append(np.nanmean(t_fit, axis=0))
-        std_t_all.append(np.nanstd(t_fit, axis=0))
+    for ac_level in ac_levels:
         legend_txt.append('AC DAC = ' + str(ac_level))
-    mean_charge_all = np.array(mean_charge_all)
-    std_charge_all = np.array(std_charge_all)
-    mean_t_all = np.array(mean_t_all)
-    std_t_all = np.array(std_t_all)
-    np.savez(
-        'time_resolution.npz',
-        ac_levels=ac_levels,
-        mean_charge=mean_charge_all,
-        std_charge_all=std_charge_all,
-        mean_t_all=mean_t_all,
-        std_t_all=std_t_all
-    )
 
     fig, axes = plt.subplots(2, 2)
     axes[0, 0].loglog(mean_charge_all.T, std_charge_all.T, '+')
@@ -83,7 +63,7 @@ def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns
     axes[0, 0].set_ylabel('Q std')
     axes[0, 0].set_xlim([0.5, 1000])
     axes[0, 0].set_ylim([0.25, 40])
-    axes[0, 0].legend(legend_txt)
+#    axes[0, 0].legend(legend_txt)
     axes[0, 1].loglog(mean_charge_all.T, std_t_all.T, '+')
     axes[0, 1].set_xlabel('Q mean')
     axes[0, 1].set_ylabel('t std')
@@ -106,6 +86,37 @@ def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns
     display.add_colorbar()
     plt.tight_layout()
     plt.savefig('time_resolution.png')
+
+
+def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns,
+         normalize_range, parameters, template, adc_noise):
+    mean_charge_all = []
+    std_charge_all = []
+    mean_t_all = []
+    std_t_all = []
+    legend_txt = []
+    for ac_level, file in zip(ac_levels, files):
+        print('analyze file with AC DAC =', ac_level)
+        charge, t_fit = analyse_AC_level(
+            [file], max_events, delay_step_ns, time_range_ns, sampling_ns,
+            normalize_range, parameters, template, adc_noise
+        )
+        mean_charge_all.append(np.nanmean(charge, axis=0))
+        std_charge_all.append(np.nanstd(charge, axis=0))
+        mean_t_all.append(np.nanmean(t_fit, axis=0))
+        std_t_all.append(np.nanstd(t_fit, axis=0))
+    mean_charge_all = np.array(mean_charge_all)
+    std_charge_all = np.array(std_charge_all)
+    mean_t_all = np.array(mean_t_all)
+    std_t_all = np.array(std_t_all)
+    np.savez(
+        'time_resolution.npz',
+        ac_levels=ac_levels,
+        mean_charge_all=mean_charge_all,
+        std_charge_all=std_charge_all,
+        mean_t_all=mean_t_all,
+        std_t_all=std_t_all
+    )
 
 
 def analyse_AC_level(
@@ -286,4 +297,4 @@ def entry():
 
 
 if __name__ == '__main__':
-    entry()
+    plot('time_resolution.npz')
