@@ -53,6 +53,24 @@ def compute_charge(events, integral_width, shift):
         yield event
 
 
+def rescale_pulse(events, pde_func, xt_func, gain_func):
+
+    for event in events:
+
+        baseline_shift = event.data.baseline_shift
+        pde_drop = pde_func(baseline_shift)
+        xt_drop = xt_func(baseline_shift)
+        gain_drop = gain_func(baseline_shift)
+
+        scale = pde_drop * xt_drop * gain_drop
+
+        print(scale)
+
+        event.data.adc_samples = event.data.adc_samples / scale
+
+        yield event
+
+
 def compute_charge_with_saturation(events, integral_width,
                                    saturation_threshold=300,
                                    debug=False):
@@ -127,12 +145,11 @@ def compute_charge_with_saturation(events, integral_width,
 
 
 def compute_charge_with_saturation_and_threshold(events, integral_width,
-                                                 true_charge,
-                                                 measured_charge,
                                                  saturation_threshold=3000,
                                                  threshold_pulse=0.1,
                                                  debug=False, trigger_bin=15,
                                                  n_samples=50,
+                                                 pulse_tail=False,
                                                  ):
     """
 
@@ -153,18 +170,6 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
     trigger_sample = trigger_bin
     trigger_bin = (samples == trigger_bin[:, None])
     # print(np.sum(signal_window, axis=-1))
-
-    X = measured_charge.T
-    Y = true_charge.T
-    dX = np.diff(X, axis=-1)
-    dY = np.diff(Y, axis=-1)
-
-    def interpolate_linearity(x):
-
-        w = np.clip((x[:, None] - X[:, :-1]) / dX[:, :], 0, 1)
-        y = Y[:, 0] + np.sum(w * dY[:, :], axis=1)
-
-        return y
 
     if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
         threshold_pulse = np.ones(n_pixels) * threshold_pulse
@@ -190,9 +195,10 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         #    axis=-1,
         #    mode='constant',
         #    cval=0,
-        #)
+        # )
 
-        max_arg = np.argmax(trigger_bin, axis=-1) # np.argmax(convolved_signal, axis=-1)
+        max_arg = np.argmax(trigger_bin,
+                            axis=-1)  # np.argmax(convolved_signal, axis=-1)
         start_bin = (samples <= (max_arg[:, None] - integral_width / 2))
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
@@ -217,8 +223,14 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
                         (adc[:, 1:] < threshold)
             end_point = np.argmax(end_point, axis=-1)[:, None]
             end_bin = (smp[..., :-1] > end_point + 1)
-
             win = ~(start_bin + end_bin) * (adc[:, :-1] > 0)
+
+            if pulse_tail:
+                extended_window = (smp[..., :-1] > end_point + 1) * \
+                                  (adc[:, :-1] > 0)
+
+                win = win + extended_window
+
             window[saturated_pulse, :-1] = win
 
             temp = adc * window[saturated_pulse]
@@ -229,15 +241,13 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         event.data.reconstructed_charge = charge
         event.data.reconstructed_amplitude = amplitude
 
-        pe = interpolate_linearity(charge)
-        event.data.reconstructed_number_of_pe = pe
-
         if debug:
 
             pixel = 0
             time = np.arange(adc_samples.shape[-1]) * 4
-            lower = time[window[pixel]].min()
-            upper = time[window[pixel]].max()
+            window = window[pixel]
+            # lower = time[window[pixel]].min()
+            # upper = time[window[pixel]].max()
 
             plt.figure()
             plt.step(time, np.cumsum(adc_samples, axis=-1)[pixel])
@@ -256,25 +266,36 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
 
             ax = fig.add_subplot(111)
             ax.step(time, wvf,
-                     color='k', label='Waveform', where='mid')
+                    color='k', label='Waveform', where='mid')
             ax.axhline(baseline, xmax=1, label='DigiCam Baseline',
-                        linestyle='--', color='k')
-            # ax.step(time, convolved_signal[pixel] + baseline, color='r')
+                       linestyle='--', color='k')
             ax.axhline(amplitude[pixel] + baseline)
 
             if threshold_pulse[pixel] <= amplitude[pixel]:
-
-                ax.axhline(threshold_pulse[pixel], linestyle='--',
+                ax.axhline(threshold_pulse[pixel] + baseline, linestyle='--',
                            color='b', label='Threshold')
 
-            # ax.axvspan(time[signal_window].min(), time[signal_window].max(), color='b', alpha=0.2)
-            ax.axvline(max_arg[pixel]*4, label='Trigger bin')
-            ax.axvspan(lower, upper, alpha=0.3, color='k', label='Integration ')
+            ax.axvline(max_arg[pixel] * 4, label='Trigger bin')
+
+            ax.fill_between(time, baseline, wvf, where=window,
+                            color='k', alpha=0.3, step='mid')
             plt.xlabel('time [ns]')
             plt.ylabel('[LSB]')
             plt.legend(loc='best')
-            print(pe[pixel], amplitude[pixel], charge[pixel])
             plt.show()
+
+        yield event
+
+
+def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
+    for event in events:
+
+        charge = event.data.reconstructed_charge
+        pe = charge_to_pe_function(charge)
+        event.data.reconstructed_number_of_pe = pe
+
+        if debug:
+            print(pe)
 
         yield event
 

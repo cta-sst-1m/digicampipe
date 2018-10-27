@@ -319,6 +319,9 @@ def entry():
         mu_xt_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
         amplitude_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
+        mean = np.zeros((n_ac_levels, n_pixels)) * np.nan
+        std = np.zeros((n_ac_levels, n_pixels)) * np.nan
+
         chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
         ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
@@ -334,6 +337,9 @@ def entry():
                                     leave=False):
 
                 histo = charge_histo[i, pixel_id]
+
+                mean[i, j] = histo.mean()
+                std[i, j] = histo.std()
 
                 if histo.overflow > 0 or histo.data.sum() == 0:
                     continue
@@ -426,6 +432,8 @@ def entry():
                  ac_levels=ac_levels,
                  amplitude=amplitude,
                  amplitude_error=amplitude_error,
+                 mean=mean,
+                 std=std,
                  )
 
     if args['--save_figures']:
