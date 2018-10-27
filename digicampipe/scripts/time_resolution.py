@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-measure the time offsets and the timing resolution.
+measure the time offsets using template fitting. Create a file
+time_acXXX_dcYYY.npz for eac AC and DC level with XXX and YYY the value of resp.
+the AC and DC level.
 Usage:
   digicam-time-resolution [options] [--] <INPUT>...
 
@@ -9,6 +11,9 @@ Options:
   --ac_levels=LIST              Comma separated list of AC levels for each
                                 input file. Must be of the same size as the
                                 number of input file.
+  --dc_levels=LIST              Comma separated list of DC levels for each
+                                input file. Must be a single value or the same
+                                size as the number of input files. [default: 0]
   --max_events=INT              Maximum number of events to analyze. Set to
                                 none to use all events in the input files.
                                 [default: none]
@@ -27,6 +32,8 @@ Options:
   --template=FILE               Pulse template file path. If set to none, the
                                 default one is used.
                                 [default: none]
+  --output=PATH                 Path to a directory where results will be
+                                stored.
 """
 from docopt import docopt
 from pkg_resources import resource_filename
@@ -42,76 +49,116 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.calib.baseline import fill_digicam_baseline, subtract_baseline
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.instrument.camera import DigiCam
+from digicampipe.instrument.light_source import ACLED
+
+
+parameters_default = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'calibration_20180814.yml'
+    )
+)
+template_default = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_template_all_pixels.txt'
+    )
+)
 
 
 def plot(data_file):
+    file_calib = os.path.join('mpe_fit_results_combined.npz')
+    data_calib = np.load(file_calib)
+    pe = data_calib['mu']
+    pe_err = data_calib['mu_error']
+
     data = np.load(data_file)
     ac_levels = data['ac_levels']
     mean_charge_all = data['mean_charge_all']
     std_charge_all = data['std_charge_all']
     mean_t_all = data['mean_t_all']
     std_t_all = data['std_t_all']
-    legend_txt = []
-    for ac_level in ac_levels:
-        legend_txt.append('AC DAC = ' + str(ac_level))
 
-    fig, axes = plt.subplots(2, 2)
-    axes[0, 0].loglog(mean_charge_all.T, std_charge_all.T, '+')
-    x_poisson = np.logspace(-3, 3)
-    axes[0, 0].loglog(x_poisson, np.sqrt(x_poisson), 'k--')
-    axes[0, 0].set_xlabel('Q mean')
-    axes[0, 0].set_ylabel('Q std')
-    axes[0, 0].set_xlim([0.5, 1000])
-    axes[0, 0].set_ylim([0.25, 40])
-#    axes[0, 0].legend(legend_txt)
-    axes[0, 1].loglog(mean_charge_all.T, std_t_all.T, '+')
-    axes[0, 1].set_xlabel('Q mean')
-    axes[0, 1].set_ylabel('t std')
-    axes[0, 1].set_xlim([0.5, 1000])
-    axes[0, 1].set_ylim([0.05, 10])
+    ac_led = ACLED(ac_levels, pe, pe_err)
+    true_pe = ac_led(ac_levels).T
+
+    fig, axes = plt.subplots(2, 3, figsize=(12, 9))
+    axes[0, 0].loglog(true_pe.T, mean_charge_all.T, '+',
+                      [0.1, 1000], [0.1, 1000], 'k--')
+    axes[0, 0].set_xlabel('Q true')
+    axes[0, 0].set_ylabel('Q mean')
+    axes[0, 0].set_xlim([0.1, 1000])
+    axes[0, 0].set_ylim([0.1, 5000])
+    axes[0, 1].loglog(true_pe.T, std_charge_all.T, '+')
+    x_poisson = np.logspace(-1, 3)
+    axes[0, 1].loglog(x_poisson, np.sqrt(x_poisson), 'k--')
+    axes[0, 1].set_xlabel('Q true')
+    axes[0, 1].set_ylabel('Q std')
+    axes[0, 1].set_xlim([0.1, 1000])
+    axes[0, 1].set_ylim([0.25, 40])
+    axes[0, 2].loglog(true_pe.T, std_t_all.T, '+')
+    axes[0, 2].set_xlabel('Q true')
+    axes[0, 2].set_ylabel('t std')
+    axes[0, 2].set_xlim([0.1, 1000])
+    axes[0, 2].set_ylim([0.05, 10])
     axes[1, 0].hist2d(
-        mean_charge_all.flatten(),
+        true_pe.flatten(),
         std_t_all.flatten(),
-        [np.logspace(-0.3, 3, 101), np.logspace(-1.3, 1, 101)]
+        [np.logspace(-1, 3, 101), np.logspace(-1.3, 1, 101)]
     )
     axes[1, 0].set_xscale('log')
     axes[1, 0].set_yscale('log')
-    axes[0, 1].set_xlabel('Q mean')
-    axes[0, 1].set_ylabel('t std')
+    axes[1, 0].set_xlabel('Q true')
+    axes[1, 0].set_ylabel('t std')
+    axes[1, 1].semilogx(true_pe[:, :30], mean_t_all[:, :30], '-')
+    axes[1, 1].set_xlim([0.1, 1000])
+    axes[1, 1].set_xlabel('Q true')
+    axes[1, 1].set_ylabel('t mean')
     display = CameraDisplay(
-        DigiCam.geometry, ax=axes[1, 1], title='timing offset [ns]'
+        DigiCam.geometry, ax=axes[1, 2], title='timing offset [ns]'
     )
-    display.image = mean_t_all[-1, :]
+    charge_mask = np.ones_like(true_pe)
+    charge_mask[true_pe < 10] = np.NaN
+    charge_mask[true_pe > 500] = np.NaN
+    mean_t_plot = np.nanmean(mean_t_all * charge_mask, axis=0)
+    display.image = mean_t_plot
     display.set_limits_minmax(61, 66)
     display.add_colorbar()
     plt.tight_layout()
     plt.savefig('time_resolution.png')
 
 
-def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns,
-         normalize_range, parameters, template, adc_noise):
+def combine(acdc_level_files, output):
     mean_charge_all = []
     std_charge_all = []
     mean_t_all = []
     std_t_all = []
-    legend_txt = []
-    for ac_level, file in zip(ac_levels, files):
-        print('analyze file with AC DAC =', ac_level)
-        charge, t_fit = analyse_AC_level(
-            [file], max_events, delay_step_ns, time_range_ns, sampling_ns,
-            normalize_range, parameters, template, adc_noise
-        )
+    ac_levels = []
+    dc_levels = []
+    for data_file in acdc_level_files:
+        data = np.load(data_file)
+        ac_level = data['ac_level']
+        dc_level = data['dc_level']
+        charge = data['charge']
+        t_fit = data['t_fit']
         mean_charge_all.append(np.nanmean(charge, axis=0))
         std_charge_all.append(np.nanstd(charge, axis=0))
         mean_t_all.append(np.nanmean(t_fit, axis=0))
         std_t_all.append(np.nanstd(t_fit, axis=0))
+        ac_levels.append(ac_level)
+        dc_levels.append(dc_level)
     mean_charge_all = np.array(mean_charge_all)
     std_charge_all = np.array(std_charge_all)
     mean_t_all = np.array(mean_t_all)
     std_t_all = np.array(std_t_all)
     np.savez(
-        'time_resolution.npz',
+        output,
         ac_levels=ac_levels,
+        dc_levels=dc_levels,
         mean_charge_all=mean_charge_all,
         std_charge_all=std_charge_all,
         mean_t_all=mean_t_all,
@@ -119,9 +166,9 @@ def main(files, ac_levels, max_events, delay_step_ns, time_range_ns, sampling_ns
     )
 
 
-def analyse_AC_level(
-        files, max_events, delay_step_ns, time_range_ns, sampling_ns,
-         normalize_range, parameters, template, adc_noise
+def analyse_ACDC_level(
+    files, max_events, delay_step_ns, time_range_ns, sampling_ns,
+    normalize_range, parameters, template, adc_noise
 ):
     with open(parameters) as parameters_file:
         calibration_parameters = yaml.load(parameters_file)
@@ -250,10 +297,41 @@ def analyse_AC_level(
     return charge, t_fit
 
 
+def main(files, ac_levels, dc_levels, max_events, delay_step_ns, time_range_ns,
+         sampling_ns, normalize_range, parameters, template, adc_noise, output):
+    unique_ac_dc, inverse = np.unique(
+        np.vstack([ac_levels, dc_levels]).T,
+        axis=0,
+        return_inverse=True
+    )
+    files = np.array(files)
+    for i, (ac_level, dc_level) in enumerate(unique_ac_dc):
+        files_level = files[inverse == i]
+        print('analyze file with AC DAC =', ac_level, 'DC DAC =', dc_level)
+        charge, t_fit = analyse_ACDC_level(
+            files_level, max_events, delay_step_ns, time_range_ns, sampling_ns,
+            normalize_range, parameters, template, adc_noise
+        )
+        filename = os.path.join(
+            output,
+            'time_ac{}_dc{}.npz'.format(ac_level, dc_level)
+        )
+        np.savez(
+            filename,
+            charge=charge,
+            t_fit=t_fit,
+            ac_level=ac_level,
+            dc_level=dc_level
+        )
+
+
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
     ac_levels = convert_list_int(args['--ac_levels'])
+    dc_levels = convert_list_int(args['--dc_levels'])
+    if len(dc_levels) == 1:
+        dc_levels = [dc_levels[0],] * len(ac_levels)
     assert len(ac_levels) == len(files)
     max_events = convert_int(args['--max_events'])
     delay_step_ns = convert_float(args['--delay_step_ns'])
@@ -262,29 +340,17 @@ def entry():
     sampling_ns = 4
     parameters = convert_text(args['--parameters'])
     template = convert_text(args['--template'])
-    parameters_default = resource_filename(
-        'digicampipe',
-        os.path.join(
-            'tests',
-            'resources',
-            'calibration_20180814.yml'
-        )
-    )
-    template_default = resource_filename(
-        'digicampipe',
-        os.path.join(
-            'tests',
-            'resources',
-            'pulse_template_all_pixels.txt'
-        )
-    )
+    output = convert_text(args['--output'])
     if parameters is None:
         parameters = parameters_default
     if template is None:
         template = template_default
+    if output is None:
+        output='./'
     main(
         files=files,
         ac_levels=ac_levels,
+        dc_levels=dc_levels,
         max_events=max_events,
         delay_step_ns=delay_step_ns,
         time_range_ns=time_range_ns,
@@ -292,9 +358,12 @@ def entry():
         normalize_range=normalize_range,
         parameters=parameters,
         template=template,
-        adc_noise=1.
+        adc_noise=1.,
+        output=output
     )
 
 
 if __name__ == '__main__':
-    plot('time_resolution.npz')
+    entry()
+    #combine(glob('time_ac*_dc*.npz'), 'time_resolution.npz')
+    #plot('time_resolution.npz')
