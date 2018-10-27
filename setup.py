@@ -40,7 +40,7 @@ setup(
         'h5py',
         'tqdm',
         'docopt',
-        'yaml',
+        'pyyaml',
     ],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['pytest-runner'],
