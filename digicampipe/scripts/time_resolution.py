@@ -38,6 +38,7 @@ Options:
 """
 from docopt import docopt
 from pkg_resources import resource_filename
+from glob import glob
 import os
 import numpy as np
 import yaml
@@ -70,8 +71,13 @@ template_default = resource_filename(
     )
 )
 
+cone_pde = 0.88
+sipm_pde = 0.35
+window_pde = 0.9
+pde = cone_pde * sipm_pde * window_pde
 
-def plot(data_file):
+
+def plot_rms_difference(data_file, figure_file, n_pe=20*pde, vmin=0., vmax=2.):
     file_calib = os.path.join('mpe_fit_results_combined.npz')
     data_calib = np.load(file_calib)
     ac_led = ACLED(
@@ -82,57 +88,202 @@ def plot(data_file):
 
     data = np.load(data_file)
     ac_levels = data['ac_levels']
+    if 'dc_levels' not in data.keys():
+        dc_levels = np.zeros_like(ac_levels)
+    else:
+        dc_levels = data['dc_levels']
+    std_t_all = data['std_t_all']
+
+    # AC LED were calib without DC and without the window
+    if np.all(dc_levels == 0):
+        print('WARNING: no filter taken into account')
+        window_trans = 1
+    else:
+        window_trans = 0.9
+    true_pe = ac_led(ac_levels).T * window_trans
+
+    std_t_npe = np.array(
+        [np.interp(n_pe, true_pe[:, i], std_t_all[:, i]) for i in range(1296)]
+    )
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    rms_diff = np.sqrt(std_t_npe[:, None]**2 + std_t_npe[None, :]**2)
+    h = ax.pcolormesh(rms_diff, vmin=vmin, vmax=vmax)
+    cb = fig.colorbar(h, ax=ax)
+    cb.ax.set_ylabel('rms time difference [ns]')
+    ax.set_xlabel('pixel')
+    ax.set_ylabel('pixel')
+    plt.title('125 MHz NSB, rms time difference at {:.1f} p.e.'.format(n_pe))
+    plt.tight_layout()
+    plt.savefig(figure_file)
+    print(figure_file, 'created')
+
+
+def plot_zone(x, y, bins, ax, label, xscale="log", yscale="linear"):
+    H, xedges, yedges = np.histogram2d(x.flatten(), y.flatten(), bins=bins)
+    yy = yedges[:-1] + np.diff(yedges) / 2
+    xx = xedges[:-1] + np.diff(xedges) / 2
+    mean_y = yy * H
+    mean_y = np.sum(mean_y, axis=-1) / np.sum(H, axis=-1)
+    sigma_y = ((mean_y[:, None] - yy)) ** 2 * H
+    sigma_y = np.sum(sigma_y, axis=-1) / np.sum(H, axis=-1)
+    std_y = np.sqrt(sigma_y)
+    ax.fill_between(xx, mean_y + std_y, mean_y - std_y, alpha=0.3, color='k',
+                    label='$1\sigma$')
+    ax.plot(xx, mean_y, color='k', label=label)
+    x_min, x_max = bins[0][0], bins[0][-1]
+    y_min, y_max = bins[1][0], bins[1][-1]
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xscale(xscale)
+    ax.set_yscale(yscale)
+    ax.set_xlabel('$N$ [p.e.]')
+    ax.xaxis.set_label_position('top')
+    ax.grid(True)
+    ax.legend()
+    ax2 = ax.twiny()  # instantiate a second axes that shares the same y-axis
+    ax2.plot(1e-5, 1e-5, alpha=0)
+    ax2.tick_params(axis='x')
+    ax2.set_xlim(x_min / pde, x_max / pde)
+    ax2.set_ylim(y_min, y_max)
+    ax2.set_xscale(xscale)
+    ax2.set_yscale(yscale)
+    ax.xaxis.tick_top()
+    ax2.xaxis.tick_bottom()
+    ax2.set_xlabel('$N_\gamma$ [ph.]')
+    ax2.xaxis.set_label_position('bottom')
+
+
+def plot_resol(data_file, figure_file, legend):
+    file_calib = os.path.join('mpe_fit_results_combined.npz')
+    data_calib = np.load(file_calib)
+    ac_led = ACLED(
+        data_calib['ac_levels'][:, 0],
+        data_calib['mu'],
+        data_calib['mu_error']
+    )
+
+    data = np.load(data_file)
+    ac_levels = data['ac_levels']
+    if 'dc_levels' not in data.keys():
+        dc_levels = np.zeros_like(ac_levels)
+    else:
+        dc_levels = data['dc_levels']
+    std_t_all = data['std_t_all']
+
+    # AC LED were calib without DC and without the window
+    if np.all(dc_levels == 0):
+        print('WARNING: no filter taken into account')
+        window_trans = 1
+    else:
+        window_trans = 0.9
+    true_pe = ac_led(ac_levels).T * window_trans
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    plot_zone(
+        true_pe,
+        std_t_all,
+        [np.logspace(.5, 2.75, 101), np.logspace(-1.3, 0.5, 101)],
+        ax,
+        legend,
+        yscale='log'
+    )
+    ax.set_ylabel('time resolution [ns]')
+
+    plt.tight_layout()
+    plt.savefig(figure_file)
+
+
+def plot_all(data_file, figure_file='time_resolution.png'):
+    file_calib = os.path.join('mpe_fit_results_combined.npz')
+    data_calib = np.load(file_calib)
+    ac_led = ACLED(
+        data_calib['ac_levels'][:, 0],
+        data_calib['mu'],
+        data_calib['mu_error']
+    )
+
+    data = np.load(data_file)
+    ac_levels = data['ac_levels']
+    if 'dc_levels' not in data.keys():
+        dc_levels = np.zeros_like(ac_levels)
+    else:
+        dc_levels = data['dc_levels']
     mean_charge_all = data['mean_charge_all']
     std_charge_all = data['std_charge_all']
     mean_t_all = data['mean_t_all']
     std_t_all = data['std_t_all']
 
-    true_pe = ac_led(ac_levels).T
+    # AC LED were calib without DC and without the window
+    if np.all(dc_levels == 0):
+        print('WARNING: no filter taken into account')
+        window_trans = 1
+    else:
+        window_trans = 0.9
+    true_pe = ac_led(ac_levels).T * window_trans
+    mean_t_100pe = np.array(
+        [np.interp(100, true_pe[:, i], mean_t_all[:, i]) for i in range(1296)]
+    )
+    std_t_100pe = np.array(
+        [np.interp(100, true_pe[:, i], std_t_all[:, i]) for i in range(1296)]
+    )
 
     fig, axes = plt.subplots(2, 3, figsize=(12, 9))
-    axes[0, 0].loglog(true_pe.T, mean_charge_all.T, '+',
-                      [0.1, 1000], [0.1, 1000], 'k--')
-    axes[0, 0].set_xlabel('Q true')
-    axes[0, 0].set_ylabel('Q mean')
-    axes[0, 0].set_xlim([0.1, 1000])
-    axes[0, 0].set_ylim([0.1, 5000])
-    axes[0, 1].loglog(true_pe.T, std_charge_all.T, '+')
-    x_poisson = np.logspace(-1, 3)
-    axes[0, 1].loglog(x_poisson, np.sqrt(x_poisson), 'k--')
-    axes[0, 1].set_xlabel('Q true')
-    axes[0, 1].set_ylabel('Q std')
-    axes[0, 1].set_xlim([0.1, 1000])
-    axes[0, 1].set_ylim([0.25, 40])
-    axes[0, 2].loglog(true_pe.T, std_t_all.T, '+')
-    axes[0, 2].set_xlabel('Q true')
-    axes[0, 2].set_ylabel('t std')
-    axes[0, 2].set_xlim([0.1, 1000])
-    axes[0, 2].set_ylim([0.05, 10])
-    axes[1, 0].hist2d(
-        true_pe.flatten(),
-        std_t_all.flatten(),
-        [np.logspace(-1, 3, 101), np.logspace(-1.3, 1, 101)]
+    plot_zone(
+        true_pe,
+        mean_charge_all,
+        [np.logspace(-.7, 2.8, 101), np.logspace(-.3, 2.8, 101)],
+        axes[0, 0],
+        'camera average',
+        yscale='log'
     )
-    axes[1, 0].set_xscale('log')
-    axes[1, 0].set_yscale('log')
-    axes[1, 0].set_xlabel('Q true')
-    axes[1, 0].set_ylabel('t std')
-    axes[1, 1].semilogx(true_pe[:, :30], mean_t_all[:, :30], '-')
-    axes[1, 1].set_xlim([0.1, 1000])
-    axes[1, 1].set_xlabel('Q true')
-    axes[1, 1].set_ylabel('t mean')
+    axes[0, 0].loglog([0.1, 1000], [0.1, 1000], 'k--')
+    axes[0, 0].set_ylabel('mean charge reco. [p.e]')
+    plot_zone(
+        true_pe,
+        std_charge_all,
+        [np.logspace(-.7, 2.8, 101), np.logspace(-0.5, 1.5, 101)],
+        axes[0, 1],
+        'camera average',
+        yscale='log'
+    )
+    axes[0, 1].loglog([0.1, 1000], np.sqrt([0.1, 1000]), 'k--')
+    axes[0, 1].set_ylabel('std charge reco. [p.e]')
+    plot_zone(
+        true_pe,
+        std_t_all,
+        [np.logspace(-.7, 2.8, 101), np.logspace(-1.3, 1, 101)],
+        axes[0, 2],
+        'camera average',
+        yscale='log'
+    )
+    axes[0, 2].set_ylabel('time resolution [ns]')
+    plot_zone(
+        true_pe,
+        mean_t_all - mean_t_100pe[None, :],
+        [np.logspace(-.7, 2.8, 101), np.linspace(-2, 2, 101)],
+        axes[1, 0],
+        'camera average',
+        xscale='log',
+        yscale='linear'
+    )
+    axes[1, 0].set_ylabel('time offset [ns]')
     display = CameraDisplay(
-        DigiCam.geometry, ax=axes[1, 2], title='timing offset [ns]'
+        DigiCam.geometry, ax=axes[1, 1],
+        title='timing offset (at 100 p.e) [ns]'
     )
-    charge_mask = np.ones_like(true_pe)
-    charge_mask[true_pe < 10] = np.NaN
-    charge_mask[true_pe > 500] = np.NaN
-    mean_t_plot = np.nanmean(mean_t_all * charge_mask, axis=0)
-    display.image = mean_t_plot
-    display.set_limits_minmax(61, 66)
-    display.add_colorbar()
+    display.image = mean_t_100pe - np.nanmean(mean_t_100pe)
+    display.set_limits_minmax(-2, 2)
+    display.add_colorbar(ax=axes[1, 1])
+    display = CameraDisplay(
+        DigiCam.geometry, ax=axes[1, 2],
+        title='timing resolution (at 100 p.e.) [ns]'
+    )
+    display.image = std_t_100pe
+    display.set_limits_minmax(0.1, 0.3)
+    display.add_colorbar(ax=axes[1, 2])
     plt.tight_layout()
-    plt.savefig('time_resolution.png')
+    plt.savefig(figure_file)
 
 
 def combine(acdc_level_files, output):
@@ -142,6 +293,7 @@ def combine(acdc_level_files, output):
     std_t_all = []
     ac_levels = []
     dc_levels = []
+    n_file = len(acdc_level_files)
     for data_file in acdc_level_files:
         data = np.load(data_file)
         mean_charge_all.append(data['mean_charge'])
@@ -150,10 +302,15 @@ def combine(acdc_level_files, output):
         std_t_all.append(data['std_t'])
         ac_levels.append(data['ac_level'])
         dc_levels.append( data['dc_level'])
-    mean_charge_all = np.array(mean_charge_all)
-    std_charge_all = np.array(std_charge_all)
-    mean_t_all = np.array(mean_t_all)
-    std_t_all = np.array(std_t_all)
+    levels = [list(range(n_file)), dc_levels, ac_levels]
+    levels_sorted = sorted(np.array(levels).T, key=lambda x: (x[1], x[2]))
+    order = np.array(levels_sorted)[:, 0]
+    ac_levels = np.array(ac_levels)[order]
+    dc_levels = np.array(dc_levels)[order]
+    mean_charge_all = np.array(mean_charge_all)[order]
+    std_charge_all = np.array(std_charge_all)[order]
+    mean_t_all = np.array(mean_t_all)[order]
+    std_t_all = np.array(std_t_all)[order]
     np.savez(
         output,
         ac_levels=ac_levels,
@@ -229,16 +386,16 @@ def analyse_ACDC_level(
         # we discard pixels with less that few pe
         good_pix = np.logical_and(
             good_pix,
-            np.max(adc_samples, axis=1) > 2.5 * max_ampl_one_pe
+            np.max(adc_samples, axis=1) > 3.5 / max_ampl_one_pe
         )
         # discard pixels with max pulse not around the right position
         good_pix = np.logical_and(
             good_pix,
-            idx_sample_max >= 11
+            idx_sample_max >= 15
         )
         good_pix = np.logical_and(
             good_pix,
-            idx_sample_max <= 17
+            idx_sample_max <= 16
         )
         sample_norm = adc_samples[rows_norm[good_pix, :], column_norm[good_pix, :]]
         norm_pixels = np.sum(sample_norm, axis=1)
@@ -369,17 +526,39 @@ def entry():
 if __name__ == '__main__':
     entry()
     """
-    from glob import glob
+    test_files = glob('./time_ac*_dc0.npz')
     data_combined = 'time_resolution_test.npz'
-    timing_level_files = glob(
-        os.path.join(
-            '/mnt/baobab/sst1m/analyzed/timing_resolution/20180628/',
-            'time_ac*_dc200.npz'
-        )
-    )
     combine(
-        timing_level_files,
+        test_files,
         data_combined
     )
-    plot(data_combined)
+    plot_all(data_combined, figure_file='time_analysis_test.png')
+
+    for dc in range(200, 330, 10):
+        timing_level_files = glob(
+            os.path.join(
+                '/mnt/baobab/sst1m/analyzed/timing_resolution/20180628/',
+                'time_ac*_dc{}.npz'.format(dc)
+            )
+        )
+        data_combined = 'time_resolution_dc{}.npz'.format(dc)
+        combine(
+            timing_level_files,
+            data_combined
+        )
+        #data_combined = 'time_resolution_dc{}.npz'.format(dc)
+        figure_file = 'time_analysis_dc{}.png'.format(dc)
+        plot_all(data_combined, figure_file=figure_file)
+        print(figure_file, 'created with', len(timing_level_files), 'AC lvl')
+    plot_resol(
+        'time_resolution_dc290.npz',
+        figure_file='time_resolution_dc290.png',
+        legend='125MHz NSB, camera average'
+    )
+    plot_rms_difference(
+        'time_resolution_dc290.npz',
+        figure_file='rms_difference_dc290.png',
+        n_pe=1.5,
+        vmax=3
+    )
     """
