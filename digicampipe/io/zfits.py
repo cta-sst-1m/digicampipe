@@ -89,13 +89,15 @@ def zfits_event_source(
 
             events = events[max(index_of_event, 0):]
 
+        n_steps = n_events_in_file if max_events is None else max_events
+
         for event_counter, event in tqdm(
                 enumerate(events),
                 desc='Events',
                 leave=True,
                 initial=index_of_event,
-                total=n_events_in_file,
-                disable=disable_bar
+                disable=disable_bar,
+                total=n_steps
         ):
             if max_events is not None and event_counter > max_events:
                 break

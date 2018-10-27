@@ -3,22 +3,34 @@ from setuptools import (
     find_packages
 )
 
-with open('digicampipe/VERSION') as f:
+import glob
+import os.path
+
+VERSION_PATH = os.path.dirname(os.path.abspath(__file__))
+VERSION_PATH = os.path.join(VERSION_PATH, 'digicampipe/VERSION')
+
+with open(VERSION_PATH) as f:
     __version__ = f.read().strip()
 
 
 def make_console_scripts(glob_expr='digicampipe/scripts/*.py'):
-    import glob
-    import os.path
 
-    return [
-        'digicam-{call:22s}=digicampipe.scripts.{stub:22s}:entry'.format(
-            call=os.path.basename(path).split('.')[0].replace('_', '-'),
-            stub=os.path.basename(path).split('.')[0],
-        )
-        for path in sorted(glob.glob(glob_expr))
-        if not os.path.basename(path).startswith('__')
-    ]
+    command_list = []
+
+    for path in sorted(glob.glob(glob_expr)):
+
+        if not os.path.basename(path).startswith('__'):
+
+            command_name = os.path.basename(path)
+            script_filename = command_name.split('.')[0]
+            command_name = command_name.split('.')[0].replace('_', '-')
+
+            command = 'digicam-{call:s}=digicampipe.scripts.{stub:s}:' \
+                      'entry'.format(call=command_name, stub=script_filename)
+
+            command_list.append(command)
+
+    return command_list
 
 
 setup(
