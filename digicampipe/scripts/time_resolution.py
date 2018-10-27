@@ -74,8 +74,11 @@ template_default = resource_filename(
 def plot(data_file):
     file_calib = os.path.join('mpe_fit_results_combined.npz')
     data_calib = np.load(file_calib)
-    pe = data_calib['mu']
-    pe_err = data_calib['mu_error']
+    ac_led = ACLED(
+        data_calib['ac_levels'][:, 0],
+        data_calib['mu'],
+        data_calib['mu_error']
+    )
 
     data = np.load(data_file)
     ac_levels = data['ac_levels']
@@ -84,7 +87,6 @@ def plot(data_file):
     mean_t_all = data['mean_t_all']
     std_t_all = data['std_t_all']
 
-    ac_led = ACLED(ac_levels, pe, pe_err)
     true_pe = ac_led(ac_levels).T
 
     fig, axes = plt.subplots(2, 3, figsize=(12, 9))
@@ -313,10 +315,10 @@ def main(files, ac_levels, dc_levels, max_events, delay_step_ns, time_range_ns,
             output,
             'time_ac{}_dc{}.npz'.format(ac_level, dc_level)
         )
-        mean_charge = np.nanmean(charge)
-        std_charge = np.nanstd(charge)
-        mean_t = np.nanmean(t_fit)
-        std_t = np.nanstd(t_fit)
+        mean_charge = np.nanmean(charge, axis=0)
+        std_charge = np.nanstd(charge, axis=0)
+        mean_t = np.nanmean(t_fit, axis=0)
+        std_t = np.nanstd(t_fit, axis=0)
         np.savez(
             filename,
             mean_charge=mean_charge,
@@ -365,6 +367,18 @@ def entry():
 
 
 if __name__ == '__main__':
-    entry()
-    #combine(glob('time_ac*_dc*.npz'), 'time_resolution.npz')
-    #plot('time_resolution.npz')
+    # entry()
+    from glob import glob
+    data_combined = 'time_resolution_test.npz'
+    timing_level_files = glob(
+        os.path.join(
+            '/mnt/baobab/sst1m/analyzed/timing_resolution/20180628/',
+            'time_ac*_dc200.npz'
+        )
+    )
+    #timing_level_files = glob('./time_ac*_dc*.npz')
+    combine(
+        timing_level_files,
+        data_combined
+    )
+    plot(data_combined)
