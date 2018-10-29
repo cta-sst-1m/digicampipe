@@ -48,8 +48,8 @@ def subtract_baseline(events):
 
 def compute_baseline_shift(events):
     for event in events:
-        event.data.baseline_shift = event.data.baseline \
-                                    - event.data.dark_baseline
+
+        event.data.baseline_shift = event.data.baseline - event.data.dark_baseline
         yield event
 
 
@@ -98,9 +98,16 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
         yield event
 
 
+def _nsb_rate_from_baseline_shift(baseline_shift,
+                                  p=np.array([-5.77111, 7.3408*1e4,
+                                              1.20598*1e7, -2.4464*1e6])):
+
+    return np.polyval(p, baseline_shift) / 1E9  # in GHz
+
+
 def _gain_drop_from_baseline_shift(baseline_shift,
-                                   p=np.array([1., -5.252*1e-3,
-                                               2.35*1e-5, 5.821*1e-8])):
+                                   p=np.array([-5.821*1e-8, 2.35*1e-5,
+                                               -5.252*1e-3, 1.])):
     """
     Compute the gain drop from baseline shift (assuming nominal gain of
     5.01 LSB/p..e).
@@ -110,12 +117,14 @@ def _gain_drop_from_baseline_shift(baseline_shift,
     :return:
     """
 
-    return np.polyval(p.T, baseline_shift)
+    return np.polyval(p, baseline_shift)
 
 
 def _crosstalk_drop_from_baseline_shift(baseline_shift,
-                                        p=np.array([1., -9.425*1e-3,
-                                                    5.463*1e-5, -1.503*1e-8])):
+                                        p=np.array([-1.503*1e-8,
+                                                    5.463*1e-5,
+                                                    -9.425*1e-3,
+                                                    1])):
     """
     Compute the crosstalk drop from baseline shift (assuming nominal gain of
     5.01 LSB/p..e).
@@ -125,11 +134,11 @@ def _crosstalk_drop_from_baseline_shift(baseline_shift,
     :return:
     """
 
-    return np.polyval(p.T, baseline_shift)
+    return np.polyval(p, baseline_shift)
 
 
 def _pde_drop_from_baseline_shift(baseline_shift,
-                                  p=np.array([1., -2.187*1e-3, 5.199*1e-6])):
+                                  p=np.array([5.199*1e-6, -2.187*1e-3, 1.])):
     """
     Compute the PDE (@ 468nm) drop from baseline shift (assuming nominal gain
     of 5.01 LSB/p..e).
@@ -139,7 +148,7 @@ def _pde_drop_from_baseline_shift(baseline_shift,
     :return:
     """
 
-    return np.polyval(p.T, baseline_shift)
+    return np.polyval(p, baseline_shift)
 
 
 def fill_baseline_r0(event_stream, n_bins=10000):
