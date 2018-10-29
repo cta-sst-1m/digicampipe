@@ -27,6 +27,8 @@ def compute_charge(events, integral_width, shift):
     :param events: a stream of events
     :param integral_width: width of the integration window
     :param shift: shift to the pulse index
+    :param maximum_width: width of the region (bin size) to compute charge,
+    maximum value is retained. (not implemented yet)
     :return:
     """
 
@@ -63,7 +65,7 @@ def rescale_pulse(events, pde_func, xt_func, gain_func):
 
         scale = pde_drop * xt_drop * gain_drop
         # event.data.baseline_shift = event.data.baseline_shift / scale
-        scale = scale[:, None]
+        # scale = scale[:, None]
 
         event.data.reconstructed_number_of_pe = event.data.reconstructed_number_of_pe / scale
 
@@ -287,14 +289,17 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         yield event
 
 
-def compute_number_of_pe_from_table(events, charge_to_pe_function,
-                                    debug=False):
+def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
     for event in events:
+
         charge = event.data.reconstructed_charge
         pe = charge_to_pe_function(charge)
         event.data.reconstructed_number_of_pe = pe
+
         if debug:
             print(pe)
+            print(pe.shape)
+
         yield event
 
 
@@ -387,24 +392,6 @@ def compute_photo_electron(events, gains):
         pe = np.nansum(charge, axis=-1) / corrected_gains
         event.data.reconstructed_number_of_pe = pe
 
-        yield event
-
-
-def interpolate_bad_pixels(events, geom, bad_pixels):
-    n_bad = len(bad_pixels)
-    n_pixel = len(geom.neighbors)
-    average_matrix = np.zeros([n_bad, n_pixel])
-    for i, pix in enumerate(bad_pixels):
-        pix_neighbors = geom.neighbors[pix]
-        bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
-                                       assume_unique=True)
-        for bad_neighbor in bad_neighbors:
-            pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
-        average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
-    for event in events:
-        charge = event.data.reconstructed_charge
-        charge[bad_pixels, :] = average_matrix.dot(charge)
-        event.data.reconstructed_charge = charge
         yield event
 
 
