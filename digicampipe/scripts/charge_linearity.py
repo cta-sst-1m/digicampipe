@@ -63,6 +63,8 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
     charge_mean = np.zeros(shape)
     charge_std = np.zeros(shape)
 
+    waveform_std = np.zeros(shape)
+
     for i, dc_level, in tqdm(enumerate(dc_levels), total=n_dc_level):
 
         for j, ac_level in tqdm(enumerate(ac_levels), total=n_ac_level):
@@ -91,8 +93,10 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
                 baseline_mean[i, j] += event.data.baseline
                 baseline_std[i, j] += event.data.baseline**2
+                waveform_std[i, j] += np.std(event.data.adc_samples[:, :6])
 
             charge_mean[i, j] = charge_mean[i, j] / (n + 1)
+            waveform_std[i, j] = waveform_std[i, j] / (n + 1)
             charge_std[i, j] = charge_std[i, j] / (n + 1)
             charge_std[i, j] = np.sqrt(charge_std[i, j] - charge_mean[i, j]**2)
             amplitude_mean[i, j] = amplitude_mean[i, j] / (n + 1)
@@ -104,8 +108,9 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
     np.savez(output_filename, charge_mean=charge_mean, charge_std=charge_std,
              amplitude_mean=amplitude_mean, amplitude_std=amplitude_std,
-             ac_levels=ac_levels, dc_levels=dc_levels, baseline_mean=baseline_mean,
-             baseline_std=baseline_std)
+             ac_levels=ac_levels, dc_levels=dc_levels,
+             baseline_mean=baseline_mean,
+             baseline_std=baseline_std, waveform_std=waveform_std)
 
 
 def entry():
