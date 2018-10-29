@@ -65,7 +65,7 @@ def rescale_pulse(events, pde_func, xt_func, gain_func):
 
         scale = pde_drop * xt_drop * gain_drop
         # event.data.baseline_shift = event.data.baseline_shift / scale
-        scale = scale[:, None]
+        # scale = scale[:, None]
 
         event.data.reconstructed_number_of_pe = event.data.reconstructed_number_of_pe / scale
 
@@ -298,6 +298,7 @@ def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
 
         if debug:
             print(pe)
+            print(pe.shape)
 
         yield event
 
