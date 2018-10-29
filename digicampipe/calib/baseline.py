@@ -89,6 +89,13 @@ def _nsb_rate_from_baseline_shift(baseline_shift,
     return np.polyval(p, baseline_shift) / 1E9  # in GHz
 
 
+def _nsb_rate_from_baseline_std(baseline_std,
+                                p=np.array([789204, -2.34886*1e06,
+                                            1.59792*1e7, 0])):
+
+    return np.polyval(p, baseline_std) / 1E9  # in GHz
+
+
 def _gain_drop_from_baseline_shift(baseline_shift,
                                    p=np.array([-5.821*1e-8, 2.35*1e-5,
                                                -5.252*1e-3, 1.])):
