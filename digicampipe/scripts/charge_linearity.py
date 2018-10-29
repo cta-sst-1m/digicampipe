@@ -53,7 +53,7 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
     for file in files:
         assert os.path.exists(file)
 
-    assert not os.path.exists(output_filename)
+    # assert not os.path.exists(output_filename)
 
     shape = (len(dc_levels), len(ac_levels), n_pixels)
     amplitude_mean = np.zeros(shape)
@@ -93,7 +93,8 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
                 baseline_mean[i, j] += event.data.baseline
                 baseline_std[i, j] += event.data.baseline**2
-                waveform_std[i, j] += np.std(event.data.adc_samples[:, :6])
+                waveform_std[i, j] += np.std(event.data.adc_samples[:, :6],
+                                             axis=-1)
 
             charge_mean[i, j] = charge_mean[i, j] / (n + 1)
             waveform_std[i, j] = waveform_std[i, j] / (n + 1)
