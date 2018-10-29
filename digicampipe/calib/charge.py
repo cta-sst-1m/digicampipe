@@ -58,15 +58,16 @@ def rescale_pulse(events, pde_func, xt_func, gain_func):
     for event in events:
 
         baseline_shift = event.data.baseline_shift
+
         pde_drop = pde_func(baseline_shift)
         xt_drop = xt_func(baseline_shift)
         gain_drop = gain_func(baseline_shift)
 
         scale = pde_drop * xt_drop * gain_drop
+        # event.data.baseline_shift = event.data.baseline_shift / scale
+        scale = scale[:, None]
 
-        print(scale)
-
-        event.data.adc_samples = event.data.adc_samples / scale
+        event.data.reconstructed_number_of_pe = event.data.reconstructed_number_of_pe / scale
 
         yield event
 
@@ -157,6 +158,7 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
     :param integral_width: width of the integration window
     :return:
     """
+
     left = max(2, integral_width)
     right = 5
     n_pixels = 1296
