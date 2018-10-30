@@ -1,6 +1,8 @@
 import astropy.units as u
 import numpy as np
 
+from digicampipe.io.containers import CameraEventType
+
 
 def set_patches_to_zero(event_stream, unwanted_patch):
     for event in event_stream:
@@ -27,12 +29,10 @@ def set_pixels_to_zero(event_stream, unwanted_pixels):
             yield event
 
 
-def filter_event_types(event_stream, flags=[0]):
+def filter_event_types(event_stream, flags=(CameraEventType.PATCH7,)):
     for event in event_stream:
-
         for telescope_id in event.r0.tels_with_data:
             flag = event.r0.tel[telescope_id].camera_event_type
-
             if flag in flags:
                 yield event
 
@@ -108,5 +108,5 @@ def filter_period(event_stream, period):
 def filter_clocked_trigger(events):
     for event in events:
 
-        if not event.event_type == 8:
+        if event.event_type.INTERNAL not in event.event_type:
             yield event

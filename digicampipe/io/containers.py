@@ -7,7 +7,7 @@ In general each major pipeline step is associated with a given data level.
 Please keep in mind that the data level definition and the associated fields
 might change rapidly as there is no final data level definition.
 """
-
+from aenum import IntFlag
 import pickle
 from gzip import open as gzip_open
 from os import remove
@@ -24,7 +24,8 @@ from ctapipe.io.serializer import Serializer
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
-__all__ = ['InstrumentContainer',
+__all__ = ['CameraEventType',
+           'InstrumentContainer',
            'R0Container',
            'R0CameraContainer',
            'R1Container',
@@ -42,6 +43,21 @@ __all__ = ['InstrumentContainer',
            'ReconstructedEnergyContainer',
            'ParticleClassificationContainer',
            'DataContainer']
+
+
+class CameraEventType(IntFlag):
+    # from https://github.com/cta-sst-1m/digicampipe/issues/244
+    UNKNOWN = 0x0
+    PATCH7 = 0x1  # algorithm 0 trigger - PATCH7
+    PATCH19 = 0x2  # algorithm 1 trigger - PATCH19
+    MUON_TRIGGER = 0x4  # algorithm 2 trigger - MUON
+    INTERNAL = 0x8  # internal or external trigger
+    EXTMSTR = 0x10  # unused (0) / external (on master only)
+    BIT5 = 0x20  # unused (0)
+    BIT6 = 0x40  # unused (0)
+    CONTINUOUS = 0x80  # continuous readout marker
+    MUON_DETECT = 0x10000  # camera server detected muon
+    HILLAS = 0x20000  # camera server computed Hillas parametrs
 
 
 class InstrumentContainer(Container):
@@ -156,7 +172,16 @@ class R0CameraContainer(Container):
     local_camera_clock = Field(np.int64, "camera timestamp")
     gps_time = Field(np.int64, "gps timestamp")
     white_rabbit_time = Field(float, "precise white rabbit based timestamp")
-    camera_event_type = Field(int, "camera event type")
+    _camera_event_type = Field(CameraEventType, "camera event type")
+
+    @property
+    def camera_event_type(self):
+        return self._camera_event_type
+
+    @camera_event_type.setter
+    def camera_event_type(self, value):
+        self._camera_event_type = CameraEventType(value)
+
     array_event_type = Field(int, "array event type")
     trigger_input_traces = Field(ndarray, "trigger patch trace (n_patches)")
     trigger_input_offline = Field(ndarray, "trigger patch trace (n_patches)")
@@ -454,6 +479,7 @@ class CalibrationEventContainer(Container):
     shower = Field(bool, 'is the event considered as a shower')
     border = Field(bool, 'is the event after cleaning touchin the camera '
                          'borders')
+    burst = Field(bool, 'is the event during a burst')
 
     def plot(self, pixel_id):
         plt.figure()
@@ -484,6 +510,6 @@ class CalibrationContainer(Container):
     pixel_id = Field(ndarray, 'pixel ids')
     data = CalibrationEventContainer()
     event_id = Field(int, 'event_id')
-    event_type = Field(int, 'Event type')
+    event_type = Field(CameraEventType, 'Event type')
     hillas = Field(HillasParametersContainer, 'Hillas parameters')
     info = CalibrationContainerMeta()
