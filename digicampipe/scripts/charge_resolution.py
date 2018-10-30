@@ -63,7 +63,6 @@ def charge_to_pe(x, measured_average_charge, true_pe):
 def compute(files, ac_levels, dc_levels, output_filename, dark_charge, dark_baseline,
             max_events, pixels, integral_width, timing, saturation_threshold, pulse_tail, debug):
 
-
     directory = '/sst1m/analyzed/calib/mpe/'
     file_calib = os.path.join(directory, 'mpe_fit_results_combined.npz')
     data_calib = dict(np.load(file_calib))
