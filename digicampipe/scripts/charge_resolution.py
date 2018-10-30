@@ -75,8 +75,6 @@ def compute(files, ac_levels, dc_levels, output_filename, dark_charge, dark_base
     pde = 0.9  # window filter
     true_pe = ac_led(ac_levels).T * pde
 
-    print(true_pe.shape)
-
     # mask = true_pe < 5
     # true_pe[mask] = pe[mask]
 
@@ -158,10 +156,18 @@ def entry():
     debug = args['--debug']
     charge_linearity = args['--charge_linearity']
     charge_linearity = np.load(charge_linearity)
-    dark_charge = charge_linearity['charge_mean'][0]
-    dark_baseline = charge_linearity['baseline_mean'][0]
 
-    print(dark_charge.shape, dark_baseline.shape)
+    index_sim = []
+
+    ac_levels_2 = charge_linearity['ac_levels']
+
+    for i, ac in enumerate(ac_levels):
+
+        ind = np.where(ac == ac_levels_2)[0][0]
+        index_sim.append(ind)
+
+    dark_charge = charge_linearity['charge_mean'][0][index_sim]
+    dark_baseline = charge_linearity['baseline_mean'][0][index_sim]
 
     if args['--compute']:
 
