@@ -93,11 +93,9 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
                 baseline_mean[i, j] += event.data.baseline
                 baseline_std[i, j] += event.data.baseline**2
-                waveform_std[i, j] += np.std(event.data.adc_samples[:, :6],
-                                             axis=-1)
+                waveform_std[i, j] += event.data.adc_samples[:, 1]**2
 
             charge_mean[i, j] = charge_mean[i, j] / (n + 1)
-            waveform_std[i, j] = waveform_std[i, j] / (n + 1)
             charge_std[i, j] = charge_std[i, j] / (n + 1)
             charge_std[i, j] = np.sqrt(charge_std[i, j] - charge_mean[i, j]**2)
             amplitude_mean[i, j] = amplitude_mean[i, j] / (n + 1)
@@ -106,6 +104,8 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
             baseline_mean[i, j] = baseline_mean[i, j] / (n + 1)
             baseline_std[i, j] = baseline_std[i, j] / (n + 1)
             baseline_std[i, j] = np.sqrt(baseline_std[i, j] - baseline_mean[i, j]**2)
+            waveform_std[i, j] = waveform_std[i, j] / (n + 1)
+            waveform_std[i, j] = np.sqrt(waveform_std[i, j])
 
     np.savez(output_filename, charge_mean=charge_mean, charge_std=charge_std,
              amplitude_mean=amplitude_mean, amplitude_std=amplitude_std,
