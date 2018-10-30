@@ -1,6 +1,7 @@
 name: digicampipe
 channels:
 - astropy
+- conda-forge
 - cta-observatory
 dependencies:
 - aenum
@@ -9,9 +10,11 @@ dependencies:
 - ctapipe-extra=0.2.*
 - cython
 - docopt
+- fitsio
 - h5py
 - hdf5
 - iminuit
+- jupyter
 - matplotlib
 - numba
 - numpy

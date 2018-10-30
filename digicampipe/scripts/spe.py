@@ -1,30 +1,39 @@
 #!/usr/bin/env python
-'''
+"""
 Do the Single Photoelectron anaylsis
 
 Usage:
   digicam-spe [options] [--] <INPUT>...
 
 Options:
-  -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
-  -o OUTPUT --output=OUTPUT.  Folder where to store the results.
-  -c --compute                Compute the data.
-  -f --fit                    Fit.
-  -d --display                Display.
-  -v --debug                  Enter the debug mode.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
-  --shift=N                   number of bins to shift before integrating
-                              [default: 0].
-  --integral_width=N          number of bins to integrate over
-                              [default: 7].
-  --pulse_finder_threshold=F  threshold of pulse finder in arbitrary units
-                              [default: 2.0].
-  --save_figures              Save the plots to the OUTPUT folder
-  --ncall=N                   Number of calls for the fit [default: 10000]
-  --n_samples=N               Number of samples per waveform
+  -h --help                    Show this screen.
+  --max_events=N               Maximum number of events to analyse.
+  --max_histo_filename=FILE    File path of the max histogram.
+                               [Default: ./max_histo.pk]
+  --charge_histo_filename=FILE File path of the charge histogram
+                               [Default: ./charge_histo.pk]
+  --raw_histo_filename=FILE    File path of the raw histogram
+                               [Default: ./raw_histo.pk]
+  -o OUTPUT --output=OUTPUT    Output file path to store the results.
+                               [Default: ./results.npz]
+  -c --compute                 Compute the data.
+  -f --fit                     Fit.
+  -d --display                 Display.
+  -v --debug                   Enter the debug mode.
+  -p --pixel=<PIXEL>           Give a list of pixel IDs.
+  --shift=N                    Number of bins to shift before integrating
+                               [default: 0].
+  --integral_width=N           Number of bins to integrate over
+                               [default: 7].
+  --pulse_finder_threshold=F   Threshold of pulse finder in arbitrary units
+                               [default: 2.0].
+  --save_figures=PATH          Save the plots to the indicated folder.
+                               Figures are not saved is set to none
+                               [default: none]
+  --ncall=N                    Number of calls for the fit [default: 10000]
+  --n_samples=N                Number of samples per waveform
 
-'''
+"""
 import os
 
 import matplotlib.pyplot as plt
@@ -41,7 +50,7 @@ from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.scripts import raw
 from digicampipe.scripts.fmpe import FMPEFitter
 from digicampipe.utils.docopt import convert_pixel_args, \
-    convert_max_events_args
+    convert_int, convert_text
 from digicampipe.utils.pdf import fmpe_pdf_10
 
 
@@ -194,19 +203,15 @@ def entry():
     files = args['<INPUT>']
     debug = args['--debug']
 
-    max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['--output']
+    max_events = convert_int(args['--max_events'])
 
-    if not os.path.exists(output_path):
-        raise IOError('Path for output does not exists \n')
+    raw_histo_filename = args['--raw_histo_filename']
+    charge_histo_filename = args['--charge_histo_filename']
+    max_histo_filename = args['--max_histo_filename']
+    results_filename = args['--output']
 
     pixel_id = convert_pixel_args(args['--pixel'])
     n_pixels = len(pixel_id)
-
-    raw_histo_filename = os.path.join(output_path, 'raw_histo.pk')
-    charge_histo_filename = os.path.join(output_path, 'charge_histo.pk')
-    max_histo_filename = os.path.join(output_path, 'max_histo.pk')
-    results_filename = os.path.join(output_path, 'results.npz')
 
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
@@ -307,12 +312,12 @@ def entry():
         data['gain'] = gain
         np.savez(results_filename, **data)
 
-    if args['--save_figures']:
-
+    save_figure = convert_text(args['--save_figures'])
+    if save_figure is not None:
+        output_path = save_figure
         spe_histo = Histogram1D.load(charge_histo_filename)
         spe_amplitude = Histogram1D.load(charge_histo_filename)
-        raw_histo = Histogram1D.load(os.path.join(output_path,
-                                                  raw_histo_filename))
+        raw_histo = Histogram1D.load(raw_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
         figure_directory = output_path + 'figures/'
