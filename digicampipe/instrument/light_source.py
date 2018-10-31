@@ -6,6 +6,7 @@ from scipy.optimize import curve_fit
 from scipy.special import lambertw
 from abc import ABC, abstractclassmethod, abstractmethod
 
+
 def exponential(x, a, b):
 
     # log_y = np.log(a) + b * x
@@ -293,7 +294,7 @@ class ACLED(LightSource):
 
         pass
 
-    def plot(self, axes=None, pixel=0, y_lim=(0, 2000), **kwargs):
+    def plot(self, axes=None, pixel=0, y_lim=(0, 2000), show_fits=True, **kwargs):
 
         if axes is None:
             fig = plt.figure()
@@ -317,9 +318,11 @@ class ACLED(LightSource):
                       yerr=y_err, label='Data points, pixel : {}'.format(pixel),
                       linestyle='None', marker='o', color='k', **kwargs)
         axes.plot(x_fit, y_fit, label='Interpolated data', color='r')
-        axes.plot(x_fit, self.func_spline(x_fit)[pixel], label='Spline')
-        axes.plot(x_fit, self.func_polynomial(x_fit)[pixel], label='Polynomial')
-        axes.plot(x_fit, self.func_exponential(x_fit)[pixel], label='Exponential')
+
+        if show_fits:
+            axes.plot(x_fit, self.func_spline(x_fit)[pixel], label='Spline')
+            axes.plot(x_fit, self.func_polynomial(x_fit)[pixel], label='Polynomial')
+            axes.plot(x_fit, self.func_exponential(x_fit)[pixel], label='Exponential')
         axes.set_xlabel('AC DAC level')
         axes.set_ylabel('Number of p.e.')
         axes.set_yscale('log')
@@ -370,11 +373,41 @@ if __name__ == '__main__':
 
     test = ACLED(ac_levels, pe, pe_err)
 
-    x = np.linspace(-100, 10000, num=1E3)
+    x = np.linspace(0, 1000, num=1E3)
     # X = np.zeros((1296, len(x)))
     # X[:] = x
-    print(test(x))
+    print(test(x).shape)
 
-    test.plot(pixel=0, y_lim=(0, 1E4))
+    test.plot(pixel=1, y_lim=(0, 1E4), show_fits=False)
+
+    y = test(x)
+
+    X = np.zeros(y.shape)
+    X[:] = x
+
+    mask = np.isfinite(X) * np.isfinite(y)
+
+    y = y[mask].ravel()
+    x = X[mask].ravel()
+
+    print(x.shape, y.shape)
+
+    x_min, x_max = max(1, np.min(x)), np.max(x)
+    y_min, y_max = max(1, np.min(y)), np.max(y)
+
+    n_bins_x, n_bins_y = 150, 150
+
+    # bin_x = np.logspace(np.log10(x_min), np.log10(x_max), num=n_bins_x)
+    bin_x = np.linspace(x_min, x_max, num=n_bins_x)
+    bin_y = np.logspace(np.log10(y_min), np.log10(y_max), num=n_bins_y)
+
+    plt.figure()
+    plt.hist2d(x, y, bins=[bin_x, bin_y], range=[[x_min, x_max], [y_min, y_max]]
+               )#, normed=True)
+    plt.yscale('log')
+    plt.xlabel('AC DAC level')
+    plt.ylabel('Number of p.e.')
+    plt.colorbar(label='Counts []')
 
     plt.show()
+

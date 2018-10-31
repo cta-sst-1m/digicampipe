@@ -258,24 +258,31 @@ def plot_results(results_filename, figure_path=None):
     gain = fit_results['gain']
     sigma_e = fit_results['sigma_e']
     sigma_s = fit_results['sigma_s']
+    baseline = fit_results['baseline']
 
     _, fig_1 = plot_array_camera(gain, label='Gain [LSB $\cdot$ ns]')
-    _, fig_2 = plot_array_camera(sigma_e, label='$\sigma_e$')
-    _, fig_3 = plot_array_camera(sigma_s, label='$\sigma_s$')
+    _, fig_2 = plot_array_camera(sigma_e, label='$\sigma_e$ [LSB $\cdot$ ns]')
+    _, fig_3 = plot_array_camera(sigma_s, label='$\sigma_s$ [LSB $\cdot$ ns]')
+    _, fig_7 = plot_array_camera(baseline, label='Baseline [LSB]')
 
     fig_4 = plot_histo(gain, x_label='Gain [LSB $\cdot$ ns]', bins='auto')
-    fig_5 = plot_histo(sigma_e, x_label='$\sigma_e$', bins='auto')
-    fig_6 = plot_histo(sigma_s, x_label='$\sigma_s$', bins='auto')
+    fig_5 = plot_histo(sigma_e, x_label='$\sigma_e$ [LSB $\cdot$ ns]',
+                       bins='auto')
+    fig_6 = plot_histo(sigma_s, x_label='$\sigma_s$ [LSB $\cdot$ ns]',
+                       bins='auto')
+    fig_8 = plot_histo(baseline, x_label='Baseline [LSB]', bins='auto')
 
     if figure_path is not None:
 
         fig_1.savefig(os.path.join(figure_path, 'gain_camera'))
         fig_2.savefig(os.path.join(figure_path, 'sigma_e_camera'))
         fig_3.savefig(os.path.join(figure_path, 'sigma_s_camera'))
+        fig_7.savefig(os.path.join(figure_path, 'baseline_camera'))
 
         fig_4.savefig(os.path.join(figure_path, 'gain_histo'))
         fig_5.savefig(os.path.join(figure_path, 'sigma_e_histo'))
         fig_6.savefig(os.path.join(figure_path, 'sigma_s_histo'))
+        fig_8.savefig(os.path.join(figure_path, 'baseline_histo'))
 
 
 def plot_fit(histo, results_filename, pixel, figure_path=None):
