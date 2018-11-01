@@ -45,21 +45,34 @@ class NormalizedPulseTemplate:
             return cls(amplitude=x, time=t, amplitude_std=dx)
 
     @classmethod
-    def create_from_datafile(cls, input_file):
+    def create_from_datafile(cls, input_file, min_entries_ratio=0.1):
         """
         Create a template from the 2D histogram file obtained by the
         pulse_shape.py script.
+        :param input_file: the 2D histogram file.
+        :param min_entries_ratio: minimum ratio of elemnets in a time bin over
+        the maximum number of elemnets in any time bin. If a time bin has a
+        ratio lower than that, it won't be used in the template.
+        :return: the created normalised pulse template object
         """
         histo_pixels = Histogram2d.load(input_file)
         histo = histo_pixels.stack_all(dtype=np.int64)
-        ts, ampl, ampl_std = histo.fit_y(min_entries=10000)
+        tbin_max_entries = np.max(np.sum(histo.contents(), axis=-1))
+        # 2 entries minimum per bin to get std values
+        min_entries = np.max([2, tbin_max_entries*min_entries_ratio])
+        ts, ampl, ampl_std = histo.fit_y(min_entries=min_entries)
         return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
     @classmethod
-    def create_from_datafiles(cls, input_files):
+    def create_from_datafiles(cls, input_files, min_entries_ratio=0.1):
         """
         Create a template from several 2D histogram files obtained by the
         pulse_shape.py script.
+        :param input_files: 2D histogram files.
+        :param min_entries_ratio: minimum ratio of elemnets in a time bin over
+        the maximum number of elemnets in any time bin. If a time bin has a
+        ratio lower than that, it won't be used in the template.
+        :return: the created normalised pulse template object
         """
         sum = None
         for input_file in input_files:
@@ -69,7 +82,10 @@ class NormalizedPulseTemplate:
             else:
                 sum += histo_pixels
         histo = sum.stack_all(dtype=np.int64)
-        ts, ampl, ampl_std = histo.fit_y(min_entries=10000)
+        tbin_max_entries = np.max(np.sum(histo.contents(), axis=-1))
+        # 2 entries minimum per bin to get std values
+        min_entries = np.max([2, tbin_max_entries*min_entries_ratio])
+        ts, ampl, ampl_std = histo.fit_y(min_entries=min_entries)
         return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
     def _interpolate(self):

@@ -29,7 +29,8 @@ from digicampipe.utils.docopt import convert_text
 
 def main(input_files, output=None, plot="show"):
     template = NormalizedPulseTemplate.create_from_datafiles(
-        input_files=input_files
+        input_files=input_files,
+        min_entries_ratio=0.1
     )
     if output is not None:
         template.save(output)
