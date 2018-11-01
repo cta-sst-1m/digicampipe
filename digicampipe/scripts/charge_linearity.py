@@ -35,6 +35,7 @@ from tqdm import tqdm
 import os
 from docopt import docopt
 import fitsio
+import matplotlib.pyplot as plt
 
 from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
 from digicampipe.calib.charge import compute_dynamic_charge, compute_charge
@@ -64,6 +65,8 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
     charge_mean = np.zeros(shape)
     charge_std = np.zeros(shape)
     waveform_std = np.zeros(shape)
+    ac = np.ones(shape)
+    dc = np.ones(shape)
 
     count = np.zeros(shape[:-1])
 
@@ -104,6 +107,8 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
                 waveform_std[i, j] += event.data.adc_samples[:, 1]**2
 
+            ac[i, j] *= ac_level
+            dc[i, j] *= dc_level
             count[i, j] = n + 1
 
     charge_mean /= count[..., None]
@@ -119,16 +124,18 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
     with fitsio.FITS(output_filename, 'rw', clobber=True) as f:
 
         data = [charge_mean, charge_std, baseline_mean, baseline_std,
-                waveform_std, ac_levels, dc_levels, count]
+                waveform_std, ac, dc]
 
         names = ['charge_mean', 'charge_std', 'baseline_mean', 'baseline_std',
-                 'waveform_std', 'ac_levels', 'dc_levels', 'count']
+                 'waveform_std', 'ac_levels', 'dc_levels']
 
-        data = dict(zip(names, data))
+        # data = dict(zip(names, data))
 
-        for key, val in data.items():
+        f.write(data, names=names)
 
-            f.write(val, extname=key)
+        # for key, val in data.items():
+
+        #    f.write(val, extname=key)
 
 
 def entry():
@@ -162,9 +169,56 @@ def entry():
 
         with fitsio.FITS(output_filename, 'r') as f:
 
-            data = {hdu.get_extname(): hdu.read() for hdu in f}
+            data = f[1].read()
 
-        pass
+        charge_mean = data['charge_mean']
+        charge_std = data['charge_std']
+        dc_levels = data['dc_levels']
+        ac_levels = data['ac_levels']
+
+        plt.figure()
+        plt.scatter(ac_levels, charge_mean, c=dc_levels, s=0.1)
+        plt.yscale('log')
+        plt.xlabel('AC DAC level')
+        plt.ylabel('Charge [a.u.]')
+        plt.colorbar(label='DC DAC level')
+        plt.ylim(1, None)
+
+        plt.figure()
+        plt.scatter(ac_levels, charge_std / charge_mean, c=dc_levels, s=0.1)
+        plt.yscale('log')
+        plt.xlabel('AC DAC level')
+        plt.ylabel(r'$\frac{\sigma_C}{C}$ []')
+        plt.colorbar(label='DC DAC level')
+        plt.ylim(0.0001, None)
+
+        plt.figure()
+        plt.scatter(ac_levels, data['baseline_mean'], c=dc_levels, s=0.1)
+        plt.yscale('log')
+        plt.xlabel('AC DAC level')
+        plt.ylabel(r'Baseline mean [LSB]')
+        plt.colorbar(label='DC DAC level')
+        plt.ylim(1, None)
+
+        plt.figure()
+        plt.scatter(ac_levels, data['baseline_mean'] - data['baseline_mean'][0]
+                    , c=dc_levels, s=0.1)
+        plt.yscale('log')
+        plt.xlabel('AC DAC level')
+        plt.ylabel(r'Baseline shift [LSB]')
+        plt.colorbar(label='DC DAC level')
+        plt.ylim(1, None)
+
+        plt.figure()
+        plt.scatter(dc_levels, data['baseline_mean'] - data['baseline_mean'][0]
+                    , c=ac_levels, s=0.1)
+        plt.yscale('log')
+        plt.xlabel('DC DAC level')
+        plt.ylabel(r'Baseline shift [LSB]')
+        plt.colorbar(label='AC DAC level')
+        plt.ylim(1, None)
+
+        plt.show()
 
     if args['--save_figures']:
 
