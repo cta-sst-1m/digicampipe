@@ -132,6 +132,28 @@ class Histogram2d:
             plt.show()
         plt.close(fig)
 
+    def __add__(self, other):
+        histo1 = self.contents()
+        histo2 = other.contents()
+        assert histo1.shape == histo2.shape
+        # dtype is ordered according to safe casting, so next line is to be one the safe side
+        dtype = np.max([histo1.dtype, histo2.dtype])
+        sum = Histogram2d(histo1.shape, self.range, dtype=dtype)
+        sum.histo = histo1 + histo2
+        sum.xedges = self.xedges
+        sum.yedges = self.yedges
+        if other.xedges is not None:
+            sum.xedges = other.xedges
+        if other.yedges is not None:
+            sum.yedges = other.yedges
+        return sum
+
+    def astype(self, dtype):
+        "Convert the type of the histogram to the indicated numpy dtype."
+        output = self
+        output.histo = self.contents().astype(dtype)
+        return output
+
 
 class Histogram2dChunked(Histogram2d):
     def __init__(self, shape, range, dtype='u2', buffer_size=1000):
