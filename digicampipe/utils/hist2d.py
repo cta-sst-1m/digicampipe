@@ -55,7 +55,8 @@ class Histogram2d:
         shape_2d = h.shape[-2:]
         n_2d_hist = sum(h.shape[:-2])
         h_reshaped = h.reshape([n_2d_hist, shape_2d[0], shape_2d[1]])
-        n = h_reshaped.sum(axis=-1) #number of entries per bins of the 1st dim
+        # n is the number of entries per bins of the 1st dim
+        n = h_reshaped.sum(axis=-1)
         for h2d_idx in range(n_2d_hist):
             x_bin_non_empty = n[h2d_idx, :] > min_entries
             h_pix = h_reshaped[h2d_idx, x_bin_non_empty, :]
@@ -136,7 +137,8 @@ class Histogram2d:
         histo1 = self.contents()
         histo2 = other.contents()
         assert histo1.shape == histo2.shape
-        # dtype is ordered according to safe casting, so next line is to be one the safe side
+        # dtype is ordered according to safe casting, so next line is to be on
+        # the safe side
         dtype = np.max([histo1.dtype, histo2.dtype])
         sum = Histogram2d(histo1.shape, self.range, dtype=dtype)
         sum.histo = histo1 + histo2

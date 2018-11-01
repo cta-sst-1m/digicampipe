@@ -154,7 +154,8 @@ def test_pulse_template_save():
         template_saved = NormalizedPulseTemplate.load(template_saved_filename)
         assert np.all(template_saved.time == template_load.time)
         assert np.all(template_saved.amplitude == template_load.amplitude)
-        assert np.all(template_saved.amplitude_std == template_load.amplitude_std)
+        assert np.all(template_saved.amplitude_std ==
+                      template_load.amplitude_std)
 
 
 if __name__ == '__main__':

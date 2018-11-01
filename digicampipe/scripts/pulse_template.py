@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Create and plot a pulse template from the 2D histograms of the pusle shape for each pixel (output of
-digicam-pulse-shape).
+Create and plot a pulse template from the 2D histograms of the pusle shape for
+each pixel (output of digicam-pulse-shape).
 Usage:
   digicam-pulse-template [options] <input_files>...
 
@@ -10,8 +10,8 @@ Options:
   <INPUT>                   List of path to fits files containing 2D histograms
                             to combine to create the pulse template.
   --output=PATH             Path to the pulse template file to be created.
-                            It is a text file with 3 columns: time, amplitude and
-                            standard deviation.
+                            It is a text file with 3 columns: time, amplitude
+                            and standard deviation.
                             If set to "none" the file is not created.
                             [Default: none]
   --plot=PATH               Path to the output plot. Will show the average
@@ -28,7 +28,9 @@ from digicampipe.utils.docopt import convert_text
 
 
 def main(input_files, output=None, plot="show"):
-    template = NormalizedPulseTemplate.create_from_datafiles(input_files=input_files)
+    template = NormalizedPulseTemplate.create_from_datafiles(
+        input_files=input_files
+    )
     if output is not None:
         template.save(output)
     if plot is not None:
