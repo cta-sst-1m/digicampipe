@@ -130,20 +130,18 @@ def plot_zone(x, y, bins, ax, label, xscale="log", yscale="linear"):
     ax.set_xscale(xscale)
     ax.set_yscale(yscale)
     ax.set_xlabel('$N$ [p.e.]')
-    ax.xaxis.set_label_position('top')
     ax.grid(True)
     ax.legend()
-    ax2 = ax.twiny()  # instantiate a second axes that shares the same y-axis
-    ax2.plot(1e-5, 1e-5, alpha=0)
-    ax2.tick_params(axis='x')
-    ax2.set_xlim(x_min / pde, x_max / pde)
-    ax2.set_ylim(y_min, y_max)
-    ax2.set_xscale(xscale)
-    ax2.set_yscale(yscale)
-    ax.xaxis.tick_top()
-    ax2.xaxis.tick_bottom()
-    ax2.set_xlabel('$N_\gamma$ [ph.]')
-    ax2.xaxis.set_label_position('bottom')
+    # ax2 = ax.twiny()  # instantiate a second axes that shares the same y-axis
+    # ax2.plot(1e-5, 1e-5, alpha=0)
+    # ax2.tick_params(axis='x')
+    # ax2.set_xlim(x_min / pde, x_max / pde)
+    # ax2.set_ylim(y_min, y_max)
+    # ax2.set_xscale(xscale)
+    # ax2.set_yscale(yscale)
+    # ax2.xaxis.tick_top()
+    # ax2.set_xlabel('$N_\gamma$ [ph.]')
+    # ax2.xaxis.set_label_position('top')
 
 
 def plot_resol(data_file, figure_file, legend):
@@ -166,12 +164,14 @@ def plot_resol(data_file, figure_file, legend):
     true_pe = ac_led(ac_levels).T * window_trans
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
-    ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement')
-    ax.plot([20*pde, 20*pde], [.8, 1.25], 'r-', label=None)
+    ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
+    ax.plot([20*pde, 20*pde], [.9, 1.1], 'r-', label=None)
+    ax.plot([20*pde, 2e3*pde], [1.5, 1.5], 'b--', label='requirement B-TEL-1640')
+    ax.plot([20*pde, 20*pde], [1.4, 1.6], 'b-', label=None)
     plot_zone(
         true_pe,
         std_t_all,
-        [np.logspace(.5, 2.75, 101), np.logspace(-1.3, 0.7, 101)],
+        [np.logspace(.5, 2.75, 101), np.logspace(-1.2, 1, 101)],
         ax,
         legend,
         yscale='log'
