@@ -27,8 +27,6 @@ def compute_charge(events, integral_width, shift):
     :param events: a stream of events
     :param integral_width: width of the integration window
     :param shift: shift to the pulse index
-    :param maximum_width: width of the region (bin size) to compute charge,
-    maximum value is retained. (not implemented yet)
     :return:
     """
 
