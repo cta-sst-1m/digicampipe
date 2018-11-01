@@ -2,7 +2,7 @@
 """
 Create an histogram of the pulse template for each pixel.
 Usage:
-  digicam-template [options] <input_files>...
+  digicam-pulse-shape [options] <input_files>...
 
 Options:
   -h --help                 Show this screen.
@@ -19,7 +19,6 @@ Options:
                             to build the histogram [default: 1000,10000].
   --n_bin=INT               Number of bins for the 2d histograms
                             [default: 100].
-
 """
 import numpy as np
 from docopt import docopt
