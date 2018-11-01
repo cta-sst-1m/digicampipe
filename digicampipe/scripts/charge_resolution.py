@@ -38,7 +38,7 @@ from docopt import docopt
 from digicampipe.utils.docopt import convert_pixel_args, convert_max_events_args, convert_dac_level
 from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline, fill_dark_baseline, compute_baseline_shift, _crosstalk_drop_from_baseline_shift, _pde_drop_from_baseline_shift, _gain_drop_from_baseline_shift, compute_nsb_rate
 from digicampipe.calib.charge import \
-    compute_charge_with_saturation_and_threshold, compute_number_of_pe_from_table, rescale_pulse
+    compute_dynamic_charge, compute_number_of_pe_from_table, correct_voltage_drop
 from digicampipe.io.event_stream import calibration_event_stream
 
 
@@ -105,17 +105,17 @@ def compute(files, ac_levels, dc_levels, output_filename, dark_charge, dark_base
             # events = compute_nsb_rate(events, gain, pulse_area, crosstalk,
             #                           bias_resistance, cell_capacitance)
             # events = compute_charge_with_saturation(events, integral_width=7)
-            events = compute_charge_with_saturation_and_threshold(events,
-                                                                  integral_width=integral_width,
-                                                                  debug=debug,
-                                                                  trigger_bin=timing,
-                                                                  saturation_threshold=saturation_threshold,
-                                                                  pulse_tail=pulse_tail)
+            events = compute_dynamic_charge(events,
+                                            integral_width=integral_width,
+                                            debug=debug,
+                                            trigger_bin=timing,
+                                            saturation_threshold=saturation_threshold,
+                                            pulse_tail=pulse_tail)
 
             events = compute_number_of_pe_from_table(events, pe_interpolator, debug=debug)
-            events = rescale_pulse(events, gain_func=_gain_drop_from_baseline_shift,
-                                   xt_func=_crosstalk_drop_from_baseline_shift,
-                                   pde_func=_pde_drop_from_baseline_shift)
+            events = correct_voltage_drop(events, gain_func=_gain_drop_from_baseline_shift,
+                                          xt_func=_crosstalk_drop_from_baseline_shift,
+                                          pde_func=_pde_drop_from_baseline_shift)
             # events = compute_maximal_charge(events)
 
             for n, event in enumerate(events):
