@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
 measure the time offsets using template fitting. Create a file
-time_acXXX_dcYYY.npz for eac AC and DC level with XXX and YYY the value of resp.
-the AC and DC level.
+time_acXXX_dcYYY.npz for eac AC and DC level with XXX and YYY the value of
+resp. the AC and DC level.
 Usage:
   digicam-time-resolution-plot [options] [--] <INPUT>...
 
@@ -15,9 +15,9 @@ Options:
                                 plot. Set to "show" to show the plot instead.
                                 [Default: none]
   --plot_resolution=PATH        Path to the image created showing the time
-                                resolution function of the charge. Set to "none"
-                                to not create the plot. Set to "show" to show
-                                the plot instead. [Default: show]
+                                resolution function of the charge. Set to
+                                "none" to not create the plot. Set to "show" to
+                                show the plot instead. [Default: show]
   --legend=TEXT                 Legend for the resolution plot.
                                 [default: camera average]
   --plot_rms_difference=PATH    Path to the image created showing the time
@@ -92,7 +92,7 @@ def plot_rms_difference(data_file, figure_file, n_pe=20*pde):
     mean = np.mean(rms_diff_no_double)
     std = np.std(rms_diff_no_double)
     print(len(rms_diff_no_double), 'combinations')
-    print(np.sum(rms_diff_no_double<=0), 'pixels without time info')
+    print(np.sum(rms_diff_no_double <= 0), 'pixels without time info')
     ax.hist(
         rms_diff_no_double, 100,
         label='mean={:.2f} ns\nstd={:.2f} ns'.format(mean, std))
@@ -166,7 +166,8 @@ def plot_resol(data_file, figure_file, legend):
     fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
     ax.plot([20*pde, 20*pde], [.9, 1.1], 'r-', label=None)
-    ax.plot([20*pde, 2e3*pde], [1.5, 1.5], 'b--', label='requirement B-TEL-1640')
+    ax.plot([20*pde, 2e3*pde], [1.5, 1.5], 'b--',
+            label='requirement B-TEL-1640')
     ax.plot([20*pde, 20*pde], [1.4, 1.6], 'b-', label=None)
     plot_zone(
         true_pe,
@@ -293,7 +294,7 @@ def combine(acdc_level_files, output):
         mean_t_all.append(data['mean_t'])
         std_t_all.append(data['std_t'])
         ac_levels.append(data['ac_level'])
-        dc_levels.append( data['dc_level'])
+        dc_levels.append(data['dc_level'])
     levels = [list(range(n_file)), dc_levels, ac_levels]
     levels_sorted = sorted(np.array(levels).T, key=lambda x: (x[1], x[2]))
     order = np.array(levels_sorted)[:, 0]
@@ -344,4 +345,3 @@ def entry():
 
 if __name__ == '__main__':
     entry()
-
