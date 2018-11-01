@@ -72,151 +72,70 @@ def rescale_pulse(events, pde_func, xt_func, gain_func):
         yield event
 
 
-def compute_charge_with_saturation(events, integral_width,
-                                   saturation_threshold=300,
-                                   debug=False):
+def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
+                           threshold_pulse=0.1, debug=False, trigger_bin=15,
+                           data_shape=(1296, 50), pulse_tail=False,
+                           ):
     """
     :param events: a stream of events
-    :param integral_width: width of the integration window
-    :param saturation_threshold: if the maximum value of the waveform is above
-    this threshold the waveform charge will be treated as saturated
-    (type) float, ndarray
-    :param debug: for debugging purposes
-    :return yield events
-    """
-
-    for count, event in enumerate(events):
-
-        adc_samples = event.data.adc_samples
-        max_value = np.max(adc_samples, axis=-1)
-        saturated_pulse = max_value > saturation_threshold
-
-        convolved_signal = convolve1d(
-            adc_samples,
-            np.ones(integral_width),
-            axis=-1
-        )
-
-        charge = np.max(convolved_signal, axis=-1)
-
-        if np.any(saturated_pulse):
-            adc_samples = adc_samples[saturated_pulse]
-
-            # cumulative_adc_samples = np.cumsum(adc_samples, axis=-1)
-            # diff2_adc_samples = np.diff(diff_adc_samples, axis=-1)
-            # start_bin[:, :-1] = (adc_samples[:, :-1] < threshold_rising)
-            #  * (adc_samples[:, 1:] >= threshold_rising)
-            # end_bin[:, 1:-1] = (cumulative_adc_samples[:, 1:-1]
-            #  >= threshold_falling) * (diff_adc_samples[:, :-1] < 0)
-            # end_bin[:, 1:-1] = end_bin[:, 1:-1]
-            #  * (adc_samples[:, :-2] > 0) * (adc_samples[:, 1:-1] <=0)
-            diff_adc_samples = np.diff(adc_samples, axis=-1)
-            samples = np.arange(adc_samples.shape[-1])
-            max_diff = np.argmax(diff_adc_samples, axis=-1)[:, None] - 1
-            start_bin = (samples <= max_diff)
-
-            min_diff = np.argmin(diff_adc_samples, axis=-1)[:, None]
-            end_bin = (samples >= min_diff)
-
-            window = start_bin + end_bin
-            window = ~window
-            temp = adc_samples[window]
-            temp = np.sum(temp, axis=-1)
-            charge[saturated_pulse] = temp
-
-        event.data.reconstructed_charge = charge
-
-        if debug:
-            pixel = 0
-            print(charge)
-            print(window[0], start_bin[0], end_bin[0])
-
-            plt.figure()
-            plt.plot(adc_samples[pixel])
-            plt.plot(adc_samples[window][0], marker='x')
-
-            plt.figure()
-            plt.plot(np.cumsum(adc_samples, axis=-1)[0])
-
-            plt.figure()
-            plt.plot(np.diff(adc_samples)[0])
-            plt.show()
-
-        yield event
-
-
-def compute_charge_with_saturation_and_threshold(events, integral_width,
-                                                 saturation_threshold=3000,
-                                                 threshold_pulse=0.1,
-                                                 debug=False, trigger_bin=15,
-                                                 n_samples=50,
-                                                 pulse_tail=False,
-                                                 ):
-    """
-
-    :param events: a stream of events
-    :param integral_width: width of the integration window
+    :param integral_width: width of the integration window for non-saturated
+    pulses
+    :param saturation_threshold: threshold corresponding to the pulse amplitude
+    in unit of LSB at which the signal is considered saturated
+    :param threshold_pulse: relative threshold (of pulse amplitude)
+    at which the pulse area is integrated.
+    :param debug: Enter the debug mode
+    :param trigger_bin: Sample number where the maximum of the waveform is
+    expected.
+    :param data_shape: array shape of the waveforms
+    :param pulse_tail: Use or not the tail of the pulse for charge computation
     :return:
     """
 
-    left = max(2, integral_width)
-    right = 5
-    n_pixels = 1296
+    assert threshold_pulse <= 1
+    assert len(data_shape) == 2
 
-    # signal_window = np.zeros((n_pixels, n_samples), dtype=bool)
-    # signal_window[:, trigger_bin] = True
-
+    n_pixels, n_samples = data_shape
     samples = np.arange(n_samples)
-    samples = np.tile(samples, n_pixels).reshape(n_pixels, n_samples)
+    samples = np.tile(samples, n_pixels).reshape(data_shape)
 
     trigger_sample = trigger_bin
     trigger_bin = (samples == trigger_bin[:, None])
-    # print(np.sum(signal_window, axis=-1))
+
+    if isinstance(trigger_sample, int):
+
+        trigger_sample = np.ones(n_pixels, dtype=int) * trigger_sample
 
     if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
         threshold_pulse = np.ones(n_pixels) * threshold_pulse
+
     if isinstance(saturation_threshold, float) or \
             isinstance(saturation_threshold, int):
         saturation_threshold = np.ones(n_pixels) * saturation_threshold
 
     threshold_pulse = threshold_pulse * saturation_threshold
+    threshold_pulse = threshold_pulse[:, None]
 
     for count, event in enumerate(events):
 
         adc_samples = event.data.adc_samples
-        # restricted_adc_samples = adc_samples * signal_window
-
-        # amplitude = np.max(restricted_adc_samples, axis=-1)
-        amplitude = adc_samples[trigger_bin]
+        amplitude = np.max(adc_samples, axis=-1)
 
         saturated_pulse = amplitude > saturation_threshold
 
-        # convolved_signal = convolve1d(
-        #    adc_samples,
-        #    np.ones(integral_width),
-        #    axis=-1,
-        #    mode='constant',
-        #    cval=0,
-        # )
-
-        max_arg = np.argmax(trigger_bin,
-                            axis=-1)  # np.argmax(convolved_signal, axis=-1)
+        max_arg = np.argmax(trigger_bin, axis=-1)
         start_bin = (samples <= (max_arg[:, None] - integral_width / 2))
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
+
         charge = np.sum(adc_samples * window, axis=-1)
-        # charge = np.max(convolved_signal, axis=-1)
 
         if np.any(saturated_pulse):
 
             adc = adc_samples[saturated_pulse]
             smp = samples[saturated_pulse]
             threshold = threshold_pulse[saturated_pulse]
-            threshold = threshold[:, None]
 
-            # start_point = (adc[:, :-1] <= threshold) * \
-            #              (adc[:, 1:] > threshold)
-            # start_point = np.argmax(start_point, axis=-1)[:, None]
             start_point = trigger_sample[saturated_pulse] - 3
             start_bin = (smp < start_point[:, None])
             start_bin = start_bin[:, :-1]
@@ -248,8 +167,6 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
             pixel = 0
             time = np.arange(adc_samples.shape[-1]) * 4
             window = window[pixel]
-            # lower = time[window[pixel]].min()
-            # upper = time[window[pixel]].max()
 
             plt.figure()
             plt.step(time, np.cumsum(adc_samples, axis=-1)[pixel])
