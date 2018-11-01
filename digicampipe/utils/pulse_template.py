@@ -29,6 +29,10 @@ class NormalizedPulseTemplate:
         return NormalizedPulseTemplate(amplitude=self.amplitude[item],
                                        time=self.time)
 
+    def save(self, filename):
+        data = np.hstack([self.time, self.amplitude, self.amplitude_std])
+        np.savetxt(filename, data)
+
     @classmethod
     def load(cls, filename):
         data = np.loadtxt(filename).T
@@ -48,6 +52,23 @@ class NormalizedPulseTemplate:
         """
         histo_pixels = Histogram2d.load(input_file)
         histo = histo_pixels.stack_all(dtype=np.int64)
+        ts, ampl, ampl_std = histo.fit_y(min_entries=10000)
+        return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
+
+    @classmethod
+    def create_from_datafiles(cls, input_files):
+        """
+        Create a template from several 2D histogram files obtained by the
+        pulse_shape.py script.
+        """
+        sum = None
+        for input_file in input_files:
+            histo_pixels = Histogram2d.load(input_file)
+            if sum is None:
+                sum = histo_pixels.astype(np.int64)
+            else:
+                sum += histo_pixels
+        histo = sum.stack_all(dtype=np.int64)
         ts, ampl, ampl_std = histo.fit_y(min_entries=10000)
         return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
