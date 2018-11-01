@@ -22,6 +22,7 @@ Options:
 """
 import matplotlib.pyplot as plt
 from docopt import docopt
+import os
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils.docopt import convert_text
@@ -33,6 +34,8 @@ def main(input_files, output=None, plot="show"):
         min_entries_ratio=0.1
     )
     if output is not None:
+        if os.path.exists(output):
+            os.remove(output)
         template.save(output)
     if plot is not None:
         fig, ax = plt.subplots(1, 1)
