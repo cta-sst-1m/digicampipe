@@ -30,8 +30,8 @@ class NormalizedPulseTemplate:
                                        time=self.time)
 
     def save(self, filename):
-        data = np.hstack([self.time, self.amplitude, self.amplitude_std])
-        np.savetxt(filename, data)
+        data = np.vstack([self.time, self.amplitude, self.amplitude_std])
+        np.savetxt(filename, data.T)
 
     @classmethod
     def load(cls, filename):
