@@ -116,14 +116,19 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
     baseline_std = np.sqrt(baseline_std - baseline_mean**2)
     waveform_std = np.sqrt(waveform_std)
 
-    with fitsio.FITS(output_filename, 'rw') as f:
+    with fitsio.FITS(output_filename, 'rw', clobber=True) as f:
 
         data = [charge_mean, charge_std, baseline_mean, baseline_std,
                 waveform_std, ac_levels, dc_levels, count]
 
         names = ['charge_mean', 'charge_std', 'baseline_mean', 'baseline_std',
                  'waveform_std', 'ac_levels', 'dc_levels', 'count']
-        f.write(data, names=names)
+
+        data = dict(zip(names, data))
+
+        for key, val in data.items():
+
+            f.write(val, extname=key)
 
 
 def entry():
@@ -154,6 +159,10 @@ def entry():
                 pulse_tail=pulse_tail, debug=debug, method=method)
 
     if args['--display']:
+
+        with fitsio.FITS(output_filename, 'r') as f:
+
+            data = {hdu.get_extname(): hdu.read() for hdu in f}
 
         pass
 
