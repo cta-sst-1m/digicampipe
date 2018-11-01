@@ -25,6 +25,8 @@ Options:
   --saturation_threshold=N    Saturation threshold in LSB
                               [default: 3000]
   --pulse_tail                Use pulse tail for charge integration
+  --integration_method=STR    Integration method (static or dynamic)
+                              [Default: dynamic]
 """
 
 
@@ -41,8 +43,9 @@ from digicampipe.utils.docopt import convert_dac_level, convert_pixel_args, conv
 
 
 def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
-            integral_width, timing, saturation_threshold, pulse_tail, debug,
-            method='dynamic'):
+            integral_width, shift, timing, saturation_threshold,
+            pulse_tail=False,
+            debug=False, method='dynamic'):
 
     n_pixels = len(pixels)
     n_files = len(files)
@@ -129,16 +132,19 @@ def entry():
     max_events = convert_max_events_args(args['--max_events'])
     pixels = convert_pixel_args(args['--pixel'])
     integral_width = float(args['--integral_width'])
+    shift = int(args['--shift'])
     timing = args['--timing']
     timing = np.load(timing)['time'] // 4
     saturation_threshold = float(args['--saturation_threshold'])
     pulse_tail = args['--pulse_tail']
     debug = args['--debug']
+    method = args['--integration_method']
 
     if args['--compute']:
 
         compute(files=files, ac_levels=ac_levels, dc_levels=dc_levels,
                 output_filename=output_filename, max_events=max_events,
-                pixels=pixels, integral_width=integral_width, timing=timing,
+                pixels=pixels, integral_width=integral_width, shift=shift,
+                timing=timing,
                 saturation_threshold=saturation_threshold,
-                pulse_tail=pulse_tail, debug=debug)
+                pulse_tail=pulse_tail, debug=debug, method=method)
