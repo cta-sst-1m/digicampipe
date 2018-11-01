@@ -84,7 +84,7 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
                     events,
                     integral_width=integral_width,
                     debug=debug,
-                    trigger_bin=timing,
+                    trigger_bin=timing - shift,
                     saturation_threshold=saturation_threshold,
                     pulse_tail=pulse_tail)
 
@@ -92,7 +92,7 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
                 events = fill_pulse_indices(events, pulse_indices=timing)
                 events = compute_charge(events, integral_width=integral_width,
-                                        shift=0)
+                                        shift=shift)
 
             for n, event in enumerate(events):
 
