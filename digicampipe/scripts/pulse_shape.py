@@ -16,9 +16,10 @@ Options:
                             integration for normalization of the pulse charge
                             [default: 8,20].
   --charge_range=LIST       Minimum and maximum integrated charge in LSB used
-                            to build the histogram [default: 1000,10000].
+                            to build the histogram [default: 1000,8000].
   --n_bin=INT               Number of bins for the 2d histograms
                             [default: 100].
+  --disable_bar             use if you want to disable the progress bar.
 """
 import numpy as np
 from docopt import docopt
@@ -43,6 +44,7 @@ def main(
         # 1 pe <=> 20 LSB integral
         charge_range=(1000., 10000.),
         n_bin=100,
+        disable_bar=False
 ):
     if os.path.exists(output_hist):
         os.remove(output_hist)
@@ -50,7 +52,7 @@ def main(
     charge_max = np.max(charge_range)
     integration_min = np.min(integration_range)
     integration_max = np.max(integration_range)
-    events = calibration_event_stream(input_files)
+    events = calibration_event_stream(input_files, disable_bar=disable_bar)
     events = fill_digicam_baseline(events)
     if "SST1M_01_201805" in input_files[0]:  # fix data in May
         print("WARNING: correction of the baselines applied.")
@@ -96,6 +98,7 @@ def entry():
     integration_range = convert_list_int(args['--integration_range'])
     charge_range = convert_list_float(args['--charge_range'])
     n_bin = convert_int(args['--n_bin'])
+    disable_bar=args['--disable_bar']
 
     if output_hist is None:
         output_hist = inputs[0] + '.npz'
@@ -114,7 +117,8 @@ def entry():
         amplitude_range=amplitude_range,
         integration_range=integration_range,
         charge_range=charge_range,
-        n_bin=n_bin
+        n_bin=n_bin,
+        disable_bar=disable_bar
     )
 
 
