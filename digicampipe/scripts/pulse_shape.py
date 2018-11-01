@@ -98,7 +98,7 @@ def entry():
     integration_range = convert_list_int(args['--integration_range'])
     charge_range = convert_list_float(args['--charge_range'])
     n_bin = convert_int(args['--n_bin'])
-    disable_bar=args['--disable_bar']
+    disable_bar = args['--disable_bar']
 
     if output_hist is None:
         output_hist = inputs[0] + '.npz'
