@@ -34,6 +34,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 from docopt import docopt
+import fitsio
 
 from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
 from digicampipe.calib.charge import compute_dynamic_charge, compute_charge
@@ -58,14 +59,13 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
         assert os.path.exists(file)
 
     shape = (len(dc_levels), len(ac_levels), n_pixels)
-    amplitude_mean = np.zeros(shape)
-    amplitude_std = np.zeros(shape)
     baseline_mean = np.zeros(shape)
     baseline_std = np.zeros(shape)
     charge_mean = np.zeros(shape)
     charge_std = np.zeros(shape)
-
     waveform_std = np.zeros(shape)
+
+    count = np.zeros(shape[:-1])
 
     for i, dc_level, in tqdm(enumerate(dc_levels), total=n_dc_level):
 
@@ -104,22 +104,26 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
 
                 waveform_std[i, j] += event.data.adc_samples[:, 1]**2
 
-            charge_mean[i, j] = charge_mean[i, j] / (n + 1)
-            charge_std[i, j] = charge_std[i, j] / (n + 1)
-            charge_std[i, j] = np.sqrt(charge_std[i, j] - charge_mean[i, j]**2)
+            count[i, j] = n + 1
 
-            baseline_mean[i, j] = baseline_mean[i, j] / (n + 1)
-            baseline_std[i, j] = baseline_std[i, j] / (n + 1)
-            baseline_std[i, j] = np.sqrt(baseline_std[i, j] - baseline_mean[i, j]**2)
+    charge_mean /= count[..., None]
+    charge_std /= count[..., None]
+    baseline_mean /= count[..., None]
+    baseline_std /= count[..., None]
+    waveform_std /= count[..., None]
 
-            waveform_std[i, j] = waveform_std[i, j] / (n + 1)
-            waveform_std[i, j] = np.sqrt(waveform_std[i, j])
+    charge_std = np.sqrt(charge_std - charge_mean**2)
+    baseline_std = np.sqrt(baseline_std - baseline_mean**2)
+    waveform_std = np.sqrt(waveform_std)
 
-    np.savez(output_filename, charge_mean=charge_mean, charge_std=charge_std,
-             amplitude_mean=amplitude_mean, amplitude_std=amplitude_std,
-             ac_levels=ac_levels, dc_levels=dc_levels,
-             baseline_mean=baseline_mean,
-             baseline_std=baseline_std, waveform_std=waveform_std)
+    with fitsio.FITS(output_filename, 'rw') as f:
+
+        data = [charge_mean, charge_std, baseline_mean, baseline_std,
+                waveform_std, ac_levels, dc_levels, count]
+
+        names = ['charge_mean', 'charge_std', 'baseline_mean', 'baseline_std',
+                 'waveform_std', 'ac_levels', 'dc_levels', 'count']
+        f.write(data, names=names)
 
 
 def entry():
@@ -148,3 +152,11 @@ def entry():
                 timing=timing,
                 saturation_threshold=saturation_threshold,
                 pulse_tail=pulse_tail, debug=debug, method=method)
+
+    if args['--display']:
+
+        pass
+
+    if args['--save_figures']:
+
+        pass
