@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from pkg_resources import resource_filename
+import tempfile
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
@@ -135,5 +136,26 @@ def test_pulse_template_from_datafile():
         np.abs(template3(time) - template_load(time)) < 5 * std)
 
 
+def test_pulse_template_from_datafiles():
+    files = [data_filename1, data_filename2, data_filename3]
+    template = NormalizedPulseTemplate.create_from_datafiles(files)
+    template_load = NormalizedPulseTemplate.load(template_filename_2)
+    time = np.linspace(-10, 30, num=101)
+    std = template_load.std(time)
+    assert np.all(
+        np.abs(template(time) - template_load(time)) < 5 * std)
+
+
+def test_pulse_template_save():
+    template_load = NormalizedPulseTemplate.load(template_filename_2)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        template_saved_filename = os.path.join(tmpdirname, 'test.txt')
+        template_load.save(template_saved_filename)
+        template_saved = NormalizedPulseTemplate.load(template_saved_filename)
+        assert np.all(template_saved.time == template_load.time)
+        assert np.all(template_saved.amplitude == template_load.amplitude)
+        assert np.all(template_saved.amplitude_std == template_load.amplitude_std)
+
+
 if __name__ == '__main__':
-    test_pulse_template_from_datafile()
+    test_pulse_template_save()
