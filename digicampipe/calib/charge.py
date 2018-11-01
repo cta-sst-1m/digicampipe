@@ -32,8 +32,6 @@ def compute_charge(events, integral_width, shift):
     :return:
     """
 
-    # bins = np.arange(-maximum_width, maximum_width + 1, 1)
-
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
         pulse_mask = event.data.pulse_mask
@@ -53,7 +51,7 @@ def compute_charge(events, integral_width, shift):
         yield event
 
 
-def rescale_pulse(events, pde_func, xt_func, gain_func):
+def correct_voltage_drop(events, pde_func, xt_func, gain_func):
 
     for event in events:
 
@@ -64,10 +62,7 @@ def rescale_pulse(events, pde_func, xt_func, gain_func):
         gain_drop = gain_func(baseline_shift)
 
         scale = pde_drop * xt_drop * gain_drop
-        # event.data.baseline_shift = event.data.baseline_shift / scale
-        # scale = scale[:, None]
-
-        event.data.reconstructed_number_of_pe = event.data.reconstructed_number_of_pe / scale
+        event.data.reconstructed_number_of_pe /= scale
 
         yield event
 
@@ -206,7 +201,9 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
         yield event
 
 
-def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
+def compute_number_of_pe_from_interpolator(events, charge_to_pe_function,
+                                           debug=False):
+
     for event in events:
 
         charge = event.data.reconstructed_charge
@@ -214,13 +211,14 @@ def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
         event.data.reconstructed_number_of_pe = pe
 
         if debug:
+            print(charge)
             print(pe)
-            print(pe.shape)
 
         yield event
 
 
 def compute_amplitude(events):
+
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
         pulse_indices = event.data.pulse_mask
@@ -233,6 +231,7 @@ def compute_amplitude(events):
 
 
 def compute_full_waveform_charge(events):
+
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
         charges = np.sum(adc_samples, axis=-1)
