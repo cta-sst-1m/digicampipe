@@ -113,19 +113,23 @@ class Histogram2d:
         instead.
         """
         n_plotted = 0
-        fig, axes = plt.subplots(4, 3)
         hists = self.contents()
         if len(hists.shape) == 2:
             hists = hists.reshape([1, hists.shape[0], hists.shape[1]])
-        for i, h in enumerate(hists):
-            if np.all(h == 0):
-                continue
-            ax = axes[int(n_plotted / 3), n_plotted % 3]
-            ax.set_title('pixel ' + str(i))
-            ax.pcolor(self.xedges, self.yedges, h.T)
-            n_plotted += 1
-            if n_plotted == 12:
-                break
+        if len(hists) > 1:
+            fig, axes = plt.subplots(4, 3)
+            for i, h in enumerate(hists):
+                if np.all(h == 0):
+                    continue
+                ax = axes[int(n_plotted / 3), n_plotted % 3]
+                ax.set_title('pixel ' + str(i))
+                ax.pcolor(self.xedges, self.yedges, h.T)
+                n_plotted += 1
+                if n_plotted == 12:
+                    break
+        elif len(hists) == 1:
+            fig, ax = plt.subplots(1,1)
+            ax.pcolor(self.xedges, self.yedges, hists[0].T)
         plt.tight_layout()
         if filename.lower() != "show":
             plt.savefig(filename, dpi=200)
