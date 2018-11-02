@@ -79,7 +79,7 @@ def main(
             if delays_ps is None:
                 arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
             else:
-                arrival_time_in_ns = 1e-3 * delays_ps[file_idx]
+                arrival_time_in_ns = 1e-3 * delays_ps[file_idx] * np.ones(1296)
             if histo is None:
                 n_pixel, n_sample = adc_norm.shape
                 histo = Histogram2dChunked(
