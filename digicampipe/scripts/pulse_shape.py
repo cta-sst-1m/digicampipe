@@ -109,7 +109,7 @@ def entry():
     args = docopt(__doc__)
     inputs = args['<input_files>']
     output_hist = args['--output_hist']
-    delays = convert_list_float(args['--delays_ps'])
+    delays_ps = convert_list_float(args['--delays_ps'])
     time_range_ns = convert_list_float(args['--time_range_ns'])
     amplitude_range = convert_list_float(args['--amplitude_range'])
     integration_range = convert_list_int(args['--integration_range'])
