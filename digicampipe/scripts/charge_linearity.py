@@ -149,14 +149,15 @@ def entry():
     pixels = convert_pixel_args(args['--pixel'])
     integral_width = float(args['--integral_width'])
     shift = int(args['--shift'])
-    timing = args['--timing']
-    timing = np.load(timing)['time'] // 4
     saturation_threshold = float(args['--saturation_threshold'])
     pulse_tail = args['--pulse_tail']
     debug = args['--debug']
     method = args['--integration_method']
 
     if args['--compute']:
+
+        timing = args['--timing']
+        timing = np.load(timing)['time'] // 4
 
         compute(files=files, ac_levels=ac_levels, dc_levels=dc_levels,
                 output_filename=output_filename, max_events=max_events,
@@ -167,9 +168,12 @@ def entry():
 
     if args['--display']:
 
-        with fitsio.FITS(output_filename, 'r') as f:
+        for file in files:
 
-            data = f[1].read()
+            with fitsio.FITS(file, 'r') as f:
+
+                table = f[1].read()
+                data = table
 
         charge_mean = data['charge_mean']
         charge_std = data['charge_std']
