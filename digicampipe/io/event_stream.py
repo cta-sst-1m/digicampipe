@@ -9,7 +9,7 @@ from digicampipe.io.containers import CalibrationContainer
 from .auxservice import AuxService
 
 
-def event_stream(filelist, source=None, max_events=None,
+def event_stream(filelist, source=None, max_events=None, disable_bar=False,
                  event_id_range=(None, None), **kwargs):
     """Iterable of events in the form of `DataContainer`.
 
@@ -26,6 +26,7 @@ def event_stream(filelist, source=None, max_events=None,
     max_events: max_events to iterate over
     event_id_range: minimum and maximum event id to be returned. Set one of
     them to None to disable that limit.
+    disable_bar: If set to true, the progress bar is not shown.
     kwargs: parameters for event_source
         Some event_sources need special parameters to work, c.f. their doc.
     """
@@ -52,11 +53,12 @@ def event_stream(filelist, source=None, max_events=None,
 
     else:
 
-        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=True)
+        file_stream = tqdm(filelist, total=n_files, desc='Files', leave=True,
+                           disable=disable_bar)
     for file in file_stream:
         if source is None:
             source = guess_source_from_path(file)
-        data_stream = source(url=file, **kwargs)
+        data_stream = source(url=file, disable_bar=disable_bar, **kwargs)
         try:
             for event in data_stream:
                 tel = event.r0.tels_with_data[0]
@@ -79,6 +81,7 @@ def calibration_event_stream(path,
                              pixel_id=[...],
                              max_events=None,
                              event_id_range=(None, None),
+                             disable_bar=False,
                              **kwargs):
     """
     Event stream for the calibration of the camera based on the observation
@@ -86,7 +89,8 @@ def calibration_event_stream(path,
     """
     container = CalibrationContainer()
     for event in event_stream(path, max_events=max_events,
-                              event_id_range=event_id_range, **kwargs):
+                              event_id_range=event_id_range,
+                              disable_bar=disable_bar, **kwargs):
         r0_event = list(event.r0.tel.values())[0]
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
         container.event_type = r0_event.camera_event_type

@@ -33,8 +33,8 @@ from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args, convert_event_types_args
+from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
+    convert_list_int
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
@@ -70,7 +70,7 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename,
                                           max_events=max_events)
         baseline_histo = Histogram1D(
             data_shape=(n_pixels,),
-            bin_edges=np.arange(-4096, 4096, 1 / 16),
+            bin_edges=np.arange(0, 4096, 1 / 16),
         )
 
         for event in events:
@@ -86,10 +86,10 @@ def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
-    event_types = convert_event_types_args(args['--event_types'])
+    event_types = convert_list_int(args['--event_types'])
     baseline_filename = args['--baseline_filename']
     if baseline_filename.lower() == 'none':
         baseline_filename = None

@@ -1,48 +1,47 @@
 import numpy as np
 
 
-def convert_pixel_args(text):
-    if text is not None:
-
-        text = text.split(',')
-        pixel_id = list(map(int, text))
-        pixel_id = np.array(pixel_id)
-
-    else:
-
-        pixel_id = np.arange(1296)
-
-    return pixel_id
-
-
-def convert_dac_level(text):
-    dac_level = None
-
-    if text is not None:
-        text = text.split(',')
-        dac_level = list(map(int, text))
-        dac_level = np.array(dac_level)
-
-    return dac_level
-
-
-def convert_max_events_args(text):
-    if text is not None:
-        max_events = int(text)
-    else:
-        max_events = text
-    return max_events
-
-
-def convert_event_types_args(text):
-    if text is None or text.lower() == 'none':
-        return None
-    else:
-        return [int(t) for t in text.split(',')]
-
-
 def convert_text(text):
     if text is None or text.lower() == 'none':
         return None
     else:
         return text
+
+
+def convert_int(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        return int(text)
+
+
+def convert_float(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        return float(text)
+
+
+def convert_list_int(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        text = text.split(',')
+        list_int = list(map(int, text))
+        return np.array(list_int)
+
+
+def convert_list_float(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        text = text.split(',')
+        list_float = list(map(float, text))
+        return np.array(list_float)
+
+
+def convert_pixel_args(text):
+    pixel_id = convert_list_int(text)
+    if pixel_id is None:
+        pixel_id = np.arange(1296)
+    return pixel_id

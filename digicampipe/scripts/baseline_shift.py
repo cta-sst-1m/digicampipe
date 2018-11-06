@@ -29,15 +29,15 @@ from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args, convert_dac_level
+from digicampipe.utils.docopt import convert_int, \
+    convert_pixel_args, convert_list_int
 
 
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     output_path = args['--output']
 
     if not os.path.exists(output_path):
@@ -45,7 +45,7 @@ def entry():
                       'exists \n'.format(output_path))
 
     pixel_id = convert_pixel_args(args['--pixel'])
-    dc_levels = convert_dac_level(args['--dc_levels'])
+    dc_levels = convert_list_int(args['--dc_levels'])
     n_pixels = len(pixel_id)
     n_dc_levels = len(dc_levels)
 

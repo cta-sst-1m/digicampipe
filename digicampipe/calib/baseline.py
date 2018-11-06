@@ -3,7 +3,7 @@ import numpy as np
 __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_with_min', 'subtract_baseline',
            'compute_baseline_shift', 'compute_baseline_std',
-           'compute_nsb_rate', 'compute_gain_drop']
+           'compute_nsb_rate', 'compute_gain_drop', 'correct_wrong_baseline']
 
 
 def fill_dark_baseline(events, dark_baseline):
@@ -21,6 +21,13 @@ def fill_baseline(events, baseline):
 def fill_digicam_baseline(events):
     for event in events:
         event.data.baseline = event.data.digicam_baseline
+        yield event
+
+
+def correct_wrong_baseline(events):
+    "In May 2018 the data was recorded with a baseline 16 time too small."
+    for event in events:
+        event.data.baseline *= 16
         yield event
 
 
@@ -89,6 +96,50 @@ def compute_gain_drop(events, bias_resistance, cell_capacitance):
         gain_drop = gain_drop.value
         event.data.gain_drop = gain_drop
         yield event
+
+
+def _gain_drop_from_baseline_shift(baseline_shift,
+                                   p=np.array([1., -5.252*1e-3,
+                                               2.35*1e-5, 5.821*1e-8])):
+    """
+    Compute the gain drop from baseline shift (assuming nominal gain of
+    5.01 LSB/p..e).
+    Parameters obtained from Monte-Carlo model of SiPM voltage drop
+    :param baseline_shift:
+    :param p
+    :return:
+    """
+
+    return np.polyval(p.T, baseline_shift)
+
+
+def _crosstalk_drop_from_baseline_shift(baseline_shift,
+                                        p=np.array([1., -9.425*1e-3,
+                                                    5.463*1e-5, -1.503*1e-8])):
+    """
+    Compute the crosstalk drop from baseline shift (assuming nominal gain of
+    5.01 LSB/p..e).
+    Parameters obtained from Monte-Carlo model of SiPM voltage drop
+    :param baseline_shift:
+    :param p
+    :return:
+    """
+
+    return np.polyval(p.T, baseline_shift)
+
+
+def _pde_drop_from_baseline_shift(baseline_shift,
+                                  p=np.array([1., -2.187*1e-3, 5.199*1e-6])):
+    """
+    Compute the PDE (@ 468nm) drop from baseline shift (assuming nominal gain
+    of 5.01 LSB/p..e).
+    Parameters obtained from Monte-Carlo model of SiPM voltage drop
+    :param baseline_shift:
+    :param p
+    :return:
+    """
+
+    return np.polyval(p.T, baseline_shift)
 
 
 def fill_baseline_r0(event_stream, n_bins=10000):

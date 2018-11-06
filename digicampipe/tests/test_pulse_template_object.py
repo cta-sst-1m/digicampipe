@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 from pkg_resources import resource_filename
 
@@ -13,6 +12,38 @@ template_filename = resource_filename(
         'pulse_SST-1M_pixel_0.dat'
     )
 )
+template_filename_2 = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'pulse_template_all_pixels.txt'
+    )
+)
+data_filename1 = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'template_scan_dac_250.fits.gz'
+    )
+)
+data_filename2 = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'template_scan_dac_400.fits.gz'
+    )
+)
+data_filename3 = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'template_scan_dac_450.fits.gz'
+    )
+)
 
 PULSE_AREA = 17.974891497703858
 RATIO_CHARGE_AMPLITUDE = 0.24164813864342138
@@ -20,21 +51,23 @@ RATIO_CHARGE_AMPLITUDE = 0.24164813864342138
 
 def test_pulse_template_creation_with_file():
     template = NormalizedPulseTemplate.load(template_filename)
-
     t, x = np.loadtxt(template_filename).T
-
     assert (t == template.time).all()
+
+
+def test_pulse_template_creation_with_file_with_std():
+    template = NormalizedPulseTemplate.load(template_filename_2)
+    t, x, std = np.loadtxt(template_filename_2).T
+    assert np.all(t == template.time)
 
 
 def test_pulse_template_integral():
     template = NormalizedPulseTemplate.load(template_filename)
-
     assert template.integral() == PULSE_AREA
 
 
 def test_pulse_template_plot():
     template = NormalizedPulseTemplate.load(template_filename)
-
     template.plot()
 
 
@@ -87,8 +120,20 @@ def test_charge_amplitude_ratio():
     assert RATIO_CHARGE_AMPLITUDE == ratio
 
 
-if __name__ == '__main__':
-    test_pulse_template_plot()
-    import matplotlib.pyplot as plt
+def test_pulse_template_from_datafile():
+    template1 = NormalizedPulseTemplate.create_from_datafile(data_filename1)
+    template2 = NormalizedPulseTemplate.create_from_datafile(data_filename2)
+    template3 = NormalizedPulseTemplate.create_from_datafile(data_filename3)
+    template_load = NormalizedPulseTemplate.load(template_filename_2)
+    time = np.linspace(-10, 30, num=101)
+    std = template_load.std(time)
+    assert np.all(
+        np.abs(template1(time) - template_load(time)) < 5 * std)
+    assert np.all(
+        np.abs(template2(time) - template_load(time)) < 5 * std)
+    assert np.all(
+        np.abs(template3(time) - template_load(time)) < 5 * std)
 
-    plt.show()
+
+if __name__ == '__main__':
+    test_pulse_template_from_datafile()

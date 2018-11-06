@@ -5,13 +5,23 @@ def gaussian(x, mean, sigma, amplitude):
     x = np.atleast_1d(x)
     pdf = (x[:, np.newaxis] - mean) ** 2 / (2 * sigma ** 2)
     pdf = np.exp(-pdf)
-    pdf /= np.sqrt(2 * np.pi) * sigma
+    pdf /= (np.sqrt(2 * np.pi) * sigma)
     pdf *= amplitude
 
     return pdf
 
 
 def generalized_poisson(k, mu, mu_xt, amplitude=1):
+    """
+    Reference can be found here: https://arxiv.org/pdf/math/0606238.pdf
+    S. Vinogradov https://arxiv.org/pdf/1109.2014.pdf
+    :param k:
+    :param mu:
+    :param mu_xt:
+    :param amplitude:
+    :return:
+    """
+
     if mu_xt < 0 or mu < 0:
 
         if isinstance(k, int):
