@@ -7,7 +7,7 @@ Usage:
 Options:
   -h --help                 Show this screen.
   <input_files>             Path to zfits input files.
-  --delays_ps=LIST          Delays used [in ps] for each input file. If set to
+  --delays_ns=LIST          Delays used [in ns] for each input file. If set to
                             "none", the timing of each pulse will be
                             determined at the half height of the rising
                             edge. If different of none, the coma separated list
@@ -44,7 +44,7 @@ from digicampipe.utils.docopt import convert_list_float, convert_list_int, \
 def main(
         input_files,
         output_hist,
-        delays_ps=None,
+        delays_ns=None,
         time_range_ns=(-10., 40.),
         amplitude_range=(-0.1, 0.4),
         integration_range=(8, 20),
@@ -54,8 +54,8 @@ def main(
         n_bin=100,
         disable_bar=False
 ):
-    if delays_ps is not None:
-        assert len(delays_ps) == len(input_files)
+    if delays_ns is not None:
+        assert len(delays_ns) == len(input_files)
     charge_min = np.min(charge_range)
     charge_max = np.max(charge_range)
     integration_min = np.min(integration_range)
@@ -76,10 +76,10 @@ def main(
             adc = e.data.adc_samples
             integral = adc[:, slice(integration_min, integration_max)].sum(axis=1)
             adc_norm = adc / integral[:, None]
-            if delays_ps is None:
+            if delays_ns is None:
                 arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
             else:
-                arrival_time_in_ns = 1e-3 * delays_ps[file_idx] * np.ones(1296)
+                arrival_time_in_ns = 1e-3 * delays_ns[file_idx] * np.ones(1296)
             if histo is None:
                 n_pixel, n_sample = adc_norm.shape
                 histo = Histogram2dChunked(
@@ -109,7 +109,7 @@ def entry():
     args = docopt(__doc__)
     inputs = args['<input_files>']
     output_hist = args['--output_hist']
-    delays_ps = convert_list_float(args['--delays_ps'])
+    delays_ns = convert_list_float(args['--delays_ns'])
     time_range_ns = convert_list_float(args['--time_range_ns'])
     amplitude_range = convert_list_float(args['--amplitude_range'])
     integration_range = convert_list_int(args['--integration_range'])
@@ -130,7 +130,7 @@ def entry():
     main(
         input_files=inputs,
         output_hist=output_hist,
-        delays_ps=delays_ps,
+        delays_ns=delays_ns,
         time_range_ns=time_range_ns,
         amplitude_range=amplitude_range,
         integration_range=integration_range,
