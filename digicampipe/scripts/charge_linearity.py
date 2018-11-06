@@ -129,13 +129,7 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
         names = ['charge_mean', 'charge_std', 'baseline_mean', 'baseline_std',
                  'waveform_std', 'ac_levels', 'dc_levels']
 
-        # data = dict(zip(names, data))
-
         f.write(data, names=names)
-
-        # for key, val in data.items():
-
-        #    f.write(val, extname=key)
 
 
 def entry():
