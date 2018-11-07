@@ -18,6 +18,16 @@ class LightSource(ABC):
 
     def __init__(self, x, y, y_err=None):
 
+        y = np.atleast_2d(y)
+
+        assert x[0] == 0
+        assert (np.diff(x) > 0).all()
+
+        if y_err is not None:
+
+            y_err = np.atleast_2d(y_err)
+            assert y.shape == y_err.shape
+
         self.x = x
         self.y = y
         self.y_err = y_err
@@ -38,110 +48,115 @@ class LightSource(ABC):
         return self.__class__(x=self.x, y=self.y[item],
                               y_err=self.y_err[item])
 
+    @abstractmethod
+    def _interpolate(self):
+
+        pass
+
+    @classmethod
+    @abstractmethod
+    def load(cls, filename):
+
+        pass
+
     def save(self, filename):
 
         with fitsio.FITS(filename, 'rw', clobber=True) as f:
 
             f.write(self.x, extname='x')
-            f.write(self.y, extname='y', compress='gzip')
-            f.write(self.y_err, extname='y_err', compress='gzip')
-
-    def plot(self, axes=None, pixel=0, **kwargs):
-
-        if axes is None:
-            fig = plt.figure()
-            axes = fig.add_subplot(111)
-
-        x_fit = np.arange(1000)
-        y_fit = self(x_fit, pixel=pixel)
-
-        mask = (y_fit > 0) * (y_fit <= 2000)
-        x_fit = x_fit[mask]
-        y_fit = y_fit[mask]
-
-        if self.photo_electrons_err is not None:
-
-            y_err = self.photo_electrons_err[:, pixel]
-        else:
-
-            y_err = None
-
-        axes.errorbar(self.ac_level, self.photo_electrons[:, pixel],
-                      yerr=y_err,
-                      label='Data points, pixel : {}'.format(pixel),
-                      linestyle='None', marker='o', color='k', **kwargs)
-        axes.plot(x_fit, y_fit, label='Interpolated data', color='r')
-        axes.set_xlabel('AC DAC level')
-        axes.set_ylabel('Number of p.e.')
-        axes.set_yscale('log')
-        axes.legend(loc='best')
-
-        return axes
+            f.write(self.y, extname='y')
+            f.write(self.y_err, extname='y_err')
 
 
 class ACLED(LightSource):
 
     saturation_threshold = 300  # in p.e.
 
-    def __init__(self, ac_level, photo_electrons, photo_electrons_err=None):
+    def __init__(self, x, y, y_err=None):
 
-        assert ac_level[0] == 0
-        assert (np.diff(ac_level) > 0).all()
+        self.cubic_spline = None
+        self.params_polynomial = None
+        self.params_exponential = None
 
-        self.x = ac_level - ac_level[0]
-        self.y = photo_electrons
-        self.y_err = photo_electrons_err
-        self._interpolate()
-        self._extrapolate()
-        self._extrapolate_exponential()
+        super().__init__(x, y, y_err)
 
     @classmethod
     def load(cls, filename):
 
         with fitsio.FITS(filename, 'r') as f:
+
             x = f['x'].read()
             y = f['y'].read()
             y_err = f['y_err'].read()
 
+        print(x, y)
         obj = ACLED(x, y, y_err)
 
         return obj
 
-    def __call__(self, ac_level, pixel=None):
+    def _interpolate(self):
 
-        y = self.func_exponential(ac_level)
-        y_shape = y.shape
-        y = y.ravel()
-        y_spline = self.func_spline(ac_level).ravel()
-        y_poly = self.func_polynomial(ac_level).ravel()
+        self._fit_spline()
+        self._fit_polynomial()
+        self._fit_exponential()
 
-        start_values = (y < 5)
-        end_values = (y > self.saturation_threshold)
+        def _func(x):
 
-        y[~start_values] = y_spline[~start_values]
-        y[end_values] = y_poly[end_values]
-        y = y.reshape(y_shape)
+            y = self.func_exponential(x)
+            y_shape = y.shape
+            y = y.ravel()
+            y_spline = self.func_spline(x).ravel()
+            y_poly = self.func_polynomial(x).ravel()
 
-        if pixel is not None:
+            start_values = (y < 5)
+            end_values = (y > self.saturation_threshold)
 
-            y = y[pixel]
+            y[~start_values] = y_spline[~start_values]
+            y[end_values] = y_poly[end_values]
+            y = y.reshape(y_shape)
 
-        return y
+            return y
 
-    def _extrapolate(self):
+        return _func
+
+    def _fit_spline(self):
+
+        pes = self.y.copy()
+        cubic_spline = []
+
+        for pe in pes:
+
+            mask = np.isfinite(pe)  # * (pe > 5)
+            x = self.x[mask]
+            y = pe[mask]
+
+            if not len(x):
+                x = self.x
+                y = pe
+
+            spline = interp1d(x, y,
+                              kind='quadratic',
+                              bounds_error=False,
+                              fill_value=np.nan)
+
+            cubic_spline.append(spline)
+
+        self.cubic_spline = cubic_spline
+
+    def _fit_polynomial(self):
 
         pes = self.y.copy()
         params = []
         deg = 4
 
-        for i, pe in enumerate(pes.T):
+        for i, pe in enumerate(pes):
 
             ac_level = self.x.copy()
             mask = (pe > 50) * (pe < self.saturation_threshold) * np.isfinite(pe)
 
             err = None
             if self.y_err is not None:
-                err = self.y_err[:, i]
+                err = self.y_err[i]
                 mask = mask * (np.isfinite(err))
                 err = err[mask]
                 err = 1 / err
@@ -164,20 +179,20 @@ class ACLED(LightSource):
             params.append(param)
 
         params = np.array(params)
-        self._params = params
+        self.params_polynomial = params
 
-    def _extrapolate_exponential(self):
+    def _fit_exponential(self):
 
         pes = self.y.copy()
         params = []
 
-        for i, pe in enumerate(pes.T):
+        for i, pe in enumerate(pes):
 
             ac_level = self.x.copy()
             mask = (pe > 0) * (pe < 100) * np.isfinite(pe) * (ac_level >= 0)
 
             if self.y_err is not None:
-                err = self.y_err[:, i]
+                err = self.y_err[i]
                 mask = mask * (np.isfinite(err))
                 err = err[mask]
 
@@ -222,77 +237,38 @@ class ACLED(LightSource):
             params.append(param)
 
         params = np.array(params)
-        self._params_exponential = params
+        self.params_exponential = params
 
     def func_exponential(self, x):
 
-        y = np.zeros((self.y.shape[1], len(x)))
+        y = np.zeros((len(self.y), len(x)))
 
         for i in range(len(y)):
-            y[i] = exponential(x, self._params_exponential[i][0],
-                               self._params_exponential[i][1])
+            y[i] = exponential(x, self.params_exponential[i][0],
+                               self.params_exponential[i][1])
 
         return y
 
     def func_spline(self, x):
 
-        y = np.zeros((self.y.shape[1], len(x)))
+        y = np.zeros((len(self.y), len(x)))
 
         for i in range(len(y)):
-            y[i] = self._spline[i](x)
+            y[i] = self.cubic_spline[i](x)
 
         return y
 
     def func_polynomial(self, x):
 
-        y = np.zeros((self.y.shape[1], len(x)))
+        y = np.zeros((len(self.y), len(x)))
 
         for i in range(len(y)):
-            y[i] = np.polyval(self._params[i], x).T
+            y[i] = np.polyval(self.params_polynomial[i], x).T
 
         return y
 
-    def _interpolate(self):
-
-        pes = self.y.copy().T
-        cubic_spline = []
-
-        for pe in pes:
-
-            mask = np.isfinite(pe) # * (pe > 5)
-            x = self.x[mask]
-            y = pe[mask]
-
-            if not len(x):
-
-                x = self.x
-                y = pe
-
-            spline = interp1d(x, y,
-                          kind='quadratic',
-                          bounds_error=False,
-                              fill_value=np.nan)
-
-            cubic_spline.append(spline)
-
-        # mask = np.isfinite(pes)
-        # pes[~mask] = 0
-        # w = np.ones(pes.shape)
-        # w[~mask] = 0
-        # w = np.sum(w, axis=0)
-        # w[w>0] = 1
-        #
-        # print(pes.shape, w.shape, self.ac_level.shape)
-        # cubic_spline = splprep(pes.T, w=w.T, u=self.ac_level)
-        #
-        # # cubic_spline = interp1d(self.ac_level, pes.T,
-         #                       kind='slinear',
-         #                       bounds_error=None,
-         #                       fill_value='extrapolate')
-
-        self._spline = cubic_spline
-
-    def plot(self, axes=None, pixel=0, y_lim=(0, 2000), show_fits=True, **kwargs):
+    def plot(self, axes=None, pixel=0, y_lim=(0, 2000), show_fits=True,
+             **kwargs):
 
         if axes is None:
             fig = plt.figure()
@@ -307,12 +283,12 @@ class ACLED(LightSource):
 
         if self.y_err is not None:
 
-            y_err = self.y_err[:, pixel]
+            y_err = self.y_err[pixel]
         else:
 
             y_err = None
 
-        axes.errorbar(self.x, self.y[:, pixel],
+        axes.errorbar(self.x, self.y[pixel],
                       yerr=y_err, label='Data points, pixel : {}'.format(pixel),
                       linestyle='None', marker='o', color='k', **kwargs)
         axes.plot(x_fit, y_fit, label='Interpolated data', color='r')

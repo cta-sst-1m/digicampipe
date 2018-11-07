@@ -117,7 +117,7 @@ N_PE = np.array(
      [920.4630004484947, 799.4081561415728],
      [np.nan, 802.1297572892993],
      [np.nan, 804.8229857019243],
-     [np.nan, 807.3226588229511]])
+     [np.nan, 807.3226588229511]]).T
 
 N_PE_ERR = np.array([[np.nan, 0.008774341460186297],
                      [0.00615409248744625, 0.009034394295824144],
@@ -223,7 +223,7 @@ N_PE_ERR = np.array([[np.nan, 0.008774341460186297],
                      [3.0116187478582788, 0.33781483906301446],
                      [np.nan, 0.33903562073686544],
                      [np.nan, 0.33672652795030444],
-                     [np.nan, 0.33775348890333134]])
+                     [np.nan, 0.33775348890333134]]).T
 
 
 def test_create():
@@ -235,6 +235,14 @@ def test_create():
     np.testing.assert_array_equal(ac_led.y_err, N_PE_ERR)
 
 
+def test_create_without_error():
+
+    ac_led = ACLED(AC_LEVELS, N_PE)
+
+    np.testing.assert_array_equal(ac_led.x, AC_LEVELS)
+    np.testing.assert_array_equal(ac_led.y, N_PE)
+
+
 def test_call():
 
     ac_led = ACLED(AC_LEVELS, N_PE, N_PE_ERR)
@@ -242,9 +250,16 @@ def test_call():
     x = np.linspace(0, 1000, num=1001)
     y = ac_led(x)
 
-    assert y.shape[0] == N_PE.shape[1]
+    assert len(y) == len(N_PE)
     assert y.shape[1] == len(x)
-    # np.testing.assert_array_less(0, (np.diff(y) / np.diff(x)))
+
+
+def test_1d_y_array():
+
+    ac_led = ACLED(AC_LEVELS, N_PE[0])
+
+    assert len(N_PE[0].shape) == 1
+    assert len(ac_led.y.shape) > 1
 
 
 def test_load_save():
@@ -261,6 +276,20 @@ def test_load_save():
         np.testing.assert_array_equal(ac_led.y_err, loaded_ac_led.y_err)
 
 
-if __name__ == '__main__':
+def test_get_item():
 
-    test_create()
+    ac_led = ACLED(AC_LEVELS, N_PE, N_PE_ERR)
+
+    ac_led_0 = ac_led[0]
+
+    np.testing.assert_array_equal(ac_led.x, ac_led_0.x)
+    np.testing.assert_array_equal(ac_led.y[0].ravel(),
+                                  ac_led_0.y.ravel())
+    np.testing.assert_array_equal(ac_led.y_err[0].ravel(),
+                                  ac_led_0.y_err.ravel())
+
+
+def test_plot():
+
+    ac_led = ACLED(AC_LEVELS, N_PE, N_PE_ERR)
+    ac_led.plot()
