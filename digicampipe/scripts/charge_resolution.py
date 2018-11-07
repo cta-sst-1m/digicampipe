@@ -38,7 +38,7 @@ from docopt import docopt
 from digicampipe.utils.docopt import convert_pixel_args, convert_max_events_args, convert_dac_level
 from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline, fill_dark_baseline, compute_baseline_shift, _crosstalk_drop_from_baseline_shift, _pde_drop_from_baseline_shift, _gain_drop_from_baseline_shift, compute_nsb_rate
 from digicampipe.calib.charge import \
-    compute_dynamic_charge, compute_number_of_pe_from_table, correct_voltage_drop
+    compute_dynamic_charge, correct_voltage_drop
 from digicampipe.io.event_stream import calibration_event_stream
 
 

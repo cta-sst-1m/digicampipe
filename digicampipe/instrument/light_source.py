@@ -3,14 +3,12 @@ import numpy as np
 import warnings
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
-from scipy.special import lambertw
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import ABC, abstractmethod
+import fitsio
 
 
 def exponential(x, a, b):
 
-    # log_y = np.log(a) + b * x
-    # y = np.exp(log_y)
     y = a * np.exp(b * x)
 
     return y
@@ -36,7 +34,8 @@ class LightSource(ABC):
         return self.__class__(x=self.x, y=self.y[item],
                               y_err=self.y_err[item])
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def load(cls, filename):
 
         pass
