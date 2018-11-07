@@ -28,7 +28,7 @@ from digicampipe.calib.filters import filter_event_types
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.instrument.geometry import compute_patch_matrix
 from digicampipe.io.event_stream import event_stream
-from digicampipe.utils.docopt import convert_text, convert_event_types_args
+from digicampipe.utils.docopt import convert_text, convert_list_int
 
 
 def entry(files, plot="show", event_types=None):
@@ -72,5 +72,5 @@ if __name__ == '__main__':
     args = docopt(__doc__)
     files = args['<INPUT>']
     plot = convert_text(args['--plot'])
-    event_types = convert_event_types_args(args['--event_types'])
+    event_types = convert_list_int(args['--event_types'])
     entry(files, plot, event_types)

@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from tqdm import tqdm
+import warnings
 
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.containers import DataContainer
@@ -13,6 +14,8 @@ def digicamtoy_event_source(
         camera=DigiCam,
         max_events=None,
         chunk_size=150,
+        event_id=None,
+        disable_bar=False
 ):
     """A generator that streams data from an HDF5 data file from DigicamToy
     Parameters
@@ -23,7 +26,14 @@ def digicamtoy_event_source(
         maximum number of events to read
     camera : utils.Camera() default: utils.DigiCam
     chunk_size : Number of events to load into the memory at once
+    event_id : TODO
+    disable_bar: If set to true, the progress bar is not shown.
     """
+
+    if event_id is not None:
+
+        warnings.warn('The event id search is not implemented for this'
+                      ' type of file')
 
     data = DataContainer()
     hdf5 = h5py.File(url, 'r')
@@ -36,7 +46,7 @@ def digicamtoy_event_source(
 
     max_events = min(max_events, n_events)
 
-    for event_id in tqdm(range(max_events), desc='Events'):
+    for event_id in tqdm(range(max_events), desc='Events', disable=disable_bar):
 
         data.r0.event_id = event_id
         data.r0.tels_with_data = [1, ]

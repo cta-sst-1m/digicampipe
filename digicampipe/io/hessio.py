@@ -73,7 +73,7 @@ def hessio_get_list_event_ids(url, max_events=None):
 
 def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
-                        use_event_id=False):
+                        use_event_id=False, disable_bar=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
 
@@ -93,6 +93,7 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
     use_event_id : bool
         If True ,'requested_event' now seeks for a particular event id instead
         of index
+    disable_bar : Unused, for compatibility with other readers
     """
 
     with open_hessio(url) as pyhessio_file:

@@ -3,7 +3,7 @@ import numpy as np
 __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_with_min', 'subtract_baseline',
            'compute_baseline_shift', 'compute_baseline_std',
-           'compute_nsb_rate', 'compute_gain_drop']
+           'compute_nsb_rate', 'compute_gain_drop', 'correct_wrong_baseline']
 
 
 def fill_dark_baseline(events, dark_baseline):
@@ -21,6 +21,13 @@ def fill_baseline(events, baseline):
 def fill_digicam_baseline(events):
     for event in events:
         event.data.baseline = event.data.digicam_baseline
+        yield event
+
+
+def correct_wrong_baseline(events):
+    "In May 2018 the data was recorded with a baseline 16 time too small."
+    for event in events:
+        event.data.baseline *= 16
         yield event
 
 
@@ -65,11 +72,20 @@ def compute_nsb_rate(events, gain, pulse_area, crosstalk, bias_resistance,
                      cell_capacitance):
     for event in events:
         baseline_shift = event.data.baseline_shift
-        nsb_rate = baseline_shift / (gain * pulse_area * (1 + crosstalk) -
-                                     baseline_shift * bias_resistance *
+        nsb_rate = _compute_nsb_rate(baseline_shift, gain, pulse_area,
+                                     crosstalk, bias_resistance,
                                      cell_capacitance)
         event.data.nsb_rate = nsb_rate
         yield event
+
+
+def _compute_nsb_rate(baseline_shift, gain, pulse_area, crosstalk,
+                      bias_resistance, cell_capacitance):
+    nsb_rate = baseline_shift / (gain * pulse_area * (1 + crosstalk) -
+                                 baseline_shift * bias_resistance *
+                                 cell_capacitance)
+
+    return nsb_rate
 
 
 def compute_gain_drop(events, bias_resistance, cell_capacitance):
@@ -177,7 +193,6 @@ def compute_baseline_from_waveform(events, bin_left=5, bin_right=10):
     """
 
     for event in events:
-
         adc_samples = event.data.adc_samples
 
         adc_samples_first = adc_samples[:, 0:bin_left - 1]
@@ -195,7 +210,6 @@ def compute_baseline_from_waveform(events, bin_left=5, bin_right=10):
 
 
 def compute_baseline_simtel(event_stream):
-
     for event in event_stream:
 
         for telescope_id in event.r0.tels_with_data:

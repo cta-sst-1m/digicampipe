@@ -40,7 +40,7 @@ import fitsio
 from astropy.table import Table
 
 from digicampipe.scripts import mpe
-from digicampipe.utils.docopt import convert_max_events_args, \
+from digicampipe.utils.docopt import convert_int, \
     convert_pixel_args
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.pdf import fmpe_pdf_10
@@ -317,7 +317,7 @@ def entry():
     files = args['<INPUT>']
     debug = args['--debug']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     output_path = args['--output']
 
     if not os.path.exists(output_path):

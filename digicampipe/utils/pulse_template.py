@@ -2,39 +2,56 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 
+from digicampipe.utils.hist2d import Histogram2d
+
 
 class NormalizedPulseTemplate:
-    def __init__(self, amplitude, time):
-
-        dt = np.diff(time)
-
-        if not (dt == dt[0]).all():
-            raise ValueError('time argument should be of constant sampling')
-
-        self.time = time
-        self.amplitude = amplitude
+    def __init__(self, amplitude, time, amplitude_std=None):
+        self.time = np.array(time)
+        self.amplitude = np.array(amplitude)
+        if amplitude_std is not None:
+            assert np.array(amplitude_std).shape == self.amplitude.shape
+            self.amplitude_std = np.array(amplitude_std)
+        else:
+            self.amplitude_std = self.amplitude * 0
         self._template = self._interpolate()
+        self._template_std = self._interpolate_std()
 
     def __call__(self, time, amplitude=1, t_0=0, baseline=0):
-
         y = amplitude * self._template(time - t_0) + baseline
+        return np.array(y)
 
+    def std(self, time, amplitude=1, t_0=0, baseline=0):
+        y = amplitude * self._template_std(time - t_0) + baseline
         return np.array(y)
 
     def __getitem__(self, item):
-
         return NormalizedPulseTemplate(amplitude=self.amplitude[item],
                                        time=self.time)
 
     @classmethod
     def load(cls, filename):
+        data = np.loadtxt(filename).T
+        assert len(data) in [2, 3]
+        if len(data) == 2:  # no std in file
+            t, x = data
+            return cls(amplitude=x, time=t)
+        elif len(data) == 3:
+            t, x, dx = data
+            return cls(amplitude=x, time=t, amplitude_std=dx)
 
-        t, x = np.loadtxt(filename).T
-
-        return cls(amplitude=x, time=t)
+    @classmethod
+    def create_from_datafile(cls, input_file):
+        """
+        Create a template from the 2D histogram file obtained by the
+        pulse_shape.py script.
+        """
+        histo_pixels = Histogram2d.load(input_file)
+        histo = histo_pixels.stack_all(dtype=np.int64)
+        ts, ampl, ampl_std = histo.fit_y(min_entries=10000)
+        return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
     def _interpolate(self):
-
         if abs(np.min(self.amplitude)) <= abs(np.max(self.amplitude)):
 
             normalization = np.max(self.amplitude)
@@ -44,9 +61,15 @@ class NormalizedPulseTemplate:
             normalization = np.min(self.amplitude)
 
         self.amplitude = self.amplitude / normalization
+        self.amplitude_std = self.amplitude_std / normalization
 
         return interp1d(self.time, self.amplitude, kind='cubic',
                         bounds_error=False, fill_value=0., assume_sorted=True)
+
+    def _interpolate_std(self):
+        return interp1d(self.time, self.amplitude_std, kind='cubic',
+                        bounds_error=False, fill_value=np.inf,
+                        assume_sorted=True)
 
     def integral(self):
 
@@ -76,9 +99,8 @@ class NormalizedPulseTemplate:
         t = np.linspace(self.time.min(), self.time.max(),
                         num=len(self.time) * 100)
 
-        axes.plot(self.time, self.amplitude, label='Template data-points',
-                  **kwargs)
-        axes.plot(t, self(t), label='Interpolated template')
+        axes.errorbar(self.time, self.amplitude, self.amplitude_std,
+                      label='Template data-points', **kwargs)
+        axes.plot(t, self(t), '-', label='Interpolated template')
         axes.legend(loc='best')
-
         return axes

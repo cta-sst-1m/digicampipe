@@ -44,7 +44,7 @@ from digicampipe.calib import baseline, peak, charge, cleaning, image, tagging
 from digicampipe.calib import filters
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
+from digicampipe.utils.docopt import convert_int, \
     convert_pixel_args
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
@@ -168,7 +168,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             data['length'] / data['width'] >= 10.,
             data['length'] / data['width'] <= 2.
         )
-        print('tagged', np.sum(data['is_burst']), '/', n_event,
+        print('tagged', np.sum(data['burst']), '/', n_event,
               'events as of bad quality')
         print('tagged', np.sum(is_cutted), '/', n_event,
               'events cut by l/w')
@@ -189,7 +189,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         subplot = 0
         for key, val in data.items():
             if key in ['border', 'intensity', 'kurtosis', 'event_id',
-                       'event_type', 'miss']:
+                       'event_type', 'miss', 'burst']:
                 continue
             subplot += 1
             print(subplot, '/', 9, 'plotting', key)
@@ -315,8 +315,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
             print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
             for yi, y in enumerate(y_fov):
                 data_cor2 = correct_alpha_3(data_cor, source_x=x, source_y=y)
-                mask2 = (data_cor2['alpha'] < bin_size) & (
-                        data_cor2['r'] - data_cor2['length'] / 2.0 > 0)
+                mask2 = data_cor2['alpha'] < bin_size
                 alpha_filtered = data_cor2['alpha'][mask2]
                 N[yi, xi] = alpha_filtered.shape[0]
             i += 1
@@ -334,14 +333,13 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     dark_filename = args['--dark']
     output = args['--output']
     compute = args['--compute']
     display = args['--display']
     output_path = os.path.dirname(output)
-
-    if not os.path.exists(output_path):
+    if output_path != "" and not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
                       'for output hillas does not exists \n')
     pixel_ids = convert_pixel_args(args['--pixel'])

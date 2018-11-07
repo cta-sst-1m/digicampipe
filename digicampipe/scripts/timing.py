@@ -31,8 +31,8 @@ from scipy.stats import mode
 
 from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args, convert_dac_level
+from digicampipe.utils.docopt import convert_int, \
+    convert_pixel_args, convert_list_int
 from digicampipe.visualization.plot import plot_array_camera, plot_parameter
 
 
@@ -81,11 +81,11 @@ def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
 
-    max_events = convert_max_events_args(args['--max_events'])
+    max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     n_samples = int(args['--n_samples'])
     timing_histo_filename = args['--timing_histo_filename']
-    ac_levels = convert_dac_level(args['--ac_levels'])
+    ac_levels = convert_list_int(args['--ac_levels'])
 
     output_path = os.path.dirname(timing_histo_filename)
     results_filename = os.path.join(output_path, 'timing.npz')
