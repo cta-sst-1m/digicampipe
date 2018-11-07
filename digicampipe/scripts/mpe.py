@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Do the Multiple Photoelectron anaylsis
+Do the Multiple Photoelectron anaylsis and calibrate the AC LEDs
 
 Usage:
   digicam-mpe [options] [--] <INPUT>...
@@ -10,6 +10,8 @@ Options:
   --max_events=N              Maximum number of events to analyse.
   --fit_output=OUTPUT         File where to store the fit results.
                               [default: ./fit_results.npz]
+  --ac_led_filename=OUTPUT    File to store the ACLED calibration
+                              [default: ./ac_led.fits]
   --compute_output=OUTPUT     File where to store the compute results.
                               [default: ./charge_histo_ac_level.pk]
   -c --compute                Compute the data.
@@ -53,6 +55,7 @@ from digicampipe.utils.docopt import convert_int, \
     convert_pixel_args, convert_list_int
 from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
     generalized_poisson
+from digicampipe.instrument.light_source import ACLED
 
 
 class MPEFitter(HistogramFitter):
@@ -251,6 +254,7 @@ def entry():
     n_ac_levels = len(ac_levels)
     adc_min = int(args['--adc_min'])
     adc_max = int(args['--adc_max'])
+    ac_led_filename = args['--ac_led_filename']
 
     timing_filename = args['--timing']
     timing = np.load(timing_filename)['time']
@@ -435,6 +439,8 @@ def entry():
                  mean=mean,
                  std=std,
                  )
+        ac_led = ACLED(ac_levels, mu.T, mu_error.T)
+        ac_led.save(ac_led_filename)
 
     if args['--save_figures']:
 
