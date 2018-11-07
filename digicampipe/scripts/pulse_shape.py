@@ -13,15 +13,16 @@ Options:
                             edge. If different of none, the coma separated list
                             must have as many values as inputs files.
                             [default: none]
-  --output_hist=PATH        Output histogram file, if not given, we just append
-                            ".npz" to the path of the 1st input file.
+  --output_hist=PATH        Output histogram file, if not given, we replace the
+                            extension of the 1st input file to 'fits.gz'.
   --time_range_ns=LIST      Minimum and maximum time in ns w.r.t. half maximum
                             of the pulse during rise time [default: -10,40].
   --amplitude_range=LIST    Minimum and maximum amplitude of the template
                             normalised in integrated charge [default: -.1,0.4].
   --integration_range=LIST  Minimum and maximum indexes of samples used in the
-                            integration for normalization of the pulse charge
-                            [default: 8,20].
+                            integration for normalization of the pulse charge.
+                            If set to "none", all samples are used.
+                            [default: none].
   --charge_range=LIST       Minimum and maximum integrated charge in LSB used
                             to build the histogram [default: 1000,8000].
   --n_bin=INT               Number of bins for the 2d histograms
@@ -47,10 +48,10 @@ def main(
         delays_ns=None,
         time_range_ns=(-10., 40.),
         amplitude_range=(-0.1, 0.4),
-        integration_range=(8, 20),
+        integration_range=None,
         # charge < 50 pe (noisy) or > 500 pe (saturation) => bad_charge
         # 1 pe <=> 20 LSB integral
-        charge_range=(1000., 10000.),
+        charge_range=(1000., 8000.),
         n_bin=100,
         disable_bar=False
 ):
@@ -58,8 +59,9 @@ def main(
         assert len(delays_ns) == len(input_files)
     charge_min = np.min(charge_range)
     charge_max = np.max(charge_range)
-    integration_min = np.min(integration_range)
-    integration_max = np.max(integration_range)
+    if integration_range is not None:
+        integration_min = np.min(integration_range)
+        integration_max = np.max(integration_range)
     histo = None
     n_sample = 0
     n_pixel = 0
@@ -74,12 +76,16 @@ def main(
         events = subtract_baseline(events)
         for e in events:
             adc = e.data.adc_samples
-            integral = adc[:, slice(integration_min, integration_max)].sum(axis=1)
+            if integration_range is not None:
+                adc_interp = adc[:, slice(integration_min, integration_max)]
+            else:
+                adc_interp = adc
+            integral = adc_interp.sum(axis=1)
             adc_norm = adc / integral[:, None]
             if delays_ns is None:
                 arrival_time_in_ns = estimate_time_from_leading_edge(adc) * 4
             else:
-                arrival_time_in_ns = 1e-3 * delays_ns[file_idx] * np.ones(1296)
+                arrival_time_in_ns = delays_ns[file_idx] * np.ones(1296)
             if histo is None:
                 n_pixel, n_sample = adc_norm.shape
                 histo = Histogram2dChunked(
@@ -118,7 +124,7 @@ def entry():
     disable_bar = args['--disable_bar']
 
     if output_hist is None:
-        output_hist = inputs[0] + '.npz'
+        output_hist = os.path.splitext(inputs[0])[0] + '.fits.gz'
     print('options selected:')
     print('input_files:', inputs)
     print('output_hist:', output_hist)

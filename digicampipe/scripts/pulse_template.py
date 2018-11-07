@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
-Create and plot a pulse template from the 2D histograms of the pusle shape for
+Create and plot a pulse template from the 2D histograms of the pulse shape for
 each pixel (output of digicam-pulse-shape).
 Usage:
   digicam-pulse-template [options] <input_files>...
 
 Options:
   -h --help                 Show this screen.
-  <INPUT>                   List of path to fits files containing 2D histograms
+  <input_files>             List of path to fits files containing 2D histograms
                             to combine to create the pulse template.
   --output=PATH             Path to the pulse template file to be created.
                             It is a text file with 3 columns: time, amplitude
