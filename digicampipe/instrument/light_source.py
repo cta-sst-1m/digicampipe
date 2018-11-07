@@ -89,7 +89,6 @@ class ACLED(LightSource):
             y = f['y'].read()
             y_err = f['y_err'].read()
 
-        print(x, y)
         obj = ACLED(x, y, y_err)
 
         return obj
@@ -307,88 +306,27 @@ class ACLED(LightSource):
 
 class DCLED(LightSource):
 
-    def __init__(self, dc_level, nsb_rate, nsb_rate_error=None):
+    def __init__(self, x, y, y_err):
 
-        self.dc_level = dc_level
-        self.nsb_rate = nsb_rate
-        self.nsb_rate_error = nsb_rate_error
-        self._interpolate()
+        super().__init__(x, y, y_err)
 
-    def __call__(self, *args, **kwargs):
-
-        pass
-
-    def __getitem__(self, item):
-
-        return DCLED(dc_level=self.dc_level, nsb_rate=self.nsb_rate[item],
-                     nsb_rate_error=self.nsb_rate_error[item])
-
+    @classmethod
     def load(cls, filename):
 
-        pass
+        with fitsio.FITS(filename, 'r') as f:
 
-    def save(self, filename):
+            x = f['x'].read()
+            y = f['y'].read()
+            y_err = f['y_err'].read()
+
+        obj = DCLED(x, y, y_err)
+
+        return obj
+
+    def _interpolate(self):
 
         pass
 
     def plot(self):
 
-        plt.figure()
-
-
-if __name__ == '__main__':
-
-    # data = np.load('/home/alispach/Documents/PhD/ctasoft/digicampipe/charge_linearity_final.npz')
-    ac_leds = np.load('/sst1m/analyzed/calib/mpe/mpe_fit_results_combined.npz')
-
-    ac_levels = ac_leds['ac_levels'][:, 0]
-
-    pe = ac_leds['mu']
-
-
-    pe_err = ac_leds['mu_error']
-    print(ac_levels.tolist())
-    print(pe[:, 0:2].tolist())
-    print(pe_err[:, 0:2].tolist())
-
-
-    test = ACLED(ac_levels, pe, pe_err)
-
-    x = np.linspace(0, 1000, num=1E3)
-    # X = np.zeros((1296, len(x)))
-    # X[:] = x
-    print(test(x).shape)
-
-    test.plot(pixel=1, y_lim=(0, 1E4), show_fits=False)
-
-    y = test(x)
-
-    X = np.zeros(y.shape)
-    X[:] = x
-
-    mask = np.isfinite(X) * np.isfinite(y)
-
-    y = y[mask].ravel()
-    x = X[mask].ravel()
-
-    print(x.shape, y.shape)
-
-    x_min, x_max = max(1, np.min(x)), np.max(x)
-    y_min, y_max = max(1, np.min(y)), np.max(y)
-
-    n_bins_x, n_bins_y = 150, 150
-
-    # bin_x = np.logspace(np.log10(x_min), np.log10(x_max), num=n_bins_x)
-    bin_x = np.linspace(x_min, x_max, num=n_bins_x)
-    bin_y = np.logspace(np.log10(y_min), np.log10(y_max), num=n_bins_y)
-
-    plt.figure()
-    plt.hist2d(x, y, bins=[bin_x, bin_y], range=[[x_min, x_max], [y_min, y_max]]
-               )#, normed=True)
-    plt.yscale('log')
-    plt.xlabel('AC DAC level')
-    plt.ylabel('Number of p.e.')
-    plt.colorbar(label='Counts []')
-
-    plt.show()
-
+        pass
