@@ -70,7 +70,7 @@ def compute(files, ac_levels, dc_levels, output_filename, dark_charge, dark_base
     pe = data_calib['mu']
     pe_err = data_calib['mu_error']
     ac = data_calib['ac_levels'][:, 0]
-    ac_led = ACLED(ac, pe, pe_err)
+    ac_led = ACLED(ac, pe.T, pe_err.T)
     pde = 0.9  # window filter
     true_pe = ac_led(ac_levels).T * pde
 
