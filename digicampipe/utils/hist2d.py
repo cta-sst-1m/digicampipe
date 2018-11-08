@@ -88,7 +88,7 @@ class Histogram2d:
             obj.yedges = hdul[3].data
         return obj
 
-    def stack_all(self, dtype=None):
+    def stack_all(self, dtype=None, indexes=None):
         """
         stack all 2D histograms together and return the result.
         :return: a simple histogram2D
@@ -102,8 +102,9 @@ class Histogram2d:
         hist.yedges = self.yedges
         n_2d_hist = np.sum(_h.shape[:-2])
         h_reshaped = _h.reshape([n_2d_hist, shape_2d[0], shape_2d[1]])
-        for h_2d in h_reshaped:
-            hist.histo += h_2d
+        for i, h_2d in enumerate(h_reshaped):
+            if indexes is None or i in indexes:
+                hist.histo += h_2d
         return hist
 
     def plot(self, filename="show"):
