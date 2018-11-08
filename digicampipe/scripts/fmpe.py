@@ -8,7 +8,6 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyze
-  -o OUTPUT --output=OUTPUT  Folder where to store the results.
   -c --compute                Compute the data.
   -f --fit                    Fit.
   -d --display                Display.
@@ -24,6 +23,9 @@ Options:
   --ncall=N                   Number of calls for the fit [default: 10000]
   --timing=PATH               Timing filename
   --n_samples=N               Number of samples in readout window
+  --charge_histo_filename=FILE
+  --amplitude_histo_filename=FILE
+  --results_filename=FILE
   --estimated_gain=N          Estimated gain for the fit
 """
 import os
@@ -318,10 +320,6 @@ def entry():
     debug = args['--debug']
 
     max_events = convert_int(args['--max_events'])
-    output_path = args['--output']
-
-    if not os.path.exists(output_path):
-        raise IOError('Path for output does not exists \n')
 
     pixel_id = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
@@ -330,10 +328,9 @@ def entry():
 
     n_pixels = len(pixel_id)
 
-    charge_histo_filename = os.path.join(output_path, 'charge_histo_fmpe.pk')
-    amplitude_histo_filename = os.path.join(output_path,
-                                            'amplitude_histo_fmpe.pk')
-    results_filename = os.path.join(output_path, 'fmpe_fit_results.fits')
+    charge_histo_filename = args['--charge_histo_filename']
+    amplitude_histo_filename = args['--amplitude_histo_filename']
+    results_filename = args['--results_filename']
     timing_filename = args['--timing']
     n_samples = int(args['--n_samples'])
     ncall = int(args['--ncall'])
@@ -416,6 +413,9 @@ def entry():
                 f.write(results.to_records(index=False))
 
     if args['--save_figures']:
+
+        raise NotImplementedError
+        output_path = None
 
         charge_histo = Histogram1D.load(charge_histo_filename)
 
