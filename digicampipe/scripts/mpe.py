@@ -444,14 +444,32 @@ def entry():
 
     if args['--save_figures']:
 
-        pass
+        fig = plt.figure()
+        axes = fig.add_subplot(111)
+
+        ac_led = ACLED.load(ac_led_filename)
+
+        for i in tqdm(range(len(ac_led.y))):
+
+            ac_led.plot(axes=axes, pixel=i)
+
+            figure_name = 'ac_led_pixel_{}'.format(i)
+            figure_name = os.path.join(dir_output, figure_name)
+
+            fig.savefig(figure_name)
+            fig.clf()
 
     if args['--display']:
 
-        charge_histo = Histogram1D.load(charge_histo_filename)
-        charge_histo.draw(index=(0, 0), log=False, legend=False)
+        pixel = 0
 
-        pass
+        charge_histo = Histogram1D.load(charge_histo_filename)
+        charge_histo.draw(index=(0, pixel), log=False, legend=False)
+
+        ac_led = ACLED.load(ac_led_filename)
+        ac_led.plot(pixel=pixel)
+
+        plt.show()
 
     return
 
