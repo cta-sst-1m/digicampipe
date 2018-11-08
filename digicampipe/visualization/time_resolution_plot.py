@@ -17,8 +17,12 @@ Options:
   --plot_resolution=PATH        Path to the image created showing the time
                                 resolution function of the charge. Set to
                                 "none" to not create the plot. Set to "show" to
-                                show the plot instead. [Default: show]
-  --legend=TEXT                 Legend for the resolution plot.
+                                show the plot instead. [Default: none]
+  --plot_offset=PATH            Path to the image created showing the time
+                                offset function of the charge. Set to
+                                "none" to not create the plot. Set to "show" to
+                                show the plot instead. [Default: none]
+  --legend=TEXT                 Legend for the plots.
                                 [default: camera average]
   --plot_rms_difference=PATH    Path to the image created showing the time
                                 resolution between any combination of 2 pixels
@@ -61,15 +65,17 @@ def get_ac_led_light_level(filename_calib='mpe_fit_results_combined.npz'):
     return ac_led
 
 
-def plot_rms_difference(data_file, figure_file, n_pe=20*pde):
+def load_data(data_file):
     ac_led = get_ac_led_light_level()
-
     data = np.load(data_file)
     ac_levels = data['ac_levels']
     if 'dc_levels' not in data.keys():
         dc_levels = np.zeros_like(ac_levels)
     else:
         dc_levels = data['dc_levels']
+    mean_charge_all = data['mean_charge_all']
+    std_charge_all = data['std_charge_all']
+    mean_t_all = data['mean_t_all']
     std_t_all = data['std_t_all']
 
     # AC LED were calib without DC and without the window
@@ -77,8 +83,14 @@ def plot_rms_difference(data_file, figure_file, n_pe=20*pde):
         print('WARNING: no filter taken into account')
         window_trans = 1
     else:
-        window_trans = 0.9
+        window_trans = .9
     true_pe = ac_led(ac_levels).T * window_trans
+    return mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe
+
+
+def plot_rms_difference(data_file, n_pe=20*pde):
+    mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
+        load_data(data_file)
 
     std_t_npe = np.array(
         [np.interp(n_pe, true_pe[:, i], std_t_all[:, i]) for i in range(1296)]
@@ -103,12 +115,6 @@ def plot_rms_difference(data_file, figure_file, n_pe=20*pde):
     ax.set_ylim(ylim)
     ax.legend()
     plt.tight_layout()
-    if figure_file.lower() != "show":
-        plt.savefig(figure_file)
-        print(figure_file, 'created')
-    else:
-        plt.show()
-    plt.close(fig)
 
 
 def plot_zone(x, y, bins, ax, label, xscale="log", yscale="linear"):
@@ -144,26 +150,11 @@ def plot_zone(x, y, bins, ax, label, xscale="log", yscale="linear"):
     # ax2.xaxis.set_label_position('top')
 
 
-def plot_resol(data_file, figure_file, legend):
-    ac_led = get_ac_led_light_level()
-
-    data = np.load(data_file)
-    ac_levels = data['ac_levels']
-    if 'dc_levels' not in data.keys():
-        dc_levels = np.zeros_like(ac_levels)
-    else:
-        dc_levels = data['dc_levels']
-    std_t_all = data['std_t_all']
-
-    # AC LED were calib without DC and without the window
-    if np.all(dc_levels == 0):
-        print('WARNING: no filter taken into account')
-        window_trans = 1
-    else:
-        window_trans = 0.9
-    true_pe = ac_led(ac_levels).T * window_trans
-
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+def plot_resol(data_file, legend, ax=None):
+    mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
+        load_data(data_file)
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
     ax.plot([20*pde, 20*pde], [.9, 1.1], 'r-', label=None)
     ax.plot([20*pde, 2e3*pde], [1.5, 1.5], 'b--',
@@ -178,51 +169,45 @@ def plot_resol(data_file, figure_file, legend):
         yscale='log'
     )
     ax.set_ylabel('time resolution [ns]')
-
     plt.tight_layout()
-    if figure_file.lower() != "show":
-        plt.savefig(figure_file)
-        print(figure_file, 'created')
-    else:
-        plt.show()
-    plt.close(fig)
 
 
-def plot_all(data_file, figure_file='time_resolution.png'):
-    ac_led = get_ac_led_light_level()
+def plot_offset(data_file, legend, ax=None):
+    mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
+        load_data(data_file)
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+    mean_t_100pe = np.array(
+        [np.interp(100, true_pe[:, i], mean_t_all[:, i]) for i in range(1296)]
+    )
+    plot_zone(
+        true_pe,
+        mean_t_all - mean_t_100pe[None, :],
+        [np.logspace(.5, 2.75, 101), np.linspace(-1, 1, 101)],
+        ax,
+        legend,
+        xscale='log',
+        yscale='linear'
+    )
+    ax.set_ylabel('time offset [ns]')
 
-    data = np.load(data_file)
-    ac_levels = data['ac_levels']
-    if 'dc_levels' not in data.keys():
-        dc_levels = np.zeros_like(ac_levels)
-    else:
-        dc_levels = data['dc_levels']
-    mean_charge_all = data['mean_charge_all']
-    std_charge_all = data['std_charge_all']
-    mean_t_all = data['mean_t_all']
-    std_t_all = data['std_t_all']
 
-    # AC LED were calib without DC and without the window
-    if np.all(dc_levels == 0):
-        print('WARNING: no filter taken into account')
-        window_trans = 1
-    else:
-        window_trans = 0.9
-    true_pe = ac_led(ac_levels).T * window_trans
+def plot_all(data_file, legend='camera average'):
+    mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
+        load_data(data_file)
     mean_t_100pe = np.array(
         [np.interp(100, true_pe[:, i], mean_t_all[:, i]) for i in range(1296)]
     )
     std_t_100pe = np.array(
         [np.interp(100, true_pe[:, i], std_t_all[:, i]) for i in range(1296)]
     )
-
     fig, axes = plt.subplots(2, 3, figsize=(24, 18))
     plot_zone(
         true_pe,
         mean_charge_all,
-        [np.logspace(-.7, 2.8, 101), np.logspace(-.3, 2.8, 101)],
+        [np.logspace(.5, 2.75, 101), np.logspace(-.3, 2.8, 101)],
         axes[0, 0],
-        'camera average',
+        legend,
         yscale='log'
     )
     axes[0, 0].loglog([0.1, 1000], [0.1, 1000], 'k--')
@@ -230,32 +215,15 @@ def plot_all(data_file, figure_file='time_resolution.png'):
     plot_zone(
         true_pe,
         std_charge_all,
-        [np.logspace(-.7, 2.8, 101), np.logspace(-0.5, 1.5, 101)],
+        [np.logspace(.5, 2.75, 101), np.logspace(-0.5, 1.5, 101)],
         axes[0, 1],
-        'camera average',
+        legend,
         yscale='log'
     )
     axes[0, 1].loglog([0.1, 1000], np.sqrt([0.1, 1000]), 'k--')
     axes[0, 1].set_ylabel('std charge reco. [p.e]')
-    plot_zone(
-        true_pe,
-        std_t_all,
-        [np.logspace(-.7, 2.8, 101), np.logspace(-1.3, 1, 101)],
-        axes[0, 2],
-        'camera average',
-        yscale='log'
-    )
-    axes[0, 2].set_ylabel('time resolution [ns]')
-    plot_zone(
-        true_pe,
-        mean_t_all - mean_t_100pe[None, :],
-        [np.logspace(-.7, 2.8, 101), np.linspace(-2, 2, 101)],
-        axes[1, 0],
-        'camera average',
-        xscale='log',
-        yscale='linear'
-    )
-    axes[1, 0].set_ylabel('time offset [ns]')
+    plot_resol(data_file, legend=legend, ax=axes[0, 2])
+    plot_offset(data_file, legend=legend, ax=axes[1, 0])
     display = CameraDisplay(
         DigiCam.geometry, ax=axes[1, 1],
         title='timing offset (at 100 p.e) [ns]'
@@ -271,12 +239,6 @@ def plot_all(data_file, figure_file='time_resolution.png'):
     display.set_limits_minmax(0.1, 0.3)
     display.add_colorbar(ax=axes[1, 2])
     plt.tight_layout()
-    if figure_file.lower() != "show":
-        plt.savefig(figure_file)
-        print(figure_file, 'created')
-    else:
-        plt.show()
-    plt.close(fig)
 
 
 def combine(acdc_level_files, output):
@@ -321,6 +283,7 @@ def entry():
     print('files:', files)
     summary_filename = convert_text(args['--plot_summary'])
     resolution_filename = convert_text(args['--plot_resolution'])
+    offset_filename = convert_text(args['--plot_offset'])
     legend = convert_text(args['--legend'])
     rms_difference_filename = convert_text(args['--plot_rms_difference'])
     n_pe = convert_float(args['--n_pe_rms_difference'])
@@ -328,19 +291,49 @@ def entry():
         data_combined = os.path.join(temp_dir, 'time_resolution_test.npz')
         combine(files, data_combined)
         if summary_filename is not None:
-            plot_all(data_combined, figure_file=summary_filename)
+            plot_all(
+                data_combined,
+                legend=legend
+            )
+            if summary_filename.lower() != "show":
+                plt.savefig(summary_filename)
+                print(summary_filename, 'created')
+            else:
+                plt.show()
+            plt.close()
+        if offset_filename is not None:
+            plot_offset(
+                data_combined,
+                legend=legend
+            )
+            if offset_filename.lower() != "show":
+                plt.savefig(offset_filename)
+                print(offset_filename, 'created')
+            else:
+                plt.show()
+            plt.close()
         if resolution_filename is not None:
             plot_resol(
                 data_combined,
-                figure_file=resolution_filename,
                 legend=legend
             )
+            if resolution_filename.lower() != "show":
+                plt.savefig(resolution_filename)
+                print(resolution_filename, 'created')
+            else:
+                plt.show()
+            plt.close()
         if rms_difference_filename is not None:
             plot_rms_difference(
                 data_combined,
-                figure_file=rms_difference_filename,
                 n_pe=n_pe
             )
+            if rms_difference_filename.lower() != "show":
+                plt.savefig(rms_difference_filename)
+                print(rms_difference_filename, 'created')
+            else:
+                plt.show()
+            plt.close()
 
 
 if __name__ == '__main__':

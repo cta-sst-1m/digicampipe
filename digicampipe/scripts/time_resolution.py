@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
 measure the time offsets using template fitting. Create a file
-time_acXXX_dcYYY.npz for eac AC and DC level with XXX and YYY the value of resp.
-the AC and DC level.
+time_acXXX_dcYYY.npz for each AC and DC level with XXX and YYY the value of
+resp. the AC and DC level.
 Usage:
   digicam-time-resolution [options] [--] <INPUT>...
 
