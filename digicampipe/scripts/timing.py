@@ -10,6 +10,8 @@ Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   --timing_histo_filename=FILE.  Folder where to store the results.
+  --timing_results_filename=FILE File to which the results of the timing
+                              analysis are stored
   --ac_levels=<DAC>           LED AC DAC level
   -c --compute                Compute the data.
   -f --fit                    Fit the timing histo.
@@ -88,7 +90,7 @@ def entry():
     ac_levels = convert_list_int(args['--ac_levels'])
 
     output_path = os.path.dirname(timing_histo_filename)
-    results_filename = os.path.join(output_path, 'timing.npz')
+    results_filename = args['--timing_results_filename']
 
     if not os.path.exists(output_path):
         raise IOError('Path for output does not exists \n')
