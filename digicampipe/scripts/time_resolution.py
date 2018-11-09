@@ -92,8 +92,8 @@ def analyse_ACDC_level(
         range_integ = index_max_template[i] + normalize_slice
         norm_templ = np.sum(ampl_templ[range_integ])
         templates_ampl[i, :] = ampl_templ / norm_templ
-        templates_std[i, :] = template.std(sample_template + delay) / \
-                              norm_templ
+        std = template.std(sample_template + delay) / norm_templ
+        templates_std[i, :] = std
     max_ampl_one_pe = np.max(templates_ampl)
     events = calibration_event_stream(files, max_events=max_events,
                                       disable_bar=True)
@@ -161,17 +161,18 @@ def analyse_ACDC_level(
         charge_good_pix = norm_pixels / gain_pixels[good_pix]
         adc_samples_norm = adc_samples[good_pix, :] / norm_pixels[:, None]
         n_good_pix = int(np.sum(good_pix))
-
-        column_chi2 = index_template_rel[good_pix, None, None] + \
-                      np.arange(n_sample_template, dtype=int)[None, None, :]
-        row_chi2 = np.tile(np.arange(n_good_pix)[:, None, None],
-                           [1, n_delays, n_sample_template])
+        samples = np.arange(n_sample_template, dtype=int)[None, None, :]
+        column_chi2 = index_template_rel[good_pix, None, None] + samples
+        row_chi2 = np.tile(
+            np.arange(n_good_pix)[:, None, None],
+            [1, n_delays, n_sample_template]
+        )
         adc_samples_compared = adc_samples_norm[row_chi2, column_chi2]
         residual = adc_samples_compared - templates_ampl[None, :, :]
         error_squared = templates_std[None, :, :] ** 2 \
             + (adc_noise/norm_pixels[:, None, None]) ** 2
-        chi2 = np.sum(residual**2/error_squared, axis=2)/\
-               (n_sample_template - 1)
+        chi2 = np.sum(residual**2 / error_squared, axis=2) \
+            / (n_sample_template - 1)
 
         t_fit_all = np.ones(1296) * np.nan
         # estimate offset from min chi2
