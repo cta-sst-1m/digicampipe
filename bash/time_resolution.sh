@@ -4,7 +4,7 @@ output=/sst1m/analyzed/timing_resolution/20180628
 digicam_path=~/ctasoft/digicampipe
 
 # AC scan (dark data) analysis (~24H, best using cluster or use --max_event parameter)
-ac_lvls=({0..20..1} {21..440..5})
+ac_lvls=({0..20..1} 25 30 35 {45..440..5})
 files=$(echo /sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{1350..1454}.fits.fz)
 
 python $digicam_path/digicampipe/scripts/time_resolution.py --ac_levels=$ac_lvls --output=$output $files
