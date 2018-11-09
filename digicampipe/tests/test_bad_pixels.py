@@ -48,4 +48,3 @@ if __name__ == '__main__':
     test_bad_pixels()
     test_bad_pixels_plot()
     test_bad_pixels_save()
-    get_bad_pixels(parameters_filename, plot="show", output=None)
