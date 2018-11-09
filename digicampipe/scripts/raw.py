@@ -39,7 +39,7 @@ from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
 def compute(files, max_events, pixel_id, filename, event_types=None):
-    if os.path.exists(filename) and len(files) == 0:
+    if os.path.exists(filename):
         raw_histo = Histogram1D.load(filename)
         return raw_histo
     else:
