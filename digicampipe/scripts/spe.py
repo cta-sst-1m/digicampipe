@@ -235,9 +235,6 @@ def entry():
 
     if args['--fit']:
 
-        spe_histo = Histogram1D.load(charge_histo_filename)
-        max_histo = Histogram1D.load(max_histo_filename)
-
         dark_count_rate = np.zeros(n_pixels) * np.nan
         electronic_noise = np.zeros(n_pixels) * np.nan
         crosstalk = np.zeros(n_pixels) * np.nan
@@ -245,7 +242,7 @@ def entry():
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
-            histo = max_histo[i]
+            histo = Histogram1D.load(max_histo_filename, rows=i)
             fitter = MaxHistoFitter(histo, estimated_gain, throw_nan=True)
 
             try:
@@ -279,7 +276,7 @@ def entry():
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
 
-            histo = spe_histo[i]
+            histo = Histogram1D.load(charge_histo_filename, rows=i)
             fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
 
             try:
