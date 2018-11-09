@@ -55,7 +55,8 @@ class Histogram2d:
         shape_2d = h.shape[-2:]
         n_2d_hist = sum(h.shape[:-2])
         h_reshaped = h.reshape([n_2d_hist, shape_2d[0], shape_2d[1]])
-        n = h_reshaped.sum(axis=-1) #number of entries per bins of the 1st dim
+        # n is the number of entries per bins of the 1st dim
+        n = h_reshaped.sum(axis=-1)
         for h2d_idx in range(n_2d_hist):
             x_bin_non_empty = n[h2d_idx, :] > min_entries
             h_pix = h_reshaped[h2d_idx, x_bin_non_empty, :]
@@ -87,7 +88,7 @@ class Histogram2d:
             obj.yedges = hdul[3].data
         return obj
 
-    def stack_all(self, dtype=None):
+    def stack_all(self, dtype=None, indexes=None):
         """
         stack all 2D histograms together and return the result.
         :return: a simple histogram2D
@@ -101,8 +102,9 @@ class Histogram2d:
         hist.yedges = self.yedges
         n_2d_hist = np.sum(_h.shape[:-2])
         h_reshaped = _h.reshape([n_2d_hist, shape_2d[0], shape_2d[1]])
-        for h_2d in h_reshaped:
-            hist.histo += h_2d
+        for i, h_2d in enumerate(h_reshaped):
+            if indexes is None or i in indexes:
+                hist.histo += h_2d
         return hist
 
     def plot(self, filename="show"):
@@ -112,25 +114,52 @@ class Histogram2d:
         instead.
         """
         n_plotted = 0
-        fig, axes = plt.subplots(4, 3)
         hists = self.contents()
         if len(hists.shape) == 2:
             hists = hists.reshape([1, hists.shape[0], hists.shape[1]])
-        for i, h in enumerate(hists):
-            if np.all(h == 0):
-                continue
-            ax = axes[int(n_plotted / 3), n_plotted % 3]
-            ax.set_title('pixel ' + str(i))
-            ax.pcolor(self.xedges, self.yedges, h.T)
-            n_plotted += 1
-            if n_plotted == 12:
-                break
+        if len(hists) > 1:
+            fig, axes = plt.subplots(4, 3)
+            for i, h in enumerate(hists):
+                if np.all(h == 0):
+                    continue
+                ax = axes[int(n_plotted / 3), n_plotted % 3]
+                ax.set_title('pixel ' + str(i))
+                ax.pcolor(self.xedges, self.yedges, h.T)
+                n_plotted += 1
+                if n_plotted == 12:
+                    break
+        elif len(hists) == 1:
+            fig, ax = plt.subplots(1, 1)
+            ax.pcolor(self.xedges, self.yedges, hists[0].T)
         plt.tight_layout()
         if filename.lower() != "show":
             plt.savefig(filename, dpi=200)
         else:
             plt.show()
         plt.close(fig)
+
+    def __add__(self, other):
+        histo1 = self.contents()
+        histo2 = other.contents()
+        assert histo1.shape == histo2.shape
+        # dtype is ordered according to safe casting, so next line is to be on
+        # the safe side
+        dtype = np.max([histo1.dtype, histo2.dtype])
+        sum = Histogram2d(histo1.shape, self.range, dtype=dtype)
+        sum.histo = histo1 + histo2
+        sum.xedges = self.xedges
+        sum.yedges = self.yedges
+        if other.xedges is not None:
+            sum.xedges = other.xedges
+        if other.yedges is not None:
+            sum.yedges = other.yedges
+        return sum
+
+    def astype(self, dtype):
+        "Convert the type of the histogram to the indicated numpy dtype."
+        output = self
+        output.histo = self.contents().astype(dtype)
+        return output
 
 
 class Histogram2dChunked(Histogram2d):
