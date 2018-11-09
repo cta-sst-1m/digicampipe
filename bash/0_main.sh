@@ -2,10 +2,8 @@
 
 export MATPLOTLIBRC='../matplotlibrc'
 
-DATE=`date +%Y%m%d`
 
-export DIGICAM_FOLDER='/sst1m/analyzed/calib/'$DATE'/'
-mkdir -p $DIGICAM_FOLDER
+### INPUT FILES ###
 
 export DIGICAM_GHV_OFF_FILES=($(echo /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1292..1299}.fits.fz))
 export DIGICAM_GHV_ON_FILES=($(echo /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1286..1292}.fits.fz))
@@ -50,3 +48,25 @@ function tolist () {
 export -p tolist
 # echo ${DIGICAM_PIXELS[@]}
 # a=$(tolist "${DIGICAM_PIXELS[@]}")
+
+### OUTPUT FILES ###
+
+DATE=`date +%Y%m%d`
+# DATE=20181108
+export DIGICAM_FOLDER='/sst1m/analyzed/calib/'$DATE'/'
+mkdir -p $DIGICAM_FOLDER
+
+export GHV_OFF_RAW_HISTO=$DIGICAM_FOLDER'ghv_off_raw_histo.fits'
+export GHV_ON_RAW_HISTO=$DIGICAM_FOLDER'ghv_on_raw_histo.fits'
+export DARK_RAW_HISTO=$DIGICAM_FOLDER'dark_raw_histo.fits'
+export DARK_MAX_HISTO=$DIGICAM_FOLDER'dark_max_histo.fits'
+export DARK_CHARGE_HISTO=$DIGICAM_FOLDER'dark_charge_histo.fits'
+export SPE_RESULTS=$DIGICAM_FOLDER'spe_results.npz'
+export TIMING_HISTO=$DIGICAM_FOLDER'timing_histo.fits'
+export TIMING_RESULTS=$DIGICAM_FOLDER'timing_results.npz'
+export FMPE_CHARGE_HISTO=$DIGICAM_FOLDER'fmpe_charge_histo.fits'
+export FMPE_AMPLITUDE_HISTO=$DIGICAM_FOLDER'fmpe_amplitude_histo.fits'
+export FMPE_RESULTS=$DIGICAM_FOLDER'fmpe_results.fits'
+export MPE_CHARGE_HISTO=$DIGICAM_FOLDER'mpe_charge_histo.fits'
+export MPE_RESULTS=$DIGICAM_FOLDER'mpe_results.fits'
+export AC_LED_FILE=$DIGCAM_FOLDER'ac_led.fits'
