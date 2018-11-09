@@ -81,5 +81,40 @@ def test_pipeline():
             assert len(hdul[1].data[col]) == nevent
 
 
+def test_pipeline_two_pixels():
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        dark_filename = os.path.join(tmpdirname, 'dark.pk')
+        hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
+        compute_raw(
+            files=[example_file1_path],
+            max_events=None,
+            pixel_id=[0, 1],
+            filename=dark_filename
+        )
+        main_pipeline(
+            files=[example_file2_path],
+            max_events=None,
+            dark_filename=dark_filename,
+            pixel_ids=[0, 1],
+            shift=0,
+            integral_width=7,
+            debug=False,
+            hillas_filename=hillas_filename,
+            template_filename=template_filename,
+            parameters_filename=calibration_filename,
+            compute=True,
+            display=False,
+            picture_threshold=1,  # unusual value, so events pass cuts
+            boundary_threshold=1,  # unusual value, so events pass cuts
+        )
+        hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
+        cols = [c.name for c in hdul[1].columns]
+        nevent = len(hdul[1].data['local_time'])
+        assert nevent > 0
+        for col in expected_columns:
+            assert col in cols
+            assert len(hdul[1].data[col]) == nevent
+
+
 if __name__ == '__main__':
-    test_pipeline()
+    test_pipeline_two_pixels()
