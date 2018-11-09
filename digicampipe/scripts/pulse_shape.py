@@ -68,7 +68,8 @@ def main(
     for file_idx, input_file in enumerate(input_files):
         if not os.path.isfile(input_file):
             continue
-        events = calibration_event_stream([input_file], disable_bar=disable_bar)
+        events = calibration_event_stream([input_file],
+                                          disable_bar=disable_bar)
         events = fill_digicam_baseline(events)
         if "SST1M_01_201805" in input_files[0]:  # fix data in May
             print("WARNING: correction of the baselines applied.")

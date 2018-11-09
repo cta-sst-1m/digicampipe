@@ -77,7 +77,8 @@ def analyse_ACDC_level(
     gain_pixels = np.array(calibration_parameters['gain'])
     normalize_slice = np.arange(normalize_range[0], normalize_range[1]+1,
                                 dtype=int)
-    sample_template = np.arange(time_range_ns[0], time_range_ns[1], sampling_ns)
+    sample_template = np.arange(time_range_ns[0], time_range_ns[1],
+                                sampling_ns)
     n_sample_template = len(sample_template)
     template = NormalizedPulseTemplate.load(template)
     delays = np.arange(-4, 4, delay_step_ns)
@@ -91,7 +92,8 @@ def analyse_ACDC_level(
         range_integ = index_max_template[i] + normalize_slice
         norm_templ = np.sum(ampl_templ[range_integ])
         templates_ampl[i, :] = ampl_templ / norm_templ
-        templates_std[i, :] = template.std(sample_template + delay) / norm_templ
+        templates_std[i, :] = template.std(sample_template + delay) / \
+                              norm_templ
     max_ampl_one_pe = np.max(templates_ampl)
     events = calibration_event_stream(files, max_events=max_events,
                                       disable_bar=True)
@@ -143,9 +145,10 @@ def analyse_ACDC_level(
             good_pix,
             idx_sample_max <= 16
         )
-        sample_norm = adc_samples[rows_norm[good_pix, :], column_norm[good_pix, :]]
+        sample_norm = adc_samples[rows_norm[good_pix, :],
+                                  column_norm[good_pix, :]]
         norm_pixels = np.sum(sample_norm, axis=1)
-        #discard pixels where charge is <= 2.5 LSB (0.5 pe), as normalization
+        # discard pixels where charge is <= 2.5 LSB (0.5 pe), as normalization
         # is then meaningless
         norm_all = np.zeros(1296)
         norm_all[good_pix] = norm_pixels
@@ -159,13 +162,16 @@ def analyse_ACDC_level(
         adc_samples_norm = adc_samples[good_pix, :] / norm_pixels[:, None]
         n_good_pix = int(np.sum(good_pix))
 
-        column_chi2 = index_template_rel[good_pix, None, None] + np.arange(n_sample_template, dtype=int)[None, None, :]
-        row_chi2 = np.tile(np.arange(n_good_pix)[:, None, None], [1, n_delays, n_sample_template])
+        column_chi2 = index_template_rel[good_pix, None, None] + \
+                      np.arange(n_sample_template, dtype=int)[None, None, :]
+        row_chi2 = np.tile(np.arange(n_good_pix)[:, None, None],
+                           [1, n_delays, n_sample_template])
         adc_samples_compared = adc_samples_norm[row_chi2, column_chi2]
         residual = adc_samples_compared - templates_ampl[None, :, :]
         error_squared = templates_std[None, :, :] ** 2 \
             + (adc_noise/norm_pixels[:, None, None]) ** 2
-        chi2 = np.sum(residual**2/error_squared, axis=2)/(n_sample_template - 1)
+        chi2 = np.sum(residual**2/error_squared, axis=2)/\
+               (n_sample_template - 1)
 
         t_fit_all = np.ones(1296) * np.nan
         # estimate offset from min chi2
@@ -183,8 +189,10 @@ def analyse_ACDC_level(
     return charge, t_fit
 
 
-def main(files, ac_levels, dc_levels, max_events, delay_step_ns, time_range_ns,
-         sampling_ns, normalize_range, parameters, template, adc_noise, output):
+def main(
+        files, ac_levels, dc_levels, max_events, delay_step_ns, time_range_ns,
+        sampling_ns, normalize_range, parameters, template, adc_noise, output
+):
     unique_ac_dc, inverse = np.unique(
         np.vstack([ac_levels, dc_levels]).T,
         axis=0,
@@ -223,7 +231,7 @@ def entry():
     ac_levels = convert_list_int(args['--ac_levels'])
     dc_levels = convert_list_int(args['--dc_levels'])
     if len(dc_levels) == 1:
-        dc_levels = [dc_levels[0],] * len(ac_levels)
+        dc_levels = [dc_levels[0], ] * len(ac_levels)
     assert len(ac_levels) == len(files)
     max_events = convert_int(args['--max_events'])
     delay_step_ns = convert_float(args['--delay_step_ns'])

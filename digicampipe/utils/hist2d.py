@@ -129,7 +129,7 @@ class Histogram2d:
                 if n_plotted == 12:
                     break
         elif len(hists) == 1:
-            fig, ax = plt.subplots(1,1)
+            fig, ax = plt.subplots(1, 1)
             ax.pcolor(self.xedges, self.yedges, hists[0].T)
         plt.tight_layout()
         if filename.lower() != "show":
