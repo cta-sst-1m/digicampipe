@@ -392,6 +392,20 @@ def compute_photo_electron(events, gains):
         yield event
 
 
+def interpolate_bad_pixels(events, geom, bad_pixels):
+    n_bad = len(bad_pixels)
+    n_pixel = len(geom.neighbors)
+    average_matrix = np.zeros([n_bad, n_pixel])
+    for i, pix in enumerate(bad_pixels):
+        pix_neighbors = geom.neighbors[pix]
+        average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
+    for event in events:
+        charge = event.data.reconstructed_charge
+        charge[bad_pixels, :] = average_matrix.dot(charge)
+        event.data.reconstructed_charge = charge
+        yield event
+
+
 def compute_sample_photo_electron(events, gain_amplitude):
     """
     :param events: a stream of events

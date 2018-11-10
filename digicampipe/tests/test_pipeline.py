@@ -60,7 +60,6 @@ def test_pipeline():
             files=[example_file2_path],
             max_events=None,
             dark_filename=dark_filename,
-            pixel_ids=convert_pixel_args(None),
             shift=0,
             integral_width=7,
             debug=False,
@@ -88,14 +87,13 @@ def test_pipeline_two_pixels():
         compute_raw(
             files=[example_file1_path],
             max_events=None,
-            pixel_id=[0, 1],
+            pixel_id=convert_pixel_args(None),
             filename=dark_filename
         )
         main_pipeline(
             files=[example_file2_path],
             max_events=None,
             dark_filename=dark_filename,
-            pixel_ids=[0, 1],
             shift=0,
             integral_width=7,
             debug=False,
@@ -106,6 +104,7 @@ def test_pipeline_two_pixels():
             display=False,
             picture_threshold=1,  # unusual value, so events pass cuts
             boundary_threshold=1,  # unusual value, so events pass cuts
+            bad_pixels=[0, 1],
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]

@@ -15,7 +15,7 @@ Options:
   -v --debug                  Enter the debug mode.
   -c --compute
   -d --display
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  -p --bad_pixels=<PIXELS>    Give a list of bad pixel IDs. [default: none]
   --shift=N                   number of bins to shift before integrating
                               [default: 0].
   --integral_width=N          number of bins to integrate over
@@ -63,9 +63,10 @@ class PipelineOutputContainer(HillasParametersContainer):
     burst = Field(bool, 'Is the event during a burst')
 
 
-def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
+def main(files, max_events, dark_filename, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
-         picture_threshold, boundary_threshold, template_filename):
+         picture_threshold, boundary_threshold, template_filename,
+         bad_pixels=()):
     if compute:
 
         with open(parameters_filename) as file:
@@ -89,8 +90,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         dark_histo = Histogram1D.load(dark_filename)
         dark_baseline = dark_histo.mean()
 
-        events = calibration_event_stream(files, pixel_id=pixel_ids,
-                                          max_events=max_events)
+        events = calibration_event_stream(files, max_events=max_events)
         events = baseline.fill_dark_baseline(events, dark_baseline)
         events = baseline.fill_digicam_baseline(events)
         events = tagging.tag_burst_from_moving_average_baseline(events)
@@ -105,6 +105,7 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
                                             cell_capacitance)
         events = peak.find_pulse_with_max(events)
         events = charge.compute_charge(events, integral_width, shift)
+        events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
 
@@ -342,7 +343,7 @@ def entry():
     if output_path != "" and not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
                       'for output hillas does not exists \n')
-    pixel_ids = convert_pixel_args(args['--pixel'])
+    bad_pixels = convert_pixel_args(args['--bad_pixels'])
     integral_width = int(args['--integral_width'])
     picture_threshold = float(args['--picture_threshold'])
     boundary_threshold = float(args['--boundary_threshold'])
@@ -353,7 +354,6 @@ def entry():
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
-         pixel_ids=pixel_ids,
          shift=shift,
          integral_width=integral_width,
          debug=debug,
@@ -364,6 +364,7 @@ def entry():
          picture_threshold=picture_threshold,
          boundary_threshold=boundary_threshold,
          template_filename=template_filename,
+         bad_pixels=bad_pixels,
          )
 
 
