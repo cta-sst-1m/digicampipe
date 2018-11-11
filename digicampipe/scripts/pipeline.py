@@ -15,13 +15,16 @@ Options:
   -v --debug                  Enter the debug mode.
   -c --compute
   -d --display
-  -p --bad_pixels=<PIXELS>    Give a list of bad pixel IDs. [default: none]
+  -p --bad_pixels=LIST        Give a list of bad pixel IDs.
+                              If "none", the bad pixels will be deduced from
+                              the parameter file specified with --parameters.
+                              [default: none]
   --shift=N                   number of bins to shift before integrating
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --picture_threshold=N       Tailcut primary cleaning threshold
-                              [Default: 20]
+                              [Default: 30]
   --boundary_threshold=N      Tailcut secondary cleaning threshold
                               [Default: 15]
   --parameters=FILE           Calibration parameters file path
@@ -40,12 +43,13 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from histogram.histogram import Histogram1D
+
+from digicampipe.scripts.bad_pixels import get_bad_pixels
 from digicampipe.calib import baseline, peak, charge, cleaning, image, tagging
 from digicampipe.calib import filters
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_int, \
-    convert_pixel_args
+from digicampipe.utils.docopt import convert_int, convert_list_int
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
 from digicampipe.image.hillas import compute_alpha, compute_miss, \
@@ -66,12 +70,12 @@ class PipelineOutputContainer(HillasParametersContainer):
 def main(files, max_events, dark_filename, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename,
-         bad_pixels=()):
+         bad_pixels=None):
     if compute:
-
         with open(parameters_filename) as file:
-
             calibration_parameters = yaml.load(file)
+        if bad_pixels is None:
+            bad_pixels = get_bad_pixels(calibration_parameters, plot=None)
 
         pulse_template = NormalizedPulseTemplate.load(template_filename)
 
@@ -119,6 +123,8 @@ def main(files, max_events, dark_filename, shift, integral_width,
         events = cleaning.compute_dilate(events, geom)
 
         events = image.compute_hillas_parameters(events, geom)
+
+        # events = image.show(events, geom)
 
         output_file = Serializer(hillas_filename, mode='w', format='fits')
 
@@ -343,7 +349,7 @@ def entry():
     if output_path != "" and not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
                       'for output hillas does not exists \n')
-    bad_pixels = convert_pixel_args(args['--bad_pixels'])
+    bad_pixels = convert_list_int(args['--bad_pixels'])
     integral_width = int(args['--integral_width'])
     picture_threshold = float(args['--picture_threshold'])
     boundary_threshold = float(args['--boundary_threshold'])
