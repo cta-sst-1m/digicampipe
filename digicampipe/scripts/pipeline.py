@@ -75,7 +75,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
         with open(parameters_filename) as file:
             calibration_parameters = yaml.load(file)
         if bad_pixels is None:
-            bad_pixels = get_bad_pixels(calibration_parameters, plot=None)
+            bad_pixels = get_bad_pixels(parameters_filename, plot=None)
 
         pulse_template = NormalizedPulseTemplate.load(template_filename)
 

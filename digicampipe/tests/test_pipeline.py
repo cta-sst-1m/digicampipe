@@ -67,13 +67,13 @@ def test_pipeline():
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
         compute_raw(
-            files=[dark200_file_path],
+            files=[dark100_file_path],
             max_events=None,
             pixel_id=convert_pixel_args(None),
             filename=dark_filename
         )
         main_pipeline(
-            files=[science200_file_path],
+            files=[science100_file_path],
             max_events=None,
             dark_filename=dark_filename,
             shift=0,
@@ -101,13 +101,13 @@ def test_pipeline_two_pixels():
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
         compute_raw(
-            files=[example_file1_path],
+            files=[dark200_file_path],
             max_events=None,
             pixel_id=convert_pixel_args(None),
             filename=dark_filename
         )
         main_pipeline(
-            files=[example_file2_path],
+            files=[science200_file_path],
             max_events=None,
             dark_filename=dark_filename,
             shift=0,
