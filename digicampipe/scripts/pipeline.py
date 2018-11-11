@@ -29,6 +29,8 @@ Options:
                               [Default: 15]
   --parameters=FILE           Calibration parameters file path
   --template=FILE             Pulse template file path
+  --disable_bar               If used, the progress bar is not show while
+                              reading files.
 """
 import os
 import astropy.units as u
@@ -70,7 +72,7 @@ class PipelineOutputContainer(HillasParametersContainer):
 def main(files, max_events, dark_filename, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename,
-         bad_pixels=None):
+         bad_pixels=None, disable_bar=False):
     if compute:
         with open(parameters_filename) as file:
             calibration_parameters = yaml.load(file)
@@ -94,7 +96,8 @@ def main(files, max_events, dark_filename, shift, integral_width,
         dark_histo = Histogram1D.load(dark_filename)
         dark_baseline = dark_histo.mean()
 
-        events = calibration_event_stream(files, max_events=max_events)
+        events = calibration_event_stream(files, max_events=max_events,
+                                          disable_bar=disable_bar)
         events = baseline.fill_dark_baseline(events, dark_baseline)
         events = baseline.fill_digicam_baseline(events)
         events = tagging.tag_burst_from_moving_average_baseline(events)
@@ -357,6 +360,7 @@ def entry():
     debug = args['--debug']
     parameters_filename = args['--parameters']
     template_filename = args['--template']
+    disable_bar = args['--disable_bar']
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
@@ -371,6 +375,7 @@ def entry():
          boundary_threshold=boundary_threshold,
          template_filename=template_filename,
          bad_pixels=bad_pixels,
+         disable_bar=disable_bar,
          )
 
 

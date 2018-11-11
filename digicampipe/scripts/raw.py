@@ -23,6 +23,8 @@ Options:
                               histogram (others are discarded).
                               If set to "none", all events are included.
                               [Default: none]
+  --disable_bar               If used, the progress bar is not show while
+                              reading files.
 """
 import os
 
@@ -38,14 +40,16 @@ from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
-def compute(files, max_events, pixel_id, filename, event_types=None):
+def compute(files, max_events, pixel_id, filename, event_types=None,
+            disable_bar=False):
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
     else:
         n_pixels = len(pixel_id)
-        events = calibration_event_stream(files, pixel_id=pixel_id,
-                                          max_events=max_events)
+        events = calibration_event_stream(
+            files, pixel_id=pixel_id, max_events=max_events,
+            disable_bar=disable_bar)
         raw_histo = Histogram1D(
             data_shape=(n_pixels,),
             bin_edges=np.arange(0, 4095, 1),
@@ -60,14 +64,16 @@ def compute(files, max_events, pixel_id, filename, event_types=None):
 
 
 def compute_baseline_histogram(files, max_events, pixel_id, filename,
-                               event_types=None):
+                               event_types=None, disable_bar=False):
     if os.path.exists(filename) and len(files) == 0:
         baseline_histo = Histogram1D.load(filename)
         return baseline_histo
     else:
         n_pixels = len(pixel_id)
-        events = calibration_event_stream(files, pixel_id=pixel_id,
-                                          max_events=max_events)
+        events = calibration_event_stream(
+            files, pixel_id=pixel_id, max_events=max_events,
+            disable_bar=disable_bar
+        )
         baseline_histo = Histogram1D(
             data_shape=(n_pixels,),
             bin_edges=np.arange(0, 4096, 1 / 16),
@@ -85,88 +91,69 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename,
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
-
     max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     raw_histo_filename = args['--output']
     event_types = convert_list_int(args['--event_types'])
     baseline_filename = args['--baseline_filename']
+    disable_bar = args['--disable_bar']
     if baseline_filename.lower() == 'none':
         baseline_filename = None
-
     output_path = os.path.dirname(raw_histo_filename)
     if not os.path.exists(output_path) and output_path != "":
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
 
     if args['--compute']:
-        compute(files, max_events, pixel_id, raw_histo_filename, event_types)
-
+        compute(files, max_events, pixel_id, raw_histo_filename, event_types,
+                disable_bar=disable_bar)
         if baseline_filename:
-            compute_baseline_histogram(files, max_events, pixel_id,
-                                       baseline_filename)
+            compute_baseline_histogram(
+                files, max_events, pixel_id, baseline_filename,
+                disable_bar=disable_bar
+            )
 
     if args['--save_figures']:
         raw_histo = Histogram1D.load(raw_histo_filename)
-
         path = os.path.join(output_path, 'figures/', 'raw_histo/')
-
         if not os.path.exists(path):
             os.makedirs(path)
-
         figure = plt.figure()
-
         for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
             axis = figure.add_subplot(111)
             figure_path = os.path.join(path, 'pixel_{}.pdf')
-
             try:
-
                 raw_histo.draw(index=(i,), axis=axis, log=True, legend=False)
                 figure.savefig(figure_path.format(pixel))
-
             except Exception as e:
-
                 print('Could not save pixel {} to : {} \n'.
                       format(pixel, figure_path))
                 print(e)
-
             axis.remove()
 
     if args['--display']:
-
         raw_histo = Histogram1D.load(raw_histo_filename)
-
         pixel = 0
         raw_histo.draw(index=(pixel,), log=True, legend=False,
                        label='Histogram {}'.format(pixel), x_label='[LSB]')
-
         mean_value = raw_histo.mean()
         plot_histo(mean_value, bins='auto', x_label='Mean value [LSB]')
         plot_array_camera(mean_value, label='Mean value [LSB]')
-
         if baseline_filename:
             baseline_histo = Histogram1D.load(baseline_filename)
-
             baseline_histo.draw(index=(pixel,), log=True, legend=False,
                                 label='Histogram {}'.format(pixel),
                                 x_label='DigiCam baseline [LSB]')
-
             mean_baseline = baseline_histo.mean()
             plot_histo(mean_baseline, bins='auto',
                        x_label='Mean DigiCam baseline [LSB]')
             plot_array_camera(mean_baseline,
                               label='Mean DigiCam baseline [LSB]')
-
             plot_array_camera(mean_baseline - mean_value,
                               label='Diff [LSB]')
-
             plot_histo(mean_baseline - mean_value, bins='auto',
                        x_label='Diff [LSB]')
-
         plt.show()
-
-    return
 
 
 if __name__ == '__main__':

@@ -38,6 +38,8 @@ Options:
   --template=FILE               Pulse template file path
   --threshold_sample_pe=INT     threshold used in the shower rate estimation.
                                 [Default: 20.]
+  --disable_bar                 If used, the progress bar is not show while
+                                reading files.
 """
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -77,8 +79,9 @@ class DataQualityContainer(Container):
 def main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
          nsb_plot_filename, parameters_filename, template_filename,
-         threshold_sample_pe=20,
-         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad):
+         threshold_sample_pe=20.,
+         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad,
+         disable_bar=False):
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -94,7 +97,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
     dark_histo = Histogram1D.load(dark_filename)
     dark_baseline = dark_histo.mean()
     if not load_files:
-        events = calibration_event_stream(files)
+        events = calibration_event_stream(files, disable_bar=disable_bar)
         events = fill_digicam_baseline(events)
         events = fill_dark_baseline(events, dark_baseline)
         events = subtract_baseline(events)
@@ -228,11 +231,12 @@ def entry():
     parameters_filename = args['--parameters']
     template_filename = args['--template']
     threshold_sample_pe = float(args['--threshold_sample_pe'])
+    disable_bar = args['--disable_bar']
 
     main(files, dark_filename, time_step, fits_filename, load_files,
          histo_filename, rate_plot_filename, baseline_plot_filename,
-         nsb_plot_filename,
-         parameters_filename, template_filename, threshold_sample_pe)
+         nsb_plot_filename, parameters_filename, template_filename,
+         threshold_sample_pe, disable_bar=disable_bar)
 
 
 if __name__ == '__main__':

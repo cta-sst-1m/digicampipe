@@ -96,7 +96,7 @@ def test_pipeline():
             assert len(hdul[1].data[col]) == nevent
 
 
-def test_pipeline_two_pixels():
+def test_pipeline_bad_pixels():
     with tempfile.TemporaryDirectory() as tmpdirname:
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
@@ -132,4 +132,4 @@ def test_pipeline_two_pixels():
 
 
 if __name__ == '__main__':
-    test_pipeline_two_pixels()
+    test_pipeline_bad_pixels()

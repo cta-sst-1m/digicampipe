@@ -9,31 +9,36 @@ from digicampipe.scripts.data_quality import main as data_quality
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args
 
-example_file1_path = resource_filename(
+dark100_file_path = resource_filename(
     'digicampipe',
     os.path.join(
         'tests',
         'resources',
-        'example_10_evts.000.fits.fz'
+        'dark_100_evts.fits.fz'
     )
 )
-
-example_file2_path = resource_filename(
+dark200_file_path = resource_filename(
     'digicampipe',
     os.path.join(
         'tests',
         'resources',
-        'SST1M_01_20180918_261.fits.fz'
+        'dark_200_evts.fits.fz'
     )
 )
-
-example_file_path_dark = resource_filename(
+science100_file_path = resource_filename(
     'digicampipe',
     os.path.join(
         'tests',
         'resources',
-        'digicamtoy',
-        'events_digicamtoy_nsb_3_pe_0.hdf5'
+        'run150_100_evts.fits.fz'
+    )
+)
+science200_file_path = resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'run150_200_evts.fits.fz'
     )
 )
 parameters_filename = resource_filename(
@@ -59,7 +64,7 @@ expected_columns = ['time', 'baseline', 'trigger_rate', 'shower_rate',
 
 
 def test_data_quality():
-    files = [example_file2_path]
+    files = [science200_file_path]
     time_step = 1e8  # in ns, average history plot over 100 ms
     with tempfile.TemporaryDirectory() as tmpdirname:
         fits_filename = os.path.join(tmpdirname, 'ouptput.fits')
@@ -70,16 +75,26 @@ def test_data_quality():
         load_files = False
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         compute_raw(
-            files=example_file_path_dark,
+            files=[dark100_file_path, dark200_file_path],
             max_events=None,
             pixel_id=convert_pixel_args(None),
-            filename=dark_filename
+            filename=dark_filename,
+            disable_bar=True
         )
         data_quality(
-            files, dark_filename, time_step, fits_filename, load_files,
-            histo_filename, rate_plot_filename, baseline_plot_filename,
-            nsb_plot_filename,
-            parameters_filename, template_filename, threshold_sample_pe=0.02,
+            files=files,
+            dark_filename=dark_filename,
+            time_step=time_step,
+            fits_filename=fits_filename,
+            load_files=load_files,
+            histo_filename=histo_filename,
+            rate_plot_filename=rate_plot_filename,
+            baseline_plot_filename=baseline_plot_filename,
+            nsb_plot_filename=nsb_plot_filename,
+            parameters_filename=parameters_filename,
+            template_filename=template_filename,
+            threshold_sample_pe=20,
+            disable_bar=True
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
