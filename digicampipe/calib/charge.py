@@ -287,16 +287,14 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         yield event
 
 
-def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
+def compute_number_of_pe_from_table(events, charge_to_pe_function,
+                                    debug=False):
     for event in events:
-
         charge = event.data.reconstructed_charge
         pe = charge_to_pe_function(charge)
         event.data.reconstructed_number_of_pe = pe
-
         if debug:
             print(pe)
-
         yield event
 
 
@@ -398,6 +396,10 @@ def interpolate_bad_pixels(events, geom, bad_pixels):
     average_matrix = np.zeros([n_bad, n_pixel])
     for i, pix in enumerate(bad_pixels):
         pix_neighbors = geom.neighbors[pix]
+        bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
+                                       assume_unique=True)
+        for bad_neighbor in bad_neighbors:
+            pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
         average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
     for event in events:
         charge = event.data.reconstructed_charge
