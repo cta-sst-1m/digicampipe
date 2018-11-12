@@ -113,6 +113,32 @@ def guess_source_from_path(path):
 
 def add_slow_data(
         data_stream,
+        aux_services=(
+            'DigicamSlowControl',
+            'MasterSST1M',
+            'PDPSlowControl',
+            'SafetyPLC',
+            'DriveSystem',
+        ),
+        basepath=None
+):
+    services = {
+        name: AuxService(name, basepath)
+        for name in aux_services
+    }
+    SlowDataContainer = namedtuple('SlowDataContainer', aux_services)
+    for event_id, event in enumerate(data_stream):
+        tel = event.r0.tels_with_data[0]
+        services_event = {
+            name: service.at(event.r0.tel[tel].local_camera_clock)
+            for (name, service) in services.items()
+        }
+        event.slow_data = SlowDataContainer(**services_event)
+        yield event
+
+
+def add_slow_data_calibration(
+        data_stream,
         aux_services=[
             'DigicamSlowControl',
             'MasterSST1M',
@@ -126,12 +152,10 @@ def add_slow_data(
         name: AuxService(name, basepath)
         for name in aux_services
     }
-
     SlowDataContainer = namedtuple('SlowDataContainer', aux_services)
     for event_id, event in enumerate(data_stream):
-        tel = event.r0.tels_with_data[0]
         services_event = {
-            name: service.at(event.r0.tel[tel].local_camera_clock)
+            name: service.at(event.data.local_time)
             for (name, service) in services.items()
         }
         event.slow_data = SlowDataContainer(**services_event)

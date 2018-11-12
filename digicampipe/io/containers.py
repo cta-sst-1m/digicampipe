@@ -514,3 +514,4 @@ class CalibrationContainer(Container):
     event_type = Field(CameraEventType, 'Event type')
     hillas = Field(HillasParametersContainer, 'Hillas parameters')
     info = CalibrationContainerMeta()
+    slow_data = Field(None, "Slow Data Information")
