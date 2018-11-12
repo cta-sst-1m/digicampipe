@@ -30,6 +30,7 @@ from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
 from scipy.stats import mode
+import fitsio
 
 from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
@@ -71,7 +72,7 @@ def compute(files, max_events, pixel_id, n_samples, ac_levels,
         events = time_method(events)
 
         for event in events:
-            timing_histo.fill(event.data.reconstructed_time, indices=(i, ))
+            timing_histo.fill(event.data.reconstructed_time, indices=i)
 
     if save:
         timing_histo.save(filename)
@@ -106,6 +107,10 @@ def entry():
 
         timing = timing_histo.mode()
         timing = mode(timing, axis=0)[0][0]
+
+        with fitsio.FITS as f:
+
+            f.write([timing], names=['timing'])
 
         np.savez(results_filename, time=timing)
 
