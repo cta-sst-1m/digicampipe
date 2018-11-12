@@ -121,6 +121,8 @@ def test_pipeline_bad_pixels():
             picture_threshold=1,  # unusual value, so events pass cuts
             boundary_threshold=1,  # unusual value, so events pass cuts
             bad_pixels=[0, 1],
+            saturation_threshold=3000,
+            threshold_pulse=0.1,
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
