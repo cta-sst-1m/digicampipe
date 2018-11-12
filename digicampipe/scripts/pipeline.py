@@ -111,7 +111,15 @@ def main(files, max_events, dark_filename, shift, integral_width,
         events = baseline.compute_gain_drop(events, bias_resistance,
                                             cell_capacitance)
         events = peak.find_pulse_with_max(events)
-        events = charge.compute_charge(events, integral_width, shift)
+        events = charge.compute_dynamic_charge(events,
+                                               integral_width=integral_width,
+                                               saturation_threshold=saturation_threshold,
+                                               threshold_pulse=threshold_pulse,
+                                               debug=debug,
+                                               trigger_bin=trigger_bin,
+                                               data_shape=(n_pixels, n_samples),
+                                               pulse_tail=pulse_tail,)
+        # events = charge.compute_charge(events, integral_width, shift)
         events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)

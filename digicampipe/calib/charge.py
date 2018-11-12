@@ -66,7 +66,7 @@ def correct_voltage_drop(events, pde_func, xt_func, gain_func):
 
 
 def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
-                           threshold_pulse=0.1, debug=False, trigger_bin=15,
+                           threshold_pulse=0.1, debug=False,
                            data_shape=(1296, 50), pulse_tail=False,
                            ):
     """
@@ -78,8 +78,6 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
     :param threshold_pulse: relative threshold (of pulse amplitude)
     at which the pulse area is integrated.
     :param debug: Enter the debug mode
-    :param trigger_bin: Sample number where the maximum of the waveform is
-    expected.
     :param data_shape: array shape of the waveforms
     :param pulse_tail: Use or not the tail of the pulse for charge computation
     :return:
@@ -91,13 +89,6 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
     n_pixels, n_samples = data_shape
     samples = np.arange(n_samples)
     samples = np.tile(samples, n_pixels).reshape(data_shape)
-
-    trigger_sample = trigger_bin
-    trigger_bin = (samples == trigger_bin[:, None])
-
-    if isinstance(trigger_sample, int):
-
-        trigger_sample = np.ones(n_pixels, dtype=int) * trigger_sample
 
     if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
         threshold_pulse = np.ones(n_pixels) * threshold_pulse
@@ -114,6 +105,8 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
         adc_samples = event.data.adc_samples
         amplitude = np.max(adc_samples, axis=-1)
 
+        trigger_bin = event.data.pulse_mask
+
         saturated_pulse = amplitude > saturation_threshold
 
         max_arg = np.argmax(trigger_bin, axis=-1)
@@ -121,15 +114,14 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
 
-        charge = np.sum(adc_samples * window, axis=-1)
-
         if np.any(saturated_pulse):
 
             adc = adc_samples[saturated_pulse]
             smp = samples[saturated_pulse]
             threshold = threshold_pulse[saturated_pulse]
+            trigger_sample = max_arg[saturated_pulse]
 
-            start_point = trigger_sample[saturated_pulse] - 3
+            start_point = trigger_sample - 3
             start_bin = (smp < start_point[:, None])
             start_bin = start_bin[:, :-1]
 
@@ -147,11 +139,7 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
 
             window[saturated_pulse, :-1] = win
 
-            temp = adc * window[saturated_pulse]
-            temp = np.sum(temp, axis=-1)
-
-            charge[saturated_pulse] = temp
-
+        charge = np.sum(adc_samples * window, axis=-1)
         event.data.reconstructed_charge = charge
         event.data.reconstructed_amplitude = amplitude
 
