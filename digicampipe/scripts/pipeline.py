@@ -298,11 +298,11 @@ def main(files, max_events, dark_filename, shift, integral_width,
 
         # 2D scan of spike in alpha
         bin_size = 4  # binning in degrees
-        num_steps = 40  # number of binning in the FoV
-        x_fov_start = -400  # limits of the FoV
-        y_fov_start = -400  # limits of the FoV
-        x_fov_end = 400  # limits of the FoV
-        y_fov_end = 400  # limits of the FoV
+        num_steps = 80  # number of binning in the FoV
+        x_fov_start = -500  # limits of the FoV
+        y_fov_start = -500  # limits of the FoV
+        x_fov_end = 500  # limits of the FoV
+        y_fov_end = 500  # limits of the FoV
         mask = (~data['border']) & (~data['burst']) & (
                 data['length']/data['width'] > 1.5) & (
                 data['length']/data['width'] < 10) & (
