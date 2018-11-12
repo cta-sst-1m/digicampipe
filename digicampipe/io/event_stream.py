@@ -139,13 +139,13 @@ def add_slow_data(
 
 def add_slow_data_calibration(
         data_stream,
-        aux_services=[
+        aux_services=(
             'DigicamSlowControl',
             'MasterSST1M',
             'PDPSlowControl',
             'SafetyPLC',
             'DriveSystem',
-        ],
+        ),
         basepath=None
 ):
     services = {
