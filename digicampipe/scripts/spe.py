@@ -281,7 +281,6 @@ def entry():
 
             try:
 
-                fitter.fit(ncall=100)
                 fitter.fit(ncall=ncall)
 
                 params = fitter.parameters
