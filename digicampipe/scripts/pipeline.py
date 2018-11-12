@@ -21,6 +21,12 @@ Options:
                               [default: none]
   --shift=N                   number of bins to shift before integrating
                               [default: 0].
+  --saturation_threshold=N    Threshold in LSB at which the pulse amplitude is
+                              considered as saturated.
+                              [default: 3000]
+  --threshold_pulse=N         A threshold to which the integration of the pulse
+                              is defined for saturated pulses.
+                              [default: 0.1]
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --picture_threshold=N       Tailcut primary cleaning threshold
@@ -67,12 +73,14 @@ class PipelineOutputContainer(HillasParametersContainer):
     miss = Field(float, 'Miss parameter of the shower')
     border = Field(bool, 'Is the event touching the camera borders')
     burst = Field(bool, 'Is the event during a burst')
+    saturated = Field(bool, 'Is any pixel signal saturated')
 
 
 def main(files, max_events, dark_filename, shift, integral_width,
          debug, hillas_filename, parameters_filename, compute, display,
          picture_threshold, boundary_threshold, template_filename,
-         bad_pixels=None, disable_bar=False):
+         saturation_threshold, threshold_pulse,
+         bad_pixels=None, disable_bar=False,):
     if compute:
         with open(parameters_filename) as file:
             calibration_parameters = yaml.load(file)
@@ -111,7 +119,13 @@ def main(files, max_events, dark_filename, shift, integral_width,
         events = baseline.compute_gain_drop(events, bias_resistance,
                                             cell_capacitance)
         events = peak.find_pulse_with_max(events)
-        events = charge.compute_charge(events, integral_width, shift)
+        events = charge.compute_dynamic_charge(events,
+                                               integral_width=integral_width,
+                                               saturation_threshold=saturation_threshold,
+                                               threshold_pulse=threshold_pulse,
+                                               debug=debug,
+                                               pulse_tail=False,)
+        # events = charge.compute_charge(events, integral_width, shift)
         events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
@@ -156,6 +170,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
             data_to_store.event_id = event.event_id
             data_to_store.border = event.data.border
             data_to_store.burst = event.data.burst
+            data_to_store.saturated = event.data.saturated
 
             for key, val in event.hillas.items():
                 data_to_store[key] = val
@@ -361,6 +376,8 @@ def entry():
     parameters_filename = args['--parameters']
     template_filename = args['--template']
     disable_bar = args['--disable_bar']
+    saturation_threshold = float(args['--saturation_threshold'])
+    threshold_pulse = float(args['--threshold_pulse'])
     main(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
@@ -376,6 +393,8 @@ def entry():
          template_filename=template_filename,
          bad_pixels=bad_pixels,
          disable_bar=disable_bar,
+         threshold_pulse=threshold_pulse,
+         saturation_threshold=saturation_threshold,
          )
 
 

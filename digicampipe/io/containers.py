@@ -480,6 +480,7 @@ class CalibrationEventContainer(Container):
     border = Field(bool, 'is the event after cleaning touchin the camera '
                          'borders')
     burst = Field(bool, 'is the event during a burst')
+    saturated = Field(bool, 'is any pixel signal saturated')
 
     def plot(self, pixel_id):
         plt.figure()
