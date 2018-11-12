@@ -140,6 +140,7 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
             window[saturated_pulse, :-1] = win
 
         charge = np.sum(adc_samples * window, axis=-1)
+
         event.data.reconstructed_charge = charge
         event.data.reconstructed_amplitude = amplitude
 
@@ -327,6 +328,6 @@ def interpolate_bad_pixels(events, geom, bad_pixels):
         average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
     for event in events:
         charge = event.data.reconstructed_charge
-        charge[bad_pixels, :] = average_matrix.dot(charge)
+        charge[bad_pixels] = average_matrix.dot(charge)
         event.data.reconstructed_charge = charge
         yield event
