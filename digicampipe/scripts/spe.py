@@ -258,8 +258,8 @@ def entry():
                 rate = compute_dark_rate(number_of_zeros,
                                          n_entries,
                                          window_length)
-                results['electronic_noise'][i] = fitter.parameters['sigma_e']
-                results['dark_count_rate'][i] = rate
+                results[i, 'electronic_noise'] = fitter.parameters['sigma_e']
+                results[i, 'dark_count_rate'] = rate
 
                 if debug:
                     fitter.draw()
@@ -292,8 +292,8 @@ def entry():
                 crosstalk = (n_entries - params['a_1']) / n_entries
                 gain = params['gain']
 
-                results['crosstalk'][i] = crosstalk
-                results['gain'][i] = gain
+                results[i, 'crosstalk'] = crosstalk
+                results[i, 'gain'] = gain
 
                 if debug:
                     fitter.draw()
