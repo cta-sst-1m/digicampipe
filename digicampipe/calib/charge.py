@@ -312,3 +312,21 @@ def compute_sample_photo_electron(events, gain_amplitude):
         sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop)
         event.data.sample_pe = sample_pe
         yield event
+
+
+def interpolate_bad_pixels(events, geom, bad_pixels):
+    n_bad = len(bad_pixels)
+    n_pixel = len(geom.neighbors)
+    average_matrix = np.zeros([n_bad, n_pixel])
+    for i, pix in enumerate(bad_pixels):
+        pix_neighbors = geom.neighbors[pix]
+        bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
+                                       assume_unique=True)
+        for bad_neighbor in bad_neighbors:
+            pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
+        average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
+    for event in events:
+        charge = event.data.reconstructed_charge
+        charge[bad_pixels, :] = average_matrix.dot(charge)
+        event.data.reconstructed_charge = charge
+        yield event
