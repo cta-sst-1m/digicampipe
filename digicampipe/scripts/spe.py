@@ -41,6 +41,8 @@ import numpy as np
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
+import pandas as pd
+import fitsio
 
 from digicampipe.calib.baseline import fill_baseline, subtract_baseline
 from digicampipe.calib.charge import compute_charge
@@ -235,10 +237,11 @@ def entry():
 
     if args['--fit']:
 
-        dark_count_rate = np.zeros(n_pixels) * np.nan
-        electronic_noise = np.zeros(n_pixels) * np.nan
-        crosstalk = np.zeros(n_pixels) * np.nan
-        gain = np.zeros(n_pixels) * np.nan
+        columns = ['dark_count_rate', 'electronic_noise', 'crosstalk', 'gain',
+                   'pixels_id']
+        data = np.zeros((n_pixels, len(columns))) * np.nan
+        results = pd.DataFrame(data=data, columns=columns)
+        results['pixel_id'] = pixel_id
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
@@ -255,9 +258,9 @@ def entry():
                 rate = compute_dark_rate(number_of_zeros,
                                          n_entries,
                                          window_length)
-                electronic_noise[i] = fitter.parameters['sigma_e']
+                results['electronic_noise'][i] = fitter.parameters['sigma_e']
+                results['dark_count_rate'][i] = rate
 
-                dark_count_rate[i] = rate
                 if debug:
                     fitter.draw()
                     fitter.draw_init(x_label='[LSB]')
@@ -269,9 +272,6 @@ def entry():
                 print('Could not compute dark count rate'
                       ' in pixel {}'.format(pixel))
                 print(e)
-
-        np.savez(results_filename, dcr=dark_count_rate,
-                 sigma_e=electronic_noise, pixel_id=pixel_id)
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
@@ -289,8 +289,11 @@ def entry():
                 n_entries += params['a_2']
                 n_entries += params['a_3']
                 n_entries += params['a_4']
-                crosstalk[i] = (n_entries - params['a_1']) / n_entries
-                gain[i] = params['gain']
+                crosstalk = (n_entries - params['a_1']) / n_entries
+                gain = params['gain']
+
+                results['crosstalk'][i] = crosstalk
+                results['gain'][i] = gain
 
                 if debug:
                     fitter.draw()
@@ -304,10 +307,9 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-        data = dict(np.load(results_filename))
-        data['crosstalk'] = crosstalk
-        data['gain'] = gain
-        np.savez(results_filename, **data)
+        with fitsio.FITS(results_filename, 'rw') as f:
+
+            f.write(results.to_records(index=False))
 
     save_figure = convert_text(args['--save_figures'])
     if save_figure is not None:
