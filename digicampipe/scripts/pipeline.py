@@ -391,6 +391,8 @@ def entry():
          template_filename=template_filename,
          bad_pixels=bad_pixels,
          disable_bar=disable_bar,
+         threshold_pulse=threshold_pulse,
+         saturation_threshold=saturation_threshold,
          )
 
 
