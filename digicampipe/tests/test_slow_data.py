@@ -51,7 +51,7 @@ def test_add_slow_data():
 
 
 def test_add_slow_data_calibration():
-    data_stream = event_stream(example_file_path, max_events=100)
+    data_stream = calibration_event_stream(example_file_path, max_events=100)
     data_stream = add_slow_data_calibration(data_stream, basepath=aux_basepath)
     ts_slow = []
     ts_data = []
@@ -63,3 +63,8 @@ def test_add_slow_data_calibration():
     ts_data = np.array(ts_data)
     diff = ts_data - ts_slow
     assert (diff <= 1.1).all()
+
+
+if __name__ == '__main__':
+    test_add_slow_data_calibration()
+    test_add_slow_data()

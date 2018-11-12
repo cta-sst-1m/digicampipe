@@ -5,7 +5,7 @@ import numpy as np
 from astropy.io import fits
 from pkg_resources import resource_filename
 
-from digicampipe.scripts.data_quality import main as data_quality
+from digicampipe.scripts.data_quality import data_quality
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args
 
@@ -59,12 +59,14 @@ template_filename = resource_filename(
     )
 )
 
-expected_columns = ['time', 'baseline', 'trigger_rate', 'shower_rate',
-                    'nsb_rate', 'burst']
+aux_basepath = resource_filename('digicampipe', 'tests/resources/')
+
+expected_columns = [
+    'time', 'baseline', 'trigger_rate', 'shower_rate', 'nsb_rate', 'burst',
+    'current_position_az', 'current_position_el']
 
 
 def test_data_quality():
-    files = [science200_file_path]
     time_step = 1e8  # in ns, average history plot over 100 ms
     with tempfile.TemporaryDirectory() as tmpdirname:
         fits_filename = os.path.join(tmpdirname, 'ouptput.fits')
@@ -82,7 +84,7 @@ def test_data_quality():
             disable_bar=True
         )
         data_quality(
-            files=files,
+            files=[science200_file_path],
             dark_filename=dark_filename,
             time_step=time_step,
             fits_filename=fits_filename,
@@ -93,8 +95,10 @@ def test_data_quality():
             nsb_plot_filename=nsb_plot_filename,
             parameters_filename=parameters_filename,
             template_filename=template_filename,
+            aux_basepath=aux_basepath,
             threshold_sample_pe=20,
-            disable_bar=True
+            disable_bar=True,
+            aux_services=['DriveSystem']
         )
         hdul = fits.open(fits_filename)
         assert np.all(np.diff(hdul[1].data['time']) > 0)
