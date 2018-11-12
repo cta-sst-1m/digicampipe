@@ -86,6 +86,8 @@ def test_pipeline():
             display=False,
             picture_threshold=30,
             boundary_threshold=15,
+            saturation_threshold=3000,
+            threshold_pulse=0.1,
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]

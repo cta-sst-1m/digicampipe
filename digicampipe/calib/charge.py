@@ -108,13 +108,15 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
         trigger_bin = event.data.pulse_mask
 
         saturated_pulse = amplitude > saturation_threshold
+        saturated = np.any(saturated_pulse)
+        event.data.saturated = saturated
 
         max_arg = np.argmax(trigger_bin, axis=-1)
         start_bin = (samples <= (max_arg[:, None] - integral_width / 2))
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
 
-        if np.any(saturated_pulse):
+        if saturated:
 
             adc = adc_samples[saturated_pulse]
             smp = samples[saturated_pulse]

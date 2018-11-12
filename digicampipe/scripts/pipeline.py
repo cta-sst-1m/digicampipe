@@ -73,6 +73,7 @@ class PipelineOutputContainer(HillasParametersContainer):
     miss = Field(float, 'Miss parameter of the shower')
     border = Field(bool, 'Is the event touching the camera borders')
     burst = Field(bool, 'Is the event during a burst')
+    saturated = Field(bool, 'Is any pixel signal saturated')
 
 
 def main(files, max_events, dark_filename, shift, integral_width,
@@ -169,6 +170,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
             data_to_store.event_id = event.event_id
             data_to_store.border = event.data.border
             data_to_store.burst = event.data.burst
+            data_to_store.saturated = event.data.saturated
 
             for key, val in event.hillas.items():
                 data_to_store[key] = val
