@@ -116,9 +116,8 @@ def main(files, max_events, dark_filename, shift, integral_width,
                                                saturation_threshold=saturation_threshold,
                                                threshold_pulse=threshold_pulse,
                                                debug=debug,
-                                               trigger_bin=trigger_bin,
                                                data_shape=(n_pixels, n_samples),
-                                               pulse_tail=pulse_tail,)
+                                               pulse_tail=False,)
         # events = charge.compute_charge(events, integral_width, shift)
         events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
         events = charge.compute_photo_electron(events, gains=gain)

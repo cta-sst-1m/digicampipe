@@ -84,23 +84,25 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
     """
 
     assert threshold_pulse <= 1
-    assert len(data_shape) == 2
-
-    n_pixels, n_samples = data_shape
-    samples = np.arange(n_samples)
-    samples = np.tile(samples, n_pixels).reshape(data_shape)
-
-    if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
-        threshold_pulse = np.ones(n_pixels) * threshold_pulse
-
-    if isinstance(saturation_threshold, float) or \
-            isinstance(saturation_threshold, int):
-        saturation_threshold = np.ones(n_pixels) * saturation_threshold
-
-    threshold_pulse = threshold_pulse * saturation_threshold
-    threshold_pulse = threshold_pulse[:, None]
 
     for count, event in enumerate(events):
+
+        if count == 0:
+
+            n_pixels, n_samples = event.data.adc_samples.shape
+            samples = np.arange(n_samples)
+            samples = np.tile(samples, n_pixels).reshape(data_shape)
+
+            if isinstance(threshold_pulse, float) or isinstance(threshold_pulse,
+                                                                int):
+                threshold_pulse = np.ones(n_pixels) * threshold_pulse
+
+            if isinstance(saturation_threshold, float) or \
+                    isinstance(saturation_threshold, int):
+                saturation_threshold = np.ones(n_pixels) * saturation_threshold
+
+            threshold_pulse = threshold_pulse * saturation_threshold
+            threshold_pulse = threshold_pulse[:, None]
 
         adc_samples = event.data.adc_samples
         amplitude = np.max(adc_samples, axis=-1)
