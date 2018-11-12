@@ -17,7 +17,7 @@ Options:
   -f --fit                    Fit the timing histo.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  -p --pixels=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the OUTPUT folder
   --n_samples=N               Number of samples per waveform
 """
@@ -84,7 +84,7 @@ def entry():
     files = args['<INPUT>']
 
     max_events = convert_int(args['--max_events'])
-    pixel_id = convert_pixel_args(args['--pixel'])
+    pixel_id = convert_pixel_args(args['--pixels'])
     n_samples = int(args['--n_samples'])
     timing_histo_filename = args['--timing_histo_filename']
     ac_levels = convert_list_int(args['--ac_levels'])
