@@ -66,8 +66,7 @@ def correct_voltage_drop(events, pde_func, xt_func, gain_func):
 
 
 def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
-                           threshold_pulse=0.1, debug=False,
-                           data_shape=(1296, 50), pulse_tail=False,
+                           threshold_pulse=0.1, debug=False,  pulse_tail=False,
                            ):
     """
     :param events: a stream of events
@@ -78,7 +77,6 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
     :param threshold_pulse: relative threshold (of pulse amplitude)
     at which the pulse area is integrated.
     :param debug: Enter the debug mode
-    :param data_shape: array shape of the waveforms
     :param pulse_tail: Use or not the tail of the pulse for charge computation
     :return:
     """
@@ -91,7 +89,7 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
 
             n_pixels, n_samples = event.data.adc_samples.shape
             samples = np.arange(n_samples)
-            samples = np.tile(samples, n_pixels).reshape(data_shape)
+            samples = np.tile(samples, n_pixels).reshape((n_pixels, n_samples))
 
             if isinstance(threshold_pulse, float) or isinstance(threshold_pulse,
                                                                 int):
