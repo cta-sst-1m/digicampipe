@@ -242,9 +242,7 @@ def compute(files, max_events, pixel_id, n_samples, timing_filename,
 
     with fitsio.FITS(timing_filename, 'r') as f:
 
-        pulse_indices = f['timing'].read() // 4
-
-    print(pulse_indices)
+        pulse_indices = f[1]['timing'].read() // 4
 
     amplitude_histo, charge_histo = mpe.compute(
         files,
@@ -356,8 +354,6 @@ def entry():
 
     if args['--fit']:
 
-        charge_histo = Histogram1D.load(charge_histo_filename)
-
         param_names = describe(FMPEFitter.pdf)[2:]
         param_error_names = [key + '_error' for key in param_names]
         columns = param_names + param_error_names
@@ -368,7 +364,8 @@ def entry():
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
-            histo = charge_histo[i]
+
+            histo = Histogram1D.load(charge_histo_filename, rows=i)
 
             try:
 
