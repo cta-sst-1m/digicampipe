@@ -246,18 +246,17 @@ def entry():
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
             histo = Histogram1D.load(max_histo_filename, rows=i)
-            fitter = MaxHistoFitter(histo, estimated_gain, throw_nan=True)
 
             try:
-                fitter.fit(ncall=100)
+                fitter = MaxHistoFitter(histo, estimated_gain, throw_nan=True)
                 fitter.fit(ncall=ncall)
 
                 n_entries = histo.data.sum()
                 number_of_zeros = fitter.parameters['a_0']
                 window_length = 4 * n_samples
                 rate = compute_dark_rate(number_of_zeros,
-                                         n_entries,
-                                         window_length)
+                                          n_entries,
+                                          window_length)
                 results[i, 'electronic_noise'] = fitter.parameters['sigma_e']
                 results[i, 'dark_count_rate'] = rate
 
@@ -277,12 +276,11 @@ def entry():
                              desc='Pixel'):
 
             histo = Histogram1D.load(charge_histo_filename, rows=i)
-            fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
 
             try:
 
+                fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
                 fitter.fit(ncall=ncall)
-
                 params = fitter.parameters
                 n_entries = params['a_1']
                 n_entries += params['a_2']
