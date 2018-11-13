@@ -62,6 +62,7 @@ setup(
             'tests/resources/*',
             'tests/resources/stars_on_lid/*',
             'tests/resources/digicamtoy/*',
+            'tests/resources/simtel/*',
         ],
     },
     entry_points={
