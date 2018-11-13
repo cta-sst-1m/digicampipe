@@ -99,6 +99,7 @@ def calibration_event_stream(path,
         container.data.local_time = r0_event.local_camera_clock
         container.data.gps_time = r0_event.gps_time
         container.event_id = r0_event.camera_event_number
+        container.mc = event.mc
         yield container
 
 
