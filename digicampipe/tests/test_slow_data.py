@@ -57,7 +57,7 @@ def test_add_slow_data_calibration():
     ts_data = []
     for event in data_stream:
         ts_slow.append(event.slow_data.DriveSystem.timestamp * 1e-3)
-        ts_data.append(event.local_time * 1e-9)
+        ts_data.append(event.data.local_time * 1e-9)
     ts_slow = np.array(ts_slow)
     ts_data = np.array(ts_data)
     diff = ts_data - ts_slow
