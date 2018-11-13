@@ -73,7 +73,7 @@ def hessio_get_list_event_ids(url, max_events=None):
 
 def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
-                        use_event_id=False, disable_bar=False):
+                        use_event_id=False, event_id=None, disable_bar=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
 
@@ -95,6 +95,11 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
         of index
     disable_bar : Unused, for compatibility with other readers
     """
+
+    if event_id is not None:
+
+        raise ValueError('Event id feature not implemented yet! \n'
+                         'Use event_id=None')
 
     with open_hessio(url) as pyhessio_file:
 
