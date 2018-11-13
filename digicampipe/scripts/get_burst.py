@@ -247,7 +247,7 @@ def entry():
     merge_sec = float(args['--merge_sec'])
     plot_baseline = convert_text(args['--plot_baseline'])
     video_prefix = convert_text(args['--video_prefix'])
-    disable_bar = convert_text(args['--disable_bar'])
+    disable_bar = args['--disable_bar']
     get_burst(files, plot_baseline, n_previous_events, threshold_lsb, output,
           expand, merge_sec, video_prefix, disable_bar)
 
