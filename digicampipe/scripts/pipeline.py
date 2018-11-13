@@ -14,7 +14,9 @@ Options:
                               the dark analysis
   -v --debug                  Enter the debug mode.
   -c --compute
-  -d --display
+  -d --display=PATH           Create the plots and put them in the specified
+                              path. If "none", the plot are not produced.
+                              [Default=none]
   -p --bad_pixels=LIST        Give a list of bad pixel IDs.
                               If "none", the bad pixels will be deduced from
                               the parameter file specified with --parameters.
@@ -57,7 +59,8 @@ from digicampipe.calib import baseline, peak, charge, cleaning, image, tagging
 from digicampipe.calib import filters
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_int, convert_list_int
+from digicampipe.utils.docopt import convert_int, convert_list_int, \
+    convert_text
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
 from digicampipe.image.hillas import compute_alpha, compute_miss, \
@@ -178,7 +181,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
             output_file.add_container(data_to_store)
         output_file.close()
 
-    if display:
+    if display is not None:
 
         data = Table.read(hillas_filename, format='fits')
         data = data.to_pandas()
@@ -228,7 +231,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
             if subplot == 1:
                 plt.legend(['2 < l/w < 10', 'l/w cut'])
         plt.tight_layout()
-        plt.savefig('hillas.png')
+        plt.savefig(os.path.join(display, 'hillas.png'))
         plt.close()
 
         # 2d histogram of shower centers
@@ -269,7 +272,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
         cb.set_label('Number of events')
         plt.axis('equal')
         plt.tight_layout()
-        plt.savefig('shower_center_map.png')
+        plt.savefig(os.path.join(display, 'shower_center_map.png'))
         plt.close(fig)
 
         # correlation plot
@@ -308,7 +311,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
                     cb = plt.colorbar()
                     cb.set_label('Number of events')
             plt.tight_layout()
-            plt.savefig('correlation_{}.png'.format(title.replace(' ', '_')))
+            plt.savefig(os.path.join(display, 'correlation_{}.png'.format(title.replace(' ', '_'))))
         plt.close(fig)
 
         # 2D scan of spike in alpha
@@ -352,7 +355,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
         plt.xlabel('FOV X [mm]')
         cbar = fig.colorbar(pcm)
         cbar.set_label('N of events')
-        plt.savefig('2d_alpha_scan.png')
+        plt.savefig(os.path.join(display, '2d_alpha_scan.png'))
 
 
 def entry():
@@ -362,7 +365,7 @@ def entry():
     dark_filename = args['--dark']
     output = args['--output']
     compute = args['--compute']
-    display = args['--display']
+    display_path = convert_text(args['--display'])
     output_path = os.path.dirname(output)
     if output_path != "" and not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
@@ -387,7 +390,7 @@ def entry():
          parameters_filename=parameters_filename,
          hillas_filename=output,
          compute=compute,
-         display=display,
+         display=display_path,
          picture_threshold=picture_threshold,
          boundary_threshold=boundary_threshold,
          template_filename=template_filename,
