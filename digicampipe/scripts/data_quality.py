@@ -37,6 +37,7 @@ Options:
                                 [Default: none]
   --template=FILE               Pulse template file path
   --threshold_sample_pe=INT     threshold used in the shower rate estimation.
+                                [Default: 20.]
 """
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -168,7 +169,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         plt.ylabel('rate [Hz]')
         plt.legend({'trigger rate', 'shower rate'})
         xlim = plt.xlim()
-        plt.xlim(xlim[0] - 1, xlim[1] + 1)
+        plt.xlim(xlim[0] - 1e-3, xlim[1] + 1e-3)  # extra min on the sides
         if rate_plot_filename == "show":
             plt.show()
         else:
@@ -188,7 +189,7 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         plt.plot(data_burst['baseline'], '.', label='burst', ms=2)
         plt.ylabel('Baseline [LSB]')
         xlim = plt.xlim()
-        plt.xlim(xlim[0] - 1, xlim[1] + 1)
+        plt.xlim(xlim[0] - 1e-3, xlim[1] + 1e-3)  # extra min on the sides
         if rate_plot_filename == "show":
             plt.show()
         else:

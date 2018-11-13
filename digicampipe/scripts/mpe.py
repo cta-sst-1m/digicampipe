@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''
+"""
 Do the Multiple Photoelectron anaylsis
 
 Usage:
@@ -8,7 +8,10 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse.
-  -o OUTPUT --output=OUTPUT   Folder where to store the results.
+  --fit_output=OUTPUT         File where to store the fit results.
+                              [default: ./fit_results.npz]
+  --compute_output=OUTPUT     File where to store the compute results.
+                              [default: ./charge_histo_ac_level.pk]
   -c --compute                Compute the data.
   -f --fit                    Fit.
   --ncall=N                   ncall for fit [default: 10000].
@@ -23,9 +26,13 @@ Options:
   --save_figures              Save the plots to the OUTPUT folder
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
+  --adc_min=N                 Lowest LSB value for the histogram
+                              [default: -10]
+  --adc_max=N                 Highest LSB value for the histogram
+                              [default: 2000]
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
   --timing=<TIMING_HISTO>     Timing histogram
-'''
+"""
 import os
 
 import matplotlib.pyplot as plt
@@ -35,14 +42,15 @@ from histogram.fit import HistogramFitter
 from histogram.histogram import Histogram1D
 from iminuit import describe
 from tqdm import tqdm
+from astropy.table import Table
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline
 from digicampipe.calib.charge import compute_charge, compute_amplitude
 from digicampipe.calib.peak import fill_pulse_indices
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_max_events_args, \
-    convert_pixel_args, convert_dac_level
+from digicampipe.utils.docopt import convert_int, \
+    convert_pixel_args, convert_list_int
 from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
     generalized_poisson
 
@@ -209,6 +217,7 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
             bin_edges=np.arange(-40, 4096, 1))
 
         for event in events:
+
             charge_histo.fill(event.data.reconstructed_charge)
             amplitude_histo.fill(event.data.reconstructed_amplitude)
 
@@ -224,35 +233,29 @@ def entry():
     files = args['<INPUT>']
     debug = args['--debug']
 
-    max_events = convert_max_events_args(args['--max_events'])
-    output_path = args['--output']
+    max_events = convert_int(args['--max_events'])
+    results_filename = args['--fit_output']
+    dir_output = os.path.dirname(results_filename)
 
-    if not os.path.exists(output_path):
+    if not os.path.exists(dir_output):
         raise IOError('Path {} for output '
-                      'does not exists \n'.format(output_path))
+                      'does not exists \n'.format(dir_output))
 
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
     ncall = int(args['--ncall'])
-    ac_levels = convert_dac_level(args['--ac_levels'])
+    ac_levels = convert_list_int(args['--ac_levels'])
     n_pixels = len(pixel_ids)
     n_ac_levels = len(ac_levels)
+    adc_min = int(args['--adc_min'])
+    adc_max = int(args['--adc_max'])
 
     timing_filename = args['--timing']
     timing = np.load(timing_filename)['time']
 
-    results_filename = 'mpe_fit_results.npz'
-    results_filename = os.path.join(output_path, results_filename)
-
-    charge_histo_filename = 'charge_histo_ac_level.pk'
-    amplitude_histo_filename = 'amplitude_histo_ac_level.pk'
-    amplitude_histo_filename = os.path.join(output_path,
-                                            amplitude_histo_filename)
-    charge_histo_filename = os.path.join(output_path,
-                                         charge_histo_filename)
-
+    charge_histo_filename = args['--compute_output']
     fmpe_results_filename = args['--gain']
 
     if args['--compute']:
@@ -264,22 +267,13 @@ def entry():
         time = np.zeros((n_ac_levels, n_pixels))
 
         charge_histo = Histogram1D(
-            bin_edges=np.arange(- 40 * integral_width,
-                                2000, bin_width),
-            data_shape=(n_ac_levels, n_pixels,))
-
-        amplitude_histo = Histogram1D(
-            bin_edges=np.arange(- 40,
-                                500, bin_width),
+            bin_edges=np.arange(adc_min * integral_width,
+                                adc_max * integral_width, bin_width),
             data_shape=(n_ac_levels, n_pixels,))
 
         if os.path.exists(charge_histo_filename):
             raise IOError(
                 'File {} already exists'.format(charge_histo_filename))
-
-        if os.path.exists(amplitude_histo_filename):
-            raise IOError(
-                'File {} already exists'.format(amplitude_histo_filename))
 
         for i, (file, ac_level) in tqdm(enumerate(zip(files, ac_levels)),
                                         total=n_ac_levels, desc='DAC level',
@@ -300,16 +294,14 @@ def entry():
 
             for event in events:
                 charge_histo.fill(event.data.reconstructed_charge,
-                                  indices=(i,))
-                amplitude_histo.fill(event.data.reconstructed_amplitude,
-                                     indices=(i,))
+                                  indices=i)
 
-        charge_histo.save(charge_histo_filename)
-        amplitude_histo.save(amplitude_histo_filename)
+        charge_histo.save(charge_histo_filename, )
 
     if args['--fit']:
 
-        input_parameters = dict(np.load(fmpe_results_filename))
+        input_parameters = Table.read(fmpe_results_filename, format='fits')
+        input_parameters = input_parameters.to_pandas()
 
         gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
         sigma_e = np.zeros((n_ac_levels, n_pixels)) * np.nan
@@ -327,13 +319,15 @@ def entry():
         mu_xt_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
         amplitude_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
+        mean = np.zeros((n_ac_levels, n_pixels)) * np.nan
+        std = np.zeros((n_ac_levels, n_pixels)) * np.nan
+
         chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
         ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
 
         ac_limit = [np.inf] * n_pixels
 
         charge_histo = Histogram1D.load(charge_histo_filename)
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
 
         for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
                                 desc='DAC level', leave=False):
@@ -344,7 +338,10 @@ def entry():
 
                 histo = charge_histo[i, pixel_id]
 
-                if histo.data[-1] > 0 or histo.data.sum() == 0:
+                mean[i, j] = histo.mean()
+                std[i, j] = histo.std()
+
+                if histo.overflow > 0 or histo.data.sum() == 0:
                     continue
 
                 fit_params_names = describe(mpe_distribution_general)
@@ -435,18 +432,18 @@ def entry():
                  ac_levels=ac_levels,
                  amplitude=amplitude,
                  amplitude_error=amplitude_error,
+                 mean=mean,
+                 std=std,
                  )
 
     if args['--save_figures']:
+
         pass
 
     if args['--display']:
+
         charge_histo = Histogram1D.load(charge_histo_filename)
         charge_histo.draw(index=(0, 0), log=False, legend=False)
-
-        amplitude_histo = Histogram1D.load(amplitude_histo_filename)
-        amplitude_histo.draw(index=(0, 0), log=False, legend=False)
-        plt.show()
 
         pass
 

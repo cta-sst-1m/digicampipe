@@ -1,6 +1,7 @@
 name: digicampipe
 channels:
 - astropy
+- conda-forge
 - cta-observatory
 dependencies:
 - aenum
@@ -9,9 +10,11 @@ dependencies:
 - ctapipe-extra=0.2.*
 - cython
 - docopt
+- fitsio
 - h5py
 - hdf5
 - iminuit
+- jupyter
 - matplotlib
 - numba
 - numpy
@@ -41,5 +44,5 @@ dependencies:
   - git+https://github.com/cta-observatory/ctapipe.git
   - git+https://github.com/cta-sst-1m/CTS.git
   - git+https://github.com/dstndstn/astrometry.net.git
-  - https://github.com/cta-sst-1m/histogram/archive/0.3.2.tar.gz
+  - https://github.com/cta-sst-1m/histogram/archive/0.6.tar.gz
   - git+https://github.com/uvemas/ViTables.git
