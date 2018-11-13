@@ -21,6 +21,7 @@ EVENT_ID = 1
 EVENTS_IN_EXAMPLE_FILE = 1
 ENERGY = 10 * u.TeV
 
+
 def test_and_benchmark_event_source(benchmark):
     @benchmark
     def loop():
@@ -62,7 +63,6 @@ def test_calibration_event_stream():
         break
     assert event_id == EVENT_ID
     assert energy == ENERGY
-
 
 
 if __name__ == '__main__':
