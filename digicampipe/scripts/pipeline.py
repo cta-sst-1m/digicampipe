@@ -383,7 +383,7 @@ def entry():
     disable_bar = args['--disable_bar']
     saturation_threshold = float(args['--saturation_threshold'])
     threshold_pulse = float(args['--threshold_pulse'])
-    main(files=files,
+    main_pipeline(files=files,
          max_events=max_events,
          dark_filename=dark_filename,
          shift=shift,
