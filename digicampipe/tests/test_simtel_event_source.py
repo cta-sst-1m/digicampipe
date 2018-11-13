@@ -54,6 +54,15 @@ def test_event_stream():
     assert energy == ENERGY
 
 
+def test_event_stream_with_event_id_none():
+    events = event_stream([example_file_path],
+                          camera_geometry=DigiCam.geometry,
+                          event_id=None)
+    for _ in events:
+
+        pass
+
+
 def test_calibration_event_stream():
     events = calibration_event_stream([example_file_path],
                                       camera_geometry=DigiCam.geometry)
