@@ -5,6 +5,7 @@ Components to read HESSIO data.
 This requires the hessio python library to be installed
 """
 import logging
+import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -14,6 +15,7 @@ from ctapipe.instrument import TelescopeDescription, SubarrayDescription
 
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.containers import DataContainer
+
 
 logger = logging.getLogger(__name__)
 
@@ -205,8 +207,15 @@ def hessio_event_source(url, camera=DigiCam, max_events=None,
                         pyhessio_file.get_adc_sum(tel_id)[..., None]
                 data.r0.tel[tel_id].adc_sums = \
                     pyhessio_file.get_adc_sum(tel_id)
-                data.mc.tel[tel_id].reference_pulse_shape = \
-                    pyhessio_file.get_ref_shapes(tel_id)
+
+                try:
+
+                    data.mc.tel[tel_id].reference_pulse_shape = \
+                        pyhessio_file.get_ref_shapes(tel_id)
+
+                except HessioGeneralError:
+
+                    pass
 
                 nsamples = pyhessio_file.get_event_num_samples(tel_id)
                 if nsamples <= 0:
@@ -231,7 +240,7 @@ def hessio_event_source(url, camera=DigiCam, max_events=None,
                     pyhessio_file.get_altitude_cor(tel_id)
                 pedestal = data.mc.tel[tel_id].pedestal
                 baseline = pedestal / data.r0.tel[tel_id].adc_samples.shape[1]
-                data.r0.tel[tel_id].digicam_baseline = baseline
+                data.r0.tel[tel_id].digicam_baseline = np.squeeze(baseline)
 
             yield data
             counter += 1

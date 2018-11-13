@@ -12,9 +12,20 @@ example_file_path = pkg_resources.resource_filename(
         'tests',
         'resources',
         'simtel',
-        'simtel_test_file.simtel.gz'
+        '1_triggered_events_10_TeV.simtel.gz'
     )
 )
+
+example_file_path_1 = pkg_resources.resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'simtel',
+        'file-pedestal.simtel.gz'
+    )
+)
+
 
 EVENT_ID = 1
 EVENTS_IN_EXAMPLE_FILE = 1
@@ -55,6 +66,13 @@ def test_event_stream():
 def test_event_stream_with_event_id_none():
     events = event_stream([example_file_path],
                           event_id=None)
+    for _ in events:
+
+        pass
+
+
+def test_event_stream_pedestal_file():
+    events = event_stream([example_file_path_1])
     for _ in events:
 
         pass
