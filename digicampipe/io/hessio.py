@@ -185,6 +185,8 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                 data.mc.tel[tel_id].pedestal \
                     = pyhessio_file.get_pedestal(tel_id)
 
+                data.r0.tel[tel_id].camera_event_number = event_id
+
                 data.r0.tel[tel_id].adc_samples = \
                     pyhessio_file.get_adc_sample(tel_id)
 
@@ -222,6 +224,10 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                     pyhessio_file.get_azimuth_cor(tel_id)
                 data.mc.tel[tel_id].altitude_cor = \
                     pyhessio_file.get_altitude_cor(tel_id)
+                pedestal = data.mc.tel[tel_id].pedestal
+                baseline = pedestal / data.r0.tel[tel_id].adc_samples.shape[1]
+                data.r0.tel[tel_id].digicam_baseline = baseline
+
             yield data
             counter += 1
 

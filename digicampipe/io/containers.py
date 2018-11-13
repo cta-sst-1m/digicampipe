@@ -513,3 +513,4 @@ class CalibrationContainer(Container):
     event_type = Field(CameraEventType, 'Event type')
     hillas = Field(HillasParametersContainer, 'Hillas parameters')
     info = CalibrationContainerMeta()
+    mc = Field(MCEventContainer(), "Monte-Carlo data")
