@@ -22,6 +22,19 @@ Options:
                                 offset function of the charge. Set to
                                 "none" to not create the plot. Set to "show" to
                                 show the plot instead. [Default: none]
+  --camera_resolution=PATH      Path to the image created showing the time
+                                resolution on the camera. Set to
+                                "none" to not create the plot. Set to "show" to
+                                show the plot instead. [Default: none]
+  --camera_offset=PATH          Path to the image created showing the time
+                                offset  on the camera. Set to
+                                "none" to not create the plot. Set to "show" to
+                                show the plot instead. [Default: none]
+  --highlight_pixels=LIST       List of pixel to highlight in camera-??? plots.
+                                If "none", no pixel are highlighted
+                                [default: none]
+  --n_pe_camera=INT             Number of p.e. to interpolate the result shown
+                                in camera-??? plots. [default: 100]
   --legend=TEXT                 Legend for the plots.
                                 [default: camera average]
   --plot_rms_difference=PATH    Path to the image created showing the time
@@ -41,7 +54,8 @@ from tempfile import TemporaryDirectory
 from matplotlib import pyplot as plt
 from ctapipe.visualization import CameraDisplay
 
-from digicampipe.utils.docopt import convert_float, convert_text
+from digicampipe.utils.docopt import convert_float, convert_text, \
+    convert_list_int
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.instrument.light_source import ACLED
 
@@ -150,9 +164,7 @@ def plot_zone(x, y, bins, ax, label, xscale="log", yscale="linear"):
     # ax2.xaxis.set_label_position('top')
 
 
-def plot_resol(data_file, legend, ax=None):
-    mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
-        load_data(data_file)
+def plot_resol(true_pe, std_t_all, legend, ax=None):
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
@@ -172,9 +184,7 @@ def plot_resol(data_file, legend, ax=None):
     plt.tight_layout()
 
 
-def plot_offset(data_file, legend, ax=None):
-    mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
-        load_data(data_file)
+def plot_offset(true_pe, mean_t_all, legend, ax=None):
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     mean_t_100pe = np.array(
@@ -192,15 +202,48 @@ def plot_offset(data_file, legend, ax=None):
     ax.set_ylabel('time offset [ns]')
 
 
-def plot_all(data_file, legend='camera average'):
+def plot_offset_camera(true_pe, mean_t_all, n_pe=100, ax=None,
+             highlight_pixels=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+    mean_t_100pe = np.array(
+        [np.interp(n_pe, true_pe[:, i], mean_t_all[:, i]) for i in range(1296)]
+    )
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+    display = CameraDisplay(
+        DigiCam.geometry, ax=ax,
+        title='timing offset (at {} p.e) [ns]'.format(n_pe)
+    )
+    display.image = mean_t_100pe - np.nanmean(mean_t_100pe)
+    display.set_limits_minmax(-2, 2)
+    if highlight_pixels is not None:
+        display.highlight_pixels(highlight_pixels, color='r', linewidth=2)
+    display.add_colorbar(ax=ax)
+
+
+def plot_resol_camera(true_pe, std_t_all, n_pe=100, ax=None,
+             highlight_pixels=None):
+    std_t_100pe = np.array(
+        [np.interp(n_pe, true_pe[:, i], std_t_all[:, i]) for i in range(1296)]
+    )
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+    display = CameraDisplay(
+        DigiCam.geometry, ax=ax,
+        title='timing resolution (at {} p.e.) [ns]'.format(n_pe)
+    )
+    display.image = std_t_100pe
+    display.set_limits_minmax(0.1, 0.3)
+    if highlight_pixels is not None:
+        display.highlight_pixels(highlight_pixels, color='r', linewidth=2)
+    display.add_colorbar(ax=ax)
+
+
+def plot_all(data_file, legend='camera average', n_pe=100,
+             highlight_pixels=None):
     mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
         load_data(data_file)
-    mean_t_100pe = np.array(
-        [np.interp(100, true_pe[:, i], mean_t_all[:, i]) for i in range(1296)]
-    )
-    std_t_100pe = np.array(
-        [np.interp(100, true_pe[:, i], std_t_all[:, i]) for i in range(1296)]
-    )
     fig, axes = plt.subplots(2, 3, figsize=(24, 18))
     plot_zone(
         true_pe,
@@ -222,22 +265,12 @@ def plot_all(data_file, legend='camera average'):
     )
     axes[0, 1].loglog([0.1, 1000], np.sqrt([0.1, 1000]), 'k--')
     axes[0, 1].set_ylabel('std charge reco. [p.e]')
-    plot_resol(data_file, legend=legend, ax=axes[0, 2])
-    plot_offset(data_file, legend=legend, ax=axes[1, 0])
-    display = CameraDisplay(
-        DigiCam.geometry, ax=axes[1, 1],
-        title='timing offset (at 100 p.e) [ns]'
-    )
-    display.image = mean_t_100pe - np.nanmean(mean_t_100pe)
-    display.set_limits_minmax(-2, 2)
-    display.add_colorbar(ax=axes[1, 1])
-    display = CameraDisplay(
-        DigiCam.geometry, ax=axes[1, 2],
-        title='timing resolution (at 100 p.e.) [ns]'
-    )
-    display.image = std_t_100pe
-    display.set_limits_minmax(0.1, 0.3)
-    display.add_colorbar(ax=axes[1, 2])
+    plot_resol(true_pe, std_t_all, legend=legend, ax=axes[0, 2])
+    plot_offset(true_pe, mean_t_all, legend=legend, ax=axes[1, 0])
+    plot_offset_camera(true_pe, mean_t_all, n_pe=n_pe, ax=axes[1, 1],
+             highlight_pixels=highlight_pixels)
+    plot_resol_camera(true_pe, std_t_all, n_pe=n_pe, ax=axes[1, 2],
+             highlight_pixels=highlight_pixels)
     plt.tight_layout()
 
 
@@ -284,16 +317,25 @@ def entry():
     summary_filename = convert_text(args['--plot_summary'])
     resolution_filename = convert_text(args['--plot_resolution'])
     offset_filename = convert_text(args['--plot_offset'])
+    camera_resol_filename = convert_text(args['--camera_resolution'])
+    camera_offset_filename = convert_text(args['--camera_offset'])
+    n_pe_camera = convert_float(args['--n_pe_camera'])
+    highlight_pixels = convert_list_int(args['--highlight_pixels'])
     legend = convert_text(args['--legend'])
     rms_difference_filename = convert_text(args['--plot_rms_difference'])
-    n_pe = convert_float(args['--n_pe_rms_difference'])
+    n_pe_rms = convert_float(args['--n_pe_rms_difference'])
     with TemporaryDirectory() as temp_dir:
         data_combined = os.path.join(temp_dir, 'time_resolution_test.npz')
         combine(files, data_combined)
+        mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
+            load_data(data_combined)
+
         if summary_filename is not None:
             plot_all(
                 data_combined,
-                legend=legend
+                legend=legend,
+                n_pe=n_pe_camera,
+                highlight_pixels = highlight_pixels,
             )
             if summary_filename.lower() != "show":
                 plt.savefig(summary_filename)
@@ -303,7 +345,7 @@ def entry():
             plt.close()
         if offset_filename is not None:
             plot_offset(
-                data_combined,
+                true_pe, mean_t_all,
                 legend=legend
             )
             if offset_filename.lower() != "show":
@@ -314,7 +356,7 @@ def entry():
             plt.close()
         if resolution_filename is not None:
             plot_resol(
-                data_combined,
+                true_pe, std_t_all,
                 legend=legend
             )
             if resolution_filename.lower() != "show":
@@ -326,11 +368,35 @@ def entry():
         if rms_difference_filename is not None:
             plot_rms_difference(
                 data_combined,
-                n_pe=n_pe
+                n_pe=n_pe_rms
             )
             if rms_difference_filename.lower() != "show":
                 plt.savefig(rms_difference_filename)
                 print(rms_difference_filename, 'created')
+            else:
+                plt.show()
+            plt.close()
+        if camera_offset_filename is not None:
+            plot_offset_camera(
+                true_pe, mean_t_all,
+                n_pe=n_pe_camera,
+                highlight_pixels=highlight_pixels,
+            )
+            if camera_offset_filename.lower() != "show":
+                plt.savefig(camera_offset_filename)
+                print(camera_offset_filename, 'created')
+            else:
+                plt.show()
+            plt.close()
+        if camera_resol_filename is not None:
+            plot_resol_camera(
+                true_pe, std_t_all,
+                n_pe=n_pe_camera,
+                highlight_pixels=highlight_pixels,
+            )
+            if camera_resol_filename.lower() != "show":
+                plt.savefig(camera_resol_filename)
+                print(camera_resol_filename, 'created')
             else:
                 plt.show()
             plt.close()

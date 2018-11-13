@@ -25,7 +25,30 @@ for filename in $files; do
 done
 
 # dark data plots
-python $digicam_path/digicampipe/visualization/time_resolution_plot.py --plot_summary=$output/time_analysis_dark.png --plot_resolution=$output/time_resolution_dark.png --plot_offset=$output/time_offset_dark.png --plot_rms_difference=$output/rms_difference_dark.png --legend="0MHz NSB, camera average" $output/time_ac*_dc0.npz
+python $digicam_path/digicampipe/visualization/time_resolution_plot.py \
+  --plot_summary=$output/time_analysis_dark.png \
+  --plot_resolution=$output/time_resolution_dark.png \
+  --plot_offset=$output/time_offset_dark.png \
+  --camera_resolution=$output/camera_resolution_dark.png \
+  --camera_offset=$output/camera_offset_dark.png \
+  --plot_rms_difference=$output/rms_difference_dark.png \
+  --legend="0MHz NSB, camera average" \
+  $output/time_ac*_dc0.npz
 
 # 125MHz NSB plots
-python $digicam_path/digicampipe/visualization/time_resolution_plot.py --plot_summary=$output/time_analysis_dc290.png --plot_resolution=$output/time_resolution_dc290.png  --plot_offset=$output/time_offset_dc290.png --plot_rms_difference=$output/rms_difference_dc290.png --legend="125MHz NSB, camera average"  $output/time_ac*_dc290.npz
+python $digicam_path/digicampipe/visualization/time_resolution_plot.py \
+  --plot_summary=$output/time_analysis_dc290.png \
+  --plot_resolution=$output/time_resolution_dc290.png \
+  --plot_offset=$output/time_offset_dc290.png \
+  --camera_resolution=$output/camera_resolution_dc290.png \
+  --camera_offset=$output/camera_offset_dc290.png \
+  --plot_rms_difference=$output/rms_difference_dc290.png \
+  --legend="125MHz NSB, camera average" \
+  $output/time_ac*_dc290.npz
+
+#to show all problematic pixels
+#  --highlight_pixels=17,66,130,300,400,415,558,682,734,758,790,799,853,876,899,\
+#952,1007,1010,1038,1049,1112,1113,1223
+
+# to show pixels with bad gains
+#  --highlight_pixels=415,558,682,758,790,853,876,899,952,1007,1049,1113
