@@ -326,7 +326,7 @@ def entry():
 
     max_events = convert_int(args['--max_events'])
 
-    pixel_id = convert_pixel_args(args['--pixel'])
+    pixel_id = convert_pixel_args(args['--pixels'])
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
