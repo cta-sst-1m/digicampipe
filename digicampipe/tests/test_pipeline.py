@@ -83,7 +83,7 @@ def test_pipeline():
             template_filename=template_filename,
             parameters_filename=calibration_filename,
             compute=True,
-            display=False,
+            display=None,
             picture_threshold=30,
             boundary_threshold=15,
             saturation_threshold=3000,
@@ -119,7 +119,7 @@ def test_pipeline_bad_pixels():
             template_filename=template_filename,
             parameters_filename=calibration_filename,
             compute=True,
-            display=False,
+            display=None,
             picture_threshold=1,  # unusual value, so events pass cuts
             boundary_threshold=1,  # unusual value, so events pass cuts
             bad_pixels=[0, 1],
