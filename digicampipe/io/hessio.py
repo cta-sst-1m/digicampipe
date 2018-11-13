@@ -71,7 +71,7 @@ def hessio_get_list_event_ids(url, max_events=None):
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
+def hessio_event_source(url, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
                         use_event_id=False, event_id=None, disable_bar=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
@@ -178,7 +178,7 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
             data.dl1.tel.clear()
             data.mc.tel.clear()  # clear the previous telescopes
 
-            _fill_instrument_info(data, pyhessio_file, camera_geometry, camera)
+            _fill_instrument_info(data, pyhessio_file, camera.geometry, camera)
 
             for tel_id in data.r0.tels_with_data:
 
