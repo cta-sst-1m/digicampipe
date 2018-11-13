@@ -227,7 +227,7 @@ def get_burst(
     if video_prefix is not None:
         for i, burst_idxs in enumerate(bursts):
             begin_idx, end_idx = burst_idxs
-            events = calibration_event_stream(files, disable_bar)
+            events = calibration_event_stream(files, disable_bar=disable_bar)
             events = fill_digicam_baseline(events)
             if video_prefix != "show":
                 video = video_prefix + "_" + str(i) + ".mp4"
