@@ -103,8 +103,8 @@ def entry():
         # or try to use compute_time_from_leading_edge)
 
     if args['--fit']:
-        timing_histo = Histogram1D.load(timing_histo_filename)
 
+        timing_histo = Histogram1D.load(timing_histo_filename)
         timing = timing_histo.mode()
         timing = mode(timing, axis=0)[0][0]
 

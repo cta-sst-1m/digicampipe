@@ -12,7 +12,7 @@ Options:
   -f --fit                    Fit.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  -p --pixels=<PIXEL>         Give a list of pixel IDs.
   --shift=N                   number of bins to shift before integrating
                               [default: 0].
   --integral_width=N          number of bins to integrate over
@@ -239,7 +239,12 @@ class FMPEFitter(HistogramFitter):
 def compute(files, max_events, pixel_id, n_samples, timing_filename,
             charge_histo_filename, amplitude_histo_filename, save,
             integral_width, shift, bin_width):
-    pulse_indices = np.load(timing_filename)['time'] // 4
+
+    with fitsio.FITS(timing_filename, 'r') as f:
+
+        pulse_indices = f['timing'].read() // 4
+
+    print(pulse_indices)
 
     amplitude_histo, charge_histo = mpe.compute(
         files,
