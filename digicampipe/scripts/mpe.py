@@ -331,8 +331,6 @@ def entry():
 
         ac_limit = [np.inf] * n_pixels
 
-        charge_histo = Histogram1D.load(charge_histo_filename)
-
         for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
                                 desc='DAC level', leave=False):
 
@@ -340,7 +338,7 @@ def entry():
                                     desc='Pixel',
                                     leave=False):
 
-                histo = charge_histo[i, pixel_id]
+                histo = Histogram1D.load(charge_histo_filename, row=(i, j))
 
                 mean[i, j] = histo.mean()
                 std[i, j] = histo.std()
