@@ -4,7 +4,7 @@ import tempfile
 from astropy.io import fits
 from pkg_resources import resource_filename
 
-from digicampipe.scripts.pipeline import main as main_pipeline
+from digicampipe.scripts.pipeline import main_pipeline
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args
 
@@ -70,7 +70,8 @@ def test_pipeline():
             files=[dark100_file_path],
             max_events=None,
             pixel_id=convert_pixel_args(None),
-            filename=dark_filename
+            filename=dark_filename,
+            disable_bar = True
         )
         main_pipeline(
             files=[science100_file_path],
@@ -88,6 +89,7 @@ def test_pipeline():
             boundary_threshold=15,
             saturation_threshold=3000,
             threshold_pulse=0.1,
+            disable_bar=True
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
@@ -106,7 +108,8 @@ def test_pipeline_bad_pixels():
             files=[dark200_file_path],
             max_events=None,
             pixel_id=convert_pixel_args(None),
-            filename=dark_filename
+            filename=dark_filename,
+            disable_bar=True
         )
         main_pipeline(
             files=[science200_file_path],
@@ -125,6 +128,7 @@ def test_pipeline_bad_pixels():
             bad_pixels=[0, 1],
             saturation_threshold=3000,
             threshold_pulse=0.1,
+            disable_bar=True
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
@@ -137,3 +141,4 @@ def test_pipeline_bad_pixels():
 
 if __name__ == '__main__':
     test_pipeline_bad_pixels()
+    test_pipeline()

@@ -79,11 +79,13 @@ class PipelineOutputContainer(HillasParametersContainer):
     saturated = Field(bool, 'Is any pixel signal saturated')
 
 
-def main(files, max_events, dark_filename, shift, integral_width,
-         debug, hillas_filename, parameters_filename, compute, display,
-         picture_threshold, boundary_threshold, template_filename,
-         saturation_threshold, threshold_pulse,
-         bad_pixels=None, disable_bar=False,):
+def main_pipeline(
+        files, max_events, dark_filename, shift, integral_width,
+        debug, hillas_filename, parameters_filename, compute, display,
+        picture_threshold, boundary_threshold, template_filename,
+        saturation_threshold, threshold_pulse,
+        bad_pixels=None, disable_bar=False,
+):
     if compute:
         with open(parameters_filename) as file:
             calibration_parameters = yaml.load(file)
@@ -221,7 +223,7 @@ def main(files, max_events, dark_filename, shift, integral_width,
                 continue
             subplot += 1
             print(subplot, '/', 9, 'plotting', key)
-            plt.subplot(3, 3, subplot)
+            plt.subplot(3, 4, subplot)
             val_split = [
                 val[(~data['burst']) & (~is_cutted)],
                 val[(~data['burst']) & is_cutted]
