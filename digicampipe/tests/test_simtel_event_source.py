@@ -12,7 +12,7 @@ example_file_path = pkg_resources.resource_filename(
         'tests',
         'resources',
         'simtel',
-        '3_triggered_events_10_TeV.simtel.gz'
+        'simtel_test_file.simtel.gz'
     )
 )
 
