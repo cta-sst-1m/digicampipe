@@ -142,6 +142,8 @@ class NormalizedPulseTemplate:
                       label='Template data-points', **kwargs)
         if plot_interp:
             axes.plot(t, self(t), '-', label='Interpolated template')
+        axes.set_xlabel('time [ns]')
+        axes.set_ylabel('normalized amplitude')
         axes.legend(loc='best')
 
         return axes
