@@ -108,11 +108,9 @@ def entry():
         timing = timing_histo.mode()
         timing = mode(timing, axis=0)[0][0]
 
-        with fitsio.FITS as f:
+        with fitsio.FITS(results_filename, 'rw') as f:
 
             f.write([timing], names=['timing'])
-
-        np.savez(results_filename, time=timing)
 
     if args['--save_figures']:
 
