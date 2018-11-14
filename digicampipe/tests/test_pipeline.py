@@ -1,6 +1,6 @@
 import os
 import tempfile
-
+import numpy as np
 from astropy.io import fits
 from pkg_resources import resource_filename
 
@@ -71,7 +71,7 @@ def test_pipeline():
             max_events=None,
             pixel_id=convert_pixel_args(None),
             filename=dark_filename,
-            disable_bar = True
+            disable_bar=True
         )
         main_pipeline(
             files=[science100_file_path],
@@ -98,6 +98,12 @@ def test_pipeline():
         for col in expected_columns:
             assert col in cols
             assert len(hdul[1].data[col]) == nevent
+        data = hdul[1].data
+        good_data = np.isfinite(data.intensity)
+        # all data where Hillas computation succeeded have some intensity.
+        assert np.all(data.intensity[good_data] > 90)
+        # no shower are close to the center in the test ressources.
+        assert np.all(data.r[good_data] > 50)
 
 
 def test_pipeline_bad_pixels():

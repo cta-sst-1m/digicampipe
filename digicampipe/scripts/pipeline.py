@@ -14,15 +14,13 @@ Options:
                               the dark analysis
   -v --debug                  Enter the debug mode.
   -c --compute
-  -d --display=PATH           Create the plots and put them in the specified
+  --display=PATH              Create the plots and put them in the specified
                               path. If "none", the plot are not produced.
                               [Default=none]
   -p --bad_pixels=LIST        Give a list of bad pixel IDs.
                               If "none", the bad pixels will be deduced from
                               the parameter file specified with --parameters.
                               [default: none]
-  --shift=N                   number of bins to shift before integrating
-                              [default: 0].
   --saturation_threshold=N    Threshold in LSB at which the pulse amplitude is
                               considered as saturated.
                               [default: 3000]
@@ -146,8 +144,6 @@ def main_pipeline(
 
         events = image.compute_hillas_parameters(events, geom)
 
-        # events = image.show(events, geom)
-
         output_file = Serializer(hillas_filename, mode='w', format='fits')
 
         data_to_store = PipelineOutputContainer()
@@ -222,7 +218,7 @@ def main_pipeline(
                        'event_type', 'miss', 'burst']:
                 continue
             subplot += 1
-            print(subplot, '/', 9, 'plotting', key)
+            print(subplot, '/', 12, 'plotting', key)
             plt.subplot(3, 4, subplot)
             val_split = [
                 val[(~data['burst']) & (~is_cutted)],
