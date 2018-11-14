@@ -4,7 +4,6 @@ import pkg_resources
 
 from digicampipe.io.hessio import hessio_get_list_event_ids
 from digicampipe.io.hessio import hessio_event_source
-from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import event_stream, calibration_event_stream
 
 example_file_path = pkg_resources.resource_filename(
@@ -13,9 +12,20 @@ example_file_path = pkg_resources.resource_filename(
         'tests',
         'resources',
         'simtel',
-        '3_triggered_events_10_TeV.simtel.gz'
+        '1_triggered_events_10_TeV.simtel.gz'
     )
 )
+
+example_file_path_1 = pkg_resources.resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'simtel',
+        'file-pedestal.simtel.gz'
+    )
+)
+
 
 EVENT_ID = 1
 EVENTS_IN_EXAMPLE_FILE = 1
@@ -25,7 +35,7 @@ ENERGY = 10 * u.TeV
 def test_and_benchmark_event_source(benchmark):
     @benchmark
     def loop():
-        for _ in hessio_event_source(example_file_path, DigiCam.geometry):
+        for _ in hessio_event_source(example_file_path):
             pass
 
 
@@ -35,7 +45,7 @@ def test_count_number_event():
 
 
 def test_event_id():
-    for data in hessio_event_source(example_file_path, DigiCam.geometry):
+    for data in hessio_event_source(example_file_path):
         event_id = data.r0.event_id
         energy = data.mc.energy
         break
@@ -44,8 +54,7 @@ def test_event_id():
 
 
 def test_event_stream():
-    events = event_stream([example_file_path],
-                          camera_geometry=DigiCam.geometry)
+    events = event_stream([example_file_path])
     for event in events:
         event_id = event.r0.event_id
         energy = event.mc.energy
@@ -54,9 +63,23 @@ def test_event_stream():
     assert energy == ENERGY
 
 
+def test_event_stream_with_event_id_none():
+    events = event_stream([example_file_path],
+                          event_id=None)
+    for _ in events:
+
+        pass
+
+
+def test_event_stream_pedestal_file():
+    events = event_stream([example_file_path_1])
+    for _ in events:
+
+        pass
+
+
 def test_calibration_event_stream():
-    events = calibration_event_stream([example_file_path],
-                                      camera_geometry=DigiCam.geometry)
+    events = calibration_event_stream([example_file_path])
     for event in events:
         event_id = event.event_id
         energy = event.mc.energy
