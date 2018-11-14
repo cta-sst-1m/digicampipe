@@ -6,6 +6,7 @@ This requires the hessio python library to be installed
 """
 import logging
 import numpy as np
+from tqdm import tqdm
 
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -109,6 +110,7 @@ def hessio_event_source(url, camera=DigiCam, max_events=None,
         # it after each yield
         Provenance().add_input_file(url, role='dl0.sub.evt')
         counter = 0
+
         eventstream = pyhessio_file.move_to_next_event()
         if allowed_tels is not None:
             allowed_tels = set(allowed_tels)
@@ -119,7 +121,7 @@ def hessio_event_source(url, camera=DigiCam, max_events=None,
         data.meta['input'] = url
         data.meta['max_events'] = max_events
 
-        for event_id in eventstream:
+        for event_id in tqdm(eventstream, disable=disable_bar):
 
             # Seek to requested event
             if requested_event is not None:
