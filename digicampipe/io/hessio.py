@@ -5,6 +5,8 @@ Components to read HESSIO data.
 This requires the hessio python library to be installed
 """
 import logging
+import numpy as np
+from tqdm import tqdm
 
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -14,6 +16,7 @@ from ctapipe.instrument import TelescopeDescription, SubarrayDescription
 
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.containers import DataContainer
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +74,9 @@ def hessio_get_list_event_ids(url, max_events=None):
                            .format(url))
 
 
-def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
+def hessio_event_source(url, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
-                        use_event_id=False, disable_bar=False):
+                        use_event_id=False, event_id=None, disable_bar=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
     (e.g. a standard CTA data file.)
 
@@ -96,12 +99,18 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
     disable_bar : Unused, for compatibility with other readers
     """
 
+    if event_id is not None:
+
+        raise ValueError('Event id feature not implemented yet! \n'
+                         'Use event_id=None')
+
     with open_hessio(url) as pyhessio_file:
 
         # the container is initialized once, and data is replaced within
         # it after each yield
         Provenance().add_input_file(url, role='dl0.sub.evt')
         counter = 0
+
         eventstream = pyhessio_file.move_to_next_event()
         if allowed_tels is not None:
             allowed_tels = set(allowed_tels)
@@ -112,7 +121,7 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
         data.meta['input'] = url
         data.meta['max_events'] = max_events
 
-        for event_id in eventstream:
+        for event_id in tqdm(eventstream, disable=disable_bar):
 
             # Seek to requested event
             if requested_event is not None:
@@ -173,7 +182,7 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
             data.dl1.tel.clear()
             data.mc.tel.clear()  # clear the previous telescopes
 
-            _fill_instrument_info(data, pyhessio_file, camera_geometry, camera)
+            _fill_instrument_info(data, pyhessio_file, camera.geometry, camera)
 
             for tel_id in data.r0.tels_with_data:
 
@@ -184,6 +193,8 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                     = pyhessio_file.get_calibration(tel_id)
                 data.mc.tel[tel_id].pedestal \
                     = pyhessio_file.get_pedestal(tel_id)
+
+                data.r0.tel[tel_id].camera_event_number = event_id
 
                 data.r0.tel[tel_id].adc_samples = \
                     pyhessio_file.get_adc_sample(tel_id)
@@ -198,8 +209,15 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                         pyhessio_file.get_adc_sum(tel_id)[..., None]
                 data.r0.tel[tel_id].adc_sums = \
                     pyhessio_file.get_adc_sum(tel_id)
-                data.mc.tel[tel_id].reference_pulse_shape = \
-                    pyhessio_file.get_ref_shapes(tel_id)
+
+                try:
+
+                    data.mc.tel[tel_id].reference_pulse_shape = \
+                        pyhessio_file.get_ref_shapes(tel_id)
+
+                except HessioGeneralError:
+
+                    pass
 
                 nsamples = pyhessio_file.get_event_num_samples(tel_id)
                 if nsamples <= 0:
@@ -222,6 +240,10 @@ def hessio_event_source(url, camera_geometry, camera=DigiCam, max_events=None,
                     pyhessio_file.get_azimuth_cor(tel_id)
                 data.mc.tel[tel_id].altitude_cor = \
                     pyhessio_file.get_altitude_cor(tel_id)
+                pedestal = data.mc.tel[tel_id].pedestal
+                baseline = pedestal / data.r0.tel[tel_id].adc_samples.shape[1]
+                data.r0.tel[tel_id].digicam_baseline = np.squeeze(baseline)
+
             yield data
             counter += 1
 

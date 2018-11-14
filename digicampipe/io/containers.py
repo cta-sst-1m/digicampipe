@@ -515,3 +515,4 @@ class CalibrationContainer(Container):
     hillas = Field(HillasParametersContainer, 'Hillas parameters')
     info = CalibrationContainerMeta()
     slow_data = Field(None, "Slow Data Information")
+    mc = Field(MCEventContainer(), "Monte-Carlo data")

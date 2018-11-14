@@ -9,7 +9,7 @@ Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
   -o FILE --output=FILE.      File where to store the results.
-                              [Default: ./raw_histo.pk]
+                              [Default: ./raw_histo.fits]
   -c --compute                Compute the raw data histograms.
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
@@ -59,7 +59,9 @@ def compute(files, max_events, pixel_id, filename, event_types=None,
             if event_types and event.event_type not in event_types:
                 continue
             raw_histo.fill(event.data.adc_samples)
+
         raw_histo.save(filename)
+        print(filename)
         return raw_histo
 
 
