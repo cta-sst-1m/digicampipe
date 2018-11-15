@@ -46,11 +46,14 @@ def compute(files, output_filename, thresholds, n_samples=1024):
         thresholds=thresholds,
     )
 
-    rate, rate_error, cluster_rate, cluster_rate_error, thresholds = output
+    rate, rate_error, cluster_rate, cluster_rate_error, thresholds, \
+    start_event_id, end_event_id, start_event_time, end_event_time = output
 
     np.savez(file=output_filename, rate=rate, rate_error=rate_error,
              cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error,
-             thresholds=thresholds)
+             thresholds=thresholds, start_event_id=start_event_id,
+             end_event_time=end_event_time, start_event_time=start_event_time,
+             end_event_id=end_event_id)
 
     return output
 

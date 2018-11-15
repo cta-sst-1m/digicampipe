@@ -134,9 +134,13 @@ def compute_bias_curve(
 
     # cluster rate can only be initialized when the first event was read.
     cluster_rate = None
-    for event_id, event in enumerate(data_stream):
+    for event_count, event in enumerate(data_stream):
 
         for tel_id, r0 in event.r0.tel.items():
+
+            if event_count == 0:
+                start_event_id = r0.camera_event_number
+                start_event_time = r0.local_camera_clock
 
             if cluster_rate is None:
                 cluster_rate = init_cluster_rate(r0, n_thresholds)
@@ -170,13 +174,17 @@ def compute_bias_curve(
 
                     rate[- threshold_id - 1] += n_triggers
 
-    time = ((event_id + 1) * 4. * r0.trigger_input_7.shape[-1])
+    end_event_id = r0.camera_event_number
+    end_event_time = r0.local_camera_clock
+
+    time = ((event_count + 1) * 4. * r0.trigger_input_7.shape[-1])
     rate_error = np.sqrt(rate) / time
     cluster_rate_error = np.sqrt(cluster_rate) / time
     rate = rate / time
     cluster_rate = cluster_rate / time
 
-    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
+    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds, \
+           start_event_id, end_event_id, start_event_time, end_event_time
 
 
 def init_cluster_rate(r0, n_thresholds):
