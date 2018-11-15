@@ -55,9 +55,6 @@ def compute(files, output_filename, thresholds, n_samples=1024):
     rate, rate_error, cluster_rate, cluster_rate_error, thresholds, \
     start_event_id, end_event_id, start_event_time, end_event_time = output
 
-    plt.figure()
-    plt.plot(thresholds, rate)
-    plt.show()
 
     with fitsio.FITS(output_filename, mode='rw', clobber=True) as f:
 
