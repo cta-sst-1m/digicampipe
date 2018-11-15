@@ -20,6 +20,8 @@ Options:
   --n_samples=N               Number of pre-samples used by DigiCam to compute
                               baseline
                               [default: 1024]
+  --figure_path=OUTPUT        Figure path
+                              [default: None]
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -82,12 +84,14 @@ def entry():
     step = float(args['--threshold_step'])
     thresholds = np.arange(start, end + step, step)
     n_samples = int(args['--n_samples'])
+    figure_path = args['--figure_path']
+    figure_path = None if figure_path == 'None' else figure_path
 
     if args['--compute']:
         compute(input_files, output_file, thresholds=thresholds,
                 n_samples=n_samples)
 
-    if args['--display']:
+    if args['--display'] or figure_path is not None:
 
         with fitsio.FITS(output_file, 'r') as f:
 
@@ -100,21 +104,30 @@ def entry():
             camera_rate = f['camera']['rate'].read()
             camera_rate_error = f['camera']['error'].read()
             cluster_rate = f['cluster']['rate'].read()
-            cluster_rate_error = f['cluster']['error']
+            cluster_rate_error = f['cluster']['error'].read()
 
         start_time = pd.to_datetime(int(start_time), utc=True)
         end_time = pd.to_datetime(int(end_time), utc=True)
 
         fig = plt.figure()
         axes = fig.add_subplot(111)
-        axes.set_title(str(start_time) + '\n' + str(end_time))
         axes.errorbar(thresholds, camera_rate * 1E9,
-                      yerr=camera_rate_error * 1E9)
+                      yerr=camera_rate_error * 1E9, marker='o', color='k',
+                      label='Start time : {}\nEnd time   : {}\nEvent ID :'
+                            ' ({}, {})'.format(start_time, end_time, start_id,
+                                               end_id))
         axes.set_yscale('log')
         axes.set_xlabel('Threshold [LSB]')
-        axes.set_ylabel('Rate [Hz]')
+        axes.set_ylabel('Trigger rate [Hz]')
+        axes.legend(loc='best')
 
-        plt.show()
+        if args['--display']:
+
+            plt.show()
+
+        if figure_path is not None:
+
+            fig.savefig(figure_path)
 
 
 if __name__ == '__main__':
