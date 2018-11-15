@@ -51,9 +51,9 @@ def compute(files, output_filename, thresholds, n_samples=1024):
 
     np.savez(file=output_filename, rate=rate, rate_error=rate_error,
              cluster_rate=cluster_rate, cluster_rate_error=cluster_rate_error,
-             thresholds=thresholds, start_event_id=start_event_id,
-             end_event_time=end_event_time, start_event_time=start_event_time,
-             end_event_id=end_event_id)
+             thresholds=thresholds, start_event=start_event_id,
+             end_time=end_event_time, start_time=start_event_time,
+             end_event=end_event_id)
 
     return output
 
@@ -78,9 +78,12 @@ def entry():
         thresholds = output['thresholds']
         rate = output['rate']
         rate_error = output['rate_error']
+        start = output['time_start']
+        end = output['time_end']
 
         fig = plt.figure()
         axes = fig.add_subplot(111)
+        fig.title(start + ' ' + end)
         axes.errorbar(thresholds, rate * 1E9, yerr=rate_error * 1E9)
         axes.set_yscale('log')
         axes.set_xlabel('Threshold [LSB]')
