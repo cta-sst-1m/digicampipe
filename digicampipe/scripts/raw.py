@@ -58,7 +58,7 @@ def compute(files, max_events, pixel_id, filename, event_types=None):
             raw_histo.fill(event.data.adc_samples)
 
         raw_histo.save(filename)
-        print(filename)
+
         return raw_histo
 
 

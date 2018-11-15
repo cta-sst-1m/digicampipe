@@ -9,6 +9,7 @@ Options:
   --display   Display the plots
   --compute   Computes the trigger rate vs threshold
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
+                              [default: ./rate_scan.npz]
   -i INPUT --input=INPUT.     Input files.
 """
 import matplotlib.pyplot as plt
@@ -23,7 +24,7 @@ from digicampipe.io.event_stream import event_stream
 
 def compute(files, output_filename):
     n_bins = 1024
-    thresholds = np.arange(0, 100, 2)
+    thresholds = np.arange(0, 1000, 5)
 
     data_stream = event_stream(files)
     data_stream = trigger.fill_event_type(data_stream, flag=8)
