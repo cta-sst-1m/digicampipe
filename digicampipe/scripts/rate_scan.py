@@ -6,15 +6,25 @@ Usage:
   digicam-rate-scan [options] [--] <INPUT>...
 
 Options:
-  --display   Display the plots
-  --compute   Computes the trigger rate vs threshold
+  --display                   Display the plots
+  --compute                   Computes the trigger rate vs threshold
   -o OUTPUT --output=OUTPUT.  Folder where to store the results.
                               [default: ./rate_scan.npz]
   -i INPUT --input=INPUT.     Input files.
+  --threshold_start=N         Trigger threshold start
+                              [default: 0]
+  --threshold_end=N           Trigger threshold end
+                              [default: 4095]
+  --threshold_step=N          Trigger threshold step
+                              [default: 5]
+  --n_samples=N               Number of pre-samples used by DigiCam to compute
+                              baseline
+                              [default: 1024]
 """
 import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
+import fitsio
 
 from digicampipe.calib import filters
 from digicampipe.calib import trigger, baseline
@@ -22,13 +32,11 @@ from digicampipe.calib.trigger import compute_bias_curve
 from digicampipe.io.event_stream import event_stream
 
 
-def compute(files, output_filename):
-    n_bins = 1024
-    thresholds = np.arange(0, 1000, 5)
+def compute(files, output_filename, thresholds, n_samples=1024):
 
     data_stream = event_stream(files)
-    data_stream = trigger.fill_event_type(data_stream, flag=8)
-    data_stream = baseline.fill_baseline_r0(data_stream, n_bins=n_bins)
+    # data_stream = trigger.fill_event_type(data_stream, flag=8)
+    data_stream = baseline.fill_baseline_r0(data_stream, n_bins=n_samples)
     data_stream = filters.filter_missing_baseline(data_stream)
     data_stream = trigger.fill_trigger_patch(data_stream)
     data_stream = trigger.fill_trigger_input_7(data_stream)
@@ -51,9 +59,15 @@ def entry():
     args = docopt(__doc__)
     input_files = args['<INPUT>']
     output_file = args['--output']
+    start = float(args['--threshold_start'])
+    end = float(args['--threshold_end'])
+    step = float(args['--threshold_step'])
+    thresholds = np.arange(start, end + step, step)
+    n_samples = int(args['--n_samples'])
 
     if args['--compute']:
-        compute(input_files, output_file)
+        compute(input_files, output_file, thresholds=thresholds,
+                n_samples=n_samples)
 
     if args['--display']:
         output = np.load(output_file)
