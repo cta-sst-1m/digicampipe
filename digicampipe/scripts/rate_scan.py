@@ -107,6 +107,9 @@ def entry():
         start_time = pd.to_datetime(int(start_time), utc=True)
         end_time = pd.to_datetime(int(end_time), utc=True)
 
+        start_time = start_time.strftime('%Y-%m-%d %H:%M:%S')
+        end_time = end_time.strftime('%Y-%m-%d %H:%M:%S')
+
         fig = plt.figure()
         axes = fig.add_subplot(111)
         axes.errorbar(thresholds, camera_rate * 1E9,
