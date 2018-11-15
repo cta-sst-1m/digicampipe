@@ -38,6 +38,8 @@ from digicampipe.io.containers import CameraEventType
 
 def compute(files, output_filename, thresholds, n_samples=1024):
 
+    thresholds = thresholds.astype(float)
+
     data_stream = event_stream(files)
     # data_stream = trigger.fill_event_type(data_stream, flag=8)
     data_stream = filters.filter_event_types(data_stream,
@@ -54,7 +56,6 @@ def compute(files, output_filename, thresholds, n_samples=1024):
 
     rate, rate_error, cluster_rate, cluster_rate_error, thresholds, \
     start_event_id, end_event_id, start_event_time, end_event_time = output
-
 
     with fitsio.FITS(output_filename, mode='rw', clobber=True) as f:
 
