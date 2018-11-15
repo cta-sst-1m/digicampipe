@@ -5,6 +5,8 @@ import warnings
 
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.containers import DataContainer
+from digicampipe.io.containers import CameraEventType
+
 
 __all__ = ['digicamtoy_event_source']
 
@@ -72,7 +74,7 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].camera_event_number = event_id
             data.r0.tel[tel_id].local_camera_clock = None
             data.r0.tel[tel_id].gps_time = event_id
-            data.r0.tel[tel_id].camera_event_type = 0  # event Type UNKNOWN
+            data.r0.tel[tel_id].camera_event_type = CameraEventType.INTERNAL
             data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
             baseline = np.ones(
