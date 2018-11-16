@@ -10,11 +10,8 @@ def compute_cleaning_wrong_reconstructed_pixels(events, overwrite=False):
         image = event.data.reconstructed_number_of_pe
         baseline_shift = event.data.baseline_shift
 
-        print(event.data.cleaning_mask)
         mask = np.isfinite(image) * np.isfinite(baseline_shift)
         mask *= (baseline_shift > 0)
-
-        print(mask)
 
         if overwrite:
 
@@ -43,11 +40,18 @@ def compute_cleaning_1(events, snr=3, overwrite=True):
         yield event
 
 
-def compute_tailcuts_clean(events, geom, overwrite=True, **kwargs):
+def compute_tailcuts_clean(events, geom, picture_thresh, boundary_thresh,
+                           overwrite=True, **kwargs):
     for event in events:
 
         image = event.data.reconstructed_number_of_pe
-        mask = cleaning.tailcuts_clean(geom=geom, image=image, **kwargs)
+
+        mask = event.data.cleaning_mask
+        image[~mask] = 0
+        mask = cleaning.tailcuts_clean(geom=geom, image=image,
+                                       picture_thresh=picture_thresh,
+                                       boundary_thresh=boundary_thresh,
+                                       **kwargs)
 
         if overwrite:
 
