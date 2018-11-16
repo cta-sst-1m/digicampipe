@@ -3,26 +3,6 @@ from astropy import units as u
 from ctapipe.image import cleaning
 
 
-def compute_cleaning_wrong_reconstructed_pixels(events, overwrite=False):
-
-    for event in events:
-
-        image = event.data.reconstructed_number_of_pe
-        baseline_shift = event.data.baseline_shift
-
-        mask = np.isfinite(image) * np.isfinite(baseline_shift)
-        mask *= (baseline_shift > 0)
-
-        if overwrite:
-
-            event.data.cleaning_mask = mask
-        else:
-
-            event.data.cleaning_mask *= mask
-
-        yield event
-
-
 def compute_cleaning_1(events, snr=3, overwrite=True):
     for event in events:
 
