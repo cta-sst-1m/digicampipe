@@ -17,6 +17,8 @@ Options:
                                 8: clocked trigger
                                 By default set to none which keeps all events.
                                 [Default: none]
+  --disable_bar                 If used, the progress bar is not show while
+                                reading files.
 """
 import os
 import matplotlib.pyplot as plt
@@ -31,8 +33,9 @@ from digicampipe.io.event_stream import event_stream
 from digicampipe.utils.docopt import convert_text, convert_list_int
 
 
-def entry(files, plot="show", event_types=None):
-    events = event_stream(files)
+def trigger_uniformity(files, plot="show", event_types=None,
+                       disable_bar=False):
+    events = event_stream(files, disable_bar=disable_bar)
     if event_types is not None:
         events = filter_event_types(events, flags=event_types)
     # patxh matrix is a bool of size n_patch x n_pixel
@@ -68,9 +71,14 @@ def entry(files, plot="show", event_types=None):
     return pixels_rate
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
     plot = convert_text(args['--plot'])
     event_types = convert_list_int(args['--event_types'])
-    entry(files, plot, event_types)
+    disable_bar = args['--disable_bar']
+    trigger_uniformity(files, plot, event_types, disable_bar)
+
+
+if __name__ == '__main__':
+    entry()
