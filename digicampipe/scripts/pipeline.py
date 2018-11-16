@@ -78,7 +78,7 @@ class PipelineOutputContainer(HillasParametersContainer):
 
 
 def main_pipeline(
-        files, max_events, dark_filename, shift, integral_width,
+        files, max_events, dark_filename, integral_width,
         debug, hillas_filename, parameters_filename, compute, display,
         picture_threshold, boundary_threshold, template_filename,
         saturation_threshold, threshold_pulse,
@@ -88,8 +88,11 @@ def main_pipeline(
         with open(parameters_filename) as file:
             calibration_parameters = yaml.load(file)
         if bad_pixels is None:
-            bad_pixels = get_bad_pixels(parameters_filename, plot=None)
-
+            bad_pixels = get_bad_pixels(
+                calib_file=parameters_filename,
+                dark_histo=dark_filename,
+                plot=None
+            )
         pulse_template = NormalizedPulseTemplate.load(template_filename)
 
         pulse_area = pulse_template.integral() * u.ns
@@ -128,10 +131,8 @@ def main_pipeline(
                                                threshold_pulse=threshold_pulse,
                                                debug=debug,
                                                pulse_tail=False,)
-        # events = charge.compute_charge(events, integral_width, shift)
-        events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
         events = charge.compute_photo_electron(events, gains=gain)
-        # events = cleaning.compute_cleaning_1(events, snr=3)
+        events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
 
         events = cleaning.compute_tailcuts_clean(
             events, geom=geom, overwrite=True,
@@ -372,31 +373,30 @@ def entry():
     integral_width = int(args['--integral_width'])
     picture_threshold = float(args['--picture_threshold'])
     boundary_threshold = float(args['--boundary_threshold'])
-    shift = int(args['--shift'])
     debug = args['--debug']
     parameters_filename = args['--parameters']
     template_filename = args['--template']
     disable_bar = args['--disable_bar']
     saturation_threshold = float(args['--saturation_threshold'])
     threshold_pulse = float(args['--threshold_pulse'])
-    main_pipeline(files=files,
-         max_events=max_events,
-         dark_filename=dark_filename,
-         shift=shift,
-         integral_width=integral_width,
-         debug=debug,
-         parameters_filename=parameters_filename,
-         hillas_filename=output,
-         compute=compute,
-         display=display_path,
-         picture_threshold=picture_threshold,
-         boundary_threshold=boundary_threshold,
-         template_filename=template_filename,
-         bad_pixels=bad_pixels,
-         disable_bar=disable_bar,
-         threshold_pulse=threshold_pulse,
-         saturation_threshold=saturation_threshold,
-         )
+    main_pipeline(
+        files=files,
+        max_events=max_events,
+        dark_filename=dark_filename,
+        integral_width=integral_width,
+        debug=debug,
+        parameters_filename=parameters_filename,
+        hillas_filename=output,
+        compute=compute,
+        display=display_path,
+        picture_threshold=picture_threshold,
+        boundary_threshold=boundary_threshold,
+        template_filename=template_filename,
+        bad_pixels=bad_pixels,
+        disable_bar=disable_bar,
+        threshold_pulse=threshold_pulse,
+        saturation_threshold=saturation_threshold
+    )
 
 
 if __name__ == '__main__':

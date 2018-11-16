@@ -322,14 +322,16 @@ def interpolate_bad_pixels(events, geom, bad_pixels):
     n_pixel = len(geom.neighbors)
     average_matrix = np.zeros([n_bad, n_pixel])
     for i, pix in enumerate(bad_pixels):
-        pix_neighbors = geom.neighbors[pix]
+        pix_neighbors = np.array(geom.neighbors[pix])
         bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
                                        assume_unique=True)
         for bad_neighbor in bad_neighbors:
             pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
         average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
+    pixels_used = np.sum(average_matrix, axis=0) > 0
+    average_matrix = average_matrix[:, pixels_used]
     for event in events:
-        charge = event.data.reconstructed_charge
-        charge[bad_pixels] = average_matrix.dot(charge)
-        event.data.reconstructed_charge = charge
+        pe = event.data.reconstructed_number_of_pe
+        pe[bad_pixels] = average_matrix.dot(pe[pixels_used])
+        event.data.reconstructed_number_of_pe = pe
         yield event
