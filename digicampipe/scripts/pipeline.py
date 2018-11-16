@@ -107,6 +107,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = charge.compute_charge(events, integral_width, shift)
         events = charge.compute_photo_electron(events, gains=gain)
         # events = cleaning.compute_cleaning_1(events, snr=3)
+        events = cleaning.compute_cleaning_wrong_reconstructed_pixels(
+            events, overwrite=False)
 
         events = cleaning.compute_tailcuts_clean(
             events, geom=geom, overwrite=True,
@@ -116,6 +118,8 @@ def main(files, max_events, dark_filename, pixel_ids, shift, integral_width,
         events = cleaning.compute_boarder_cleaning(events, geom,
                                                    boundary_threshold)
         events = cleaning.compute_dilate(events, geom)
+        events = cleaning.compute_cleaning_wrong_reconstructed_pixels(
+            events, overwrite=False)
 
         events = image.compute_hillas_parameters(events, geom)
 
