@@ -143,8 +143,6 @@ def main_pipeline(
         events = cleaning.compute_boarder_cleaning(events, geom,
                                                    boundary_threshold)
         events = cleaning.compute_dilate(events, geom)
-        events = cleaning.compute_cleaning_wrong_reconstructed_pixels(
-            events, overwrite=False)
 
         events = image.compute_hillas_parameters(events, geom)
 
