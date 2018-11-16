@@ -13,6 +13,7 @@ Options:
   -c --compute                Compute the raw data histograms.
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  --baseline_subtracted       Perform baseline subtraction to the raw data
   --save_figures              Save the plots to the same folder as output file.
   --baseline_filename=FILE    Output path for DigiCam calculated baseline
                               histogram. If "none" the histogram will not be
@@ -41,7 +42,7 @@ from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
 def compute(files, max_events, pixel_id, filename, event_types=None,
-            disable_bar=False):
+            disable_bar=False, baseline_subtracted=False):
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
@@ -50,16 +51,22 @@ def compute(files, max_events, pixel_id, filename, event_types=None,
         events = calibration_event_stream(
             files, pixel_id=pixel_id, max_events=max_events,
             disable_bar=disable_bar)
+        if baseline_subtracted:
+            bin_edges = np.arange(-100, 4095, 1)
+        else:
+            bin_edges = np.arange(0, 4095, 1)
         raw_histo = Histogram1D(
             data_shape=(n_pixels,),
-            bin_edges=np.arange(0, 4095, 1),
+            bin_edges=bin_edges,
         )
 
         for event in events:
             if event_types and event.event_type not in event_types:
                 continue
-            raw_histo.fill(event.data.adc_samples)
-
+            samples = event.data.adc_samples
+            if baseline_subtracted:
+                samples = samples - event.data.digicam_baseline[:, None]
+            raw_histo.fill(samples)
         raw_histo.save(filename)
         print(filename)
         return raw_histo
@@ -95,6 +102,7 @@ def entry():
     files = args['<INPUT>']
     max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
+    base_sub = args['--baseline_subtracted']
     raw_histo_filename = args['--output']
     event_types = convert_list_int(args['--event_types'])
     baseline_filename = args['--baseline_filename']
@@ -108,7 +116,7 @@ def entry():
 
     if args['--compute']:
         compute(files, max_events, pixel_id, raw_histo_filename, event_types,
-                disable_bar=disable_bar)
+                disable_bar=disable_bar, baseline_subtracted=base_sub)
         if baseline_filename:
             compute_baseline_histogram(
                 files, max_events, pixel_id, baseline_filename,
