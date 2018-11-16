@@ -318,20 +318,25 @@ def compute_sample_photo_electron(events, gain_amplitude):
 
 
 def interpolate_bad_pixels(events, geom, bad_pixels):
-    n_bad = len(bad_pixels)
     n_pixel = len(geom.neighbors)
-    average_matrix = np.zeros([n_bad, n_pixel])
-    for i, pix in enumerate(bad_pixels):
+    pixels = np.arange(n_pixel, dtype=int)
+    n_bad = len(bad_pixels)
+    good_pixels = np.ones(n_pixel, dtype=bool)
+    good_pixels[bad_pixels] = False
+    good_pixels = pixels[good_pixels]
+    n_good = len(good_pixels)
+    average_matrix = np.zeros([n_pixel, n_pixel])
+    for i, pix in enumerate(pixels):
         pix_neighbors = np.array(geom.neighbors[pix])
+        # remove neighbors which are part of bad_pixels
         bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
                                        assume_unique=True)
         for bad_neighbor in bad_neighbors:
             pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
         average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
-    pixels_used = np.sum(average_matrix, axis=0) > 0
-    average_matrix = average_matrix[:, pixels_used]
+    average_matrix = average_matrix[:, good_pixels]
     for event in events:
         pe = event.data.reconstructed_number_of_pe
-        pe[bad_pixels] = average_matrix.dot(pe[pixels_used])
+        pe[bad_pixels] = average_matrix[bad_pixels, :].dot(pe[good_pixels])
         event.data.reconstructed_number_of_pe = pe
         yield event
