@@ -336,7 +336,18 @@ def interpolate_bad_pixels(events, geom, bad_pixels):
         average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
     average_matrix = average_matrix[:, good_pixels]
     for event in events:
+
         pe = event.data.reconstructed_number_of_pe
-        pe[bad_pixels] = average_matrix[bad_pixels, :].dot(pe[good_pixels])
+        baseline_shift = event.data.baseline_shift
+
+        mask = np.isfinite(pe) * np.isfinite(baseline_shift) * \
+               (baseline_shift > 0)
+
+        all_bad_pixels = np.arange(pe.shape[-1])[~mask]
+        all_bad_pixels = np.append(all_bad_pixels, bad_pixels)
+        all_bad_pixels = np.unique(all_bad_pixels)
+
+        pe[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            pe[good_pixels])
         event.data.reconstructed_number_of_pe = pe
         yield event
