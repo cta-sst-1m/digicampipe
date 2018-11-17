@@ -108,9 +108,7 @@ def correct_alpha_3(data, source_x=0, source_y=0):
     alpha_c_1 = abs(np.arccos(p_scal_1))
     alpha_c_2 = abs(np.arccos(p_scal_2))
     alpha_cetienne = alpha_c_1
-    for i in range(len(alpha_cetienne)):
-        if (alpha_c_2[i] < alpha_c_1[i]):
-            alpha_cetienne[i] = alpha_c_2[i]
+    alpha_cetienne[alpha_c_2 < alpha_c_1] = alpha_c_2
     data['alpha'] = 180.0 / np.pi * alpha_cetienne
     data['r'] = to_c_norm
     data['miss'] = data['r'] * np.sin(data['alpha'])
