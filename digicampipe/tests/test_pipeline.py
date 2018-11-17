@@ -102,7 +102,10 @@ def test_pipeline():
         # all data where Hillas computation succeeded have some intensity.
         assert np.all(data.intensity[good_data] > 90)
         # no shower are close to the center in the test ressources.
-        assert np.all(data.r[good_data] > 50)
+        assert np.all((data.r[good_data] > 50) & (data.r[good_data] < 650))
+        # cog of showers are within the camera
+        assert np.all((data.x[good_data] < 500) & (data.x[good_data] > -500))
+        assert np.all((data.y[good_data] < 550) & (data.y[good_data] > -550))
 
 
 def test_pipeline_bad_pixels():

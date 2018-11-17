@@ -16,7 +16,16 @@ Options:
   -c --compute
   --display=PATH              Create the plots and put them in the specified
                               path. If "none", the plot are not produced.
-                              [Default=none]
+                              [Default=./]
+  --plot_scan2d=PATH          path to the plot for a 2d scan of the source
+                              position for the number of shower with alpha <
+                              --alpha_min. If set to "none", the plot is not
+                              produced. If set to "show" the plot is displayed
+                              instead.
+                              [default: none]
+  --alpha_min=FLOAT           Minimum alpha angle in degrees that an event must
+                              have during the 2D scan to be included.
+                              [Default: 5]
   -p --bad_pixels=LIST        Give a list of bad pixel IDs.
                               If "none", the bad pixels will be deduced from
                               the parameter file specified with --parameters.
@@ -58,7 +67,7 @@ from digicampipe.calib import filters
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_int, convert_list_int, \
-    convert_text
+    convert_text, convert_float
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.visualization.plot import plot_array_camera
 from digicampipe.image.hillas import compute_alpha, compute_miss, \
@@ -81,8 +90,8 @@ def main_pipeline(
         files, max_events, dark_filename, integral_width,
         debug, hillas_filename, parameters_filename, compute, display,
         picture_threshold, boundary_threshold, template_filename,
-        saturation_threshold, threshold_pulse,
-        bad_pixels=None, disable_bar=False,
+        saturation_threshold, threshold_pulse, alpha_min=5.,
+        bad_pixels=None, disable_bar=False, plot_scan2d=None
 ):
     if compute:
         with open(parameters_filename) as file:
@@ -180,7 +189,7 @@ def main_pipeline(
             output_file.add_container(data_to_store)
         output_file.close()
 
-    if display is not None:
+    if display is not None or plot_scan2d is not None:
 
         data = Table.read(hillas_filename, format='fits')
         data = data.to_pandas()
@@ -211,16 +220,21 @@ def main_pipeline(
         )
         print('tagged', np.sum(is_cutted), '/', n_event,
               'events cut by 2 < l/w < 10 and l > 25 mm and w > 15 mm')
+        is_cutted = np.logical_or(is_cutted, data['border'] == True)
+        print('tagged', np.sum(is_cutted), '/', n_event,
+              'events cut by 2 < l/w < 10 and l > 25 mm and w > 15 mm',
+              'and on border')
 
+    if display is not None:
         plt.figure(figsize=(9, 9))
         subplot = 0
         for key, val in data.items():
             if key in ['border', 'intensity', 'kurtosis', 'event_id',
-                       'event_type', 'miss', 'burst']:
+                       'event_type', 'miss', 'burst', 'saturated']:
                 continue
             subplot += 1
-            print(subplot, '/', 12, 'plotting', key)
-            plt.subplot(3, 4, subplot)
+            print(subplot, '/', 9, 'plotting', key)
+            plt.subplot(3, 3, subplot)
             val_split = [
                 val[(~data['burst']) & (~is_cutted)],
                 val[(~data['burst']) & is_cutted]
@@ -288,13 +302,13 @@ def main_pipeline(
                         'shower length [mm]',
                         'shower width [mm]',
                         'length/width',
-                        'r - l/2 [mm]'
+                        'r'
                     ],
                     [
                         data_pl['length'],
                         data_pl['width'],
                         data_pl['length']/data_pl['width'],
-                        data_pl['r'] - data_pl['length']/2
+                        data_pl['r']
                     ],
                     [0, 0, 0, -100],
                     [200, 100, 10, 500]
@@ -313,17 +327,14 @@ def main_pipeline(
             plt.savefig(os.path.join(display, 'correlation_{}.png'.format(title.replace(' ', '_'))))
         plt.close(fig)
 
+    if plot_scan2d is not None:
         # 2D scan of spike in alpha
-        bin_size = 4  # binning in degrees
-        num_steps = 80  # number of binning in the FoV
-        x_fov_start = -500  # limits of the FoV
-        y_fov_start = -500  # limits of the FoV
-        x_fov_end = 500  # limits of the FoV
-        y_fov_end = 500  # limits of the FoV
-        mask = (~data['border']) & (~data['burst']) & (
-                data['length']/data['width'] > 1.5) & (
-                data['length']/data['width'] < 10) & (
-                data['length'] > 25) & (data['width'] > 15)
+        num_steps = 200  # number of binning in the FoV
+        x_fov_start = -500  # limits of the FoV in mm
+        y_fov_start = -500  # limits of the FoV in mm
+        x_fov_end = 500  # limits of the FoV in mm
+        y_fov_end = 500  # limits of the FoV in mm
+        mask = ~is_cutted
         data_cor = dict()
         for key, val in data.items():
             data_cor[key] = val[mask]
@@ -342,9 +353,7 @@ def main_pipeline(
             print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
             for yi, y in enumerate(y_fov):
                 data_cor2 = correct_alpha_3(data_cor, source_x=x, source_y=y)
-                mask2 = data_cor2['alpha'] < bin_size
-                alpha_filtered = data_cor2['alpha'][mask2]
-                N[yi, xi] = alpha_filtered.shape[0]
+                N[yi, xi] = np.sum(data_cor2['alpha'] < alpha_min)
             i += 1
         fig = plt.figure(figsize=(8, 6))
         ax1 = fig.add_subplot(111)
@@ -354,7 +363,10 @@ def main_pipeline(
         plt.xlabel('FOV X [mm]')
         cbar = fig.colorbar(pcm)
         cbar.set_label('N of events')
-        plt.savefig(os.path.join(display, '2d_alpha_scan.png'))
+        if plot_scan2d == "show":
+            plt.show()
+        else:
+            plt.savefig(plot_scan2d)
 
 
 def entry():
@@ -379,6 +391,8 @@ def entry():
     disable_bar = args['--disable_bar']
     saturation_threshold = float(args['--saturation_threshold'])
     threshold_pulse = float(args['--threshold_pulse'])
+    alpha_min = convert_float(args['--alpha_min'])
+    plot_scan2d = convert_text(args['--plot_scan2d'])
     main_pipeline(
         files=files,
         max_events=max_events,
@@ -395,7 +409,9 @@ def entry():
         bad_pixels=bad_pixels,
         disable_bar=disable_bar,
         threshold_pulse=threshold_pulse,
-        saturation_threshold=saturation_threshold
+        saturation_threshold=saturation_threshold,
+        alpha_min=alpha_min,
+        plot_scan2d=plot_scan2d
     )
 
 
