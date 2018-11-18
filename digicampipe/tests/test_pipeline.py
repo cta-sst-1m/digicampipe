@@ -82,8 +82,6 @@ def test_pipeline():
             hillas_filename=hillas_filename,
             template_filename=template_filename,
             parameters_filename=calibration_filename,
-            compute=True,
-            display=None,
             picture_threshold=30,
             boundary_threshold=15,
             saturation_threshold=3000,
@@ -128,8 +126,6 @@ def test_pipeline_bad_pixels():
             hillas_filename=hillas_filename,
             template_filename=template_filename,
             parameters_filename=calibration_filename,
-            compute=True,
-            display=None,
             picture_threshold=1,  # unusual value, so events pass cuts
             boundary_threshold=1,  # unusual value, so events pass cuts
             bad_pixels=[0, 1],

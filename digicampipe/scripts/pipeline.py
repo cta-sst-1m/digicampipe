@@ -13,19 +13,6 @@ Options:
   --dark=FILE                 File containing the Histogram of
                               the dark analysis
   -v --debug                  Enter the debug mode.
-  -c --compute
-  --display=PATH              Create the plots and put them in the specified
-                              path. If "none", the plot are not produced.
-                              [Default=./]
-  --plot_scan2d=PATH          path to the plot for a 2d scan of the source
-                              position for the number of shower with alpha <
-                              --alpha_min. If set to "none", the plot is not
-                              produced. If set to "show" the plot is displayed
-                              instead.
-                              [default: none]
-  --alpha_min=FLOAT           Minimum alpha angle in degrees that an event must
-                              have during the 2D scan to be included.
-                              [Default: 5]
   -p --bad_pixels=LIST        Give a list of bad pixel IDs.
                               If "none", the bad pixels will be deduced from
                               the parameter file specified with --parameters.
@@ -88,285 +75,105 @@ class PipelineOutputContainer(HillasParametersContainer):
 
 def main_pipeline(
         files, max_events, dark_filename, integral_width,
-        debug, hillas_filename, parameters_filename, compute, display,
+        debug, hillas_filename, parameters_filename,
         picture_threshold, boundary_threshold, template_filename,
-        saturation_threshold, threshold_pulse, alpha_min=5.,
-        bad_pixels=None, disable_bar=False, plot_scan2d=None
+        saturation_threshold, threshold_pulse,
+        bad_pixels=None, disable_bar=False
 ):
-    if compute:
-        with open(parameters_filename) as file:
-            calibration_parameters = yaml.load(file)
-        if bad_pixels is None:
-            bad_pixels = get_bad_pixels(
-                calib_file=parameters_filename,
-                dark_histo=dark_filename,
-                plot=None
-            )
-        pulse_template = NormalizedPulseTemplate.load(template_filename)
-
-        pulse_area = pulse_template.integral() * u.ns
-        ratio = pulse_template.compute_charge_amplitude_ratio(
-            integral_width=integral_width, dt_sampling=4)  # ~ 0.24
-
-        gain = np.array(calibration_parameters['gain'])  # ~ 20 LSB / p.e.
-        gain_amplitude = gain * ratio
-
-        crosstalk = np.array(calibration_parameters['mu_xt'])
-        bias_resistance = 10 * 1E3 * u.Ohm  # 10 kOhm
-        cell_capacitance = 50 * 1E-15 * u.Farad  # 50 fF
-        geom = DigiCam.geometry
-
-        dark_histo = Histogram1D.load(dark_filename)
-        dark_baseline = dark_histo.mean()
-
-        events = calibration_event_stream(files, max_events=max_events,
-                                          disable_bar=disable_bar)
-        events = baseline.fill_dark_baseline(events, dark_baseline)
-        events = baseline.fill_digicam_baseline(events)
-        events = tagging.tag_burst_from_moving_average_baseline(events)
-        events = baseline.compute_baseline_shift(events)
-        events = baseline.subtract_baseline(events)
-        # events = baseline.compute_baseline_std(events, n_events=100)
-        events = filters.filter_clocked_trigger(events)
-        events = baseline.compute_nsb_rate(events, gain_amplitude,
-                                           pulse_area, crosstalk,
-                                           bias_resistance, cell_capacitance)
-        events = baseline.compute_gain_drop(events, bias_resistance,
-                                            cell_capacitance)
-        events = peak.find_pulse_with_max(events)
-        events = charge.compute_dynamic_charge(events,
-                                               integral_width=integral_width,
-                                               saturation_threshold=saturation_threshold,
-                                               threshold_pulse=threshold_pulse,
-                                               debug=debug,
-                                               pulse_tail=False,)
-        events = charge.compute_photo_electron(events, gains=gain)
-        events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
-
-        events = cleaning.compute_tailcuts_clean(
-            events, geom=geom, overwrite=True,
-            picture_thresh=picture_threshold,
-            boundary_thresh=boundary_threshold, keep_isolated_pixels=False
+    with open(parameters_filename) as file:
+        calibration_parameters = yaml.load(file)
+    if bad_pixels is None:
+        bad_pixels = get_bad_pixels(
+            calib_file=parameters_filename,
+            dark_histo=dark_filename,
+            plot=None
         )
-        events = cleaning.compute_boarder_cleaning(events, geom,
-                                                   boundary_threshold)
-        events = cleaning.compute_dilate(events, geom)
+    pulse_template = NormalizedPulseTemplate.load(template_filename)
 
-        events = image.compute_hillas_parameters(events, geom)
+    pulse_area = pulse_template.integral() * u.ns
+    ratio = pulse_template.compute_charge_amplitude_ratio(
+        integral_width=integral_width, dt_sampling=4)  # ~ 0.24
 
-        output_file = Serializer(hillas_filename, mode='w', format='fits')
+    gain = np.array(calibration_parameters['gain'])  # ~ 20 LSB / p.e.
+    gain_amplitude = gain * ratio
 
-        data_to_store = PipelineOutputContainer()
+    crosstalk = np.array(calibration_parameters['mu_xt'])
+    bias_resistance = 10 * 1E3 * u.Ohm  # 10 kOhm
+    cell_capacitance = 50 * 1E-15 * u.Farad  # 50 fF
+    geom = DigiCam.geometry
 
-        for event in events:
+    dark_histo = Histogram1D.load(dark_filename)
+    dark_baseline = dark_histo.mean()
 
-            if debug:
-                print(event.hillas)
-                print(event.data.nsb_rate)
-                print(event.data.gain_drop)
-                print(event.data.baseline_shift)
-                print(event.data.border)
-                plot_array_camera(np.max(event.data.adc_samples, axis=-1))
-                plot_array_camera(np.nanmax(
-                    event.data.reconstructed_charge, axis=-1))
-                plot_array_camera(event.data.cleaning_mask.astype(float))
-                plot_array_camera(event.data.reconstructed_number_of_pe)
-                plt.show()
+    events = calibration_event_stream(files, max_events=max_events,
+                                      disable_bar=disable_bar)
+    events = baseline.fill_dark_baseline(events, dark_baseline)
+    events = baseline.fill_digicam_baseline(events)
+    events = tagging.tag_burst_from_moving_average_baseline(events)
+    events = baseline.compute_baseline_shift(events)
+    events = baseline.subtract_baseline(events)
+    # events = baseline.compute_baseline_std(events, n_events=100)
+    events = filters.filter_clocked_trigger(events)
+    events = baseline.compute_nsb_rate(events, gain_amplitude,
+                                       pulse_area, crosstalk,
+                                       bias_resistance, cell_capacitance)
+    events = baseline.compute_gain_drop(events, bias_resistance,
+                                        cell_capacitance)
+    events = peak.find_pulse_with_max(events)
+    events = charge.compute_dynamic_charge(events,
+                                           integral_width=integral_width,
+                                           saturation_threshold=saturation_threshold,
+                                           threshold_pulse=threshold_pulse,
+                                           debug=debug,
+                                           pulse_tail=False,)
+    events = charge.compute_photo_electron(events, gains=gain)
+    events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
 
-            data_to_store.alpha = compute_alpha(event.hillas)
-            data_to_store.miss = compute_miss(event.hillas,
-                                              data_to_store.alpha)
-            data_to_store.local_time = event.data.local_time
-            data_to_store.event_type = event.event_type
-            data_to_store.event_id = event.event_id
-            data_to_store.border = event.data.border
-            data_to_store.burst = event.data.burst
-            data_to_store.saturated = event.data.saturated
+    events = cleaning.compute_tailcuts_clean(
+        events, geom=geom, overwrite=True,
+        picture_thresh=picture_threshold,
+        boundary_thresh=boundary_threshold, keep_isolated_pixels=False
+    )
+    events = cleaning.compute_boarder_cleaning(events, geom,
+                                               boundary_threshold)
+    events = cleaning.compute_dilate(events, geom)
 
-            for key, val in event.hillas.items():
-                data_to_store[key] = val
+    events = image.compute_hillas_parameters(events, geom)
 
-            output_file.add_container(data_to_store)
-        output_file.close()
+    output_file = Serializer(hillas_filename, mode='w', format='fits')
 
-    if display is not None or plot_scan2d is not None:
+    data_to_store = PipelineOutputContainer()
 
-        data = Table.read(hillas_filename, format='fits')
-        data = data.to_pandas()
+    for event in events:
 
-        data['local_time'] = pd.to_datetime(data['local_time'])
-        data = data.set_index('local_time')
-        data = data.dropna()
-
-        n_event = len(data['event_id'])
-
-        is_cutted = np.logical_or(
-            data['length'] / data['width'] >= 10.,
-            data['length'] / data['width'] <= 2.
-        )
-        print('tagged', np.sum(data['burst']), '/', n_event,
-              'events as of bad quality')
-        print('tagged', np.sum(is_cutted), '/', n_event,
-              'events cut by l/w')
-        is_cutted = np.logical_or(
-            is_cutted,
-            data['length'] < 25
-        )
-        print('tagged', np.sum(is_cutted), '/', n_event,
-              'events cut by 2 < l/w < 10 and l > 25 mm')
-        is_cutted = np.logical_or(
-            is_cutted,
-            data['width'] < 15
-        )
-        print('tagged', np.sum(is_cutted), '/', n_event,
-              'events cut by 2 < l/w < 10 and l > 25 mm and w > 15 mm')
-        is_cutted = np.logical_or(is_cutted, data['border'] == True)
-        print('tagged', np.sum(is_cutted), '/', n_event,
-              'events cut by 2 < l/w < 10 and l > 25 mm and w > 15 mm',
-              'and on border')
-
-    if display is not None:
-        plt.figure(figsize=(15, 15))
-        subplot = 0
-        for key, val in data.items():
-            if key in ['border', 'intensity', 'kurtosis', 'event_id',
-                       'event_type', 'miss', 'burst', 'saturated']:
-                continue
-            subplot += 1
-            print(subplot, '/', 9, 'plotting', key)
-            plt.subplot(3, 3, subplot)
-            val_split = [
-                val[(~data['burst']) & (~is_cutted)],
-                val[(~data['burst']) & is_cutted]
-            ]
-            plt.hist(val_split, bins='auto', stacked=True)
-            plt.xlabel(key)
-            if subplot == 1:
-                plt.legend(['2 < l/w < 10', 'l/w cut'])
-        plt.tight_layout()
-        plt.savefig(os.path.join(display, 'hillas.png'))
-        plt.close()
-
-        # 2d histogram of shower centers
-        fig = plt.figure(figsize=(16, 16))
-        plt.subplot(2, 2, 1)
-        plt.hist2d(data['x'], data['y'], bins=100, norm=LogNorm())
-        plt.ylabel('shower center Y [mm]')
-        plt.xlabel('shower center X [mm]')
-        plt.title('all events')
-        cb = plt.colorbar()
-        cb.set_label('Number of events')
-        plt.axis('equal')
-        plt.subplot(2, 2, 2)
-        data_ok = data[(~data['burst'])]
-        plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
-        plt.ylabel('shower center Y [mm]')
-        plt.xlabel('shower center X [mm]')
-        plt.title('not burst')
-        cb = plt.colorbar()
-        cb.set_label('Number of events')
-        plt.axis('equal')
-        plt.subplot(2, 2, 3)
-        data_ok = data[(~is_cutted)]
-        plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
-        plt.ylabel('shower center Y [mm]')
-        plt.xlabel('shower center X [mm]')
-        plt.title('2 < l/w < 10')
-        cb = plt.colorbar()
-        cb.set_label('Number of events')
-        plt.axis('equal')
-        plt.subplot(2, 2, 4)
-        data_ok = data[(~data['burst']) & (~is_cutted)]
-        plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
-        plt.ylabel('shower center Y [mm]')
-        plt.xlabel('shower center X [mm]')
-        plt.title('pass all')
-        cb = plt.colorbar()
-        cb.set_label('Number of events')
-        plt.axis('equal')
-        plt.tight_layout()
-        plt.savefig(os.path.join(display, 'shower_center_map.png'))
-        plt.close(fig)
-
-        # correlation plot
-        fig = plt.figure(figsize=(24, 12))
-        for title, data_pl in zip(['all', 'pass cuts'], [data, data_ok]):
-            fig.clear()
-            subplot = 0
-            for i, (label_x, x) in enumerate(zip(
-                ['shower center X [mm]', 'shower center Y [mm]'],
-                [data_pl['x'], data_pl['y']]
-            )):
-                for j, (label_y, y, ymin, ymax) in enumerate(zip(
-                    [
-                        'shower length [mm]',
-                        'shower width [mm]',
-                        'length/width',
-                        'r'
-                    ],
-                    [
-                        data_pl['length'],
-                        data_pl['width'],
-                        data_pl['length']/data_pl['width'],
-                        data_pl['r']
-                    ],
-                    [0, 0, 0, -100],
-                    [200, 100, 10, 500]
-                )):
-                    subplot += 1
-                    plt.subplot(2, 4, subplot)
-                    plt.hist2d(x, y, bins=(100, np.linspace(ymin, ymax, 100)),
-                               norm=LogNorm())
-                    plt.ylim(ymin, ymax)
-                    plt.xlabel(label_x)
-                    plt.ylabel(label_y)
-                    plt.title(title)
-                    cb = plt.colorbar()
-                    cb.set_label('Number of events')
-            plt.tight_layout()
-            plt.savefig(os.path.join(display, 'correlation_{}.png'.format(title.replace(' ', '_'))))
-        plt.close(fig)
-
-    if plot_scan2d is not None:
-        # 2D scan of spike in alpha
-        num_steps = 200  # number of binning in the FoV
-        x_fov_start = -500  # limits of the FoV in mm
-        y_fov_start = -500  # limits of the FoV in mm
-        x_fov_end = 500  # limits of the FoV in mm
-        y_fov_end = 500  # limits of the FoV in mm
-        mask = ~is_cutted
-        data_cor = dict()
-        for key, val in data.items():
-            data_cor[key] = val[mask]
-        x_fov = np.linspace(x_fov_start, x_fov_end, num_steps)
-        y_fov = np.linspace(y_fov_start, y_fov_end, num_steps)
-        dx = x_fov[1] - x_fov[0]
-        dy = y_fov[1] - y_fov[0]
-        x_fov_bins = np.linspace(x_fov_start - dx / 2, x_fov_end + dx / 2,
-                                 num_steps + 1)
-        y_fov_bins = np.linspace(y_fov_start - dy / 2, y_fov_end + dy / 2,
-                                 num_steps + 1)
-        N = np.zeros([num_steps, num_steps], dtype=int)
-        i = 0
-        print('2D scan calculation:')
-        for xi, x in enumerate(x_fov):
-            print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
-            for yi, y in enumerate(y_fov):
-                data_cor2 = correct_alpha_3(data_cor, source_x=x, source_y=y)
-                N[yi, xi] = np.sum(data_cor2['alpha'] < alpha_min)
-            i += 1
-        fig = plt.figure(figsize=(16, 12))
-        ax1 = fig.add_subplot(111)
-        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N,
-                             rasterized=True, cmap='nipy_spectral')
-        plt.ylabel('FOV Y [mm]')
-        plt.xlabel('FOV X [mm]')
-        cbar = fig.colorbar(pcm)
-        cbar.set_label('N of events')
-        if plot_scan2d == "show":
+        if debug:
+            print(event.hillas)
+            print(event.data.nsb_rate)
+            print(event.data.gain_drop)
+            print(event.data.baseline_shift)
+            print(event.data.border)
+            plot_array_camera(np.max(event.data.adc_samples, axis=-1))
+            plot_array_camera(np.nanmax(
+                event.data.reconstructed_charge, axis=-1))
+            plot_array_camera(event.data.cleaning_mask.astype(float))
+            plot_array_camera(event.data.reconstructed_number_of_pe)
             plt.show()
-        else:
-            plt.savefig(plot_scan2d)
+
+        data_to_store.alpha = compute_alpha(event.hillas)
+        data_to_store.miss = compute_miss(event.hillas,
+                                          data_to_store.alpha)
+        data_to_store.local_time = event.data.local_time
+        data_to_store.event_type = event.event_type
+        data_to_store.event_id = event.event_id
+        data_to_store.border = event.data.border
+        data_to_store.burst = event.data.burst
+        data_to_store.saturated = event.data.saturated
+
+        for key, val in event.hillas.items():
+            data_to_store[key] = val
+
+        output_file.add_container(data_to_store)
+    output_file.close()
 
 
 def entry():
@@ -375,8 +182,6 @@ def entry():
     max_events = convert_int(args['--max_events'])
     dark_filename = args['--dark']
     output = args['--output']
-    compute = args['--compute']
-    display_path = convert_text(args['--display'])
     output_path = os.path.dirname(output)
     if output_path != "" and not os.path.exists(output_path):
         raise IOError('Path ' + output_path +
@@ -391,8 +196,6 @@ def entry():
     disable_bar = args['--disable_bar']
     saturation_threshold = float(args['--saturation_threshold'])
     threshold_pulse = float(args['--threshold_pulse'])
-    alpha_min = convert_float(args['--alpha_min'])
-    plot_scan2d = convert_text(args['--plot_scan2d'])
     main_pipeline(
         files=files,
         max_events=max_events,
@@ -401,8 +204,6 @@ def entry():
         debug=debug,
         parameters_filename=parameters_filename,
         hillas_filename=output,
-        compute=compute,
-        display=display_path,
         picture_threshold=picture_threshold,
         boundary_threshold=boundary_threshold,
         template_filename=template_filename,
@@ -410,8 +211,6 @@ def entry():
         disable_bar=disable_bar,
         threshold_pulse=threshold_pulse,
         saturation_threshold=saturation_threshold,
-        alpha_min=alpha_min,
-        plot_scan2d=plot_scan2d
     )
 
 
