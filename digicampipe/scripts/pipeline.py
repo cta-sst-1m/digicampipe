@@ -226,7 +226,7 @@ def main_pipeline(
               'and on border')
 
     if display is not None:
-        plt.figure(figsize=(9, 9))
+        plt.figure(figsize=(15, 15))
         subplot = 0
         for key, val in data.items():
             if key in ['border', 'intensity', 'kurtosis', 'event_id',
@@ -248,7 +248,7 @@ def main_pipeline(
         plt.close()
 
         # 2d histogram of shower centers
-        fig = plt.figure(figsize=(8, 8))
+        fig = plt.figure(figsize=(16, 16))
         plt.subplot(2, 2, 1)
         plt.hist2d(data['x'], data['y'], bins=100, norm=LogNorm())
         plt.ylabel('shower center Y [mm]')
@@ -289,7 +289,7 @@ def main_pipeline(
         plt.close(fig)
 
         # correlation plot
-        fig = plt.figure(figsize=(12, 9))
+        fig = plt.figure(figsize=(24, 12))
         for title, data_pl in zip(['all', 'pass cuts'], [data, data_ok]):
             fig.clear()
             subplot = 0
@@ -355,7 +355,7 @@ def main_pipeline(
                 data_cor2 = correct_alpha_3(data_cor, source_x=x, source_y=y)
                 N[yi, xi] = np.sum(data_cor2['alpha'] < alpha_min)
             i += 1
-        fig = plt.figure(figsize=(8, 6))
+        fig = plt.figure(figsize=(16, 12))
         ax1 = fig.add_subplot(111)
         pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N,
                              rasterized=True, cmap='nipy_spectral')
