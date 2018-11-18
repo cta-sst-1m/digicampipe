@@ -7,6 +7,8 @@ from pkg_resources import resource_filename
 from digicampipe.scripts.pipeline import main_pipeline
 from digicampipe.scripts.raw import compute as compute_raw
 from digicampipe.utils.docopt import convert_pixel_args
+from digicampipe.scripts.plot_pipeline import plot_pipeline, \
+    get_data_and_selection, scan_2d_plot
 
 dark100_file_path = resource_filename(
     'digicampipe',
@@ -58,7 +60,8 @@ template_filename = resource_filename(
 )
 expected_columns = ['phi', 'y', 'skewness', 'intensity', 'x', 'event_id',
                     'local_time', 'psi', 'width', 'miss', 'alpha', 'length',
-                    'r', 'kurtosis', 'event_type']
+                    'r', 'kurtosis', 'event_type', 'border', 'burst',
+                    'saturated']
 
 
 def test_pipeline():
@@ -126,20 +129,53 @@ def test_pipeline_bad_pixels():
             hillas_filename=hillas_filename,
             template_filename=template_filename,
             parameters_filename=calibration_filename,
-            picture_threshold=1,  # unusual value, so events pass cuts
-            boundary_threshold=1,  # unusual value, so events pass cuts
+            picture_threshold=30,  # unusual value, so events pass cuts
+            boundary_threshold=15,  # unusual value, so events pass cuts
             bad_pixels=[0, 1],
             saturation_threshold=3000,
             threshold_pulse=0.1,
             disable_bar=True
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
-        cols = [c.name for c in hdul[1].columns]
         nevent = len(hdul[1].data['local_time'])
         assert nevent > 0
-        for col in expected_columns:
-            assert col in cols
-            assert len(hdul[1].data[col]) == nevent
+        plot_pipeline(
+            hillas_filename,
+            cut_length_gte=None,
+            cut_length_lte=25,
+            cut_width_gte=None,
+            cut_width_lte=15,
+            cut_length_over_width_gte=10,
+            cut_length_over_width_lte=2,
+            cut_border_eq=None,
+            cut_burst_eq=None,
+            cut_saturated_eq=None,
+            alpha_min=5.,
+            plot_scan2d=None,
+            plot_showers_center='shower_center.png',
+            plot_hillas='hillas.png',
+            plot_correlation_all='correlation_all.png',
+            plot_correlation_selected='correlation_selected.png',
+            plot_correlation_cut='correlation_cut.png',
+        )
+        assert os.path.isfile('shower_center.png')
+        assert os.path.isfile('hillas.png')
+        assert os.path.isfile('correlation_all.png')
+        assert os.path.isfile('correlation_selected.png')
+        assert os.path.isfile('correlation_cut.png')
+
+        # we plot scan_2d appart to have more control on the scan, so it can
+        # be fast
+        data, selection = get_data_and_selection(
+            hillas_file=hillas_filename,
+            cut_length_lte=25,
+            cut_width_lte=15,
+            cut_length_over_width_gte=10,
+            cut_length_over_width_lte=2,
+        )
+        scan_2d_plot(data[selection], alpha_min=5., num_steps=10,
+                     plot="scan2d.png")
+        assert os.path.isfile('scan2d.png')
 
 
 if __name__ == '__main__':

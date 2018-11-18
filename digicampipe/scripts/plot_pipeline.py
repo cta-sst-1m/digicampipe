@@ -108,22 +108,22 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
     cb.set_label('Number of events')
     plt.axis('equal')
     plt.subplot(1, 2, 2)
-    data_ok = pipeline_data[(~pipeline_data['burst'])]
+    data_ok = pipeline_data[pipeline_data['burst']]
     if len(data_ok) > 0:
         plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
         plt.ylabel('shower center Y [mm]')
         plt.xlabel('shower center X [mm]')
-        plt.title('not burst')
+        plt.title('burst')
         cb = plt.colorbar()
         cb.set_label('Number of events')
         plt.axis('equal')
     plt.subplot(2, 2, 3)
-    data_ok = pipeline_data[(selection)]
+    data_ok = pipeline_data[~selection]
     if len(data_ok) > 0:
         plt.hist2d(data_ok['x'], data_ok['y'], bins=100, norm=LogNorm())
         plt.ylabel('shower center Y [mm]')
         plt.xlabel('shower center X [mm]')
-        plt.title('selected')
+        plt.title('failing cuts')
         cb = plt.colorbar()
         cb.set_label('Number of events')
         plt.axis('equal')
@@ -173,18 +173,31 @@ def hillas_plot(pipeline_data, selection, plot="show"):
     plt.close(fig)
 
 
-def scan_2d_plot(pipeline_data, selection, alpha_min=5., plot="show"):
-    # 2D scan of spike in alpha
-    num_steps = 200  # number of binning in the FoV
+def scan_2d_plot(
+        pipeline_data, alpha_min=5., plot="show",
+        num_steps=200,
+        fov=((-500, 500), (-500, 500)),
+):
+    """
+    2D scan of spike in alpha
+    :param pipeline_data: hillas parameters data file, output of pipeline.py
+    :param alpha_min: events are taken into account as possibly coming from
+    the scanned point if the alpha parameter calculated at that point is below
+    alpha_min.
+    :param plot: path to the plot for a 2d scan of the source position.
+    If set to "none", the plot is not produced. If set to "show" the plot
+    is displayed instead.
+    :param num_steps: number of binning in the FoV
+    :param fov: x and y range of the field of view. Format:
+    ((x_min, x_max), (y_min, y_max))
+    :return: None
+    """
     x_fov_start = -1000  # limits of the FoV in mm
     y_fov_start = -1000  # limits of the FoV in mm
     x_fov_end = 1000  # limits of the FoV in mm
     y_fov_end = 1000  # limits of the FoV in mm
-    data_selected = dict()
-    for key, val in pipeline_data.items():
-        data_selected[key] = val[selection]
-    x_fov = np.linspace(x_fov_start, x_fov_end, num_steps)
-    y_fov = np.linspace(y_fov_start, y_fov_end, num_steps)
+    x_fov = np.linspace(fov[0][0], fov[0][1], num_steps)
+    y_fov = np.linspace(fov[1][0], fov[1][1], num_steps)
     dx = x_fov[1] - x_fov[0]
     dy = y_fov[1] - y_fov[0]
     x_fov_bins = np.linspace(x_fov_start - dx / 2, x_fov_end + dx / 2,
@@ -197,7 +210,7 @@ def scan_2d_plot(pipeline_data, selection, alpha_min=5., plot="show"):
     for xi, x in enumerate(x_fov):
         print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
         for yi, y in enumerate(y_fov):
-            data_at_xy = correct_alpha_3(data_selected, source_x=x, source_y=y)
+            data_at_xy = correct_alpha_3(pipeline_data, source_x=x, source_y=y)
             N[yi, xi] = np.sum(data_at_xy['alpha'] < alpha_min)
         i += 1
     fig = plt.figure(figsize=(16, 12))
@@ -281,6 +294,39 @@ def cut_data(
     return selection
 
 
+def get_data_and_selection(
+        hillas_file,
+        cut_length_gte=None,
+        cut_length_lte=None,
+        cut_width_gte=None,
+        cut_width_lte=None,
+        cut_length_over_width_gte=None,
+        cut_length_over_width_lte=None,
+        cut_border_eq=None,
+        cut_burst_eq=None,
+        cut_saturated_eq=None,
+):
+    data = Table.read(hillas_file, format='fits')
+    data = data.to_pandas()
+    data['local_time'] = pd.to_datetime(data['local_time'])
+    data = data.set_index('local_time')
+    data = data.dropna()
+
+    selection = cut_data(
+        pipeline_data=data,
+        cut_length_gte=cut_length_gte,
+        cut_length_lte=cut_length_lte,
+        cut_width_gte=cut_width_gte,
+        cut_width_lte=cut_width_lte,
+        cut_length_over_width_gte=cut_length_over_width_gte,
+        cut_length_over_width_lte=cut_length_over_width_lte,
+        cut_border_eq=cut_border_eq,
+        cut_burst_eq=cut_burst_eq,
+        cut_saturated_eq=cut_saturated_eq
+    )
+    return data, selection
+
+
 def plot_pipeline(
         hillas_file,
         cut_length_gte=None,
@@ -300,15 +346,8 @@ def plot_pipeline(
         plot_correlation_selected=None,
         plot_correlation_cut=None,
 ):
-    # read data
-    data = Table.read(hillas_file, format='fits')
-    data = data.to_pandas()
-    data['local_time'] = pd.to_datetime(data['local_time'])
-    data = data.set_index('local_time')
-    data = data.dropna()
-
-    selection = cut_data(
-        pipeline_data=data,
+    data, selection = get_data_and_selection(
+        hillas_file=hillas_file,
         cut_length_gte=cut_length_gte,
         cut_length_lte=cut_length_lte,
         cut_width_gte=cut_width_gte,
@@ -317,7 +356,7 @@ def plot_pipeline(
         cut_length_over_width_lte=cut_length_over_width_lte,
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
-        cut_saturated_eq=cut_saturated_eq
+        cut_saturated_eq=cut_saturated_eq,
     )
     selection_no_burst = np.logical_and(selection, data['burst'] == False)
 
@@ -335,8 +374,8 @@ def plot_pipeline(
         correlation_plot(data[selection], title='fail cuts',
                          plot=plot_correlation_cut)
     if plot_scan2d is not None:
-        scan_2d_plot(pipeline_data=data, selection=selection_no_burst,
-                alpha_min=alpha_min, plot=plot_scan2d)
+        scan_2d_plot(pipeline_data=data[selection_no_burst],
+                     alpha_min=alpha_min, plot=plot_scan2d)
 
 
 def entry():
