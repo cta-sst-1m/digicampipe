@@ -91,12 +91,14 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
             samples = np.arange(n_samples)
             samples = np.tile(samples, n_pixels).reshape((n_pixels, n_samples))
 
-            if isinstance(threshold_pulse, float) or isinstance(threshold_pulse,
-                                                                int):
+            if isinstance(threshold_pulse, float) or isinstance(
+                    threshold_pulse, int
+            ):
                 threshold_pulse = np.ones(n_pixels) * threshold_pulse
 
-            if isinstance(saturation_threshold, float) or \
-                    isinstance(saturation_threshold, int):
+            if isinstance(saturation_threshold, float) or isinstance(
+                    saturation_threshold, int
+            ):
                 saturation_threshold = np.ones(n_pixels) * saturation_threshold
 
             threshold_pulse = threshold_pulse * saturation_threshold
@@ -320,7 +322,6 @@ def compute_sample_photo_electron(events, gain_amplitude):
 def interpolate_bad_pixels(events, geom, bad_pixels):
     n_pixel = len(geom.neighbors)
     pixels = np.arange(n_pixel, dtype=int)
-    n_bad = len(bad_pixels)
     good_pixels = np.ones(n_pixel, dtype=bool)
     good_pixels[bad_pixels] = False
     good_pixels = pixels[good_pixels]
