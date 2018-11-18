@@ -32,9 +32,9 @@ def alphanum_key(s):
 
 
 def entry(inputs, output):
-    if len(inputs) < 2:
+    if len(inputs) < 1:
         raise AttributeError('digicam-concatenate must take 1 output and at '
-                             'least 2 inputs files as arguments')
+                             'least 1 input file as arguments')
     tables = [Table.read(input) for input in inputs]
     result = vstack(tables)
     if os.path.isfile(output):
