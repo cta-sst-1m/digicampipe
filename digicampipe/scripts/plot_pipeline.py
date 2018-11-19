@@ -371,7 +371,7 @@ def plot_pipeline(
         correlation_plot(data[selection], title='pass cuts',
                          plot=plot_correlation_selected)
     if plot_correlation_cut is not None:
-        correlation_plot(data[selection], title='fail cuts',
+        correlation_plot(data[~selection], title='fail cuts',
                          plot=plot_correlation_cut)
     if plot_scan2d is not None:
         scan_2d_plot(pipeline_data=data[selection_no_burst],
