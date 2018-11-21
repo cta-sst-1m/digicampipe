@@ -58,10 +58,16 @@ template_filename = resource_filename(
         'pulse_template_all_pixels.txt'
     )
 )
-expected_columns = ['phi', 'y', 'skewness', 'intensity', 'x', 'event_id',
-                    'local_time', 'psi', 'width', 'miss', 'alpha', 'length',
-                    'r', 'kurtosis', 'event_type', 'border', 'burst',
-                    'saturated']
+aux_basepath = os.path.dirname(science100_file_path)
+
+expected_columns = ['local_time', 'event_id', 'event_type', 'az', 'el',
+                    'phi', 'y', 'skewness', 'intensity', 'x', 'psi', 'width',
+                    'length', 'r', 'kurtosis','miss', 'alpha',
+                    'baseline', 'nsb_rate', 'digicam_temperature',
+                    'pdp_temperature', 'target_ra', 'target_dec',
+                    'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
+                    'all_ghv_on', 'is_on_source', 'is_tracking',
+                    'shower', 'border', 'burst', 'saturated']
 
 
 def test_pipeline():
@@ -78,6 +84,7 @@ def test_pipeline():
         )
         main_pipeline(
             files=[science100_file_path],
+            aux_basepath=aux_basepath,
             max_events=None,
             dark_filename=dark_filename,
             integral_width=7,
@@ -96,7 +103,7 @@ def test_pipeline():
         nevent = len(hdul[1].data['local_time'])
         assert nevent > 0
         for col in expected_columns:
-            assert col in cols
+            assert col in cols, 'column "{}" was not found.'.format(col)
             assert len(hdul[1].data[col]) == nevent
         data = hdul[1].data
         good_data = np.isfinite(data.intensity)
@@ -109,7 +116,7 @@ def test_pipeline():
         assert np.all((data.y[good_data] < 550) & (data.y[good_data] > -550))
 
 
-def test_pipeline_bad_pixels():
+def test_pipeline_plot():
     with tempfile.TemporaryDirectory() as tmpdirname:
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
@@ -122,6 +129,7 @@ def test_pipeline_bad_pixels():
         )
         main_pipeline(
             files=[science200_file_path],
+            aux_basepath=aux_basepath,
             max_events=None,
             dark_filename=dark_filename,
             integral_width=7,
@@ -129,9 +137,9 @@ def test_pipeline_bad_pixels():
             hillas_filename=hillas_filename,
             template_filename=template_filename,
             parameters_filename=calibration_filename,
-            picture_threshold=30,  # unusual value, so events pass cuts
-            boundary_threshold=15,  # unusual value, so events pass cuts
-            bad_pixels=[0, 1],
+            picture_threshold=30,
+            boundary_threshold=15,
+            bad_pixels=None,
             saturation_threshold=3000,
             threshold_pulse=0.1,
             disable_bar=True
@@ -139,6 +147,11 @@ def test_pipeline_bad_pixels():
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         nevent = len(hdul[1].data['local_time'])
         assert nevent > 0
+        shower_plot = os.path.join(tmpdirname, 'shower_center.png')
+        hillas_plot = os.path.join(tmpdirname, 'hillas.png')
+        cor_all_plot = os.path.join(tmpdirname, 'correlation_all.png')
+        cor_sel_plot = os.path.join(tmpdirname, 'correlation_selected.png')
+        cor_cut_plot = os.path.join(tmpdirname, 'correlation_cut.png')
         plot_pipeline(
             hillas_filename,
             cut_length_gte=None,
@@ -152,20 +165,21 @@ def test_pipeline_bad_pixels():
             cut_saturated_eq=None,
             alpha_min=5.,
             plot_scan2d=None,
-            plot_showers_center='shower_center.png',
-            plot_hillas='hillas.png',
-            plot_correlation_all='correlation_all.png',
-            plot_correlation_selected='correlation_selected.png',
-            plot_correlation_cut='correlation_cut.png',
+            plot_showers_center=shower_plot,
+            plot_hillas=hillas_plot,
+            plot_correlation_all=cor_all_plot,
+            plot_correlation_selected=cor_sel_plot,
+            plot_correlation_cut=cor_cut_plot,
         )
-        assert os.path.isfile('shower_center.png')
-        assert os.path.isfile('hillas.png')
-        assert os.path.isfile('correlation_all.png')
-        assert os.path.isfile('correlation_selected.png')
-        assert os.path.isfile('correlation_cut.png')
+        assert os.path.isfile(shower_plot)
+        assert os.path.isfile(hillas_plot)
+        assert os.path.isfile(cor_all_plot)
+        assert os.path.isfile(cor_sel_plot)
+        assert os.path.isfile(cor_cut_plot)
 
-        # we plot scan_2d appart to have more control on the scan, so it can
+        # we plot scan_2d apart to have more control on the scan, so it can
         # be fast
+        scan2d_plot = os.path.join(tmpdirname, 'scan2d.png')
         data, selection = get_data_and_selection(
             hillas_file=hillas_filename,
             cut_length_lte=25,
@@ -173,11 +187,11 @@ def test_pipeline_bad_pixels():
             cut_length_over_width_gte=10,
             cut_length_over_width_lte=2,
         )
-        scan_2d_plot(data[selection], alpha_min=5., num_steps=10,
-                     plot="scan2d.png")
-        assert os.path.isfile('scan2d.png')
+        scan_2d_plot(data[selection], alpha_min=5., num_steps=3,
+                     plot=scan2d_plot)
+        assert os.path.isfile(scan2d_plot)
 
 
 if __name__ == '__main__':
-    test_pipeline_bad_pixels()
     test_pipeline()
+    test_pipeline_plot()

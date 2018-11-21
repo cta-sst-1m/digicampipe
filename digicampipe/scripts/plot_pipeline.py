@@ -48,8 +48,7 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from digicampipe.utils.docopt import convert_int, convert_list_int, \
-    convert_text, convert_float
+from digicampipe.utils.docopt import convert_text, convert_float
 from digicampipe.image.hillas import correct_alpha_3
 
 
@@ -98,6 +97,7 @@ def correlation_plot(pipeline_data, title=None, plot="show"):
 def showers_center_plot(pipeline_data, selection, plot="show"):
     # 2d histogram of shower centers
     fig = plt.figure(figsize=(16, 16))
+
     plt.subplot(2, 2, 1)
     plt.hist2d(pipeline_data['x'], pipeline_data['y'],
                bins=100, norm=LogNorm())
@@ -107,6 +107,7 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
     cb = plt.colorbar()
     cb.set_label('Number of events')
     plt.axis('equal')
+
     plt.subplot(1, 2, 2)
     data_ok = pipeline_data[pipeline_data['burst']]
     if len(data_ok) > 0:
@@ -117,6 +118,7 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
         cb = plt.colorbar()
         cb.set_label('Number of events')
         plt.axis('equal')
+
     plt.subplot(2, 2, 3)
     data_ok = pipeline_data[~selection]
     if len(data_ok) > 0:
@@ -127,6 +129,7 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
         cb = plt.colorbar()
         cb.set_label('Number of events')
         plt.axis('equal')
+
     plt.subplot(2, 2, 4)
     data_ok = pipeline_data[(~pipeline_data['burst']) & selection]
     if len(data_ok) > 0:
@@ -147,15 +150,17 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
 
 
 def hillas_plot(pipeline_data, selection, plot="show"):
-    fig = plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(25, 20))
     subplot = 0
     for key, val in pipeline_data.items():
         if key in ['border', 'intensity', 'kurtosis', 'event_id',
-                   'event_type', 'miss', 'burst', 'saturated']:
+                   'event_type', 'miss', 'burst', 'saturated', 'shower',
+                   'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
+                   'all_ghv_on', 'is_on_source', 'is_tracking']:
             continue
         subplot += 1
-        print(subplot, '/', 9, 'plotting', key)
-        plt.subplot(3, 3, subplot)
+        print(subplot, '/', 20, 'plotting', key)
+        plt.subplot(4, 5, subplot)
         val_split = [
             val[(~pipeline_data['burst']) & selection],
             val[(~pipeline_data['burst']) & (~selection)]
@@ -163,7 +168,7 @@ def hillas_plot(pipeline_data, selection, plot="show"):
         plt.hist(val_split, bins='auto', stacked=True)
         plt.xlabel(key)
         if subplot == 1:
-            plt.legend(['2 < l/w < 10', 'l/w cut'])
+            plt.legend(['pass cuts (no burst)', 'fail cuts (no burst)'])
     plt.tight_layout()
     if plot == "show":
         plt.show()
@@ -308,7 +313,7 @@ def get_data_and_selection(
 ):
     data = Table.read(hillas_file, format='fits')
     data = data.to_pandas()
-    data['local_time'] = pd.to_datetime(data['local_time'])
+    data.loc[:, 'local_time'] = pd.to_datetime(data['local_time'])
     data = data.set_index('local_time')
     data = data.dropna()
 
