@@ -118,11 +118,21 @@ def entry():
                       'does not exists \n'.format(output_path))
 
     if args['--compute']:
-        compute(files, max_events, pixel_id, raw_histo_filename, event_types,
-                disable_bar=disable_bar, baseline_subtracted=base_sub)
+        compute(
+            files=files,
+            filename=raw_histo_filename,
+            max_events=max_events,
+            pixel_id=pixel_id,
+            event_types=event_types,
+            disable_bar=disable_bar,
+            baseline_subtracted=base_sub
+        )
         if baseline_filename:
             compute_baseline_histogram(
-                files, max_events, pixel_id, baseline_filename,
+                files=files,
+                filename=baseline_filename,
+                max_events=max_events,
+                pixel_id=pixel_id,
                 disable_bar=disable_bar
             )
 
