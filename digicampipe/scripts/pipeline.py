@@ -277,14 +277,14 @@ def entry():
             )
         input_dir = input_dir[0]
         aux_basepath = input_dir.replace('/raw/', '/aux/')
-        if os.path.isdir(aux_basepath):
-            print("auxiliary files are expected in", aux_basepath)
-        else:
+        if not os.path.isdir(aux_basepath):
+            aux_basepath = input_dir.replace('/SST1M_01/', '/SST1M01/')
+        if not os.path.isdir(aux_basepath):
             raise AttributeError(
                 "Searching for auxiliaries files failed. " +
                 "Please use --aux_basepath=PATH"
             )
-
+        print('expecting aux files in', aux_basepath)
     main_pipeline(
         files=files,
         aux_basepath=aux_basepath,
