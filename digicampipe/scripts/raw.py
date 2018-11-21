@@ -28,7 +28,6 @@ Options:
                               reading files.
 """
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
@@ -41,12 +40,14 @@ from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
-def compute(files, max_events, pixel_id, filename, event_types=None,
+def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
             disable_bar=False, baseline_subtracted=False):
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
     else:
+        if pixel_id is None:
+            pixel_id = convert_pixel_args(None)
         n_pixels = len(pixel_id)
         events = calibration_event_stream(
             files, pixel_id=pixel_id, max_events=max_events,
@@ -72,12 +73,14 @@ def compute(files, max_events, pixel_id, filename, event_types=None,
         return raw_histo
 
 
-def compute_baseline_histogram(files, max_events, pixel_id, filename,
+def compute_baseline_histogram(files, filename, max_events=None, pixel_id=None,
                                event_types=None, disable_bar=False):
     if os.path.exists(filename) and len(files) == 0:
         baseline_histo = Histogram1D.load(filename)
         return baseline_histo
     else:
+        if pixel_id is None:
+            pixel_id = convert_pixel_args(None)
         n_pixels = len(pixel_id)
         events = calibration_event_stream(
             files, pixel_id=pixel_id, max_events=max_events,
