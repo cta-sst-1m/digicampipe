@@ -319,13 +319,12 @@ def compute_sample_photo_electron(events, gain_amplitude):
         yield event
 
 
-def interpolate_bad_pixels(events, geom, bad_pixels):
+def _get_average_matrix_bad_pixels(geom, bad_pixels):
     n_pixel = len(geom.neighbors)
     pixels = np.arange(n_pixel, dtype=int)
-    good_pixels = np.ones(n_pixel, dtype=bool)
-    good_pixels[bad_pixels] = False
-    good_pixels = pixels[good_pixels]
-    n_good = len(good_pixels)
+    good_pixels_mask = np.ones(n_pixel, dtype=bool)
+    good_pixels_mask[bad_pixels] = False
+    good_pixels = pixels[good_pixels_mask]
     average_matrix = np.zeros([n_pixel, n_pixel])
     for i, pix in enumerate(pixels):
         pix_neighbors = np.array(geom.neighbors[pix])
@@ -335,20 +334,34 @@ def interpolate_bad_pixels(events, geom, bad_pixels):
         for bad_neighbor in bad_neighbors:
             pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
         average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
-    average_matrix = average_matrix[:, good_pixels]
-    for event in events:
+    return average_matrix[:, good_pixels]
 
+
+def interpolate_bad_pixels(events, geom, bad_pixels):
+    n_pixel = len(geom.neighbors)
+    pixels = np.arange(n_pixel, dtype=int)
+    good_pixels_mask = np.ones(n_pixel, dtype=bool)
+    good_pixels_mask[bad_pixels] = False
+    good_pixels = pixels[good_pixels_mask]
+    average_matrix = _get_average_matrix_bad_pixels(geom, bad_pixels)
+    for event in events:
         pe = event.data.reconstructed_number_of_pe
         baseline_shift = event.data.baseline_shift
-
+        nsb_rate = event.data.nsb_rate
         mask = np.isfinite(pe) * np.isfinite(baseline_shift) * \
                (baseline_shift > 0)
 
         all_bad_pixels = np.arange(pe.shape[-1])[~mask]
         all_bad_pixels = np.append(all_bad_pixels, bad_pixels)
         all_bad_pixels = np.unique(all_bad_pixels)
-
+        # correct p.e. , baseline shift and NSB
         pe[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
             pe[good_pixels])
         event.data.reconstructed_number_of_pe = pe
+        baseline_shift[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            baseline_shift[good_pixels])
+        event.data.baseline_shift = baseline_shift
+        nsb_rate[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            nsb_rate[good_pixels])
+        event.data.nsb_rate = nsb_rate
         yield event
