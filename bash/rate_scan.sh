@@ -2,7 +2,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --partition=mono
 #SBATCH --mem=4G
-#SBATCH --output=/home/%u/job_logs/%x-%A_%a.out
+#SBATCH --output=/home/%u/job_logs/%x-%A_%a.out # TO BE CHANGED
 #SBATCH --job-name='sst-1m-rate-scan'
 
 source activate digicampipe
