@@ -278,7 +278,7 @@ def entry():
         input_dir = input_dir[0]
         aux_basepath = input_dir.replace('/raw/', '/aux/')
         if not os.path.isdir(aux_basepath):
-            aux_basepath = input_dir.replace('/SST1M_01/', '/SST1M01/')
+            aux_basepath = aux_basepath.replace('/SST1M_01', '/SST1M01')
         if not os.path.isdir(aux_basepath):
             raise AttributeError(
                 "Searching for auxiliaries files failed. " +
