@@ -244,6 +244,7 @@ def main_pipeline(
             data_to_store[key] = val
         output_file.add_container(data_to_store)
     output_file.close()
+    print(hillas_filename, 'created.')
 
 
 def entry():

@@ -150,23 +150,26 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
 
 
 def hillas_plot(pipeline_data, selection, plot="show"):
-    fig = plt.figure(figsize=(25, 20))
+    fig = plt.figure(figsize=(15, 10))
     subplot = 0
     for key, val in pipeline_data.items():
-        if key in ['border', 'intensity', 'kurtosis', 'event_id',
+        if key in ['border', 'kurtosis', 'event_id',
                    'event_type', 'miss', 'burst', 'saturated', 'shower',
                    'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
                    'all_ghv_on', 'is_on_source', 'is_tracking']:
             continue
         subplot += 1
         print(subplot, '/', 20, 'plotting', key)
-        plt.subplot(4, 5, subplot)
+        plt.subplot(3, 4, subplot)
         val_split = [
             val[(~pipeline_data['burst']) & selection],
             val[(~pipeline_data['burst']) & (~selection)]
         ]
         plt.hist(val_split, bins='auto', stacked=True)
         plt.xlabel(key)
+        if key == 'intensity':
+            plt.xscale('log')
+        plt.yscale('log')
         if subplot == 1:
             plt.legend(['pass cuts (no burst)', 'fail cuts (no burst)'])
     plt.tight_layout()
@@ -243,6 +246,8 @@ def cut_data(
         cut_width_lte=None,
         cut_length_over_width_gte=None,
         cut_length_over_width_lte=None,
+        cut_intensity_gte=None,
+        cut_intensity_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None
@@ -250,51 +255,74 @@ def cut_data(
     selection = np.isfinite(pipeline_data['intensity'])
     if cut_length_gte is not None:
         event_pass = pipeline_data['length'] < cut_length_gte
-        print(np.sum(event_pass), '/', np.sum(selection),
-              'events cut with selection: length < ', cut_length_gte)
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: length < ', cut_length_gte)
     if cut_length_lte is not None:
         event_pass = pipeline_data['length'] > cut_length_lte
-        print(np.sum(event_pass), '/', np.sum(selection),
-              'events cut with selection: length > ', cut_length_lte)
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: length > ', cut_length_lte)
     if cut_width_gte is not None:
         event_pass = pipeline_data['width'] < cut_width_gte
-        print(np.sum(event_pass), '/', np.sum(selection),
-              'events cut with selection: width < ', cut_width_gte)
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: width < ', cut_width_gte)
     if cut_width_lte is not None:
         event_pass = pipeline_data['width'] > cut_width_lte
-        print(np.sum(event_pass), '/', np.sum(selection),
-              'events cut with selection: width > ', cut_width_lte)
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: width > ', cut_width_lte)
     if cut_length_over_width_gte is not None:
         length_over_width = pipeline_data['length'] / pipeline_data['width']
         event_pass = length_over_width < cut_length_over_width_gte
-        print(np.sum(event_pass), '/', np.sum(selection),
-              'events cut with selection: l/w < ', cut_length_over_width_gte)
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: l/w < ', cut_length_over_width_gte)
     if cut_length_over_width_lte is not None:
         length_over_width = pipeline_data['length'] / pipeline_data['width']
         event_pass = length_over_width > cut_length_over_width_lte
-        print(np.sum(event_pass), '/', np.sum(selection),
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: l/w > ',
               cut_length_over_width_lte)
+    if cut_intensity_gte is not None:
+        event_pass = pipeline_data['intensity'] < cut_intensity_gte
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: intensity < ',
+              cut_intensity_gte)
+    if cut_intensity_lte is not None:
+        event_pass = pipeline_data['intensity'] > cut_intensity_lte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: intensity > ',
+              cut_intensity_lte)
     if cut_border_eq is not None:
         event_pass = pipeline_data['border'] != cut_border_eq
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
-        print(np.sum(event_pass), '/', np.sum(selection),
+        print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: border !=', cut_border_eq)
-    if cut_burst_eq:
+    if cut_burst_eq is not None:
         event_pass = pipeline_data['burst'] != cut_burst_eq
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
-        print(np.sum(event_pass), '/', np.sum(selection),
+        print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: burst !=', cut_burst_eq)
-    if cut_saturated_eq:
+    if cut_saturated_eq is not None:
         event_pass = pipeline_data['saturated'] != cut_saturated_eq
+        old_selection = selection
         selection = np.logical_and(selection, event_pass)
-        print(np.sum(event_pass), '/', np.sum(selection),
+        print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: saturated !=', cut_saturated_eq)
     return selection
 
@@ -307,14 +335,16 @@ def get_data_and_selection(
         cut_width_lte=None,
         cut_length_over_width_gte=None,
         cut_length_over_width_lte=None,
+        cut_intensity_gte=None,
+        cut_intensity_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
 ):
     data = Table.read(hillas_file, format='fits')
     data = data.to_pandas()
-    data.loc[:, 'local_time'] = pd.to_datetime(data['local_time'])
-    data = data.set_index('local_time')
+    data['time'] = pd.to_datetime(data['local_time'])
+    data = data.set_index('time')
     data = data.dropna()
 
     selection = cut_data(
@@ -325,6 +355,8 @@ def get_data_and_selection(
         cut_width_lte=cut_width_lte,
         cut_length_over_width_gte=cut_length_over_width_gte,
         cut_length_over_width_lte=cut_length_over_width_lte,
+        cut_intensity_gte=cut_intensity_gte,
+        cut_intensity_lte=cut_intensity_lte,
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
         cut_saturated_eq=cut_saturated_eq
@@ -340,6 +372,8 @@ def plot_pipeline(
         cut_width_lte=None,
         cut_length_over_width_gte=None,
         cut_length_over_width_lte=None,
+        cut_intensity_gte=None,
+        cut_intensity_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
@@ -350,6 +384,7 @@ def plot_pipeline(
         plot_correlation_all=None,
         plot_correlation_selected=None,
         plot_correlation_cut=None,
+        print_events=0
 ):
     data, selection = get_data_and_selection(
         hillas_file=hillas_file,
@@ -359,6 +394,8 @@ def plot_pipeline(
         cut_width_lte=cut_width_lte,
         cut_length_over_width_gte=cut_length_over_width_gte,
         cut_length_over_width_lte=cut_length_over_width_lte,
+        cut_intensity_gte=cut_intensity_gte,
+        cut_intensity_lte=cut_intensity_lte,
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
         cut_saturated_eq=cut_saturated_eq,
@@ -381,6 +418,17 @@ def plot_pipeline(
     if plot_scan2d is not None:
         scan_2d_plot(pipeline_data=data[selection_no_burst],
                      alpha_min=alpha_min, plot=plot_scan2d)
+    if not np.isfinite(print_events):
+        print_events = len(data[selection])
+    for event in range(print_events):
+        print(
+            'event', event, ':',
+            't={}'.format(data[selection].index[event]),
+            'id={}'.format(data[selection]['event_id'][event]),
+            'alpha={:.2f}'.format(data[selection]['alpha'][event]),
+            '(x,y)=({:.1f}, {:.1f})'.format(data[selection]['x'][event],
+                                            data[selection]['y'][event])
+        )
 
 
 def entry():
@@ -401,6 +449,8 @@ def entry():
         cut_width_lte=15,
         cut_length_over_width_gte=10,
         cut_length_over_width_lte=2,
+        cut_intensity_gte=None,
+        cut_intensity_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
@@ -411,6 +461,7 @@ def entry():
         plot_correlation_all=plot_correlation_all,
         plot_correlation_selected=plot_correlation_selected,
         plot_correlation_cut=plot_correlation_cut,
+        print_events=0
     )
 
 
