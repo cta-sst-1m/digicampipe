@@ -149,8 +149,8 @@ def showers_center_plot(pipeline_data, selection, plot="show"):
     plt.close(fig)
 
 
-def hillas_plot(pipeline_data, selection, plot="show"):
-    fig = plt.figure(figsize=(15, 10))
+def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
+    fig = plt.figure(figsize=(25, 20))
     subplot = 0
     for key, val in pipeline_data.items():
         if key in ['border', 'kurtosis', 'event_id',
@@ -160,7 +160,7 @@ def hillas_plot(pipeline_data, selection, plot="show"):
             continue
         subplot += 1
         print(subplot, '/', 20, 'plotting', key)
-        plt.subplot(3, 4, subplot)
+        plt.subplot(4, 5, subplot)
         val_split = [
             val[(~pipeline_data['burst']) & selection],
             val[(~pipeline_data['burst']) & (~selection)]
@@ -169,7 +169,7 @@ def hillas_plot(pipeline_data, selection, plot="show"):
         plt.xlabel(key)
         if key == 'intensity':
             plt.xscale('log')
-        plt.yscale('log')
+        plt.yscale(yscale)
         if subplot == 1:
             plt.legend(['pass cuts (no burst)', 'fail cuts (no burst)'])
     plt.tight_layout()
