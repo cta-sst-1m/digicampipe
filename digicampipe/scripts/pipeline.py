@@ -218,8 +218,8 @@ def main_pipeline(
         data_to_store.target_dec = target_radec[1]
         status_leds = event.slow_data.SafetyPLC.SPLC_CAM_Status
         # bit 8 of status_LEDs is about on/off, bit 9 about blinking
-        data_to_store.pointing_leds_on = (status_leds & 1 << 8) >> 8
-        data_to_store.pointing_leds_blink = (status_leds & 1 << 9) >> 9
+        data_to_store.pointing_leds_on = bool((status_leds & 1 << 8) >> 8)
+        data_to_store.pointing_leds_blink = bool((status_leds & 1 << 9) >> 9)
         hv_sector1 = event.slow_data.PDPSlowControl.Sector1_HV
         hv_sector2 = event.slow_data.PDPSlowControl.Sector2_HV
         hv_sector3 = event.slow_data.PDPSlowControl.Sector3_HV
@@ -234,17 +234,22 @@ def main_pipeline(
             np.hstack([ghv_sector1, ghv_sector2, ghv_sector3]), dtype=bool
         )
         data_to_store.all_ghv_on = np.all(ghv_pdp)
-        data_to_store.is_on_source = event.slow_data.DriveSystem.is_on_source
-        data_to_store.is_tracking = event.slow_data.DriveSystem.is_tracking
-        data_to_store.shower = event.data.shower
-        data_to_store.border = event.data.border
-        data_to_store.burst = event.data.burst
-        data_to_store.saturated = event.data.saturated
+        is_on_source = bool(event.slow_data.DriveSystem.is_on_source)
+        data_to_store.is_on_source = is_on_source
+        is_tracking = bool(event.slow_data.DriveSystem.is_tracking)
+        data_to_store.is_tracking = is_tracking
+        data_to_store.shower = bool(event.data.shower)
+        data_to_store.border = bool(event.data.border)
+        data_to_store.burst = bool(event.data.burst)
+        data_to_store.saturated = bool(event.data.saturated)
         for key, val in event.hillas.items():
             data_to_store[key] = val
         output_file.add_container(data_to_store)
-    output_file.close()
-    print(hillas_filename, 'created.')
+    try:
+        output_file.close()
+        print(hillas_filename, 'created.')
+    except ValueError:
+        print('WARNING: no data to save,', hillas_filename, 'not created.')
 
 
 def entry():

@@ -35,9 +35,15 @@ def entry(inputs, output):
     if len(inputs) < 1:
         raise AttributeError('digicam-concatenate must take 1 output and at '
                              'least 1 input file as arguments')
-    tables = [Table.read(input) for input in inputs]
+    tables = []
+    for input in inputs:
+        if os.path.isfile(input):
+            tables.append(Table.read(input))
+        else:
+            print('WARNING:', input, 'does not exist, skipping it.')
     result = vstack(tables)
     if os.path.isfile(output):
+        print('WARNING:', output, 'existed, overwriting it.')
         os.remove(output)
     result.write(output)
 
