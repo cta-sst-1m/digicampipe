@@ -162,16 +162,27 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
         print(subplot, '/', 20, 'plotting', key)
         plt.subplot(4, 5, subplot)
         val_split = [
-            val[(~pipeline_data['burst']) & selection],
-            val[(~pipeline_data['burst']) & (~selection)]
+            val[selection],
+            val[~selection]
         ]
-        plt.hist(val_split, bins='auto', stacked=True)
-        plt.xlabel(key)
         if key == 'intensity':
             plt.xscale('log')
+            binmin = np.floor(np.log10(np.nanmin(val)))
+            binmax = np.ceil(np.log10(np.nanmax(val)))
+            bins = np.logspace(binmin, binmax, 100)
+            h, bins, p = plt.hist(val_split, bins=bins, stacked=True)
+        else:
+            h, bins, p = plt.hist(val_split, bins='auto', stacked=True)
+
+        plt.xlabel(key)
         plt.yscale(yscale)
+        ymax = np.nanmax(h)
+        if yscale == 'log':
+            plt.ylim([0.8, ymax * 1.5])
+        else:
+            plt.ylim([0, ymax * 1.1])
         if subplot == 1:
-            plt.legend(['pass cuts (no burst)', 'fail cuts (no burst)'])
+            plt.legend(['pass cuts', 'fail cuts'])
     plt.tight_layout()
     if plot == "show":
         plt.show()
@@ -200,12 +211,12 @@ def scan_2d_plot(
     ((x_min, x_max), (y_min, y_max))
     :return: None
     """
-    x_fov_start = -1000  # limits of the FoV in mm
-    y_fov_start = -1000  # limits of the FoV in mm
-    x_fov_end = 1000  # limits of the FoV in mm
-    y_fov_end = 1000  # limits of the FoV in mm
-    x_fov = np.linspace(fov[0][0], fov[0][1], num_steps)
-    y_fov = np.linspace(fov[1][0], fov[1][1], num_steps)
+    x_fov_start = fov[0][0]  # limits of the FoV in mm
+    y_fov_start = fov[1][0]  # limits of the FoV in mm
+    x_fov_end = fov[0][1]  # limits of the FoV in mm
+    y_fov_end = fov[1][1]  # limits of the FoV in mm
+    x_fov = np.linspace(x_fov_start, x_fov_end, num_steps)
+    y_fov = np.linspace(y_fov_start, y_fov_end, num_steps)
     dx = x_fov[1] - x_fov[0]
     dy = y_fov[1] - y_fov[0]
     x_fov_bins = np.linspace(x_fov_start - dx / 2, x_fov_end + dx / 2,
@@ -250,7 +261,15 @@ def cut_data(
         cut_intensity_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
-        cut_saturated_eq=None
+        cut_saturated_eq=None,
+        cut_led_on_eq=None,
+        cut_led_blink_eq=None,
+        cut_target_ra_gte=None,
+        cut_target_ra_lte=None,
+        cut_target_dec_gte=None,
+        cut_target_dec_lte=None,
+        cut_nsb_rate_gte=None,
+        cut_nsb_rate_lte=None,
 ):
     selection = np.isfinite(pipeline_data['intensity'])
     if cut_length_gte is not None:
@@ -324,6 +343,60 @@ def cut_data(
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: saturated !=', cut_saturated_eq)
+    if cut_led_on_eq is not None:
+        event_pass = pipeline_data['pointing_leds_on'] != cut_led_on_eq
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: LEDs on !=', cut_led_on_eq)
+    if cut_led_blink_eq is not None:
+        event_pass = pipeline_data['pointing_leds_blink'] != cut_led_blink_eq
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: LEDs blink !=', cut_led_blink_eq)
+    if cut_target_ra_gte is not None:
+        event_pass = pipeline_data['target_ra'] < cut_target_ra_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: target\'s ra < ',
+              cut_target_ra_gte)
+    if cut_target_ra_lte is not None:
+        event_pass = pipeline_data['target_ra'] > cut_target_ra_lte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: target\'s ra > ',
+              cut_target_ra_lte)
+    if cut_target_dec_gte is not None:
+        event_pass = pipeline_data['target_dec'] < cut_target_dec_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: target\'s dec < ',
+              cut_target_dec_gte)
+    if cut_target_dec_lte is not None:
+        event_pass = pipeline_data['target_dec'] > cut_target_dec_lte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: target\'s dec > ',
+              cut_target_dec_lte)
+    if cut_nsb_rate_gte is not None:
+        event_pass = pipeline_data['nsb_rate'] < cut_nsb_rate_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: nsb rate < ',
+              cut_nsb_rate_gte, 'GHz')
+    if cut_nsb_rate_lte is not None:
+        event_pass = pipeline_data['nsb_rate'] > cut_nsb_rate_lte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: nsb rate > ',
+              cut_nsb_rate_lte, 'GHz')
     return selection
 
 
@@ -359,7 +432,15 @@ def get_data_and_selection(
         cut_intensity_lte=cut_intensity_lte,
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
-        cut_saturated_eq=cut_saturated_eq
+        cut_saturated_eq=cut_saturated_eq,
+        cut_led_on_eq=True,
+        cut_led_blink_eq=True,
+        cut_target_ra_gte=85,
+        cut_target_ra_lte=82,
+        cut_target_dec_gte=23,
+        cut_target_dec_lte=21,
+        cut_nsb_rate_gte=1.5,
+        cut_nsb_rate_lte=0.1,
     )
     return data, selection
 
@@ -416,8 +497,10 @@ def plot_pipeline(
         correlation_plot(data[~selection], title='fail cuts',
                          plot=plot_correlation_cut)
     if plot_scan2d is not None:
-        scan_2d_plot(pipeline_data=data[selection_no_burst],
-                     alpha_min=alpha_min, plot=plot_scan2d)
+        scan_2d_plot(
+            pipeline_data=data[selection_no_burst], alpha_min=alpha_min,
+            plot=plot_scan2d, fov=((-200, 200), (-200, 200)), num_steps=200
+        )
     if not np.isfinite(print_events):
         print_events = len(data[selection])
     for event in range(print_events):
