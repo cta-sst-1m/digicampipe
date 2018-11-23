@@ -413,6 +413,14 @@ def get_data_and_selection(
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
+        cut_led_on_eq=None,
+        cut_led_blink_eq=None,
+        cut_target_ra_gte=None,
+        cut_target_ra_lte=None,
+        cut_target_dec_gte=None,
+        cut_target_dec_lte=None,
+        cut_nsb_rate_gte=None,
+        cut_nsb_rate_lte=None,
 ):
     data = Table.read(hillas_file, format='fits')
     data = data.to_pandas()
@@ -433,14 +441,14 @@ def get_data_and_selection(
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
         cut_saturated_eq=cut_saturated_eq,
-        cut_led_on_eq=True,
-        cut_led_blink_eq=True,
-        cut_target_ra_gte=85,
-        cut_target_ra_lte=82,
-        cut_target_dec_gte=23,
-        cut_target_dec_lte=21,
-        cut_nsb_rate_gte=1.5,
-        cut_nsb_rate_lte=0.1,
+        cut_led_on_eq=cut_led_on_eq,
+        cut_led_blink_eq=cut_led_blink_eq,
+        cut_target_ra_gte=cut_target_ra_gte,
+        cut_target_ra_lte=cut_target_ra_lte,
+        cut_target_dec_gte=cut_target_dec_gte,
+        cut_target_dec_lte=cut_target_dec_lte,
+        cut_nsb_rate_gte=cut_nsb_rate_gte,
+        cut_nsb_rate_lte=cut_nsb_rate_lte,
     )
     return data, selection
 
@@ -458,6 +466,14 @@ def plot_pipeline(
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
+        cut_led_on_eq=None,
+        cut_led_blink_eq=None,
+        cut_target_ra_gte=None,
+        cut_target_ra_lte=None,
+        cut_target_dec_gte=None,
+        cut_target_dec_lte=None,
+        cut_nsb_rate_gte=None,
+        cut_nsb_rate_lte=None,
         alpha_min=5.,
         plot_scan2d=None,
         plot_showers_center=None,
@@ -480,6 +496,14 @@ def plot_pipeline(
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
         cut_saturated_eq=cut_saturated_eq,
+        cut_led_on_eq=cut_led_on_eq,
+        cut_led_blink_eq=cut_led_blink_eq,
+        cut_target_ra_gte=cut_target_ra_gte,
+        cut_target_ra_lte=cut_target_ra_lte,
+        cut_target_dec_gte=cut_target_dec_gte,
+        cut_target_dec_lte=cut_target_dec_lte,
+        cut_nsb_rate_gte=cut_nsb_rate_gte,
+        cut_nsb_rate_lte=cut_nsb_rate_lte,
     )
     selection_no_burst = np.logical_and(selection, data['burst'] == False)
 
@@ -521,9 +545,9 @@ def entry():
     plot_scan2d = convert_text(args['--plot_scan2d'])
     plot_showers_center = convert_text(args['--plot_showers_center'])
     plot_hillas = convert_text(args['--plot_hillas'])
-    plot_correlation_all=convert_text(args['--plot_correl_all'])
-    plot_correlation_selected=convert_text(args['--plot_correl_selected'])
-    plot_correlation_cut=convert_text(args['--plot_correl_cut'])
+    plot_correlation_all = convert_text(args['--plot_correl_all'])
+    plot_correlation_selected = convert_text(args['--plot_correl_selected'])
+    plot_correlation_cut = convert_text(args['--plot_correl_cut'])
     plot_pipeline(
         hillas_file=hillas_file,
         cut_length_gte=None,
@@ -537,6 +561,14 @@ def entry():
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
+        cut_led_on_eq=True,
+        cut_led_blink_eq=True,
+        cut_target_ra_gte=85,
+        cut_target_ra_lte=82,
+        cut_target_dec_gte=23,
+        cut_target_dec_lte=21,
+        cut_nsb_rate_gte=1.5,
+        cut_nsb_rate_lte=0.1,
         alpha_min=alpha_min,
         plot_scan2d=plot_scan2d,
         plot_showers_center=plot_showers_center,
