@@ -34,8 +34,8 @@ def compute_miss(hillas_parameters, alpha):
 def correct_alpha_2(data, source_x=0,
                     source_y=0):  # cyril from prod_alpha_plot.c
 
-    x = data['cen_x'] - source_x
-    y = data['cen_y'] - source_y
+    x = data['x'] - source_x
+    y = data['y'] - source_y
     data['r'] = np.sqrt(x ** 2.0 + y ** 2.0)
     phi = np.arctan(y / x)
     calpha = np.sin(phi) * np.sin(data['psi']) + np.cos(phi) * np.cos(
@@ -108,8 +108,29 @@ def correct_alpha_3(data, source_x=0, source_y=0):
     alpha_c_1 = abs(np.arccos(p_scal_1))
     alpha_c_2 = abs(np.arccos(p_scal_2))
     alpha_cetienne = alpha_c_1
-    alpha_cetienne[alpha_c_2 < alpha_c_1] = alpha_c_2
+    alpha_cetienne[alpha_c_2 < alpha_c_1] = alpha_c_2[alpha_c_2 < alpha_c_1]
     data.loc[:, 'alpha'] = 180.0 / np.pi * alpha_cetienne
     data.loc[:, 'r'] = to_c_norm
     data.loc[:, 'miss'] = data['r'] * np.sin(data['alpha'])
     return data
+
+
+def correct_alpha_4(data, sources_x, sources_y):
+    sources_x = np.array(sources_x)
+    sources_y = np.array(sources_y)
+    d_x = np.cos(data['psi'])
+    d_y = np.sin(data['psi'])
+    to_c_x = sources_x[None, :] - data['x'][:, None]
+    to_c_y = sources_y[None, :] - data['y'][:, None]
+    to_c_norm = np.sqrt(to_c_x ** 2.0 + to_c_y ** 2.0)
+    to_c_x = to_c_x / to_c_norm
+    to_c_y = to_c_y / to_c_norm
+    p_scal_1 = d_x[:, None] * to_c_x + d_y[:, None] * to_c_y
+    p_scal_2 = -d_x[:, None] * to_c_x - d_y[:, None] * to_c_y
+    alpha_c_1 = abs(np.arccos(p_scal_1))
+    alpha_c_2 = abs(np.arccos(p_scal_2))
+    mask = (alpha_c_2 < alpha_c_1)
+    alpha_cetienne = alpha_c_1
+    alpha_cetienne[mask] = alpha_c_2[mask]
+    alphas = 180.0 / np.pi * alpha_cetienne
+    return alphas

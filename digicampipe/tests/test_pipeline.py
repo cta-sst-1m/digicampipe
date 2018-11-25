@@ -163,7 +163,7 @@ def test_pipeline_plot():
             cut_border_eq=None,
             cut_burst_eq=None,
             cut_saturated_eq=None,
-            alpha_min=5.,
+            alphas_min=None,
             plot_scan2d=None,
             plot_showers_center=shower_plot,
             plot_hillas=hillas_plot,
@@ -187,7 +187,7 @@ def test_pipeline_plot():
             cut_length_over_width_gte=10,
             cut_length_over_width_lte=2,
         )
-        scan_2d_plot(data[selection], alpha_min=5., num_steps=3,
+        scan_2d_plot(data[selection], alphas_min=[5.], num_steps=3,
                      plot=scan2d_plot)
         assert os.path.isfile(scan2d_plot)
 

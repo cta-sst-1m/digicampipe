@@ -11,12 +11,12 @@ Options:
                                 [Default: ./hillas.fits]
   --plot_scan2d=PATH            path to the plot for a 2d scan of the source
                                 position for the number of shower with alpha <
-                                --alpha_min. If set to "none", the plot is not
+                                --alphas_min. If set to "none", the plot is not
                                 produced. If set to "show" the plot is
                                 displayed instead. [default: none]
-  --alpha_min=FLOAT             Minimum alpha angle in degrees that an event
+  --alphas_min=LIST             Minimum alpha angles in degrees that an event
                                 must have during the 2D scan to be included.
-                                [Default: 5]
+                                [Default: 1,2,5,10,20]
   --plot_showers_center=PATH    path to the plot of a 2d histogram of shower
                                 center of gravity. If set to "none", the plot
                                 is not produced. If set to "show" the plot is
@@ -48,8 +48,8 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from digicampipe.utils.docopt import convert_text, convert_float
-from digicampipe.image.hillas import correct_alpha_3
+from digicampipe.utils.docopt import convert_text, convert_list_float
+from digicampipe.image.hillas import correct_alpha_3, correct_alpha_4
 
 
 def correlation_plot(pipeline_data, title=None, plot="show"):
@@ -193,14 +193,17 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
 
 
 def scan_2d_plot(
-        pipeline_data, alpha_min=5., plot="show",
+        pipeline_data,
+        alphas_min=(1, 2, 5, 10, 20),
+        plot="show",
         num_steps=200,
         fov=((-500, 500), (-500, 500)),
 ):
     """
     2D scan of spike in alpha
     :param pipeline_data: hillas parameters data file, output of pipeline.py
-    :param alpha_min: events are taken into account as possibly coming from
+    :param alphas_min: list of float, each element being a alpha_min.
+    events are taken into account as possibly coming from
     the scanned point if the alpha parameter calculated at that point is below
     alpha_min.
     :param plot: path to the plot for a 2d scan of the source position.
@@ -223,30 +226,37 @@ def scan_2d_plot(
                              num_steps + 1)
     y_fov_bins = np.linspace(y_fov_start - dy / 2, y_fov_end + dy / 2,
                              num_steps + 1)
-    N = np.zeros([num_steps, num_steps], dtype=int)
-    i = 0
+    num_alpha = len(alphas_min)
+    N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
     for xi, x in enumerate(x_fov):
-        print(round(i / len(x_fov) * 100, 2), '/', 100)  # progress
-        for yi, y in enumerate(y_fov):
-            data_at_xy = correct_alpha_3(pipeline_data, source_x=x, source_y=y)
-            N[yi, xi] = np.sum(data_at_xy['alpha'] < alpha_min)
-        i += 1
-    fig = plt.figure(figsize=(16, 12))
-    ax1 = fig.add_subplot(111)
-    pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N,
-                         rasterized=True, cmap='nipy_spectral')
-    plt.ylabel('FOV Y [mm]')
-    plt.xlabel('FOV X [mm]')
-    cbar = fig.colorbar(pcm)
-    cbar.set_label('N of events')
-    plt.tight_layout()
-    if plot == "show":
-        plt.show()
-    else:
-        plt.savefig(plot)
-        print(plot, 'created')
-    plt.close(fig)
+        alphas_at_xy = correct_alpha_4(
+            pipeline_data,
+            sources_x=x * np.ones(num_steps),
+            sources_y=y_fov
+        )
+        for ai, alpha_min in enumerate(alphas_min):
+            N[:, xi, ai] = np.sum(alphas_at_xy < alpha_min, axis=0)
+    for ai, alpha_min in enumerate(alphas_min):
+        if len(alphas_min)> 1:
+            plot_name = plot.replace('.png', '_{}deg.png'.format(alpha_min))
+        else:
+            plot_name = plot
+        fig = plt.figure(figsize=(16, 12))
+        ax1 = fig.add_subplot(111)
+        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N[:, :, ai],
+                             rasterized=True, cmap='nipy_spectral')
+        plt.ylabel('FOV Y [mm]')
+        plt.xlabel('FOV X [mm]')
+        cbar = fig.colorbar(pcm)
+        cbar.set_label('N of events')
+        plt.tight_layout()
+        if plot == "show":
+            plt.show()
+        else:
+            plt.savefig(plot_name)
+            print(plot_name, 'created')
+        plt.close(fig)
 
 
 def cut_data(
@@ -474,7 +484,7 @@ def plot_pipeline(
         cut_target_dec_lte=None,
         cut_nsb_rate_gte=None,
         cut_nsb_rate_lte=None,
-        alpha_min=5.,
+        alphas_min=(1, 2, 5, 10, 20),
         plot_scan2d=None,
         plot_showers_center=None,
         plot_hillas=None,
@@ -522,7 +532,7 @@ def plot_pipeline(
                          plot=plot_correlation_cut)
     if plot_scan2d is not None:
         scan_2d_plot(
-            pipeline_data=data[selection_no_burst], alpha_min=alpha_min,
+            pipeline_data=data[selection_no_burst], alphas_min=alphas_min,
             plot=plot_scan2d, fov=((-200, 200), (-200, 200)), num_steps=200
         )
     if not np.isfinite(print_events):
@@ -541,7 +551,7 @@ def plot_pipeline(
 def entry():
     args = docopt(__doc__)
     hillas_file = args['<INPUT>']
-    alpha_min = convert_float(args['--alpha_min'])
+    alphas_min = convert_list_float(args['--alphas_min'])
     plot_scan2d = convert_text(args['--plot_scan2d'])
     plot_showers_center = convert_text(args['--plot_showers_center'])
     plot_hillas = convert_text(args['--plot_hillas'])
@@ -554,11 +564,11 @@ def entry():
         cut_length_lte=25,
         cut_width_gte=None,
         cut_width_lte=15,
-        cut_length_over_width_gte=10,
-        cut_length_over_width_lte=2,
+        cut_length_over_width_gte=None,
+        cut_length_over_width_lte=1.5,
         cut_intensity_gte=None,
-        cut_intensity_lte=None,
-        cut_border_eq=None,
+        cut_intensity_lte=500,
+        cut_border_eq=True,
         cut_burst_eq=None,
         cut_saturated_eq=None,
         cut_led_on_eq=True,
@@ -567,9 +577,9 @@ def entry():
         cut_target_ra_lte=82,
         cut_target_dec_gte=23,
         cut_target_dec_lte=21,
-        cut_nsb_rate_gte=1.5,
-        cut_nsb_rate_lte=0.1,
-        alpha_min=alpha_min,
+        cut_nsb_rate_gte=1.0,
+        cut_nsb_rate_lte=0.2,
+        alphas_min=alphas_min,
         plot_scan2d=plot_scan2d,
         plot_showers_center=plot_showers_center,
         plot_hillas=plot_hillas,
