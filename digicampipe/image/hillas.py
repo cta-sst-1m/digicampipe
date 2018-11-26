@@ -17,8 +17,9 @@ def correct_hillas(data, source_x=0, source_y=0):  # cyril
 def compute_alpha(hillas_parameters):
     data = hillas_parameters
 
-    alpha = np.cos(data['phi'] - data['psi'])
-    alpha = np.arccos(alpha)
+    # alpha = np.cos(data['phi'] - data['psi'])
+    # alpha = np.arccos(alpha)
+    alpha = data['phi'] - data['psi']
     alpha = np.remainder(alpha, np.pi / 2 * u.rad)
     alpha = alpha.to(u.deg)
 
