@@ -99,7 +99,7 @@ def test_correct_alphas():
     data_alpha1['phi'] = data_alpha1['phi'] * u.rad
     data_alpha1['psi'] = data_alpha1['psi'] * u.rad
     alpha1 = compute_alpha(data_alpha1)
-    assert np.all(alpha1.value == data_alpha2['alpha'])
+    assert np.all(alpha1.value == np.array(data_alpha2['alpha']))
     assert np.all(data_alpha3 == data_alpha2)
     assert np.all(data_alpha3['alpha'] == alpha4[:, 0])
 
