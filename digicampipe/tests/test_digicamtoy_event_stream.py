@@ -1,5 +1,5 @@
 import os
-
+import numpy as np
 import pkg_resources
 
 from digicampipe.io.event_stream import event_stream
@@ -15,8 +15,19 @@ example_file_path = pkg_resources.resource_filename(
     )
 )
 
+example_file_path_2 = pkg_resources.resource_filename(
+    'digicampipe',
+    os.path.join(
+        'tests',
+        'resources',
+        'digicamtoy',
+        'toy_example_20181126_0.hdf5'
+    )
+)
+
 TEL_WITH_DATA = 1
 N_PIXELS = 1296
+EXPECTED_BASELINE = np.ones(N_PIXELS) * 285.08224220947204
 
 
 def test_event_source():
@@ -45,3 +56,19 @@ def test_n_pixels():
 def test_tel_with_data():
     for event in event_stream(example_file_path):
         assert TEL_WITH_DATA in event.r0.tels_with_data
+
+
+def test_baseline():
+    for event in event_stream(example_file_path):
+
+        for tel_id in event.r0.tels_with_data:
+
+            assert (event.r0.tel[tel_id].digicam_baseline ==
+                    np.zeros(N_PIXELS)).all()
+
+    for event in event_stream(example_file_path_2):
+
+        for tel_id in event.r0.tels_with_data:
+
+            baseline = event.r0.tel[tel_id].digicam_baseline
+            np.testing.assert_array_equal(baseline, EXPECTED_BASELINE)
