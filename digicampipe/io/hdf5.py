@@ -39,9 +39,16 @@ def digicamtoy_event_source(
 
     data = DataContainer()
     hdf5 = h5py.File(url, 'r')
-    baseline = hdf5['config']['baseline']
+
     full_data_set = hdf5['data']['adc_count']
     n_events, n_pixels, n_samples = full_data_set.shape
+
+    try:
+
+        baseline = hdf5['data']['true_baseline']
+    except KeyError:
+
+        baseline = np.zeros(n_pixels)
 
     if max_events is None:
         max_events = n_events
@@ -77,8 +84,7 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].camera_event_type = CameraEventType.INTERNAL
             data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
-            data.r0.tel[tel_id].digicam_baseline = np.ones(
-                data.r0.tel[tel_id].adc_samples.shape[:-1]) * baseline
+            data.r0.tel[tel_id].digicam_baseline = baseline
             index_in_chunk += 1
 
         yield data
