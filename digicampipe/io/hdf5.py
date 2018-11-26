@@ -43,10 +43,10 @@ def digicamtoy_event_source(
     full_data_set = hdf5['data']['adc_count']
     n_events, n_pixels, n_samples = full_data_set.shape
 
-    try:
+    if 'true_baseline' in hdf5['data'].keys():
 
         baseline = hdf5['data']['true_baseline']
-    except KeyError:
+    else:
 
         baseline = np.zeros(n_pixels)
 
