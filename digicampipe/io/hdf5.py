@@ -71,7 +71,8 @@ def digicamtoy_event_source(
                 data.inst.patch_matrix[tel_id] = camera.patch_matrix
                 data.inst.num_samples[tel_id] = n_samples
                 data.r0.tel[tel_id].digicam_baseline = baseline
-                data.r0.tel[tel_id].camera_event_type = CameraEventType.INTERNAL
+                data.r0.tel[tel_id].camera_event_type = \
+                    CameraEventType.INTERNAL
                 data.r0.tel[tel_id].array_event_type = CameraEventType.UNKNOWN
 
             if (event_id % chunk_size) == 0:
