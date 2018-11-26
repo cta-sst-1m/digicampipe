@@ -2,9 +2,11 @@ import os
 import tempfile
 import numpy as np
 from pkg_resources import resource_filename
+import astropy.units as u
+from astropy.table import Table
 
 from digicampipe.image.hillas import correct_alpha_2, \
-    correct_alpha_3, correct_alpha_4
+    correct_alpha_3, correct_alpha_4, compute_alpha, correct_hillas
 from digicampipe.utils.docopt import convert_pixel_args
 from digicampipe.scripts.pipeline import main_pipeline
 from digicampipe.scripts.plot_pipeline import get_data_and_selection
@@ -85,12 +87,19 @@ def get_data():
 
 
 def test_correct_alphas():
-    data = get_data()
+    data =get_data()
+    data_alpha1 =  Table.from_pandas(
+        correct_hillas(data, source_x=1, source_y=1)
+    )
     data_alpha2 = correct_alpha_2(data, source_x=1, source_y=1)
     data_alpha3 = correct_alpha_3(data, source_x=1, source_y=1)
     alpha4 = correct_alpha_4(
         data, sources_x=[1, -1], sources_y=[1, -1]
     )
+    data_alpha1['phi'] = data_alpha1['phi'] * u.rad
+    data_alpha1['psi'] = data_alpha1['psi'] * u.rad
+    alpha1 = compute_alpha(data_alpha1)
+    assert np.all(alpha1.value == data_alpha2['alpha'])
     assert np.all(data_alpha3 == data_alpha2)
     assert np.all(data_alpha3['alpha'] == alpha4[:, 0])
 
