@@ -4,6 +4,7 @@ import numpy as np
 from pkg_resources import resource_filename
 import astropy.units as u
 from astropy.table import Table
+import pandas as pd
 
 from digicampipe.image.hillas import correct_alpha_2, \
     correct_alpha_3, correct_alpha_4, compute_alpha, correct_hillas
@@ -104,5 +105,57 @@ def test_correct_alphas():
     assert np.all(data_alpha3['alpha'] == alpha4[:, 0])
 
 
+def test_alpha_computation_for_aligned_showers():
+
+    x = np.linspace(-100, 100, num=100)
+    y = np.linspace(-100, 100, num=100)
+    np.random.shuffle(y)
+    data = {'x': x, 'y': y}
+    data['r'] = np.sqrt(data['x'] ** 2 + data['y']**2)
+    data['phi'] = np.arctan2(data['y'], data['x'])
+    data['psi'] = data['phi']
+
+    data = pd.DataFrame(data)
+
+    alpha_1 = np.array(compute_alpha(data))
+    alpha_2 = np.array(correct_alpha_2(data)['alpha'])
+    alpha_3 = np.array(correct_alpha_3(data)['alpha'])
+
+    assert (alpha_1 == 0).all()
+    assert (alpha_2 == 0).all()
+    assert (alpha_3 == 0).all()
+
+
+def test_alpha_computation_for_missaligned_showers():
+
+    thetas = np.linspace(0.01, np.pi/2, num=100)
+
+    for theta in thetas:
+
+        miss_alignement = (np.pi / 2 - theta)
+
+        x = np.linspace(-100, 100, num=100)
+        y = np.linspace(-100, 100, num=100)
+        np.random.shuffle(y)
+        data = {'x': x, 'y': y}
+        data['r'] = np.sqrt(data['x'] ** 2 + data['y']**2)
+        data['phi'] = np.arctan2(data['y'], data['x'])
+        data['psi'] = data['phi'] + miss_alignement
+        miss_alignement = np.rad2deg(miss_alignement)
+
+        data = pd.DataFrame(data)
+
+        alpha_1 = np.array(compute_alpha(data))
+        alpha_2 = np.array(correct_alpha_2(data)['alpha'])
+        alpha_3 = np.array(correct_alpha_3(data)['alpha'])
+
+        assert (np.isfinite(alpha_1).all())
+
+        np.testing.assert_almost_equal(alpha_1, miss_alignement)
+        # np.testing.assert_almost_equal(alpha_2, miss_alignement)
+        # np.testing.assert_almost_equal(alpha_3, miss_alignement)
+
+
 if __name__ == '__main__':
+    test_alpha_computation_for_aligned_showers()
     test_correct_alphas()

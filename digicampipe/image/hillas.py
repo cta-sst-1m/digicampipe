@@ -19,9 +19,10 @@ def compute_alpha(hillas_parameters):
 
     # alpha = np.cos(data['phi'] - data['psi'])
     # alpha = np.arccos(alpha)
-    alpha = data['phi'] - data['psi']
-    alpha = np.remainder(alpha, np.pi / 2 * u.rad)
-    alpha = alpha.to(u.deg)
+    # alpha = data['phi'] - data['psi']
+    alpha = np.abs(data['phi'] - data['psi'])
+    alpha = np.unwrap(alpha)
+    alpha = np.rad2deg(alpha)
 
     return alpha
 
