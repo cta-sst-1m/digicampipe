@@ -4,7 +4,7 @@ import numpy as np
 from pkg_resources import resource_filename
 import pandas as pd
 
-from digicampipe.image.hillas import compute_alpha
+from digicampipe.image.hillas import compute_alpha, correct_hillas
 from digicampipe.utils.docopt import convert_pixel_args
 from digicampipe.scripts.pipeline import main_pipeline
 from digicampipe.scripts.plot_pipeline import get_data_and_selection
@@ -124,7 +124,34 @@ def test_alpha_computation_for_missaligned_showers():
         np.testing.assert_almost_equal(alpha_1, miss_alignement)
 
 
+def test_correct_hillas():
+
+    x = np.linspace(0, 100, num=5)
+    y = np.linspace(0, 100, num=5)
+    np.random.shuffle(y)
+    data = {'x': x, 'y': y}
+    data['r'] = np.sqrt(x ** 2 + y**2)
+    data['phi'] = np.arctan2(data['y'], data['x'])
+    data['psi'] = np.ones(len(x)) * np.pi
+
+    data_corrected = correct_hillas(data)
+    assert (data_corrected['x'] == x).all()
+    assert (data_corrected['y'] == y).all()
+    assert (data_corrected['r'] == data['r']).all()
+    assert (data_corrected['phi'] == data['phi']).all()
+
+    data_corrected = correct_hillas(data, source_x=[0, 100], source_y=[0, 100])
+    expected_shape = (2, len(x))
+
+    for key, val in data_corrected.items():
+
+        assert (val.shape == expected_shape)
+    assert (data_corrected['x'][0, :] == x).all()
+    assert (data_corrected['x'][1, :] == x - 100).all()
+
+    assert (data_corrected['psi'] - data['psi']).sum() == 0
+
 
 if __name__ == '__main__':
+
     test_alpha_computation_for_aligned_showers()
-    test_correct_alphas()

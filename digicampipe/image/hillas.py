@@ -3,10 +3,14 @@ import numpy as np
 
 def correct_hillas(hillas, source_x=0, source_y=0):  # cyril
 
-    hillas['x'] = hillas['x'] - source_x
-    hillas['y'] = hillas['y'] - source_y
+    source_x = np.atleast_1d(source_x)
+    source_y = np.atleast_1d(source_y)
+
+    hillas['x'] = hillas['x'] - source_x[:, None]
+    hillas['y'] = hillas['y'] - source_y[:, None]
     hillas['r'] = np.sqrt(hillas['x'] ** 2.0 + hillas['y'] ** 2.0)
     hillas['phi'] = np.arctan2(hillas['y'], hillas['x'])
+    hillas['psi'] = hillas['psi'] - np.zeros(source_y.shape)[:, None]
 
     return hillas
 
@@ -34,6 +38,7 @@ def compute_miss(r, alpha):
     miss = r * np.sin(alpha)
 
     return miss
+
 
 def correct_alpha_4(data, sources_x, sources_y):
     sources_x = np.array(sources_x)
