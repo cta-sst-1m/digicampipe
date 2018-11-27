@@ -229,6 +229,10 @@ def scan_2d_plot(
     num_alpha = len(alphas_min)
     N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
+
+    pipeline_data = {col: np.array(pipeline_data[col])
+                     for col in pipeline_data.columns}
+
     for xi, x in enumerate(x_fov):
         hillas_at_xy = correct_hillas(
             pipeline_data,
@@ -237,6 +241,7 @@ def scan_2d_plot(
         )
 
         alphas_at_xy = compute_alpha(hillas_at_xy['phi'], hillas_at_xy['psi'])
+        alphas_at_xy = alphas_at_xy.T
 
         for ai, alpha_min in enumerate(alphas_min):
             N[:, xi, ai] = np.sum(alphas_at_xy < alpha_min, axis=0)
