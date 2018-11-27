@@ -39,23 +39,3 @@ def compute_miss(r, alpha):
 
     return miss
 
-
-def correct_alpha_4(data, sources_x, sources_y):
-    sources_x = np.array(sources_x)
-    sources_y = np.array(sources_y)
-    d_x = np.cos(data['psi'])
-    d_y = np.sin(data['psi'])
-    to_c_x = sources_x[None, :] - data['x'][:, None]
-    to_c_y = sources_y[None, :] - data['y'][:, None]
-    to_c_norm = np.sqrt(to_c_x ** 2.0 + to_c_y ** 2.0)
-    to_c_x = to_c_x / to_c_norm
-    to_c_y = to_c_y / to_c_norm
-    p_scal_1 = d_x[:, None] * to_c_x + d_y[:, None] * to_c_y
-    p_scal_2 = -d_x[:, None] * to_c_x - d_y[:, None] * to_c_y
-    alpha_c_1 = abs(np.arccos(p_scal_1))
-    alpha_c_2 = abs(np.arccos(p_scal_2))
-    mask = (alpha_c_2 < alpha_c_1)
-    alpha_cetienne = alpha_c_1
-    alpha_cetienne[mask] = alpha_c_2[mask]
-    alphas = 180.0 / np.pi * alpha_cetienne
-    return alphas

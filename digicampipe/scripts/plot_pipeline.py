@@ -49,7 +49,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 from digicampipe.utils.docopt import convert_text, convert_list_float
-from digicampipe.image.hillas import correct_alpha_3, correct_alpha_4
+from digicampipe.image.hillas import correct_hillas, compute_alpha
 
 
 def correlation_plot(pipeline_data, title=None, plot="show"):
@@ -230,11 +230,14 @@ def scan_2d_plot(
     N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
     for xi, x in enumerate(x_fov):
-        alphas_at_xy = correct_alpha_4(
+        hillas_at_xy = correct_hillas(
             pipeline_data,
             sources_x=x * np.ones(num_steps),
             sources_y=y_fov
         )
+
+        alphas_at_xy = compute_alpha(hillas_at_xy['phi'], hillas_at_xy['psi'])
+
         for ai, alpha_min in enumerate(alphas_min):
             N[:, xi, ai] = np.sum(alphas_at_xy < alpha_min, axis=0)
     for ai, alpha_min in enumerate(alphas_min):
