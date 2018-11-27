@@ -189,8 +189,13 @@ def main_pipeline(
         data_to_store.event_id = event.event_id
         data_to_store.az = event.slow_data.DriveSystem.current_position_az
         data_to_store.el = event.slow_data.DriveSystem.current_position_el
-        data_to_store.alpha = compute_alpha(event.hillas)
-        data_to_store.miss = compute_miss(event.hillas, data_to_store.alpha)
+
+        r = event.hillas.r
+        phi = event.hillas.phi
+        psi = event.hillas.psi
+        alpha = compute_alpha(phi.value, psi.value) * psi.unit
+        data_to_store.alpha = alpha
+        data_to_store.miss = compute_miss(r=r.value, alpha=alpha.value) * r.unit
         data_to_store.baseline = np.mean(event.data.digicam_baseline)
         data_to_store.nsb_rate = np.mean(event.data.nsb_rate)
         temp_crate1 = event.slow_data.DigicamSlowControl.Crate1_T

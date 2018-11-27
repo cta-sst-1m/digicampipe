@@ -1,60 +1,39 @@
-import astropy.units as u
 import numpy as np
 
 
-def correct_hillas(data, source_x=0, source_y=0):  # cyril
+def correct_hillas(hillas, source_x=0, source_y=0):  # cyril
 
-    data['x'] = data['x'] - source_x
-    data['y'] = data['y'] - source_y
-    data['r'] = np.sqrt(data['x'] ** 2.0 + data['y'] ** 2.0)
-    data['phi'] = np.arctan2(data['y'], data['x'])
+    hillas['x'] = hillas['x'] - source_x
+    hillas['y'] = hillas['y'] - source_y
+    hillas['r'] = np.sqrt(hillas['x'] ** 2.0 + hillas['y'] ** 2.0)
+    hillas['phi'] = np.arctan2(hillas['y'], hillas['x'])
 
-    # data = compute_alpha_and_miss(data)
-
-    return data
+    return hillas
 
 
-def compute_alpha(hillas_parameters):
-    data = hillas_parameters
+def compute_alpha(phi, psi):
+    """
+    :param phi: Polar angle of shower centroid
+    :param psi: Orientation of shower major axis
+    :return:
+    """
 
-    # alpha = np.cos(data['phi'] - data['psi'])
-    # alpha = np.arccos(alpha)
-    # alpha = data['phi'] - data['psi']
-    alpha = np.abs(data['phi'] - data['psi'])
-    alpha = np.unwrap(alpha)
-    alpha = np.rad2deg(alpha)
+    # phi and psi range [-np.pi, +np.pi]
+    alpha = np.abs(phi - psi)
+    alpha = np.minimum(np.abs(np.pi - alpha), alpha)
 
     return alpha
 
 
-def compute_miss(hillas_parameters, alpha):
-    miss = hillas_parameters['r'] * np.sin(alpha)
+def compute_miss(r, alpha):
+    """
+    :param r: Shower centroid distance to center of coordinates
+    :param alpha: Shower orientation to center of coordinates
+    :return:
+    """
+    miss = r * np.sin(alpha)
 
     return miss
-
-
-def correct_alpha_2(data, source_x=0,
-                    source_y=0):  # cyril from prod_alpha_plot.c
-
-    x = data['x'] - source_x
-    y = data['y'] - source_y
-    data['r'] = np.sqrt(x ** 2.0 + y ** 2.0)
-    phi = np.arctan(y / x)
-    calpha = np.sin(phi) * np.sin(data['psi']) + np.cos(phi) * np.cos(
-        data['psi'])
-    alpha = np.arccos(calpha)
-    for i in range(len(alpha)):
-        if alpha[i] > np.pi / 2.0:
-            alpha[i] = np.pi - alpha[i]
-    # delta_alpha = np.arctan2(source_y,source_x)
-    # delta_alpha -= np.arctan2(-1.0*data['cen_y'],-1.0*data['cen_x'])
-    # alpha_r = alpha + delta_alpha;
-    # miss_c = r*TMath::Sin(alpha_c);
-    # miss_r = r*TMath::Sin(alpha_r);
-    data['alpha'] = alpha
-    data['alpha'] = np.rad2deg(data['alpha'])  # conversion to degrees
-    data['miss'] = data['r'] * np.sin(data['alpha'])
-    return data
 
 
 """
