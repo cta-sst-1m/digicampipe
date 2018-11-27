@@ -1,3 +1,10 @@
+"""
+For further reference on Hillas parameters refer to :
+http://adsabs.harvard.edu/abs/1993ApJ...404..206R
+and
+https://github.com/cta-observatory/ctapipe
+"""
+
 import numpy as np
 
 
