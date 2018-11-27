@@ -35,28 +35,6 @@ def compute_miss(r, alpha):
 
     return miss
 
-
-# etienne from scan_crab_cluster.c
-def correct_alpha_3(data, source_x=0, source_y=0):
-    d_x = np.cos(data['psi'])
-    d_y = np.sin(data['psi'])
-    to_c_x = source_x - data['x']
-    to_c_y = source_y - data['y']
-    to_c_norm = np.sqrt(to_c_x ** 2.0 + to_c_y ** 2.0)
-    to_c_x = to_c_x / to_c_norm
-    to_c_y = to_c_y / to_c_norm
-    p_scal_1 = d_x * to_c_x + d_y * to_c_y
-    p_scal_2 = -d_x * to_c_x + -d_y * to_c_y
-    alpha_c_1 = abs(np.arccos(p_scal_1))
-    alpha_c_2 = abs(np.arccos(p_scal_2))
-    alpha_cetienne = alpha_c_1
-    alpha_cetienne[alpha_c_2 < alpha_c_1] = alpha_c_2[alpha_c_2 < alpha_c_1]
-    data.loc[:, 'alpha'] = 180.0 / np.pi * alpha_cetienne
-    data.loc[:, 'r'] = to_c_norm
-    data.loc[:, 'miss'] = data['r'] * np.sin(data['alpha'])
-    return data
-
-
 def correct_alpha_4(data, sources_x, sources_y):
     sources_x = np.array(sources_x)
     sources_y = np.array(sources_y)

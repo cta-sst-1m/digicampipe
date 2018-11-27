@@ -75,8 +75,10 @@ def entry():
             # data_cor2 = hillas.correct_alpha_1(data_cor, source_x=x, source_y=y)
             # data_cor2 = hillas.correct_alpha_2(data_cor, source_x=x,
             # source_y=y)  # OK
-            data_cor2 = hillas.correct_alpha_3(data_cor, source_x=x,
+            data_cor2 = hillas.correct_hillas(data_cor, source_x=x,
                                                source_y=y)  # OK
+            data_cor2['alpha'] = hillas.compute_alpha(data_cor2['phi'],
+                                                      data_cor2['psi'])
             # data_cor2 = hillas.correct_alpha_roland(data_cor,source_x=x, source_y=y)
 
             # 'first bin' sellection + simplified r-min criterion (source musn't be inside the elipse)
