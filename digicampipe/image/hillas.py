@@ -36,45 +36,6 @@ def compute_miss(r, alpha):
     return miss
 
 
-"""
-def alpha_roland(datas, source_x=0, source_y=0): #roland from prod_alpha_plot.c
-
-    alpha = np.sin(datas['miss']/datas['r'])
-    alpha2 = np.arctan2(-datas['cen_y'], -datas['cen_x'])
-    alpha2 = alpha2 - datas['psi'] + np.pi
-    for i in range(len(alpha2)):
-        if (alpha2[i] > np.pi):
-            alpha2[i] = alpha2[i] - 2*np.pi
-        elif (alpha2[i] < -np.pi):
-            alpha2[i] = alpha2[i] + 2*np.pi
-
-    delta_alpha2 = np.arctan2(source_y-datas['cen_y'],source_x-datas['cen_x'])
-    delta_alpha2 -= np.arctan2(-datas['cen_y'], -datas['cen_x'])
-    alpha2_crab = alpha2 + delta_alpha2
-
-    for i in range(len(alpha2_crab)):
-        if (alpha2_crab[i] > 2*np.pi):
-            alpha2_crab[i] = alpha2_crab[i] - 2*np.pi
-        elif (alpha2_crab[i] < -2*np.pi):
-            alpha2_crab[i] = alpha2_crab[i] + 2*np.pi
-
-    for i in range(len(alpha2_crab)):
-        if (alpha2_crab[i] > np.pi):
-            alpha2_crab[i] = 2*np.pi - alpha2_crab[i]
-        elif (alpha2_crab[i] < -np.pi):
-            alpha2_crab[i] = -2*np.pi - alpha2_crab[i]
-
-    alpha2_crab = abs(alpha2_crab)
-
-    for i in range(len(alpha2_crab)):
-        if (alpha2_crab[i] > 0.5*np.pi):
-            alpha2_crab[i] = np.pi - alpha2_crab[i]
-
-    datas['alpha'] = alpha2_crab
-    return datas
-"""
-
-
 # etienne from scan_crab_cluster.c
 def correct_alpha_3(data, source_x=0, source_y=0):
     d_x = np.cos(data['psi'])
