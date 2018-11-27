@@ -232,8 +232,8 @@ def scan_2d_plot(
     for xi, x in enumerate(x_fov):
         hillas_at_xy = correct_hillas(
             pipeline_data,
-            sources_x=x * np.ones(num_steps),
-            sources_y=y_fov
+            source_x=x * np.ones(num_steps),
+            source_y=y_fov
         )
 
         alphas_at_xy = compute_alpha(hillas_at_xy['phi'], hillas_at_xy['psi'])
