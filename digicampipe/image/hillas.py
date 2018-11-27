@@ -8,7 +8,7 @@ https://github.com/cta-observatory/ctapipe
 import numpy as np
 
 
-def correct_hillas(hillas, source_x=0, source_y=0):  # cyril
+def correct_hillas(hillas, source_x=0, source_y=0):
 
     source_x = np.atleast_1d(source_x)
     source_y = np.atleast_1d(source_y)
