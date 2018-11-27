@@ -34,7 +34,7 @@ from matplotlib.patches import Circle
 from scipy.interpolate import interp2d
 from scipy.optimize import curve_fit
 
-from digicampipe.utils.disp import disp_eval, leak_pixels, extents, \
+from digicampipe.image.disp import disp_eval, leak_pixels, extents, \
     arrival_distribution, res_gaussian, r68, r68mod
 from digicampipe.utils.events_image import load_image
 
