@@ -5,6 +5,8 @@ import warnings
 
 from digicampipe.instrument.camera import DigiCam
 from digicampipe.io.containers import DataContainer
+from digicampipe.io.containers import CameraEventType
+
 
 __all__ = ['digicamtoy_event_source']
 
@@ -41,12 +43,19 @@ def digicamtoy_event_source(
     full_data_set = hdf5['data']['adc_count']
     n_events, n_pixels, n_samples = full_data_set.shape
 
+    if 'true_baseline' in hdf5['data'].keys():
+
+        baseline = np.array(hdf5['data']['true_baseline'])
+    else:
+
+        baseline = np.zeros(n_pixels)
+
     if max_events is None:
         max_events = n_events
 
     max_events = min(max_events, n_events)
-
-    for event_id in tqdm(range(max_events), desc='Events', disable=disable_bar):
+    for event_id in tqdm(range(max_events), desc='Events',
+                         disable=disable_bar):
 
         data.r0.event_id = event_id
         data.r0.tels_with_data = [1, ]
@@ -61,6 +70,10 @@ def digicamtoy_event_source(
                 data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
                 data.inst.patch_matrix[tel_id] = camera.patch_matrix
                 data.inst.num_samples[tel_id] = n_samples
+                data.r0.tel[tel_id].digicam_baseline = baseline
+                data.r0.tel[tel_id].camera_event_type = \
+                    CameraEventType.INTERNAL
+                data.r0.tel[tel_id].array_event_type = CameraEventType.UNKNOWN
 
             if (event_id % chunk_size) == 0:
                 index_in_chunk = 0
@@ -70,14 +83,9 @@ def digicamtoy_event_source(
                 adc_count = full_data_set[chunk_start:chunk_end]
 
             data.r0.tel[tel_id].camera_event_number = event_id
-            data.r0.tel[tel_id].local_camera_clock = None
+            data.r0.tel[tel_id].local_camera_clock = event_id
             data.r0.tel[tel_id].gps_time = event_id
-            data.r0.tel[tel_id].camera_event_type = 0  # event Type UNKNOWN
-            data.r0.tel[tel_id].array_event_type = None
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
-            baseline = np.ones(
-                data.r0.tel[tel_id].adc_samples.shape[:-1]) * np.nan
-            data.r0.tel[tel_id].digicam_baseline = baseline
             index_in_chunk += 1
 
         yield data

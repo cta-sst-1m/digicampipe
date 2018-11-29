@@ -5,6 +5,8 @@ Usage:
 
 Options:
   --help                        Show this
+  <INPUT>                       List of zfits input files. Typically a single
+                                night observing a single source.
   --dark_filename=FILE          path to histogram of the dark files
   --parameters=FILE             Calibration parameters file path
   --time_step=N                 Time window in nanoseconds within which values
@@ -14,6 +16,10 @@ Options:
                                 [Default: ./data_quality.fits]
   --output-hist=FILE            path to output histo file
                                 [Default: ./baseline_histo.pk]
+  --aux_basepath=DIR            Base directory for the auxilary data.
+                                If set to "search", It will try to determine it
+                                from the input files.
+                                [Default: search]
   --load                        If not present, the INPUT zfits files will be
                                 analyzed and output fits and histo files will
                                 be created. If present, that analysis is
@@ -38,6 +44,8 @@ Options:
   --template=FILE               Pulse template file path
   --threshold_sample_pe=INT     threshold used in the shower rate estimation.
                                 [Default: 20.]
+  --disable_bar                 If used, the progress bar is not show while
+                                reading files.
 """
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -54,13 +62,14 @@ from numpy import ndarray
 import os
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
-    subtract_baseline, compute_gain_drop, compute_nsb_rate, _compute_nsb_rate,\
+    subtract_baseline, compute_gain_drop, compute_nsb_rate,\
     compute_baseline_shift, fill_dark_baseline
 from digicampipe.calib.tagging import tag_burst_from_moving_average_baseline
 from digicampipe.calib.charge import compute_sample_photo_electron
 from digicampipe.calib.cleaning import compute_3d_cleaning
 from digicampipe.instrument.camera import DigiCam
-from digicampipe.io.event_stream import calibration_event_stream
+from digicampipe.io.event_stream import calibration_event_stream, \
+    add_slow_data_calibration
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils.docopt import convert_text
 
@@ -72,13 +81,26 @@ class DataQualityContainer(Container):
     shower_rate = Field(ndarray, 'Shower rate')
     nsb_rate = Field(ndarray, 'Averaged over the camera NSB rate')
     burst = Field(bool, 'Is there a burst')
+    current_position_az = Field(ndarray, 'az info from DriveSystem')
+    current_position_el = Field(ndarray, 'el info from DriveSystem')
 
 
-def main(files, dark_filename, time_step, fits_filename, load_files,
-         histo_filename, rate_plot_filename, baseline_plot_filename,
-         nsb_plot_filename, parameters_filename, template_filename,
-         threshold_sample_pe=20,
-         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad):
+def data_quality(
+        files, dark_filename, time_step, fits_filename, load_files,
+        histo_filename, rate_plot_filename, baseline_plot_filename,
+        nsb_plot_filename, parameters_filename, template_filename,
+        aux_basepath, threshold_sample_pe=20.,
+        bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad,
+        disable_bar=False, aux_services=('DriveSystem',)
+
+):
+    input_dir = np.unique([os.path.dirname(file) for file in files])
+    if len(input_dir) > 1:
+        raise AttributeError("input files must be from the same directories")
+    input_dir = input_dir[0]
+    if aux_basepath.lower() == "search":
+        aux_basepath = input_dir.replace('/raw/', '/aux/')
+        print("auxiliary files are expected in", aux_basepath)
     with open(parameters_filename) as file:
         calibration_parameters = yaml.load(file)
 
@@ -94,7 +116,10 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
     dark_histo = Histogram1D.load(dark_filename)
     dark_baseline = dark_histo.mean()
     if not load_files:
-        events = calibration_event_stream(files)
+        events = calibration_event_stream(files, disable_bar=disable_bar)
+        events = add_slow_data_calibration(
+            events, basepath=aux_basepath, aux_services=aux_services
+        )
         events = fill_digicam_baseline(events)
         events = fill_dark_baseline(events, dark_baseline)
         events = subtract_baseline(events)
@@ -114,6 +139,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
         baseline = 0
         count = 0
         shower_count = 0
+        az = 0
+        el = 0
         container = DataQualityContainer()
         file = Serializer(fits_filename, mode='w', format='fits')
         baseline_histo = Histogram1D(
@@ -126,6 +153,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 init_time = new_time
             count += 1
             baseline += np.mean(event.data.digicam_baseline)
+            az += event.slow_data.DriveSystem.current_position_az
+            el += event.slow_data.DriveSystem.current_position_el
             time_diff = new_time - init_time
             if event.data.shower:
                 shower_count += 1
@@ -134,6 +163,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 trigger_rate = count / time_diff
                 shower_rate = shower_count / time_diff
                 baseline = baseline / count
+                az = az / count
+                el = el / count
                 container.trigger_rate = trigger_rate
                 container.baseline = baseline
                 container.time = (new_time + init_time) / 2
@@ -141,7 +172,8 @@ def main(files, dark_filename, time_step, fits_filename, load_files,
                 container.burst = event.data.burst
                 nsb_rate = event.data.nsb_rate
                 container.nsb_rate = np.nanmean(nsb_rate).value
-
+                container.current_position_az = az
+                container.current_position_el = el
                 baseline = 0
                 count = 0
                 init_time = 0
@@ -228,11 +260,14 @@ def entry():
     parameters_filename = args['--parameters']
     template_filename = args['--template']
     threshold_sample_pe = float(args['--threshold_sample_pe'])
-
-    main(files, dark_filename, time_step, fits_filename, load_files,
-         histo_filename, rate_plot_filename, baseline_plot_filename,
-         nsb_plot_filename,
-         parameters_filename, template_filename, threshold_sample_pe)
+    disable_bar = args['--disable_bar']
+    aux_basepath = args['--aux_basepath']
+    data_quality(
+        files, dark_filename, time_step, fits_filename, load_files,
+        histo_filename, rate_plot_filename, baseline_plot_filename,
+        nsb_plot_filename, parameters_filename, template_filename,
+        aux_basepath, threshold_sample_pe, disable_bar=disable_bar
+    )
 
 
 if __name__ == '__main__':

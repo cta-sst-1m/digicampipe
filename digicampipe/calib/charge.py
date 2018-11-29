@@ -66,8 +66,7 @@ def correct_voltage_drop(events, pde_func, xt_func, gain_func):
 
 
 def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
-                           threshold_pulse=0.1, debug=False, trigger_bin=15,
-                           data_shape=(1296, 50), pulse_tail=False,
+                           threshold_pulse=0.1, debug=False,  pulse_tail=False,
                            ):
     """
     :param events: a stream of events
@@ -78,58 +77,53 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
     :param threshold_pulse: relative threshold (of pulse amplitude)
     at which the pulse area is integrated.
     :param debug: Enter the debug mode
-    :param trigger_bin: Sample number where the maximum of the waveform is
-    expected.
-    :param data_shape: array shape of the waveforms
     :param pulse_tail: Use or not the tail of the pulse for charge computation
     :return:
     """
 
     assert threshold_pulse <= 1
-    assert len(data_shape) == 2
-
-    n_pixels, n_samples = data_shape
-    samples = np.arange(n_samples)
-    samples = np.tile(samples, n_pixels).reshape(data_shape)
-
-    trigger_sample = trigger_bin
-    trigger_bin = (samples == trigger_bin[:, None])
-
-    if isinstance(trigger_sample, int):
-
-        trigger_sample = np.ones(n_pixels, dtype=int) * trigger_sample
-
-    if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
-        threshold_pulse = np.ones(n_pixels) * threshold_pulse
-
-    if isinstance(saturation_threshold, float) or \
-            isinstance(saturation_threshold, int):
-        saturation_threshold = np.ones(n_pixels) * saturation_threshold
-
-    threshold_pulse = threshold_pulse * saturation_threshold
-    threshold_pulse = threshold_pulse[:, None]
 
     for count, event in enumerate(events):
+
+        if count == 0:
+
+            n_pixels, n_samples = event.data.adc_samples.shape
+            samples = np.arange(n_samples)
+            samples = np.tile(samples, n_pixels).reshape((n_pixels, n_samples))
+
+            if isinstance(threshold_pulse, float) or isinstance(threshold_pulse,
+                                                                int):
+                threshold_pulse = np.ones(n_pixels) * threshold_pulse
+
+            if isinstance(saturation_threshold, float) or \
+                    isinstance(saturation_threshold, int):
+                saturation_threshold = np.ones(n_pixels) * saturation_threshold
+
+            threshold_pulse = threshold_pulse * saturation_threshold
+            threshold_pulse = threshold_pulse[:, None]
 
         adc_samples = event.data.adc_samples
         amplitude = np.max(adc_samples, axis=-1)
 
+        trigger_bin = event.data.pulse_mask
+
         saturated_pulse = amplitude > saturation_threshold
+        saturated = np.any(saturated_pulse)
+        event.data.saturated = saturated
 
         max_arg = np.argmax(trigger_bin, axis=-1)
         start_bin = (samples <= (max_arg[:, None] - integral_width / 2))
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
 
-        charge = np.sum(adc_samples * window, axis=-1)
-
-        if np.any(saturated_pulse):
+        if saturated:
 
             adc = adc_samples[saturated_pulse]
             smp = samples[saturated_pulse]
             threshold = threshold_pulse[saturated_pulse]
+            trigger_sample = max_arg[saturated_pulse]
 
-            start_point = trigger_sample[saturated_pulse] - 3
+            start_point = trigger_sample - 3
             start_bin = (smp < start_point[:, None])
             start_bin = start_bin[:, :-1]
 
@@ -147,10 +141,7 @@ def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
 
             window[saturated_pulse, :-1] = win
 
-            temp = adc * window[saturated_pulse]
-            temp = np.sum(temp, axis=-1)
-
-            charge[saturated_pulse] = temp
+        charge = np.sum(adc_samples * window, axis=-1)
 
         event.data.reconstructed_charge = charge
         event.data.reconstructed_amplitude = amplitude
@@ -303,7 +294,7 @@ def compute_photo_electron(events, gains):
 
         gain_drop = event.data.gain_drop
         corrected_gains = gains * gain_drop
-        pe = np.nansum(charge, axis=-1) / corrected_gains
+        pe = charge / corrected_gains
         event.data.reconstructed_number_of_pe = pe
 
         yield event
@@ -323,4 +314,40 @@ def compute_sample_photo_electron(events, gain_amplitude):
         gain_drop = event.data.gain_drop[:, None]
         sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop)
         event.data.sample_pe = sample_pe
+        yield event
+
+
+def interpolate_bad_pixels(events, geom, bad_pixels):
+    n_pixel = len(geom.neighbors)
+    pixels = np.arange(n_pixel, dtype=int)
+    n_bad = len(bad_pixels)
+    good_pixels = np.ones(n_pixel, dtype=bool)
+    good_pixels[bad_pixels] = False
+    good_pixels = pixels[good_pixels]
+    n_good = len(good_pixels)
+    average_matrix = np.zeros([n_pixel, n_pixel])
+    for i, pix in enumerate(pixels):
+        pix_neighbors = np.array(geom.neighbors[pix])
+        # remove neighbors which are part of bad_pixels
+        bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
+                                       assume_unique=True)
+        for bad_neighbor in bad_neighbors:
+            pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
+        average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
+    average_matrix = average_matrix[:, good_pixels]
+    for event in events:
+
+        pe = event.data.reconstructed_number_of_pe
+        baseline_shift = event.data.baseline_shift
+
+        mask = np.isfinite(pe) * np.isfinite(baseline_shift) * \
+               (baseline_shift > 0)
+
+        all_bad_pixels = np.arange(pe.shape[-1])[~mask]
+        all_bad_pixels = np.append(all_bad_pixels, bad_pixels)
+        all_bad_pixels = np.unique(all_bad_pixels)
+
+        pe[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            pe[good_pixels])
+        event.data.reconstructed_number_of_pe = pe
         yield event

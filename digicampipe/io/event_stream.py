@@ -98,7 +98,10 @@ def calibration_event_stream(path,
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
         container.data.local_time = r0_event.local_camera_clock
         container.data.gps_time = r0_event.gps_time
+        container.data.cleaning_mask = \
+            np.ones(container.data.adc_samples.shape[0], dtype=bool)
         container.event_id = r0_event.camera_event_number
+        container.mc = event.mc
         yield container
 
 
@@ -113,25 +116,49 @@ def guess_source_from_path(path):
 
 def add_slow_data(
         data_stream,
-        aux_services=[
+        aux_services=(
             'DigicamSlowControl',
             'MasterSST1M',
             'PDPSlowControl',
             'SafetyPLC',
             'DriveSystem',
-        ],
+        ),
         basepath=None
 ):
     services = {
         name: AuxService(name, basepath)
         for name in aux_services
     }
-
     SlowDataContainer = namedtuple('SlowDataContainer', aux_services)
     for event_id, event in enumerate(data_stream):
         tel = event.r0.tels_with_data[0]
         services_event = {
             name: service.at(event.r0.tel[tel].local_camera_clock)
+            for (name, service) in services.items()
+        }
+        event.slow_data = SlowDataContainer(**services_event)
+        yield event
+
+
+def add_slow_data_calibration(
+        data_stream,
+        aux_services=(
+            'DigicamSlowControl',
+            'MasterSST1M',
+            'PDPSlowControl',
+            'SafetyPLC',
+            'DriveSystem',
+        ),
+        basepath=None
+):
+    services = {
+        name: AuxService(name, basepath)
+        for name in aux_services
+    }
+    SlowDataContainer = namedtuple('SlowDataContainer', aux_services)
+    for event_id, event in enumerate(data_stream):
+        services_event = {
+            name: service.at(event.data.local_time)
             for (name, service) in services.items()
         }
         event.slow_data = SlowDataContainer(**services_event)

@@ -1,4 +1,5 @@
 import numpy as np
+from digicampipe.io.containers import CameraEventType
 
 __all__ = ['fill_dark_baseline', 'fill_baseline', 'fill_digicam_baseline',
            'compute_baseline_with_min', 'subtract_baseline',
@@ -169,7 +170,8 @@ def fill_baseline_r0(event_stream, n_bins=10000):
             if n_events is None:
                 n_events = n_bins // adc_samples.shape[1]
 
-            if r0_camera.camera_event_type == 8:
+            if CameraEventType.INTERNAL in r0_camera.camera_event_type:
+
                 baselines.append(adc_samples.mean(axis=1))
                 baselines = baselines[-n_events:]
                 baselines_std.append(adc_samples.std(axis=1))

@@ -480,6 +480,7 @@ class CalibrationEventContainer(Container):
     border = Field(bool, 'is the event after cleaning touchin the camera '
                          'borders')
     burst = Field(bool, 'is the event during a burst')
+    saturated = Field(bool, 'is any pixel signal saturated')
 
     def plot(self, pixel_id):
         plt.figure()
@@ -513,3 +514,5 @@ class CalibrationContainer(Container):
     event_type = Field(CameraEventType, 'Event type')
     hillas = Field(HillasParametersContainer, 'Hillas parameters')
     info = CalibrationContainerMeta()
+    slow_data = Field(None, "Slow Data Information")
+    mc = Field(MCEventContainer(), "Monte-Carlo data")

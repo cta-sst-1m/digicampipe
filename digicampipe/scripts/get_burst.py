@@ -34,7 +34,8 @@ Options:
                                 a burst. Set to "none" to not make any video or
                                 set to "show" to display them.
                                 [Default: none]
-
+  --disable_bar                 If used, the progress bar is not show while
+                                reading files.
 """
 import numpy as np
 import sys
@@ -128,10 +129,13 @@ def animate_baseline(events, video, event_id_min=None, event_id_max=None):
     plt.close(fig)
 
 
-def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
-          output=None, expand=10, merge_sec=5., video_prefix=None):
+def get_burst(
+        files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
+        output=None, expand=10, merge_sec=5., video_prefix=None,
+        disable_bar=False
+):
     # get events info
-    events = calibration_event_stream(files)
+    events = calibration_event_stream(files, disable_bar=disable_bar)
     events = fill_digicam_baseline(events)
     events = tag_burst_from_moving_average_baseline(
         events, n_previous_events=n_previous_events,
@@ -223,7 +227,7 @@ def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
     if video_prefix is not None:
         for i, burst_idxs in enumerate(bursts):
             begin_idx, end_idx = burst_idxs
-            events = calibration_event_stream(files)
+            events = calibration_event_stream(files, disable_bar=disable_bar)
             events = fill_digicam_baseline(events)
             if video_prefix != "show":
                 video = video_prefix + "_" + str(i) + ".mp4"
@@ -233,7 +237,7 @@ def entry(files, plot_baseline="show", n_previous_events=100, threshold_lsb=2.,
                              event_id_max=event_ids[end_idx])
 
 
-if __name__ == '__main__':
+def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
     n_previous_events = int(args['--n_previous_events'])
@@ -243,5 +247,11 @@ if __name__ == '__main__':
     merge_sec = float(args['--merge_sec'])
     plot_baseline = convert_text(args['--plot_baseline'])
     video_prefix = convert_text(args['--video_prefix'])
-    entry(files, plot_baseline, n_previous_events, threshold_lsb, output,
-          expand, merge_sec, video_prefix)
+    disable_bar = args['--disable_bar']
+    get_burst(files, plot_baseline, n_previous_events, threshold_lsb, output,
+          expand, merge_sec, video_prefix, disable_bar)
+
+
+if __name__ == '__main__':
+    entry()
+
