@@ -19,6 +19,9 @@ Options:
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
   --template=<TEMPLATE>       Templates measured
   --crosstalk=<CROSSTALK>     Calibration params to use in the fit
+  --integral_width=N          Number of samples used to integrate the pulse
+  --sampling_time=N           Sampling period in ns
+                              [default: 4]
 """
 
 import matplotlib.pyplot as plt
@@ -42,7 +45,9 @@ def entry():
     pixel_id = convert_pixel_args(args['--pixel'])
     dc_levels = convert_list_int(args['--dc_levels'])
     gain = args['--gain']
-    template = args['--template']
+    template_filename = args['--template']
+    sampling_time = float(args['--sampling_time'])
+    integral_width = int(args['--integral_width'])
     crosstalk = args['--crosstalk']
     n_pixels = len(pixel_id)
     n_dc_levels = len(dc_levels)
@@ -65,7 +70,7 @@ def entry():
             baseline_mean[i] = histo.mean()
             baseline_std[i] = histo.std()
 
-        baseline_shift = baseline_mean - dark_histo.mean()[:, None]
+        baseline_shift = baseline_mean - dark_histo.mean()
 
         with FITS(output_filename, 'rw', clobber=True) as f:
 
@@ -79,14 +84,21 @@ def entry():
 
         with FITS(output_filename, 'r') as f:
 
-            baseline_shift = f['baseline_shift'].read()
+            baseline_shift = f[1].read(columns='baseline_shift')
+            baseline_mean = f[1].read(columns='baseline_mean')
+            baseline_std = f[1].read(columns='baseline_std')
+            dc_levels = f[1].read(columns='dc_levels')
 
         with FITS(gain, 'r') as f:
 
-            gain = f['gain']
+            gain = f[1]['gain'].read()
 
-        template_area = NormalizedPulseTemplate.load(template)
-        template_area = template_area.integral()
+        template = NormalizedPulseTemplate.load(template_filename)
+        template_area = template.integral()
+
+        ratio = template.compute_charge_amplitude_ratio(
+            integral_width=integral_width, dt_sampling=sampling_time)
+        gain = gain * ratio
         crosstalk = 0.08
         bias_resistance = 10 * 1E3
         cell_capacitance = 50 * 1E-15
@@ -97,25 +109,23 @@ def entry():
                                      bias_resistance=bias_resistance,
                                      cell_capacitance=cell_capacitance)
 
-        with FITS(output_filename, 'rw') as f:
+        with FITS(output_filename, 'rw', clobber=True) as f:
 
-            f[-1].insert_column('nsb_rate', nsb_rate)
-            print(f)
+            data = [baseline_mean, baseline_std, dc_levels, baseline_shift,
+                    nsb_rate]
+            names = ['baseline_mean', 'baseline_std', 'dc_levels',
+                     'baseline_shift', 'nsb_rate']
+            f.write(data, names=names)
 
-    if args['--save_figures']:
-
-
-        pass
-
-    if args['--display']:
+    if args['--display'] or args['--save_figures']:
 
         with FITS(output_filename, 'r') as f:
 
-            baseline_shift = f['baseline_shift'].read()
-            baseline_mean = f['baseline_mean'].read()
-            baseline_std = f['baseline_std'].read()
-            dc_levels = f['dc_levels'].read()
-            nsb_rate = f['nsb_rate'].read()
+            baseline_shift = f[1]['baseline_shift'].read()
+            baseline_mean = f[1]['baseline_mean'].read()
+            baseline_std = f[1]['baseline_std'].read()
+            dc_levels = f[1]['dc_levels'].read()
+            nsb_rate = f[1]['nsb_rate'].read()
 
         plt.figure()
         plt.plot(dc_levels, baseline_mean)
@@ -147,7 +157,13 @@ def entry():
         plt.xlabel('DC DAC level')
         plt.ylabel('$f_{NSB}$ [GHz]')
 
-        plt.show()
+        if args['--save_figures']:
+
+            pass
+
+        if args['--display']:
+
+            plt.show()
 
         pass
 
