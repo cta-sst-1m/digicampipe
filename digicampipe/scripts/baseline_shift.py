@@ -153,8 +153,8 @@ def entry():
         plt.ylabel('$f_{NSB}$ [GHz]')
 
         plt.figure()
-        plt.semilogy(baseline_shift, nsb_rate)
-        plt.xlabel('DC DAC level')
+        plt.loglog(baseline_shift, nsb_rate)
+        plt.xlabel('Baseline shift [LSB]')
         plt.ylabel('$f_{NSB}$ [GHz]')
 
         if args['--save_figures']:
