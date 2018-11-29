@@ -89,11 +89,18 @@ def _compute_nsb_rate(baseline_shift, gain, pulse_area, crosstalk,
     return nsb_rate
 
 
+def _compute_gain_drop(bias_resistance, cell_capacitance, nsb_rate):
+
+    gain_drop = 1. / (1. + nsb_rate * cell_capacitance * bias_resistance)
+
+    return gain_drop
+
+
 def compute_gain_drop(events, bias_resistance, cell_capacitance):
     for event in events:
         nsb_rate = event.data.nsb_rate
-        gain_drop = 1. / (1. + nsb_rate * cell_capacitance
-                          * bias_resistance)
+        gain_drop = _compute_gain_drop(bias_resistance, cell_capacitance,
+                                       nsb_rate)
         gain_drop = gain_drop.value
         event.data.gain_drop = gain_drop
         yield event
