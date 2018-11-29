@@ -1,63 +1,53 @@
 #!/usr/bin/env python
 """
-Do the Multiple Photoelectron anaylsis
-
+Compute the baseline shift and NSB
 Usage:
   digicam-baseline-shift [options] [--] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
-  -o OUTPUT --output=OUTPUT   Folder where to store the results.
+  -o OUTPUT --output=OUTPUT   Output file to store the results
+                              [default: ./baseline_shift.fits]
   -c --compute                Compute the data.
   -f --fit                    Fit
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  --dark=FILE                 Dark histogram
   --dc_levels=<DAC>           LED DC DAC level
   --save_figures              Save the plots to the OUTPUT folder
   --gain=<GAIN_RESULTS>       Calibration params to use in the fit
   --template=<TEMPLATE>       Templates measured
   --crosstalk=<CROSSTALK>     Calibration params to use in the fit
 """
-import os
 
 import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
-from histogram.histogram import Histogram1D
+from histogram import Histogram1D
 from tqdm import tqdm
+from fitsio import FITS
 
-from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_int, \
-    convert_pixel_args, convert_list_int
+from digicampipe.utils.docopt import convert_pixel_args, convert_list_int
+from digicampipe.calib.baseline import _compute_nsb_rate
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
 
-    max_events = convert_int(args['--max_events'])
-    output_path = args['--output']
-
-    if not os.path.exists(output_path):
-        raise IOError('Path {} for output does not '
-                      'exists \n'.format(output_path))
-
+    output_filename = args['--output']
+    dark_filename = args['--dark']
     pixel_id = convert_pixel_args(args['--pixel'])
     dc_levels = convert_list_int(args['--dc_levels'])
+    gain = args['--gain']
+    template = args['--template']
+    crosstalk = args['--crosstalk']
     n_pixels = len(pixel_id)
     n_dc_levels = len(dc_levels)
 
-    results_filename = 'baseline_shift_results.npz'
-    results_filename = os.path.join(output_path, results_filename)
-
-    # fmpe_results_filename = args['--gain']
-    # crosstalk = args['--crosstalk']
-    # templates = args['--template']
-
-    histo = Histogram1D(data_shape=(n_dc_levels, n_pixels),
-                        bin_edges=np.arange(0, 4096))
+    dark_histo = Histogram1D.load(dark_filename)
 
     if args['--compute']:
 
@@ -71,60 +61,61 @@ def entry():
         for i, file in tqdm(enumerate(files), desc='DC level',
                             total=len(files)):
 
-            events = calibration_event_stream(file, pixel_id=pixel_id,
-                                              max_events=max_events)
+            histo = Histogram1D.load(file)
+            baseline_mean[i] = histo.mean()
+            baseline_std[i] = histo.std()
 
-            for count, event in enumerate(events):
-                baseline_mean[i] += event.data.digicam_baseline
-                baseline_std[i] += event.data.digicam_baseline ** 2
+        baseline_shift = baseline_mean - dark_histo.mean()[:, None]
 
-                histo.fill(event.data.adc_samples, indices=(i,))
+        with FITS(output_filename, 'rw', clobber=True) as f:
 
-            count += 1
-            baseline_mean[i] = baseline_mean[i] / count
-            baseline_std[i] = baseline_std[i] / count
-            baseline_std[i] = baseline_std[i] - baseline_mean[i] ** 2
-            baseline_std[i] = np.sqrt(baseline_std[i])
+            data = [baseline_mean, baseline_std, dc_levels, baseline_shift]
 
-        histo.save(os.path.join(output_path, 'raw_histo.pk'))
-        np.savez(results_filename, baseline_mean=baseline_mean,
-                 baseline_std=baseline_std, dc_levels=dc_levels)
+            names = ['baseline_mean', 'baseline_std', 'dc_levels',
+                     'baseline_shift']
+            f.write(data, names=names)
 
     if args['--fit']:
-        data = dict(np.load(results_filename))
-        baseline_mean = data['baseline_mean']
-        baseline_std = data['baseline_std']
-        dc_levels = data['dc_levels']
 
-        gain = 5
-        template_area = 18
+        with FITS(output_filename, 'r') as f:
+
+            baseline_shift = f['baseline_shift'].read()
+
+        with FITS(gain, 'r') as f:
+
+            gain = f['gain']
+
+        template_area = NormalizedPulseTemplate.load(template)
+        template_area = template_area.integral()
         crosstalk = 0.08
         bias_resistance = 10 * 1E3
         cell_capacitance = 50 * 1E-15
 
-        baseline_shift = baseline_mean - baseline_mean[0]
-        nsb_rate = gain * template_area / (baseline_shift * (1 - crosstalk))
-        nsb_rate = nsb_rate - cell_capacitance * bias_resistance
-        nsb_rate = 1 / nsb_rate
+        nsb_rate = _compute_nsb_rate(baseline_shift=baseline_shift,
+                                     gain=gain, pulse_area=template_area,
+                                     crosstalk=crosstalk,
+                                     bias_resistance=bias_resistance,
+                                     cell_capacitance=cell_capacitance)
 
-        np.savez(results_filename, baseline_mean=baseline_mean,
-                 baseline_std=baseline_std, dc_levels=dc_levels,
-                 nsb_rate=nsb_rate, baseline_shift=baseline_shift)
+        with FITS(output_filename, 'rw') as f:
+
+            f[-1].insert_column('nsb_rate', nsb_rate)
+            print(f)
 
     if args['--save_figures']:
+
+
         pass
 
     if args['--display']:
-        data = dict(np.load(results_filename))
-        histo = Histogram1D.load(os.path.join(output_path, 'raw_histo.pk'))
-        baseline_mean = histo.mean()
-        baseline_std = histo.std()
-        nsb_rate = data['nsb_rate']
 
-        print(baseline_mean.shape)
+        with FITS(output_filename, 'r') as f:
 
-        histo.draw((0, 1))
-        histo.draw((49, 1))
+            baseline_shift = f['baseline_shift'].read()
+            baseline_mean = f['baseline_mean'].read()
+            baseline_std = f['baseline_std'].read()
+            dc_levels = f['dc_levels'].read()
+            nsb_rate = f['nsb_rate'].read()
 
         plt.figure()
         plt.plot(dc_levels, baseline_mean)
@@ -150,6 +141,12 @@ def entry():
         plt.semilogy(dc_levels, nsb_rate)
         plt.xlabel('DC DAC level')
         plt.ylabel('$f_{NSB}$ [GHz]')
+
+        plt.figure()
+        plt.semilogy(baseline_shift, nsb_rate)
+        plt.xlabel('DC DAC level')
+        plt.ylabel('$f_{NSB}$ [GHz]')
+
         plt.show()
 
         pass
