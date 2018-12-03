@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=02:00:00
+#SBATCH --time=01:00:00
 #SBATCH --partition=mono
 #SBATCH --mem=4G
 #SBATCH --output=/home/%u/job_logs/%x-%A_%a.out # TO BE CHANGED
@@ -9,7 +9,7 @@ source activate digicampipe
 
 START=0
 END=4095
-STEP=1
+STEP=5
 N_SAMPLES=1024
 
 DIR_NAME=$1 # Directory for the night to produce rate scan
@@ -21,9 +21,9 @@ if ! [[ -d $DIR_NAME ]]; then
 fi
 
 FILES=($(ls -d $DIR_NAME*fits.fz))
-N_FILES=${#FILES[@]}
 
 FILES=${FILES[$SLURM_ARRAY_TASK_ID]}
+N_FILES=${#FILES[@]}
 
 if ! [[ -z $SLURM_ARRAY_TASK_ID ]]; then
 
@@ -32,8 +32,8 @@ if ! [[ -z $SLURM_ARRAY_TASK_ID ]]; then
         exit 1
     fi
 fi
-FILES_TO_PROCESS=${FILES[$SLURM_ARRAY_TASK_ID]}
-for FILE in "${FILES_TO_PROCESS[@]}"
+
+for FILE in "${FILES[@]}"
 do
     BASENAME=$(basename "${FILE}")
     BASENAME=$(echo $BASENAME | cut -d'.' -f 1)
@@ -43,4 +43,4 @@ do
 done
 
 cd $OUTPUT_DIR
-convert -delay 20 -loop 0 rate_scan*.png rate_scan.gif
+convert -delay 1 -loop 0 rate_scan*.png rate_scan.gif
