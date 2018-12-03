@@ -57,8 +57,11 @@ export DIGICAM_FOLDER='/sst1m/analyzed/calib/'$DATE'/'
 mkdir -p $DIGICAM_FOLDER
 
 export GHV_OFF_RAW_HISTO=$DIGICAM_FOLDER'ghv_off_raw_histo.fits'
+export GHV_OFF_RATE_SCAN=$DIGICAM_FOLDER'ghv_off_rate_scan.fits'
 export GHV_ON_RAW_HISTO=$DIGICAM_FOLDER'ghv_on_raw_histo.fits'
+export GHV_ON_RATE_SCAN=$DIGICAM_FOLDER'ghv_on_rate_scan_histo.fits'
 export DARK_RAW_HISTO=$DIGICAM_FOLDER'dark_raw_histo.fits'
+export DARK_RATE_SCAN=$DIGICAM_FOLDER'dark_rate_scan.fits'
 export DARK_MAX_HISTO=$DIGICAM_FOLDER'dark_max_histo.fits'
 export DARK_CHARGE_HISTO=$DIGICAM_FOLDER'dark_charge_histo.fits'
 export SPE_RESULTS=$DIGICAM_FOLDER'spe_results.fits'
