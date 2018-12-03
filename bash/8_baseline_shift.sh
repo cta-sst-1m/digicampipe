@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#SBATCH --time=04:00:00
+#SBATCH --partition=mono
+#SBATCH --mem=8G
+#SBATCH --output=/home/%u/job_logs/%x-%A_%a.out
+#SBATCH --job-name='baseline-shift'
+
+source 0_main.sh
 
 i=0
 

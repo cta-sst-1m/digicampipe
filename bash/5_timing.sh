@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#SBATCH --time=02:00:00
+#SBATCH --partition=mono
+#SBATCH --mem=4G
+#SBATCH --output=/home/%u/job_logs/%x-%A_%a.out
+#SBATCH --job-name='timing'
+
+source 0_main.sh
 
 
 pixels=$(tolist "${DIGICAM_PIXELS[@]}")
