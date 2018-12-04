@@ -13,6 +13,7 @@ dependencies:
 - fitsio
 - h5py
 - hdf5
+- humanize
 - iminuit
 - jupyter
 - matplotlib
