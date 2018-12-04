@@ -14,8 +14,9 @@ Options:
   --dark_hist=LIST              Histogram of ADC samples during dark run.
                                 Output of raw.py on dark data.
   --output=FILE                 Fits file containing the baselines. Set to none
-                                to not create that file. [Default: none]
-                                Output of raw.py on dark data.
+                                to not create that file. No output is created
+                                if the inputs are not zfits data file.
+                                [Default: none]
   --max_events=N                Maximum number of events to analyze
   --plot=FILE                   path to the output plot. Will show the average
                                 over all events of the NSB.
@@ -91,7 +92,7 @@ def nsb_rate(
         )
         data = {
             "nsb_rate": [],
-            "bad_pixels": [],
+            "good_pixels_mask": [],
             "timestamp": [],
             "event_id": [],
             "az": [],
@@ -131,7 +132,7 @@ def nsb_rate(
             rate[bad_pixels_event] = avg_matrix[bad_pixels_event, :].dot(
                 rate[good_pixels]
             )
-            data['bad_pixels'].append(bad_pixels_event)
+            data['good_pixels_mask'].append(good_pixels_mask)
             data['timestamp'].append(event.data.local_time)
             data['event_id'].append(event.event_id)
             data['nsb_rate'].append(rate)
@@ -139,6 +140,8 @@ def nsb_rate(
             data['el'].append(event.slow_data.DriveSystem.current_position_el)
         if output is not None:
             table = Table(data)
+            if os.path.isfile(output):
+                os.remove(output)
             table.write(output, format='fits')
     az_obs = np.array(data['az'])
     el_obs = np.array(data['el'])
@@ -169,7 +172,10 @@ def nsb_rate(
         plot_nsb_range = (np.min(rate_ghz), np.max(rate_ghz))
     display.set_limits_minmax(*plot_nsb_range)
     display.add_colorbar(ax=ax)
-    display.highlight_pixels(data['bad_pixels'][0], color='r', linewidth=2)
+    bad_pixels = np.arange(
+        len(data['good_pixels_mask'][0])
+    )[data['good_pixels_mask'][0]]
+    display.highlight_pixels(bad_pixels, color='r', linewidth=2)
     plt.tight_layout()
     points, = ax.plot(stars_y[:, 0], stars_y[:, 0], 'r+', ms=20)
 
@@ -178,8 +184,11 @@ def nsb_rate(
         display.image = data['nsb_rate'][i].to(u.GHz).value
         t = int(data['timestamp'][i]*1e-9)
         display.axes.set_title('NSB rate [GHz], t={}'.format(t))
+        bad_pixels = np.arange(
+            len(data['good_pixels_mask'][i])
+        )[data['good_pixels_mask'][i]]
         display.highlight_pixels(
-            data['bad_pixels'][i], color='r', linewidth=2
+            bad_pixels, color='r', linewidth=2
         )
         points.set_xdata(stars_x[:, i])
         points.set_ydata(stars_y[:, i])
