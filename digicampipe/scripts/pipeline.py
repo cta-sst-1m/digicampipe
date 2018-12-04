@@ -196,7 +196,7 @@ def main_pipeline(
         alpha = compute_alpha(phi.value, psi.value) * psi.unit
         data_to_store.alpha = alpha
         data_to_store.miss = compute_miss(r=r.value, alpha=alpha.value)
-        data_to_store.miss = data_to_store * r.unit
+        data_to_store.miss = data_to_store.miss * r.unit
         data_to_store.baseline = np.mean(event.data.digicam_baseline)
         data_to_store.nsb_rate = np.mean(event.data.nsb_rate)
         temp_crate1 = event.slow_data.DigicamSlowControl.Crate1_T
