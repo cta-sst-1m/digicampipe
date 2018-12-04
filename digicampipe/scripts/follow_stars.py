@@ -59,10 +59,10 @@ from digicampipe.io.event_stream import calibration_event_stream, \
 
 def nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
-        output=None,
-        plot="show", plot_nsb_range=None, norm="log", disable_bar=False,
-        max_events=None, stars=('Capella',), mm_per_deg=-96.667,
-        site=(50.049683 * u.deg, 19.944544 * u.deg, 209 * u.m),  # site_location
+        output=None, plot="show", plot_nsb_range=None, norm="log",
+        disable_bar=False, max_events=None, stars=('Capella',),
+        mm_per_deg=-96.667,  rotation=0*u.deg,
+        site=(50.090815 * u.deg, 19.887937 * u.deg, 214.034 * u.m),  # krakow
         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
     files = np.atleast_1d(files)
@@ -92,6 +92,7 @@ def nsb_rate(
             #  'PDPSlowControl')
         )
         data = {
+            "baseline": [],
             "nsb_rate": [],
             "good_pixels_mask": [],
             "timestamp": [],
@@ -111,6 +112,7 @@ def nsb_rate(
             if event_counter < 100:
                 continue
             event_counter = 0
+            data['baseline'].append(event.data.digicam_baseline)
             baseline_shift = event.data.digicam_baseline - dark_histo.mean()
             rate = _compute_nsb_rate(
                 baseline_shift=baseline_shift, gain=gain_amplitude,
@@ -149,19 +151,44 @@ def nsb_rate(
     n_event = len(data['timestamp'])
     stars_x = np.zeros([len(stars), n_event])
     stars_y = np.zeros([len(stars), n_event])
+    rot_matrix = np.ones([2, 2])
+    rot_matrix[0, :] = np.array([np.cos(rotation), np.sin(rotation)])
+    rot_matrix[1, :] = np.array([-np.sin(rotation), np.cos(rotation)])
+    transform_matrix = rot_matrix * mm_per_deg
+    star_azel_rel = np.ones([len(data['timestamp']), 2])
+    time_obs = Time(
+        np.array(data['timestamp'], dtype=np.float64) * 1e-9,
+        format='unix'
+    )
     for star_idx, star in enumerate(stars):
         skycoord = SkyCoord.from_name(star)
         star_pos = skycoord.transform_to(
             AltAz(
-                obstime=Time(
-                    np.array(data['timestamp'], dtype=np.float64) * 1e-9,
-                    format='unix'
-                ),
+                obstime=time_obs,
                 location=site_location
             )
         )
-        stars_x[star_idx, :] = (np.array(star_pos.az) - az_obs) * mm_per_deg
-        stars_y[star_idx, :] = (np.array(star_pos.alt) - el_obs) * mm_per_deg
+        star_azel_rel[:, 0] = np.array(star_pos.az) - az_obs
+        star_azel_rel[:, 1] = np.array(star_pos.alt) - el_obs
+        star_xy = star_azel_rel.dot(transform_matrix)
+        stars_x[star_idx, :] = star_xy[:, 0]
+        stars_y[star_idx, :] = star_xy[:, 1]
+    fig2, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 8), dpi=50)
+    nsb_std = np.std(data['nsb_rate'].value, axis=0)
+    ax1.hist(nsb_std, 100)
+    ax1.set_xlabel('std(nsb rate) [GHz]')
+    pixels_varying = np.arange(len(nsb_std))[nsb_std > 0.5]
+    ax2.plot_date(
+        time_obs.to_datetime(),
+        data['nsb_rate'][:, pixels_varying],
+        '-'
+    )
+    ax2.set_xlabel('time')
+    ax2.set_ylabel('nsb rate [GHz]')
+    plt.tight_layout()
+    plt.show()
+    plt.close(fig2)
+
     fig1, ax = plt.subplots(1, 1, figsize=(16, 12), dpi=50)
     date = datetime.fromtimestamp(data['timestamp'][0]*1e-9)
     date_str = date.strftime("%H:%M:%S")
@@ -273,7 +300,7 @@ def entry():
         files, aux_basepath, dark_histo_file, param_file, template_filename,
         output=output,
         plot=plot, bias_resistance=bias_resistance, max_events=max_events,
-        stars=('Capella',),
+        stars=('Capella',), rotation=12*u.deg,
         cell_capacitance=cell_capacitance
     )
 
