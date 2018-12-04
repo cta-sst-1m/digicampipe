@@ -44,6 +44,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy.time import Time
 from astropy.table import Table
 from pkg_resources import resource_filename
+from datetime import datetime
 
 from histogram.histogram import Histogram1D
 from digicampipe.calib.baseline import _compute_nsb_rate
@@ -60,14 +61,14 @@ def nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
         output=None,
         plot="show", plot_nsb_range=None, norm="log", disable_bar=False,
-        max_events=None, stars=('Capella',), mm_per_deg=-100.,
+        max_events=None, stars=('Capella',), mm_per_deg=-96.667,
         site=(50.049683 * u.deg, 19.944544 * u.deg, 209 * u.m),  # site_location
         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
     files = np.atleast_1d(files)
     site_location = EarthLocation(lat=site[0], lon=site[1], height=site[2])
     if len(files) == 1 and not files[0].endswith('.fz'):
-        table = Table.read(files[0])
+        table = Table.read(files[0])[:max_events]
         data = dict(table)
         data['nsb_rate'] = data['nsb_rate'] * u.GHz
     else:
@@ -162,9 +163,11 @@ def nsb_rate(
         stars_x[star_idx, :] = (np.array(star_pos.az) - az_obs) * mm_per_deg
         stars_y[star_idx, :] = (np.array(star_pos.alt) - el_obs) * mm_per_deg
     fig1, ax = plt.subplots(1, 1, figsize=(16, 12), dpi=50)
+    date = datetime.fromtimestamp(data['timestamp'][0]*1e-9)
+    date_str = date.strftime("%H:%M:%S")
     display = CameraDisplay(
         DigiCam.geometry, ax=ax, norm=norm,
-        title='NSB rate [GHz], t={}'.format(int(data['timestamp'][0]*1e-9))
+        title='NSB rate [GHz], t=' + date_str
     )
     rate_ghz = np.array(data['nsb_rate'][0].to(u.GHz).value)
     display.image = rate_ghz
@@ -174,19 +177,21 @@ def nsb_rate(
     display.add_colorbar(ax=ax)
     bad_pixels = np.arange(
         len(data['good_pixels_mask'][0])
-    )[data['good_pixels_mask'][0]]
+    )[~data['good_pixels_mask'][0]]
     display.highlight_pixels(bad_pixels, color='r', linewidth=2)
     plt.tight_layout()
-    points, = ax.plot(stars_y[:, 0], stars_y[:, 0], 'r+', ms=20)
+    points, = ax.plot(stars_x[:, 0], stars_y[:, 0], '+', ms=20)
+    plt.legend(stars)
 
     def update(i, display):
         print('frame', i, '/', len(data['timestamp']))
         display.image = data['nsb_rate'][i].to(u.GHz).value
-        t = int(data['timestamp'][i]*1e-9)
-        display.axes.set_title('NSB rate [GHz], t={}'.format(t))
+        date = datetime.fromtimestamp(data['timestamp'][i] * 1e-9)
+        date_str = date.strftime("%H:%M:%S")
+        display.axes.set_title('NSB rate [GHz], t=' + date_str)
         bad_pixels = np.arange(
             len(data['good_pixels_mask'][i])
-        )[data['good_pixels_mask'][i]]
+        )[~data['good_pixels_mask'][i]]
         display.highlight_pixels(
             bad_pixels, color='r', linewidth=2
         )
@@ -201,7 +206,7 @@ def nsb_rate(
         fargs=(display, )
     )
     Writer = animation.writers['ffmpeg']
-    writer = Writer(fps=20, metadata=dict(artist='y. renier'),
+    writer = Writer(fps=20, metadata=dict(artist='Y. Renier'),
                     bitrate=1800, codec='h263p')
 
     output_path = os.path.dirname(plot)
