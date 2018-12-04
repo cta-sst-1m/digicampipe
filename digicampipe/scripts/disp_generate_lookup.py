@@ -30,7 +30,7 @@ import pandas as pd
 from docopt import docopt
 from lmfit import minimize, Parameters, report_fit
 
-from digicampipe.utils.disp import disp_eval, leak_pixels
+from digicampipe.image.disp import disp_eval, leak_pixels
 from digicampipe.utils.events_image import load_image
 
 
