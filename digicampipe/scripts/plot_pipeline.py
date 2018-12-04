@@ -47,6 +47,7 @@ from astropy.table import Table
 from docopt import docopt
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from tqdm import tqdm
 
 from digicampipe.utils.docopt import convert_text, convert_list_float
 from digicampipe.image.hillas import correct_hillas, compute_alpha
@@ -214,6 +215,8 @@ def scan_2d_plot(
     ((x_min, x_max), (y_min, y_max))
     :return: None
     """
+
+    alphas_min = np.array(alphas_min)
     x_fov_start = fov[0][0]  # limits of the FoV in mm
     y_fov_start = fov[1][0]  # limits of the FoV in mm
     x_fov_end = fov[0][1]  # limits of the FoV in mm
@@ -230,21 +233,22 @@ def scan_2d_plot(
     N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
 
-    pipeline_data = {col: np.array(pipeline_data[col])
-                     for col in pipeline_data.columns}
+    # pipeline_data = {col: np.array(pipeline_data[col])
+    #                 for col in pipeline_data.columns}
 
-    for xi, x in enumerate(x_fov):
-        hillas_at_xy = correct_hillas(
-            pipeline_data,
-            source_x=x * np.ones(num_steps),
-            source_y=y_fov
-        )
+    X, Y = np.meshgrid(x_fov, y_fov)
 
-        alphas_at_xy = compute_alpha(hillas_at_xy['phi'], hillas_at_xy['psi'])
-        alphas_at_xy = alphas_at_xy.T
+    for index, hillas in tqdm(pipeline_data.iterrows(),
+                              total=len(pipeline_data)):
 
-        for ai, alpha_min in enumerate(alphas_min):
-            N[:, xi, ai] = np.sum(alphas_at_xy < alpha_min, axis=0)
+        x, y, r, phi = correct_hillas(hillas['x'], hillas['y'],
+                                      source_x=X,
+                                      source_y=Y)
+
+        alpha = compute_alpha(phi, hillas['psi'])
+        alpha = alpha[..., None] < alphas_min
+        N += alpha
+
     for ai, alpha_min in enumerate(alphas_min):
         if len(alphas_min)> 1:
             plot_name = plot.replace('.png', '_{}deg.png'.format(alpha_min))

@@ -8,18 +8,14 @@ https://github.com/cta-observatory/ctapipe
 import numpy as np
 
 
-def correct_hillas(hillas, source_x=0, source_y=0):
+def correct_hillas(x, y, source_x=0, source_y=0):
 
-    source_x = np.atleast_1d(source_x)
-    source_y = np.atleast_1d(source_y)
+    x = x - source_x
+    y = y - source_y
+    r = np.sqrt(x ** 2.0 + x ** 2.0)
+    phi = np.arctan2(y, x)
 
-    hillas['x'] = hillas['x'] - source_x[:, None]
-    hillas['y'] = hillas['y'] - source_y[:, None]
-    hillas['r'] = np.sqrt(hillas['x'] ** 2.0 + hillas['y'] ** 2.0)
-    hillas['phi'] = np.arctan2(hillas['y'], hillas['x'])
-    hillas['psi'] = hillas['psi'] - np.zeros(source_y.shape)[:, None]
-
-    return hillas
+    return x, y, r, phi
 
 
 def compute_alpha(phi, psi):
