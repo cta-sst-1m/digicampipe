@@ -40,6 +40,7 @@ Options:
                                 If set to "none", the plot
                                 is not produced. If set to "show" the plot is
                                 displayed instead. [default:none]
+  --disable_bar                 Disable the progress bar
 """
 import numpy as np
 import pandas as pd
@@ -199,6 +200,7 @@ def scan_2d_plot(
         plot="show",
         num_steps=200,
         fov=((-500, 500), (-500, 500)),
+        disable_bar=True,
 ):
     """
     2D scan of spike in alpha
@@ -213,6 +215,7 @@ def scan_2d_plot(
     :param num_steps: number of binning in the FoV
     :param fov: x and y range of the field of view. Format:
     ((x_min, x_max), (y_min, y_max))
+    :param disable_bar: If true shows the progress bar of the alpha computation
     :return: None
     """
 
@@ -239,18 +242,19 @@ def scan_2d_plot(
     X, Y = np.meshgrid(x_fov, y_fov)
 
     for index, hillas in tqdm(pipeline_data.iterrows(),
-                              total=len(pipeline_data)):
+                              total=len(pipeline_data), disable=disable_bar):
 
         x, y, r, phi = correct_hillas(hillas['x'], hillas['y'],
                                       source_x=X,
                                       source_y=Y)
 
         alpha = compute_alpha(phi, hillas['psi'])
+        alpha = np.rad2deg(alpha)
         alpha = alpha[..., None] < alphas_min
         N += alpha
 
     for ai, alpha_min in enumerate(alphas_min):
-        if len(alphas_min)> 1:
+        if len(alphas_min) > 1:
             plot_name = plot.replace('.png', '_{}deg.png'.format(alpha_min))
         else:
             plot_name = plot
@@ -503,7 +507,8 @@ def plot_pipeline(
         plot_correlation_all=None,
         plot_correlation_selected=None,
         plot_correlation_cut=None,
-        print_events=0
+        print_events=0,
+        disable_bar=True,
 ):
     data, selection = get_data_and_selection(
         hillas_file=hillas_file,
@@ -545,7 +550,8 @@ def plot_pipeline(
     if plot_scan2d is not None:
         scan_2d_plot(
             pipeline_data=data[selection_no_burst], alphas_min=alphas_min,
-            plot=plot_scan2d, fov=((-200, 200), (-200, 200)), num_steps=200
+            plot=plot_scan2d, fov=((-200, 200), (-200, 200)), num_steps=200,
+            disable_bar=disable_bar
         )
     if not np.isfinite(print_events):
         print_events = len(data[selection])
@@ -570,6 +576,7 @@ def entry():
     plot_correlation_all = convert_text(args['--plot_correl_all'])
     plot_correlation_selected = convert_text(args['--plot_correl_selected'])
     plot_correlation_cut = convert_text(args['--plot_correl_cut'])
+    disable_bar = args['--disable_bar']
     plot_pipeline(
         hillas_file=hillas_file,
         cut_length_gte=None,
@@ -598,7 +605,8 @@ def entry():
         plot_correlation_all=plot_correlation_all,
         plot_correlation_selected=plot_correlation_selected,
         plot_correlation_cut=plot_correlation_cut,
-        print_events=0
+        print_events=0,
+        disable_bar=disable_bar,
     )
 
 
