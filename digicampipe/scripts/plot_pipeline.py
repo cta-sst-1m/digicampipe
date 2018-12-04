@@ -36,7 +36,8 @@ Options:
                                 is not produced. If set to "show" the plot is
                                 displayed instead. [default:none]
   --plot_correl_cut=PATH        path to the plot of a few correlation between
-                                Hillas parameter for event not passing the cuts.
+                                Hillas parameter for event not passing the
+                                cuts.
                                 If set to "none", the plot
                                 is not produced. If set to "show" the plot is
                                 displayed instead. [default:none]
