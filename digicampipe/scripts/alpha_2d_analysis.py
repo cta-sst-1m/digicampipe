@@ -3,8 +3,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-from digicampipe.scripts.alpha_2d_plot import plot_alpha2d
-
 
 def plot_aperture(x0, y0, r, col):
     phi = np.linspace(0, 2 * np.pi, 1000)
@@ -78,7 +76,6 @@ def entry():
     # sig = lima_significance(N_on,N_off,1.0)
     print(sig)
 
-    plot_alpha2d(data)
     plot_aperture(x0, y0, r, 'black')
     plot_onoffcirc(x0, y0)
     # plot_aperture(x_off, y_off, r)

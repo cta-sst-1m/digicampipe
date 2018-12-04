@@ -41,4 +41,3 @@ def compute_miss(r, alpha):
     miss = r * np.sin(alpha)
 
     return miss
-
