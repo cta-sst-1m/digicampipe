@@ -5,7 +5,8 @@ Usage:
 
 Options:
   --help                        Show this
-  <INPUTS>                      Zfits data files.
+  <INPUTS>                      Zfits data files or output fits file containing
+                                the baselines (obtained with --output).
   --aux_basepath=DIR            Base directory for the auxilary data.
                                 If set to "search", It will try to determine it
                                 from the input files.
@@ -59,83 +60,89 @@ def nsb_rate(
         output=None,
         plot="show", plot_nsb_range=None, norm="log", disable_bar=False,
         max_events=None, stars=('Capella',), mm_per_deg=-100.,
-        site=(50.049683 * u.deg, 19.944544 * u.deg, 209 * u.m),  # krakow
+        site=(50.049683 * u.deg, 19.944544 * u.deg, 209 * u.m),  # site_location
         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
-    krakow = EarthLocation(lat=site[0], lon=site[1], height=site[2])
-    dark_histo = Histogram1D.load(dark_histo_file)
-    n_pixel = len(DigiCam.geometry.neighbors)
-    pixels = np.arange(n_pixel, dtype=int)
-    with open(param_file) as file:
-        pulse_template = NormalizedPulseTemplate.load(template_filename)
-        pulse_area = pulse_template.integral() * u.ns
-        charge_to_amplitude = pulse_template.compute_charge_amplitude_ratio(7, 4)
-        calibration_parameters = yaml.load(file)
-        gain_integral = np.array(calibration_parameters['gain'])
-        gain_amplitude = gain_integral * charge_to_amplitude
-        crosstalk = np.array(calibration_parameters['mu_xt'])
-    events = calibration_event_stream(files, max_events=max_events,
-                                      disable_bar=disable_bar)
-    events = add_slow_data_calibration(
-        events, basepath=aux_basepath,
-        aux_services=('DriveSystem', )
-        #  'DigicamSlowControl', 'MasterSST1M', 'SafetyPLC', #
-        #  'PDPSlowControl')
-    )
-    data = {
-        "nsb_rate": [],
-        "bad_pixels": [],
-        "timestamp": [],
-        "event_id": [],
-        "az": [],
-        "el": [],
-    }
-    bad_pixels = get_bad_pixels(
-        calib_file=param_file, nsigma_gain=5, nsigma_elecnoise=5,
-        dark_histo=dark_histo_file, nsigma_dark=8, plot=None, output=None
-    )
-    event_counter = 0
-    for event in events:
-        if event.event_type.INTERNAL not in event.event_type:
-            continue
-        event_counter += 1
-        if event_counter < 100:
-            continue
+    files = np.atleast_1d(files)
+    site_location = EarthLocation(lat=site[0], lon=site[1], height=site[2])
+    if len(files) == 1 and not files[0].endswith('.fz'):
+        table = Table.read(files[0])
+        data = dict(table)
+        data['nsb_rate'] = data['nsb_rate'] * u.GHz
+    else:
+        dark_histo = Histogram1D.load(dark_histo_file)
+        n_pixel = len(DigiCam.geometry.neighbors)
+        pixels = np.arange(n_pixel, dtype=int)
+        with open(param_file) as file:
+            pulse_template = NormalizedPulseTemplate.load(template_filename)
+            pulse_area = pulse_template.integral() * u.ns
+            charge_to_amplitude = pulse_template.compute_charge_amplitude_ratio(7, 4)
+            calibration_parameters = yaml.load(file)
+            gain_integral = np.array(calibration_parameters['gain'])
+            gain_amplitude = gain_integral * charge_to_amplitude
+            crosstalk = np.array(calibration_parameters['mu_xt'])
+        events = calibration_event_stream(files, max_events=max_events,
+                                          disable_bar=disable_bar)
+        events = add_slow_data_calibration(
+            events, basepath=aux_basepath,
+            aux_services=('DriveSystem', )
+            #  'DigicamSlowControl', 'MasterSST1M', 'SafetyPLC', #
+            #  'PDPSlowControl')
+        )
+        data = {
+            "nsb_rate": [],
+            "bad_pixels": [],
+            "timestamp": [],
+            "event_id": [],
+            "az": [],
+            "el": [],
+        }
+        bad_pixels = get_bad_pixels(
+            calib_file=param_file, nsigma_gain=5, nsigma_elecnoise=5,
+            dark_histo=dark_histo_file, nsigma_dark=8, plot=None, output=None
+        )
         event_counter = 0
-        baseline_shift = event.data.digicam_baseline - dark_histo.mean()
-        rate = _compute_nsb_rate(
-            baseline_shift=baseline_shift, gain=gain_amplitude,
-            pulse_area=pulse_area, crosstalk=crosstalk,
-            bias_resistance=bias_resistance, cell_capacitance=cell_capacitance
-        )
-        bad_pixels_event = np.unique(np.hstack(
-            (
-                bad_pixels,
-                pixels[rate < 0],
-                pixels[rate > 5 * u.GHz]
+        for event in events:
+            if event.event_type.INTERNAL not in event.event_type:
+                continue
+            event_counter += 1
+            if event_counter < 100:
+                continue
+            event_counter = 0
+            baseline_shift = event.data.digicam_baseline - dark_histo.mean()
+            rate = _compute_nsb_rate(
+                baseline_shift=baseline_shift, gain=gain_amplitude,
+                pulse_area=pulse_area, crosstalk=crosstalk,
+                bias_resistance=bias_resistance, cell_capacitance=cell_capacitance
             )
-        ))
-        avg_matrix = _get_average_matrix_bad_pixels(
-            DigiCam.geometry, bad_pixels_event
-        )
-        good_pixels_mask = np.ones(n_pixel, dtype=bool)
-        good_pixels_mask[bad_pixels_event] = False
-        good_pixels = pixels[good_pixels_mask]
-        rate[bad_pixels_event] = avg_matrix[bad_pixels_event, :].dot(
-            rate[good_pixels]
-        )
-        data['bad_pixels'].append(bad_pixels_event)
-        data['timestamp'].append(event.data.local_time)
-        data['event_id'].append(event.event_id)
-        data['nsb_rate'].append(rate)
-        data['az'].append(event.slow_data.DriveSystem.current_position_az)
-        data['el'].append(event.slow_data.DriveSystem.current_position_el)
+            bad_pixels_event = np.unique(np.hstack(
+                (
+                    bad_pixels,
+                    pixels[rate < 0],
+                    pixels[rate > 5 * u.GHz]
+                )
+            ))
+            avg_matrix = _get_average_matrix_bad_pixels(
+                DigiCam.geometry, bad_pixels_event
+            )
+            good_pixels_mask = np.ones(n_pixel, dtype=bool)
+            good_pixels_mask[bad_pixels_event] = False
+            good_pixels = pixels[good_pixels_mask]
+            rate[bad_pixels_event] = avg_matrix[bad_pixels_event, :].dot(
+                rate[good_pixels]
+            )
+            data['bad_pixels'].append(bad_pixels_event)
+            data['timestamp'].append(event.data.local_time)
+            data['event_id'].append(event.event_id)
+            data['nsb_rate'].append(rate)
+            data['az'].append(event.slow_data.DriveSystem.current_position_az)
+            data['el'].append(event.slow_data.DriveSystem.current_position_el)
+        if output is not None:
+            table = Table(data)
+            table.write(output, format='fits')
     az_obs = np.array(data['az'])
     el_obs = np.array(data['el'])
     n_event = len(data['timestamp'])
-    if output is not None:
-        table = Table(data)
-        table.write(output, format='fits')
     stars_x = np.zeros([len(stars), n_event])
     stars_y = np.zeros([len(stars), n_event])
     for star_idx, star in enumerate(stars):
@@ -146,7 +153,7 @@ def nsb_rate(
                     np.array(data['timestamp'], dtype=np.float64) * 1e-9,
                     format='unix'
                 ),
-                location=krakow
+                location=site_location
             )
         )
         stars_x[star_idx, :] = (np.array(star_pos.az) - az_obs) * mm_per_deg
@@ -162,7 +169,7 @@ def nsb_rate(
         plot_nsb_range = (np.min(rate_ghz), np.max(rate_ghz))
     display.set_limits_minmax(*plot_nsb_range)
     display.add_colorbar(ax=ax)
-    display.highlight_pixels(bad_pixels, color='r', linewidth=2)
+    display.highlight_pixels(data['bad_pixels'][0], color='r', linewidth=2)
     plt.tight_layout()
     points, = ax.plot(stars_y[:, 0], stars_y[:, 0], 'r+', ms=20)
 
