@@ -12,7 +12,7 @@ def correct_hillas(x, y, source_x=0, source_y=0):
 
     x = x - source_x
     y = y - source_y
-    r = np.sqrt(x ** 2.0 + x ** 2.0)
+    r = np.sqrt(x ** 2.0 + y ** 2.0)
     phi = np.arctan2(y, x)
 
     return x, y, r, phi

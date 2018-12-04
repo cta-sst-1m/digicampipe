@@ -134,22 +134,20 @@ def test_correct_hillas():
     data['phi'] = np.arctan2(data['y'], data['x'])
     data['psi'] = np.ones(len(x)) * np.pi
 
-    data_corrected = correct_hillas(data)
-    assert (data_corrected['x'] == x).all()
-    assert (data_corrected['y'] == y).all()
-    assert (data_corrected['r'] == data['r']).all()
-    assert (data_corrected['phi'] == data['phi']).all()
+    x_corr, y_corr, r_corr, phi_corr = correct_hillas(data['x'], data['y'])
+    assert (x_corr == x).all()
+    assert (y_corr == y).all()
+    assert (r_corr == data['r']).all()
+    assert (phi_corr == data['phi']).all()
 
-    data_corrected = correct_hillas(data, source_x=[0, 100], source_y=[0, 100])
-    expected_shape = (2, len(x))
+    x_corr, y_corr, r_corr, phi_corr = correct_hillas(data['x'],
+                                                      data['y'],
+                                                      source_x=100,
+                                                      source_y=100)
 
-    for key, val in data_corrected.items():
-
-        assert (val.shape == expected_shape)
-    assert (data_corrected['x'][0, :] == x).all()
-    assert (data_corrected['x'][1, :] == x - 100).all()
-
-    assert (data_corrected['psi'] - data['psi']).sum() == 0
+    assert (x_corr == x - 100).all()
+    assert (y_corr == y - 100).all()
+    assert (x_corr**2 + y_corr**2 == (x - 100)**2 + (y - 100)**2).all()
 
 
 if __name__ == '__main__':
