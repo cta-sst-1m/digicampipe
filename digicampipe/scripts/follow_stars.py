@@ -12,6 +12,9 @@ Options:
                                 [Default: search]
   --dark_hist=LIST              Histogram of ADC samples during dark run.
                                 Output of raw.py on dark data.
+  --output=FILE                 Fits file containing the baselines. Set to none
+                                to not create that file. [Default: none]
+                                Output of raw.py on dark data.
   --max_events=N                Maximum number of events to analyze
   --plot=FILE                   path to the output plot. Will show the average
                                 over all events of the NSB.
@@ -37,6 +40,7 @@ import yaml
 from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy.time import Time
+from astropy.table import Table
 from pkg_resources import resource_filename
 
 from histogram.histogram import Histogram1D
@@ -52,6 +56,7 @@ from digicampipe.io.event_stream import calibration_event_stream, \
 
 def nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
+        output=None,
         plot="show", plot_nsb_range=None, norm="log", disable_bar=False,
         max_events=None, stars=('Capella',), mm_per_deg=-100.,
         site=(50.049683 * u.deg, 19.944544 * u.deg, 209 * u.m),  # krakow
@@ -110,11 +115,15 @@ def nsb_rate(
                 pixels[rate > 5 * u.GHz]
             )
         ))
-        avg_matrix = _get_average_matrix_bad_pixels(DigiCam.geometry, bad_pixels_event)
+        avg_matrix = _get_average_matrix_bad_pixels(
+            DigiCam.geometry, bad_pixels_event
+        )
         good_pixels_mask = np.ones(n_pixel, dtype=bool)
         good_pixels_mask[bad_pixels_event] = False
         good_pixels = pixels[good_pixels_mask]
-        rate[bad_pixels_event] = avg_matrix[bad_pixels_event, :].dot(rate[good_pixels])
+        rate[bad_pixels_event] = avg_matrix[bad_pixels_event, :].dot(
+            rate[good_pixels]
+        )
         data['bad_pixels'].append(bad_pixels_event)
         data['timestamp'].append(event.data.local_time)
         data['event_id'].append(event.event_id)
@@ -124,8 +133,11 @@ def nsb_rate(
     az_obs = np.array(data['az'])
     el_obs = np.array(data['el'])
     n_event = len(data['timestamp'])
-    stars_posx_mm = np.zeros([len(stars), n_event])
-    stars_posy_mm = np.zeros([len(stars), n_event])
+    if output is not None:
+        table = Table(data)
+        table.write(output, format='fits')
+    stars_x = np.zeros([len(stars), n_event])
+    stars_y = np.zeros([len(stars), n_event])
     for star_idx, star in enumerate(stars):
         skycoord = SkyCoord.from_name(star)
         star_pos = skycoord.transform_to(
@@ -137,8 +149,8 @@ def nsb_rate(
                 location=krakow
             )
         )
-        stars_posx_mm[star_idx, :] = (np.array(star_pos.az) - az_obs) * mm_per_deg
-        stars_posy_mm[star_idx, :] = (np.array(star_pos.alt) - el_obs) * mm_per_deg
+        stars_x[star_idx, :] = (np.array(star_pos.az) - az_obs) * mm_per_deg
+        stars_y[star_idx, :] = (np.array(star_pos.alt) - el_obs) * mm_per_deg
     fig1, ax = plt.subplots(1, 1, figsize=(16, 12), dpi=50)
     display = CameraDisplay(
         DigiCam.geometry, ax=ax, norm=norm,
@@ -152,17 +164,18 @@ def nsb_rate(
     display.add_colorbar(ax=ax)
     display.highlight_pixels(bad_pixels, color='r', linewidth=2)
     plt.tight_layout()
-    points, = ax.plot(stars_posx_mm[:, 0], stars_posy_mm[:, 0], 'r+', ms=20)
+    points, = ax.plot(stars_y[:, 0], stars_y[:, 0], 'r+', ms=20)
 
     def update(i, display):
         print('frame', i, '/', len(data['timestamp']))
         display.image = data['nsb_rate'][i].to(u.GHz).value
-        display.axes.set_title('NSB rate [GHz], t={}'.format(int(data['timestamp'][i]*1e-9)))
+        t = int(data['timestamp'][i]*1e-9)
+        display.axes.set_title('NSB rate [GHz], t={}'.format(t))
         display.highlight_pixels(
             data['bad_pixels'][i], color='r', linewidth=2
         )
-        points.set_xdata(stars_posx_mm[:, i])
-        points.set_ydata(stars_posx_mm[:, i])
+        points.set_xdata(stars_x[:, i])
+        points.set_ydata(stars_y[:, i])
 
     anim = FuncAnimation(
         fig1,
@@ -172,7 +185,8 @@ def nsb_rate(
         fargs=(display, )
     )
     Writer = animation.writers['ffmpeg']
-    writer = Writer(fps=20, metadata=dict(artist='y. renier'), bitrate=1800, codec='h263p')
+    writer = Writer(fps=20, metadata=dict(artist='y. renier'),
+                    bitrate=1800, codec='h263p')
 
     output_path = os.path.dirname(plot)
     if plot == "show" or \
@@ -229,12 +243,14 @@ def entry():
                 'pulse_template_all_pixels.txt'
             )
         )
+    output = convert_text(args['--output'])
     max_events = convert_int(args['--max_events'])
     plot = convert_text(args['--plot'])
     bias_resistance = convert_float(args['--bias_resistance']) * u.Ohm
     cell_capacitance = convert_float(args['--cell_capacitance']) * u.Farad
     nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
+        output=output,
         plot=plot, bias_resistance=bias_resistance, max_events=max_events,
         stars=('Capella',),
         cell_capacitance=cell_capacitance
