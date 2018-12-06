@@ -101,7 +101,7 @@ def entry():
         gain = gain * ratio
         crosstalk = 0.08
         bias_resistance = 10 * 1E3
-        cell_capacitance = 50 * 1E-15
+        cell_capacitance = 85 * 1E-15
 
         nsb_rate = _compute_nsb_rate(baseline_shift=baseline_shift,
                                      gain=gain, pulse_area=template_area,
