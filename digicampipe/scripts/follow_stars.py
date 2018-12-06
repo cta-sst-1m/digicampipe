@@ -143,7 +143,7 @@ def nsb_rate(
             data['nsb_rate'].append(rate)
             data['az'].append(event.slow_data.DriveSystem.current_position_az)
             data['el'].append(event.slow_data.DriveSystem.current_position_el)
-        data['nsb_rate'] = np.array(data['nsb_rate'])
+        data['nsb_rate'] = np.array(data['nsb_rate']) * u.GHz
         if output is not None:
             table = Table(data)
             if os.path.isfile(output):
