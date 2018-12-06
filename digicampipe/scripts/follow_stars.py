@@ -24,25 +24,29 @@ Options:
                                 saved.
                                 If set to "none", no plot is done.
                                 [Default: show]
+  --norm=TEXT                   Norm to use for the nsb scale. must be
+                                "lin" or "log", [Default: log]
+  --plot_baselines              enable the plot of the history of various
+                                baselines [Default: True]
   --parameters=FILE             Calibration parameters file path
   --template=FILE               Pulse template file path
   --bias_resistance=FLOAT       Bias resistance in Ohm. [Default: 1e4]
   --cell_capacitance=FLOAT      Cell capacitance in Farad. [Default: 5e-14]
 """
 import os
-# import matplotlib
-# matplotlib.rcParams['animation.ffmpeg_args'] = '-report'
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 import numpy as np
 from ctapipe.visualization import CameraDisplay
+from ctapipe.coordinates import CameraFrame, HorizonFrame
 from docopt import docopt
 import yaml
 from astropy import units as u
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle
 from astropy.time import Time
 from astropy.table import Table
+from astroquery.vizier import Vizier
 from pkg_resources import resource_filename
 from datetime import datetime
 
@@ -60,8 +64,8 @@ from digicampipe.io.event_stream import calibration_event_stream, \
 def nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
         output=None, plot="show", plot_nsb_range=None, norm="log",
-        disable_bar=False, max_events=None, stars=('Capella',),
-        mm_per_deg=-96.667,  rotation=0*u.deg,
+        plot_baselines=False,
+        disable_bar=False, max_events=None, stars=True,
         site=(50.090815 * u.deg, 19.887937 * u.deg, 214.034 * u.m),  # krakow
         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
@@ -88,8 +92,6 @@ def nsb_rate(
         events = add_slow_data_calibration(
             events, basepath=aux_basepath,
             aux_services=('DriveSystem', )
-            #  'DigicamSlowControl', 'MasterSST1M', 'SafetyPLC', #
-            #  'PDPSlowControl')
         )
         data = {
             "baseline": [],
@@ -141,54 +143,38 @@ def nsb_rate(
             data['nsb_rate'].append(rate)
             data['az'].append(event.slow_data.DriveSystem.current_position_az)
             data['el'].append(event.slow_data.DriveSystem.current_position_el)
+        data['nsb_rate'] = np.array(data['nsb_rate'])
         if output is not None:
             table = Table(data)
             if os.path.isfile(output):
                 os.remove(output)
             table.write(output, format='fits')
-    az_obs = np.array(data['az'])
-    el_obs = np.array(data['el'])
-    n_event = len(data['timestamp'])
-    stars_x = np.zeros([len(stars), n_event])
-    stars_y = np.zeros([len(stars), n_event])
-    rot_matrix = np.ones([2, 2])
-    rot_matrix[0, :] = np.array([np.cos(rotation), np.sin(rotation)])
-    rot_matrix[1, :] = np.array([-np.sin(rotation), np.cos(rotation)])
-    transform_matrix = rot_matrix * mm_per_deg
-    star_azel_rel = np.ones([len(data['timestamp']), 2])
+
     time_obs = Time(
         np.array(data['timestamp'], dtype=np.float64) * 1e-9,
         format='unix'
     )
-    for star_idx, star in enumerate(stars):
-        skycoord = SkyCoord.from_name(star)
-        star_pos = skycoord.transform_to(
-            AltAz(
-                obstime=time_obs,
-                location=site_location
-            )
+    if plot_baselines:
+        fig2, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 8), dpi=50)
+        baseline_std = np.std(data['baseline'], axis=0)
+        ax1.hist(baseline_std, 100)
+        ax1.set_xlabel('std(baseline) [LSB]')
+        # pixels_shown = np.arange(len(baseline_std))[baseline_std > 10]
+        pixels_shown = [834,]
+        ax2.plot_date(
+            time_obs.to_datetime(),
+            data['baseline'][:, pixels_shown],
+            '-'
         )
-        star_azel_rel[:, 0] = np.array(star_pos.az) - az_obs
-        star_azel_rel[:, 1] = np.array(star_pos.alt) - el_obs
-        star_xy = star_azel_rel.dot(transform_matrix)
-        stars_x[star_idx, :] = star_xy[:, 0]
-        stars_y[star_idx, :] = star_xy[:, 1]
-    fig2, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 8), dpi=50)
-    nsb_std = np.std(data['nsb_rate'].value, axis=0)
-    ax1.hist(nsb_std, 100)
-    ax1.set_xlabel('std(nsb rate) [GHz]')
-    pixels_varying = np.arange(len(nsb_std))[nsb_std > 0.5]
-    ax2.plot_date(
-        time_obs.to_datetime(),
-        data['nsb_rate'][:, pixels_varying],
-        '-'
-    )
-    ax2.set_xlabel('time')
-    ax2.set_ylabel('nsb rate [GHz]')
-    plt.tight_layout()
-    plt.show()
-    plt.close(fig2)
+        ax2.set_xlabel('time')
+        ax2.set_ylabel('baseline [LSB]')
+        plt.tight_layout()
+        plt.show()
+        plt.close(fig2)
 
+    az_obs = np.array(data['az'])
+    el_obs = np.array(data['el'])
+    n_event = len(data['timestamp'])
     fig1, ax = plt.subplots(1, 1, figsize=(16, 12), dpi=50)
     date = datetime.fromtimestamp(data['timestamp'][0]*1e-9)
     date_str = date.strftime("%H:%M:%S")
@@ -206,9 +192,65 @@ def nsb_rate(
         len(data['good_pixels_mask'][0])
     )[~data['good_pixels_mask'][0]]
     display.highlight_pixels(bad_pixels, color='r', linewidth=2)
+    display.axes.set_xlim([-500., 500.])
+    display.axes.set_ylim([-500., 500.])
     plt.tight_layout()
-    points, = ax.plot(stars_x[:, 0], stars_y[:, 0], '+', ms=20)
-    plt.legend(stars)
+    if stars is True:
+        vizier = Vizier(
+            columns=['RAJ2000', 'DEJ2000', 'Pmag', ' Bmag'],
+            column_filters={"Pmag": "<6"}
+        )
+        stars_table = vizier.query_region(
+            "Capella",
+            radius=Angle(10, "deg"),
+            catalog='I/254'
+        )[0]
+        stars_pmag = stars_table['Pmag']
+        stars_alt = np.zeros([len(stars_pmag), n_event]) * u.deg
+        stars_az = np.zeros([len(stars_pmag), n_event]) * u.deg
+        for star_idx in range(len(stars_pmag)):
+            skycoord = SkyCoord(
+                ra=stars_table['RAJ2000'][star_idx] * u.deg,
+                dec=stars_table['DEJ2000'][star_idx] * u.deg
+            )
+            star_pos = skycoord.transform_to(
+                AltAz(obstime=time_obs, location=site_location)
+            )
+            stars_alt[star_idx, :] = star_pos.alt
+            stars_az[star_idx, :] = star_pos.az
+        stars_x_ctapipe = np.zeros([len(stars_pmag), n_event]) * u.mm
+        stars_y_ctapipe = np.zeros([len(stars_pmag), n_event]) * u.mm
+        for event in range(len(time_obs)):
+            pd = SkyCoord(
+                alt=el_obs[event] * u.deg,
+                az=az_obs[event] * u.deg,
+                frame=HorizonFrame()
+            )
+            cam_frame = CameraFrame(
+                focal_length=5.6 * u.m,
+                rotation=90 * u.deg,
+                pointing_direction=pd,
+                array_direction=pd,
+            )
+            stars_sky = SkyCoord(
+                alt=stars_alt[:, event],
+                az=stars_az[:, event],
+                frame=HorizonFrame()
+            )
+            stars_cam = stars_sky.transform_to(cam_frame)
+            stars_x_ctapipe[:, event] = -stars_cam.x
+            stars_y_ctapipe[:, event] = stars_cam.y
+        point_stars = []
+        for index_star in range(len(stars_pmag)):
+            point_star, = ax.plot(
+                stars_x_ctapipe[index_star, 0],
+                stars_y_ctapipe[index_star, 0],
+                'ok',
+                ms=20-2*stars_pmag[index_star],
+                mew=3,
+                mfc='None'
+            )
+            point_stars.append(point_star)
 
     def update(i, display):
         print('frame', i, '/', len(data['timestamp']))
@@ -222,19 +264,25 @@ def nsb_rate(
         display.highlight_pixels(
             bad_pixels, color='r', linewidth=2
         )
-        points.set_xdata(stars_x[:, i])
-        points.set_ydata(stars_y[:, i])
+        if stars is True:
+            for index_star in range(len(stars_pmag)):
+                point_stars[index_star].set_xdata(
+                    stars_x_ctapipe[index_star, i]
+                )
+                point_stars[index_star].set_ydata(
+                    stars_y_ctapipe[index_star, i]
+                )
 
     anim = FuncAnimation(
         fig1,
         update,
         frames=len(data['timestamp']),
-        interval=50,
+        interval=20,
         fargs=(display, )
     )
     Writer = animation.writers['ffmpeg']
-    writer = Writer(fps=20, metadata=dict(artist='Y. Renier'),
-                    bitrate=1800, codec='h263p')
+    writer = Writer(fps=50, metadata=dict(artist='Y. Renier'),
+                    bitrate=4000, codec='h263p')
 
     output_path = os.path.dirname(plot)
     if plot == "show" or \
@@ -242,6 +290,7 @@ def nsb_rate(
         if not plot == "show":
             print('WARNING: Path ' + output_path + ' for output trigger ' +
                   'uniformity does not exist, displaying the plot instead.\n')
+        display.enable_pixel_picker()
         plt.show()
     else:
         anim.save(plot, writer=writer)
@@ -294,14 +343,15 @@ def entry():
     output = convert_text(args['--output'])
     max_events = convert_int(args['--max_events'])
     plot = convert_text(args['--plot'])
+    norm = convert_text(args['--norm'])
+    plot_baselines = args['--plot_baselines']
     bias_resistance = convert_float(args['--bias_resistance']) * u.Ohm
     cell_capacitance = convert_float(args['--cell_capacitance']) * u.Farad
     nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
-        output=output,
+        output=output, norm=norm, plot_baselines=plot_baselines,
         plot=plot, bias_resistance=bias_resistance, max_events=max_events,
-        stars=('Capella',), rotation=12*u.deg,
-        cell_capacitance=cell_capacitance
+        stars=True, cell_capacitance=cell_capacitance
     )
 
 
