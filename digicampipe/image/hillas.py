@@ -41,3 +41,11 @@ def compute_miss(r, alpha):
     miss = r * np.sin(alpha)
 
     return miss
+
+
+def arrival_lessard(data, xis, mm_per_deg = 100):
+    disp_ang = xis[None, :] * (1 - data['width']/data['length'])[:, None]
+    disp_mm =  - np.sign(data['skewness'])[:, None] * mm_per_deg * disp_ang
+    arrival_x = disp_mm * np.cos(data['psi'])[:, None] + data['x'][:, None]
+    arrival_y = disp_mm * np.sin(data['psi'])[:, None] + data['y'][:, None]
+    return arrival_x, arrival_y

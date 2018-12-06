@@ -16,7 +16,15 @@ Options:
                                 displayed instead. [default: none]
   --alphas_min=LIST             Minimum alpha angles in degrees that an event
                                 must have during the 2D scan to be included.
-                                [Default: 1,2,5,10,20]
+                                [Default: 0.2,0.5,1,2,5]
+  --plot_map_disp=PATH          path to the plot for a 2d map using the disp
+                                method using the --xis factor.
+                                If set to "none", the plot is not
+                                produced. If set to "show" the plot is
+                                displayed instead. [default: none]
+  --xis=LIST                    xis parameters used for the map using disp
+                                method.
+                                [Default: 1,1.2,1.4,1.6,1.8,2]
   --plot_showers_center=PATH    path to the plot of a 2d histogram of shower
                                 center of gravity. If set to "none", the plot
                                 is not produced. If set to "show" the plot is
@@ -50,10 +58,10 @@ from docopt import docopt
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from tqdm import tqdm
+from matplotlib.gridspec import GridSpec
 
 from digicampipe.utils.docopt import convert_text, convert_list_float
-from digicampipe.image.hillas import correct_hillas, compute_alpha
-
+from digicampipe.image.hillas import correct_hillas, compute_alpha, arrival_lessard
 
 def correlation_plot(pipeline_data, title=None, plot="show"):
     fig = plt.figure(figsize=(24, 12))
@@ -157,7 +165,7 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
     subplot = 0
     for key, val in pipeline_data.items():
         if key in ['border', 'kurtosis', 'event_id',
-                   'event_type', 'miss', 'burst', 'saturated', 'shower',
+                   'event_type', 'burst', 'saturated', 'shower',
                    'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
                    'all_ghv_on', 'is_on_source', 'is_tracking']:
             continue
@@ -175,8 +183,15 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
             bins = np.logspace(binmin, binmax, 100)
             h, bins, p = plt.hist(val_split, bins=bins, stacked=True)
         else:
-            h, bins, p = plt.hist(val_split, bins='auto', stacked=True)
-
+            binmin = np.floor(np.nanmin(val))
+            binmax = np.ceil(np.nanmax(val))
+            if key == 'skewness':
+                binmin = -2
+                binmax = 2
+            if key == 'nsb_rate':
+                binmax = 3
+            bins = np.linspace(binmin, binmax, 100)
+            h, bins, p = plt.hist(val_split, bins=bins, stacked=True)
         plt.xlabel(key)
         plt.yscale(yscale)
         ymax = np.nanmax(h)
@@ -237,9 +252,6 @@ def scan_2d_plot(
     N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
 
-    # pipeline_data = {col: np.array(pipeline_data[col])
-    #                 for col in pipeline_data.columns}
-
     X, Y = np.meshgrid(x_fov, y_fov)
 
     for index, hillas in tqdm(pipeline_data.iterrows(),
@@ -267,7 +279,75 @@ def scan_2d_plot(
         plt.xlabel('FOV X [mm]')
         cbar = fig.colorbar(pcm)
         cbar.set_label('N of events')
+        plt.grid()
         plt.tight_layout()
+        if plot == "show":
+            plt.show()
+        else:
+            plt.savefig(plot_name)
+            print(plot_name, 'created')
+        plt.close(fig)
+
+
+def map_disp(pipeline_data, xis, plot='show', num_steps=(20, 20),
+             fov=((-500, 500), (-500, 500))):
+    x_fov_start = fov[0][0]  # limits of the FoV in mm
+    y_fov_start = fov[1][0]  # limits of the FoV in mm
+    x_fov_end = fov[0][1]  # limits of the FoV in mm
+    y_fov_end = fov[1][1]  # limits of the FoV in mm
+    num_steps = np.atleast_1d(num_steps)
+    xis = np.unique(np.abs(np.array(xis)))
+    if len(num_steps) == 1:
+        num_steps = [num_steps[0], num_steps[0]]
+    x_bin = np.linspace(x_fov_start, x_fov_end, num_steps[0] + 1)
+    y_bin = np.linspace(y_fov_start, y_fov_end, num_steps[1] + 1)
+    x_fov = 0.5 * (x_bin[1:] + x_bin[:-1])
+    y_fov = 0.5 * (y_bin[1:] + y_bin[:-1])
+    x_cen = 0.5 * (x_fov_start + x_fov_end)
+    y_cen = 0.5 * (y_fov_start + y_fov_end)
+    bkg_mask = pipeline_data['skewness'] < 0
+    data_mask = pipeline_data['skewness'] > 0
+    x, y = arrival_lessard(pipeline_data[data_mask], xis)
+    x_bkb, y_bkb = arrival_lessard(pipeline_data[bkg_mask], -xis)
+    for i, xi in enumerate(np.unique(xis)):
+        fig = plt.figure(figsize=(15, 12))
+        gs = GridSpec(4, 5)
+        ax1 = plt.subplot(gs[:3, :3])
+        h_bkg, _, _ = np.histogram2d(x_bkb[:, i], y_bkb[:, i],
+                                     bins=(x_bin, y_bin))
+        h, _, _ = np.histogram2d(x[:, i], y[:, i],
+                                     bins=(x_bin, y_bin))
+        img = ax1.pcolormesh(x_bin, y_bin, (h - h_bkg).T)
+        data_center = np.logical_and(np.abs(x[:, i] - x_cen) < 10,
+                                     np.abs(y[:, i] - y_cen) < 10)
+        # plt.plot(pipeline_data['x'][data_mask][data_center],
+        #          pipeline_data['y'][data_mask][data_center], 'r+', ms=10)
+        plt.grid()
+        ax5 = plt.subplot(gs[3, 3:])
+        plotted = pipeline_data['width']  # pipeline_data['length']/pipeline_data['width']
+        ax5.hist(plotted[data_mask][data_center][pipeline_data['skewness'] > 0], facecolor='b')
+        ax5.hist(plotted[data_mask][data_center][pipeline_data['skewness'] < 0], facecolor='r')
+        # colorbar
+        ax4 = plt.subplot(gs[:3, 4])
+        plt.colorbar(img, cax=ax4)
+        # projection on Y axis
+        ax2 = plt.subplot(gs[:3, 3], sharey=ax1)
+        ax2.plot(np.sum(h, axis=0), y_fov, label='data')
+        ax2.plot(np.sum(h_bkg, axis=0), y_fov, label='bkg')
+        ax2.plot(np.sum(h-h_bkg, axis=0), y_fov, label='excess')
+        plt.setp(ax2.get_yticklabels(), visible=False)
+        # projection on X axis
+        ax3 = plt.subplot(gs[3, :3], sharex=ax1)
+        ax3.plot(x_fov, np.sum(h, axis=1), label='data')
+        ax3.plot(x_fov, np.sum(h_bkg, axis=1), label='bkg')
+        ax3.plot(x_fov, np.sum(h-h_bkg, axis=1), label='excess')
+        ax3.legend()
+        plt.setp(ax3.get_xticklabels(), visible=False)
+        plt.tight_layout()
+        if len(xis)> 1:
+            plot_name = plot.replace('.png', '_xi{:.2f}.png'.format(xi))
+        else:
+            plot_name = plot
         if plot == "show":
             plt.show()
         else:
@@ -286,6 +366,8 @@ def cut_data(
         cut_length_over_width_lte=None,
         cut_intensity_gte=None,
         cut_intensity_lte=None,
+        cut_skewness_gte=None,
+        cut_skewness_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
@@ -297,6 +379,8 @@ def cut_data(
         cut_target_dec_lte=None,
         cut_nsb_rate_gte=None,
         cut_nsb_rate_lte=None,
+        cut_r_gte=None,
+        cut_r_lte=None,
 ):
     selection = np.isfinite(pipeline_data['intensity'])
     if cut_length_gte is not None:
@@ -352,6 +436,20 @@ def cut_data(
         print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: intensity > ',
               cut_intensity_lte)
+    if cut_skewness_gte is not None:
+        event_pass = pipeline_data['skewness'] < cut_skewness_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: skewness < ',
+              cut_skewness_gte)
+    if cut_skewness_lte is not None:
+        event_pass = pipeline_data['skewness'] > cut_skewness_lte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: skewness > ',
+              cut_skewness_lte)
     if cut_border_eq is not None:
         event_pass = pipeline_data['border'] != cut_border_eq
         old_selection = selection
@@ -424,6 +522,20 @@ def cut_data(
         print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: nsb rate > ',
               cut_nsb_rate_lte, 'GHz')
+    if cut_r_gte is not None:
+        event_pass = pipeline_data['r'] < cut_r_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: r < ',
+              cut_nsb_rate_gte, 'mm')
+    if cut_r_lte is not None:
+        event_pass = pipeline_data['r'] > cut_r_lte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: r > ',
+              cut_nsb_rate_lte, 'mm')
     return selection
 
 
@@ -437,6 +549,8 @@ def get_data_and_selection(
         cut_length_over_width_lte=None,
         cut_intensity_gte=None,
         cut_intensity_lte=None,
+        cut_skewness_gte=None,
+        cut_skewness_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
@@ -448,6 +562,8 @@ def get_data_and_selection(
         cut_target_dec_lte=None,
         cut_nsb_rate_gte=None,
         cut_nsb_rate_lte=None,
+        cut_r_gte=None,
+        cut_r_lte=None,
 ):
     data = Table.read(hillas_file, format='fits')
     data = data.to_pandas()
@@ -465,6 +581,8 @@ def get_data_and_selection(
         cut_length_over_width_lte=cut_length_over_width_lte,
         cut_intensity_gte=cut_intensity_gte,
         cut_intensity_lte=cut_intensity_lte,
+        cut_skewness_gte=cut_skewness_gte,
+        cut_skewness_lte=cut_skewness_lte,
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
         cut_saturated_eq=cut_saturated_eq,
@@ -476,6 +594,8 @@ def get_data_and_selection(
         cut_target_dec_lte=cut_target_dec_lte,
         cut_nsb_rate_gte=cut_nsb_rate_gte,
         cut_nsb_rate_lte=cut_nsb_rate_lte,
+        cut_r_gte=cut_r_gte,
+        cut_r_lte=cut_r_lte,
     )
     return data, selection
 
@@ -490,6 +610,8 @@ def plot_pipeline(
         cut_length_over_width_lte=None,
         cut_intensity_gte=None,
         cut_intensity_lte=None,
+        cut_skewness_gte=None,
+        cut_skewness_lte=None,
         cut_border_eq=None,
         cut_burst_eq=None,
         cut_saturated_eq=None,
@@ -501,6 +623,8 @@ def plot_pipeline(
         cut_target_dec_lte=None,
         cut_nsb_rate_gte=None,
         cut_nsb_rate_lte=None,
+        cut_r_gte=None,
+        cut_r_lte=None,
         alphas_min=(1, 2, 5, 10, 20),
         plot_scan2d=None,
         plot_showers_center=None,
@@ -508,6 +632,8 @@ def plot_pipeline(
         plot_correlation_all=None,
         plot_correlation_selected=None,
         plot_correlation_cut=None,
+        plot_map_disp=None,
+        xis=(1, 1.2, 1.4, 1.6, 1.8, 2.0),
         print_events=0,
         disable_bar=True,
 ):
@@ -521,6 +647,8 @@ def plot_pipeline(
         cut_length_over_width_lte=cut_length_over_width_lte,
         cut_intensity_gte=cut_intensity_gte,
         cut_intensity_lte=cut_intensity_lte,
+        cut_skewness_gte=cut_skewness_gte,
+        cut_skewness_lte=cut_skewness_lte,
         cut_border_eq=cut_border_eq,
         cut_burst_eq=cut_burst_eq,
         cut_saturated_eq=cut_saturated_eq,
@@ -532,6 +660,8 @@ def plot_pipeline(
         cut_target_dec_lte=cut_target_dec_lte,
         cut_nsb_rate_gte=cut_nsb_rate_gte,
         cut_nsb_rate_lte=cut_nsb_rate_lte,
+        cut_r_gte=cut_r_gte,
+        cut_r_lte=cut_r_lte,
     )
     selection_no_burst = np.logical_and(selection, data['burst'] == False)
 
@@ -551,8 +681,14 @@ def plot_pipeline(
     if plot_scan2d is not None:
         scan_2d_plot(
             pipeline_data=data[selection_no_burst], alphas_min=alphas_min,
-            plot=plot_scan2d, fov=((-200, 200), (-200, 200)), num_steps=200,
-            disable_bar=disable_bar
+            plot=plot_scan2d, disable_bar=disable_bar,
+            fov=((-400, 400), (-400, 400)), num_steps=400
+        )
+    if plot_map_disp is not None:
+        map_disp(
+            pipeline_data=data[selection_no_burst], xis=xis,
+            plot=plot_map_disp,
+            fov=((-400, 400), (-400, 400)), num_steps=(51, 51)
         )
     if not np.isfinite(print_events):
         print_events = len(data[selection])
@@ -578,18 +714,22 @@ def entry():
     plot_correlation_selected = convert_text(args['--plot_correl_selected'])
     plot_correlation_cut = convert_text(args['--plot_correl_cut'])
     disable_bar = args['--disable_bar']
+    xis = convert_list_float(args['--xis'])
+    plot_map_disp = convert_text(args['--plot_map_disp'])
     plot_pipeline(
         hillas_file=hillas_file,
-        cut_length_gte=None,
-        cut_length_lte=25,
-        cut_width_gte=None,
-        cut_width_lte=15,
+        cut_length_gte=43,  # Whipple:43
+        cut_length_lte=16,  # Whipple:16
+        cut_width_gte=16,  # Whipple:16
+        cut_width_lte=7.3,  # Whipple:7.3
         cut_length_over_width_gte=None,
-        cut_length_over_width_lte=1.5,
+        cut_length_over_width_lte=None,
         cut_intensity_gte=None,
-        cut_intensity_lte=500,
+        cut_intensity_lte=None,
+        cut_skewness_gte=None,
+        cut_skewness_lte=None,
         cut_border_eq=True,
-        cut_burst_eq=None,
+        cut_burst_eq=True,
         cut_saturated_eq=None,
         cut_led_on_eq=True,
         cut_led_blink_eq=True,
@@ -597,8 +737,10 @@ def entry():
         cut_target_ra_lte=82,
         cut_target_dec_gte=23,
         cut_target_dec_lte=21,
-        cut_nsb_rate_gte=1.0,
-        cut_nsb_rate_lte=0.2,
+        cut_nsb_rate_gte=0.6 ,
+        cut_nsb_rate_lte=.1,
+        cut_r_gte=None ,
+        cut_r_lte=None,
         alphas_min=alphas_min,
         plot_scan2d=plot_scan2d,
         plot_showers_center=plot_showers_center,
@@ -606,6 +748,8 @@ def entry():
         plot_correlation_all=plot_correlation_all,
         plot_correlation_selected=plot_correlation_selected,
         plot_correlation_cut=plot_correlation_cut,
+        plot_map_disp=plot_map_disp,
+        xis=xis,
         print_events=0,
         disable_bar=disable_bar,
     )

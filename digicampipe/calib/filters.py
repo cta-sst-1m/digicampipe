@@ -110,3 +110,4 @@ def filter_clocked_trigger(events):
 
         if event.event_type.INTERNAL not in event.event_type:
             yield event
+
