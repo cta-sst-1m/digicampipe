@@ -2,9 +2,9 @@ import os
 import tempfile
 import numpy as np
 from pkg_resources import resource_filename
+import pandas as pd
 
-from digicampipe.image.hillas import correct_alpha_2, \
-    correct_alpha_3, correct_alpha_4
+from digicampipe.image.hillas import compute_alpha, correct_hillas
 from digicampipe.utils.docopt import convert_pixel_args
 from digicampipe.scripts.pipeline import main_pipeline
 from digicampipe.scripts.plot_pipeline import get_data_and_selection
@@ -84,16 +84,72 @@ def get_data():
     return data
 
 
-def test_correct_alphas():
-    data = get_data()
-    data_alpha2 = correct_alpha_2(data, source_x=1, source_y=1)
-    data_alpha3 = correct_alpha_3(data, source_x=1, source_y=1)
-    alpha4 = correct_alpha_4(
-        data, sources_x=[1, -1], sources_y=[1, -1]
-    )
-    assert np.all(data_alpha3 == data_alpha2)
-    assert np.all(data_alpha3['alpha'] == alpha4[:, 0])
+def test_alpha_computation_for_aligned_showers():
+
+    x = np.linspace(-100, 100, num=100)
+    y = np.linspace(-100, 100, num=100)
+    np.random.shuffle(y)
+    data = {'x': x, 'y': y}
+    data['r'] = np.sqrt(data['x'] ** 2 + data['y']**2)
+    data['phi'] = np.arctan2(data['y'], data['x'])
+    data['psi'] = data['phi']
+
+    data = pd.DataFrame(data)
+
+    alpha_1 = np.array(compute_alpha(data['phi'], data['psi']))
+
+    assert (alpha_1 == 0).all()
+
+
+def test_alpha_computation_for_missaligned_showers():
+
+    thetas = np.linspace(0, np.pi/2, num=100)
+
+    for theta in thetas:
+
+        miss_alignement = theta
+
+        x = np.linspace(-100, 100, num=100)
+        y = np.linspace(-100, 100, num=100)
+        np.random.shuffle(y)
+        data = {'x': x, 'y': y}
+        data['r'] = np.sqrt(data['x'] ** 2 + data['y']**2)
+        data['phi'] = np.arctan2(data['y'], data['x'])
+        data['psi'] = data['phi'] + miss_alignement
+        # miss_alignement = np.rad2deg(miss_alignement)
+
+        alpha_1 = compute_alpha(data['phi'], data['psi'])
+
+        assert (np.isfinite(alpha_1).all())
+        np.testing.assert_almost_equal(alpha_1, miss_alignement)
+
+
+def test_correct_hillas():
+
+    x = np.linspace(0, 100, num=5)
+    y = np.linspace(0, 100, num=5)
+    np.random.shuffle(y)
+    data = {'x': x, 'y': y}
+    data['r'] = np.sqrt(x ** 2 + y**2)
+    data['phi'] = np.arctan2(data['y'], data['x'])
+    data['psi'] = np.ones(len(x)) * np.pi
+
+    x_corr, y_corr, r_corr, phi_corr = correct_hillas(data['x'], data['y'])
+    assert (x_corr == x).all()
+    assert (y_corr == y).all()
+    assert (r_corr == data['r']).all()
+    assert (phi_corr == data['phi']).all()
+
+    x_corr, y_corr, r_corr, phi_corr = correct_hillas(data['x'],
+                                                      data['y'],
+                                                      source_x=100,
+                                                      source_y=100)
+
+    assert (x_corr == x - 100).all()
+    assert (y_corr == y - 100).all()
+    assert (x_corr**2 + y_corr**2 == (x - 100)**2 + (y - 100)**2).all()
 
 
 if __name__ == '__main__':
-    test_correct_alphas()
+
+    test_alpha_computation_for_aligned_showers()
