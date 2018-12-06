@@ -30,7 +30,6 @@ Options:
   --estimated_gain=N          Estimated gain for the fit
 """
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
@@ -41,6 +40,7 @@ import pandas as pd
 from iminuit.util import describe
 import fitsio
 from astropy.table import Table
+from matplotlib.backends.backend_pdf import PdfPages
 
 from digicampipe.scripts import mpe
 from digicampipe.utils.docopt import convert_int, \
@@ -291,7 +291,7 @@ def plot_results(results_filename, figure_path=None):
         fig_8.savefig(os.path.join(figure_path, 'baseline_histo'))
 
 
-def plot_fit(histo, fit_results, label='', figure_path=None):
+def plot_fit(histo, fit_results, label=''):
 
     fitter = FMPEFitter(histo, throw_nan=True,
                         estimated_gain=fit_results['gain'])
@@ -307,9 +307,7 @@ def plot_fit(histo, fit_results, label='', figure_path=None):
     fig = fitter.draw_fit(x_label=x_label, label=label, legend=False,
                           log=True)
 
-    if figure_path is not None:
-
-        fig.savefig(figure_path)
+    return fig
 
 
 def entry():
@@ -411,12 +409,10 @@ def entry():
 
     if figure_path:
 
-        if not os.path.isdir(figure_path):
-            raise OSError('Path for figure {} not found '
-                          '(must be an existing directory)'.format(figure_path))
+        figure_dir = os.path.dirname(figure_path)
+        plot_results(results_filename, figure_dir)
 
-        plot_results(results_filename, figure_path)
-
+        pdf = PdfPages(figure_path)
         fit_results = Table.read(results_filename, format='fits')
         fit_results = fit_results.to_pandas()
 
@@ -426,29 +422,28 @@ def entry():
             charge_histo = Histogram1D.load(charge_histo_filename,
                                             rows=int(pixel))
 
-            figure_name = os.path.join(figure_path,
-                                       'fmpe_pixel_{}.png'.format(pixel))
-            label = ''
+            label = 'Pixel {}'.format(pixel)
             try:
 
-                plot_fit(charge_histo, fit_result, label, figure_name)
-
-                plt.close()
-
+                fig = plot_fit(charge_histo, fit_result, label)
+                fig.savefig(pdf, format='pdf')
             except Exception as e:
 
                 print('Could not save pixel {} to : {} \n'.
-                      format(pixel, figure_name))
-                raise e
+                      format(pixel, figure_path))
                 print(e)
+        pdf.close()
 
     if args['--display']:
 
         pixel = 0
         charge_histo = Histogram1D.load(charge_histo_filename, rows=int(pixel))
+        fit_results = Table.read(results_filename, format='fits')
+        fit_results = fit_results.to_pandas()
+        fit_result = fit_results.iloc[pixel]
 
         plot_results(results_filename)
-        plot_fit(charge_histo, results_filename)
+        plot_fit(charge_histo, fit_result)
 
         plt.show()
 
