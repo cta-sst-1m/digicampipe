@@ -18,11 +18,11 @@ Options:
                                 if the inputs are not zfits data file.
                                 [Default: none]
   --max_events=N                Maximum number of events to analyze
-  --plot=FILE                   path to the output plot. Will show the average
-                                over all events of the NSB.
-                                If set to "show", the plot is displayed and not
-                                saved.
-                                If set to "none", no plot is done.
+  --plot=FILE                   path to the output plot. Will show the
+                                evolution of the NSB as a video.
+                                If set to "show", the video is displayed and
+                                not saved.
+                                If set to "none", no video is done.
                                 [Default: show]
   --norm=TEXT                   Norm to use for the nsb scale. must be
                                 "lin" or "log", [Default: log]
@@ -64,8 +64,8 @@ from digicampipe.io.event_stream import calibration_event_stream, \
 def nsb_rate(
         files, aux_basepath, dark_histo_file, param_file, template_filename,
         output=None, plot="show", plot_nsb_range=None, norm="log",
-        plot_baselines=False,
-        disable_bar=False, max_events=None, stars=True,
+        plot_baselines=False, disable_bar=False, max_events=None, n_skip=10,
+        stars=True,
         site=(50.090815 * u.deg, 19.887937 * u.deg, 214.034 * u.m),  # krakow
         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
@@ -106,14 +106,14 @@ def nsb_rate(
             calib_file=param_file, nsigma_gain=5, nsigma_elecnoise=5,
             dark_histo=dark_histo_file, nsigma_dark=8, plot=None, output=None
         )
-        event_counter = 0
+        events_skipped = 0
         for event in events:
             if event.event_type.INTERNAL not in event.event_type:
                 continue
-            event_counter += 1
-            if event_counter < 100:
+            events_skipped += 1
+            if events_skipped < n_skip:
                 continue
-            event_counter = 0
+            events_skipped = 0
             data['baseline'].append(event.data.digicam_baseline)
             baseline_shift = event.data.digicam_baseline - dark_histo.mean()
             rate = _compute_nsb_rate(
@@ -201,7 +201,12 @@ def nsb_rate(
             column_filters={"Pmag": "<6"}
         )
         stars_table = vizier.query_region(
-            "Capella",
+            AltAz(
+                alt=el_obs[0] * u.deg,
+                az=az_obs[0] * u.deg,
+                obstime=time_obs[0],
+                location=site_location
+            ),
             radius=Angle(10, "deg"),
             catalog='I/254'
         )[0]
