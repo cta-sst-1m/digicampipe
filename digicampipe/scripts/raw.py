@@ -127,7 +127,7 @@ def entry():
     if figure_path:
 
         raw_histo = Histogram1D.load(raw_histo_filename)
-        raw_histo.save_figures(figure_path)
+        raw_histo.save_figures(figure_path, log=True, x_label='[LSB]')
 
     if args['--display']:
         raw_histo = Histogram1D.load(raw_histo_filename)
