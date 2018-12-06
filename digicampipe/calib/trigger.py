@@ -202,6 +202,11 @@ def compute_bias_curve_v2(data_stream, thresholds):
     for count, event in enumerate(data_stream):
 
         for tel_id, r0 in event.r0.tel.items():
+
+            if count == 0:
+                start_event_id = r0.camera_event_number
+                start_event_time = r0.local_camera_clock
+
             trigger_input = r0.trigger_input_7
 
             comp = trigger_input[..., np.newaxis] > thresholds
@@ -213,10 +218,13 @@ def compute_bias_curve_v2(data_stream, thresholds):
             temp_rate[temp_rate > 0] = 1
             rate += temp_rate
 
+    end_event_id = r0.camera_event_number
+    end_event_time = r0.local_camera_clock
+
     time = ((count + 1) * 4. * trigger_input.shape[-1])
     rate_error = np.sqrt(rate) / time
     cluster_rate_error = np.sqrt(cluster_rate) / time
     rate = rate / time
     cluster_rate = cluster_rate / time
-
-    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds
+    return rate, rate_error, cluster_rate, cluster_rate_error, thresholds, \
+           start_event_id, end_event_id, start_event_time, end_event_time

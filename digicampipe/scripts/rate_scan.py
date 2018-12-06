@@ -31,7 +31,7 @@ import pandas as pd
 
 from digicampipe.calib import filters
 from digicampipe.calib import trigger, baseline
-from digicampipe.calib.trigger import compute_bias_curve
+from digicampipe.calib.trigger import compute_bias_curve, compute_bias_curve_v2
 from digicampipe.io.event_stream import event_stream
 from digicampipe.io.containers import CameraEventType
 
@@ -49,7 +49,7 @@ def compute(files, output_filename, thresholds, n_samples=1024):
     data_stream = trigger.fill_trigger_patch(data_stream)
     data_stream = trigger.fill_trigger_input_7(data_stream)
     data_stream = trigger.fill_trigger_input_19(data_stream)
-    output = compute_bias_curve(
+    output = compute_bias_curve_v2(
         data_stream,
         thresholds=thresholds,
     )

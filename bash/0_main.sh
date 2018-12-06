@@ -54,10 +54,11 @@ export -p tolist
 
 ### OUTPUT FILES ###
 
-DATE=`date +%Y%m%d`
-# DATE=20181108
+# DATE=`date +%Y%m%d`
+DATE=20181203
 export DIGICAM_FOLDER='/sst1m/analyzed/calib/'$DATE'/'
 mkdir -p $DIGICAM_FOLDER
+mkdir -p $DIGICAM_FOLDER'figures/'
 
 export GHV_OFF_RAW_HISTO=$DIGICAM_FOLDER'ghv_off_raw_histo.fits'
 export GHV_OFF_RATE_SCAN=$DIGICAM_FOLDER'ghv_off_rate_scan.fits'
