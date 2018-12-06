@@ -1,5 +1,5 @@
 """
-Make a trigger uniformity map
+Display the NSB rate for each pixel
 Usage:
   nsb_rate_camera.py [options] [--] <INPUT>
 
