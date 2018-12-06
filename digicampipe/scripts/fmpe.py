@@ -17,7 +17,8 @@ Options:
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
-  --save_figures              Save the plots to the OUTPUT folder
+  --figure_path=FILE          Path to save the figures
+                              [default: None]
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
   --ncall=N                   Number of calls for the fit [default: 10000]
@@ -43,7 +44,7 @@ from astropy.table import Table
 
 from digicampipe.scripts import mpe
 from digicampipe.utils.docopt import convert_int, \
-    convert_pixel_args
+    convert_pixel_args, convert_text
 from digicampipe.utils.exception import PeakNotFound
 from digicampipe.utils.pdf import fmpe_pdf_10
 from digicampipe.visualization.plot import plot_array_camera, plot_histo
@@ -265,12 +266,12 @@ def plot_results(results_filename, figure_path=None):
     sigma_s = fit_results['sigma_s']
     baseline = fit_results['baseline']
 
-    _, fig_1 = plot_array_camera(gain, label='Gain [LSB $\cdot$ ns]')
+    _, fig_1 = plot_array_camera(gain, label='Gain [LSB $\cdot$ ns / p.e.]')
     _, fig_2 = plot_array_camera(sigma_e, label='$\sigma_e$ [LSB $\cdot$ ns]')
     _, fig_3 = plot_array_camera(sigma_s, label='$\sigma_s$ [LSB $\cdot$ ns]')
     _, fig_7 = plot_array_camera(baseline, label='Baseline [LSB]')
 
-    fig_4 = plot_histo(gain, x_label='Gain [LSB $\cdot$ ns]', bins='auto')
+    fig_4 = plot_histo(gain, x_label='Gain [LSB $\cdot$ ns / p.e.]', bins='auto')
     fig_5 = plot_histo(sigma_e, x_label='$\sigma_e$ [LSB $\cdot$ ns]',
                        bins='auto')
     fig_6 = plot_histo(sigma_s, x_label='$\sigma_s$ [LSB $\cdot$ ns]',
@@ -290,31 +291,25 @@ def plot_results(results_filename, figure_path=None):
         fig_8.savefig(os.path.join(figure_path, 'baseline_histo'))
 
 
-def plot_fit(histo, results_filename, pixel, figure_path=None):
+def plot_fit(histo, fit_results, label='', figure_path=None):
 
-    fit_results = Table.read(results_filename, format='fits')
-    fit_results = fit_results.to_pandas()
-    hist = histo[pixel]
-    fitter = FMPEFitter(hist, throw_nan=True,
-                        estimated_gain=fit_results['gain'][pixel])
+    fitter = FMPEFitter(histo, throw_nan=True,
+                        estimated_gain=fit_results['gain'])
 
     for key in fitter.parameters_name:
 
-        fitter.parameters[key] = fit_results[key][pixel]
-        fitter.errors[key] = fit_results[key + '_error'][pixel]
+        fitter.parameters[key] = fit_results[key]
+        fitter.errors[key] = fit_results[key + '_error']
 
-    fitter.ndf = fit_results['ndf'][pixel]
+    fitter.ndf = fit_results['ndf']
 
     x_label = 'Charge [LSB]'
-    label = 'Pixel {}'.format(pixel)
     fig = fitter.draw_fit(x_label=x_label, label=label, legend=False,
                           log=True)
 
     if figure_path is not None:
 
-        figure_name = 'charge_fmpe_pixel_{}'.format(pixel)
-        figure_name = os.path.join(figure_path, figure_name)
-        fig.savefig(figure_name)
+        fig.savefig(figure_path)
 
 
 def entry():
@@ -328,7 +323,7 @@ def entry():
     integral_width = int(args['--integral_width'])
     shift = int(args['--shift'])
     bin_width = int(args['--bin_width'])
-
+    figure_path = convert_text(args['--figure_path'])
     n_pixels = len(pixel_id)
 
     charge_histo_filename = args['--charge_histo_filename']
@@ -414,42 +409,46 @@ def entry():
 
                 f.write(results.to_records(index=False))
 
-    if args['--save_figures']:
+    if figure_path:
 
-        raise NotImplementedError
-        output_path = None
-
-        charge_histo = Histogram1D.load(charge_histo_filename)
-
-        figure_path = os.path.join(output_path, 'figures/')
-
-        if not os.path.exists(figure_path):
-            os.makedirs(figure_path)
+        if not os.path.isdir(figure_path):
+            raise OSError('Path for figure {} not found '
+                          '(must be an existing directory)'.format(figure_path))
 
         plot_results(results_filename, figure_path)
 
+        fit_results = Table.read(results_filename, format='fits')
+        fit_results = fit_results.to_pandas()
+
         for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
 
+            fit_result = fit_results.iloc[int(pixel)]
+            charge_histo = Histogram1D.load(charge_histo_filename,
+                                            rows=int(pixel))
+
+            figure_name = os.path.join(figure_path,
+                                       'fmpe_pixel_{}.png'.format(pixel))
+            label = ''
             try:
 
-                plot_fit(charge_histo, results_filename, i,
-                         figure_path)
+                plot_fit(charge_histo, fit_result, label, figure_name)
 
                 plt.close()
 
             except Exception as e:
 
                 print('Could not save pixel {} to : {} \n'.
-                      format(pixel, figure_path))
+                      format(pixel, figure_name))
+                raise e
                 print(e)
 
     if args['--display']:
 
         pixel = 0
-        charge_histo = Histogram1D.load(charge_histo_filename)
+        charge_histo = Histogram1D.load(charge_histo_filename, rows=int(pixel))
 
         plot_results(results_filename)
-        plot_fit(charge_histo, results_filename, pixel=pixel)
+        plot_fit(charge_histo, results_filename)
 
         plt.show()
 

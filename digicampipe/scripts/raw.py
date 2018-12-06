@@ -14,7 +14,8 @@ Options:
   -d --display                Display.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
   --baseline_subtracted       Perform baseline subtraction to the raw data
-  --save_figures              Save the plots to the same folder as output file.
+  --figure_path=PATH          Path where to save the figures
+                              [default: None]
   --baseline_filename=FILE    Output path for DigiCam calculated baseline
                               histogram. If "none" the histogram will not be
                               computed. FILE should end with '.pk'
@@ -33,11 +34,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
 from histogram.histogram import Histogram1D
-from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
-    convert_list_int
+    convert_list_int, convert_text
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
@@ -107,6 +107,7 @@ def entry():
     event_types = convert_list_int(args['--event_types'])
     baseline_filename = args['--baseline_filename']
     disable_bar = args['--disable_bar']
+    figure_path = convert_text(args['-- figure_path'])
     if baseline_filename.lower() == 'none':
         baseline_filename = None
     output_path = os.path.dirname(raw_histo_filename)
@@ -123,23 +124,10 @@ def entry():
                 disable_bar=disable_bar
             )
 
-    if args['--save_figures']:
+    if figure_path:
+
         raw_histo = Histogram1D.load(raw_histo_filename)
-        path = os.path.join(output_path, 'figures/', 'raw_histo/')
-        if not os.path.exists(path):
-            os.makedirs(path)
-        figure = plt.figure()
-        for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
-            axis = figure.add_subplot(111)
-            figure_path = os.path.join(path, 'pixel_{}.pdf')
-            try:
-                raw_histo.draw(index=(i,), axis=axis, log=True, legend=False)
-                figure.savefig(figure_path.format(pixel))
-            except Exception as e:
-                print('Could not save pixel {} to : {} \n'.
-                      format(pixel, figure_path))
-                print(e)
-            axis.remove()
+        raw_histo.save_figures(figure_path)
 
     if args['--display']:
         raw_histo = Histogram1D.load(raw_histo_filename)
