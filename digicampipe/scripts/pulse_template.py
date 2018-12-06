@@ -40,6 +40,7 @@ def main(input_files, output=None, plot="show", pixels=None):
         if os.path.exists(output):
             os.remove(output)
         template.save(output)
+        print(output, 'created')
     if plot is not None:
         fig, ax = plt.subplots(1, 1)
         template.plot(axes=ax, plot_interp=False)
@@ -49,6 +50,7 @@ def main(input_files, output=None, plot="show", pixels=None):
             plt.show()
         else:
             plt.savefig(plot)
+            print(plot, 'created')
         plt.close(fig)
 
 
