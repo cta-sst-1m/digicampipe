@@ -486,7 +486,8 @@ def entry():
 
         ac_limit = [np.inf] * n_pixels
         fit_params_names = ['baseline', 'gain', 'sigma_e', 'sigma_s',
-                            'mu_xt',]
+                            'mu_xt',
+                            ]
         # n_peaks = 300
 
         saturation_threshold = 300
