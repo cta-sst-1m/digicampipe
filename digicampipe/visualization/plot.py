@@ -169,7 +169,7 @@ def plot_pulse_templates(
     if axes is None:
         fig, axes = plt.subplots(1, 1)
     else:
-        fig = axes.fig
+        fig = axes.get_figure()
     colors = plt.cm.rainbow(np.linspace(0, 1, len(pulse_shape_files)))
     for pulse_shape_file, color in zip(pulse_shape_files, colors):
         template = NormalizedPulseTemplate.create_from_datafiles(
