@@ -16,6 +16,7 @@ Options:
                               [default: ./charge_histo_ac_level.pk]
   -c --compute                Compute the data.
   -f --fit                    Fit.
+  --fit_combine               Fit the histograms in a combined way.
   --ncall=N                   ncall for fit [default: 10000].
   -d --display                Display.
   -v --debug                  Enter the debug mode.
@@ -32,8 +33,8 @@ Options:
                               [default: -10]
   --adc_max=N                 Highest LSB value for the histogram
                               [default: 2000]
-  --gain=<GAIN_RESULTS>       Calibration params to use in the fit
-  --timing=<TIMING_HISTO>     Timing histogram
+  --gain=FILE                 Calibration params to use in the fit
+  --timing=TIMING_HISTO       Timing histogram
 """
 import os
 
@@ -42,9 +43,11 @@ import numpy as np
 from docopt import docopt
 from histogram.fit import HistogramFitter
 from histogram.histogram import Histogram1D
-from iminuit import describe
+from iminuit import describe, Minuit
 from tqdm import tqdm
 from astropy.table import Table
+import fitsio
+from scipy.ndimage.filters import convolve1d, convolve
 
 from digicampipe.calib.baseline import fill_digicam_baseline, \
     subtract_baseline
@@ -144,25 +147,34 @@ class MPEFitter(HistogramFitter):
     def pdf(self, x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude,
             n_peaks):
 
-        if n_peaks > 0:
+        return mpe_fit(x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude,
+            n_peaks)
 
-            x = x - baseline
-            photoelectron_peak = np.arange(n_peaks, dtype=np.int)
-            sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
-            sigma_n = sigma_n
-            sigma_n = np.sqrt(sigma_n)
 
-            pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
+def mpe_fit(x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude, n_peaks):
 
-            pdf = pdf * gaussian(x, photoelectron_peak * gain, sigma_n,
-                                 amplitude=1)
-            pdf = np.sum(pdf, axis=-1)
+    if n_peaks > 0:
 
-            return pdf * amplitude
+        x = x - baseline
+        photoelectron_peak = np.arange(n_peaks, dtype=np.int)
+        sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
+        sigma_n = sigma_n
+        sigma_n = np.sqrt(sigma_n)
 
-        else:
+        pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
 
-            return np.zeros(x.shape)
+        noise = gaussian(x, photoelectron_peak * gain, sigma_n, amplitude=1)
+
+        # print(pdf.shape, b.shape)
+        pdf = pdf.dot(noise.T)
+        # print(pdf.shape)
+        # pdf = np.sum(pdf, axis=1)
+
+        return pdf * amplitude
+
+    else:
+
+        return np.zeros(x.shape)
 
 
 def plot_event(events, pixel_id):
@@ -257,7 +269,10 @@ def entry():
     ac_led_filename = args['--ac_led_filename']
 
     timing_filename = args['--timing']
-    timing = np.load(timing_filename)['time']
+
+    with fitsio.FITS(timing_filename, 'r') as f:
+
+        timing = f[1]['timing'].read()
 
     charge_histo_filename = args['--compute_output']
     fmpe_results_filename = args['--gain']
@@ -439,6 +454,191 @@ def entry():
                  )
         ac_led = ACLED(ac_levels, mu.T, mu_error.T)
         ac_led.save(ac_led_filename)
+
+    if args['--fit_combine']:
+
+        input_parameters = Table.read(fmpe_results_filename, format='fits')
+        input_parameters = input_parameters.to_pandas()
+
+        shape = (n_pixels, )
+        mu = np.zeros(shape + (n_ac_levels, )) * np.nan
+        mu_error = np.zeros(shape + (n_ac_levels, )) * np.nan
+
+        gain = np.zeros(shape) * np.nan
+        sigma_e = np.zeros(shape) * np.nan
+        sigma_s = np.zeros(shape) * np.nan
+        baseline = np.zeros(shape) * np.nan
+        mu_xt = np.zeros(shape) * np.nan
+        amplitude = np.zeros(shape) * np.nan
+
+        gain_error = np.zeros(shape) * np.nan
+        sigma_e_error = np.zeros(shape) * np.nan
+        sigma_s_error = np.zeros(shape) * np.nan
+        baseline_error = np.zeros(shape) * np.nan
+        mu_xt_error = np.zeros(shape) * np.nan
+        amplitude_error = np.zeros(shape) * np.nan
+
+        mean = np.zeros((n_ac_levels, n_pixels)) * np.nan
+        std = np.zeros((n_ac_levels, n_pixels)) * np.nan
+
+        chi_2 = np.nan
+        ndf = np.nan
+
+        ac_limit = [np.inf] * n_pixels
+        fit_params_names = ['baseline', 'gain', 'sigma_e', 'sigma_s',
+                            'mu_xt',]
+        # n_peaks = 300
+
+        saturation_threshold = 300
+
+        for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
+                                desc='Pixel', leave=False):
+
+            histo = Histogram1D.load(charge_histo_filename, rows=(None, j))
+            params = {'baseline': input_parameters['baseline'][j],
+                      'error_baseline': input_parameters['baseline_error'][j],
+                      'gain': input_parameters['gain'][j],
+                      # 'fix_gain': True,
+                      'error_gain': input_parameters['gain_error'][j],
+                      'sigma_e': input_parameters['sigma_e'][j],
+                      'error_sigma_e': input_parameters['sigma_e_error'][j],
+                      'sigma_s': input_parameters['sigma_s'][j],
+                      'error_sigma_s': input_parameters['sigma_s_error'][j],
+                      'mu_xt': 0.1,
+                      'limit_mu_xt': (0.001, 0.99),
+                      }
+
+            mu_max = (histo.max() - params['baseline']) / params['gain']
+
+            # mu_init *= (1 - mu_xt)
+            mask = np.ones(n_ac_levels, dtype=bool)
+            mask *= (histo.underflow == 0) * (histo.overflow == 0)
+            mask *= (histo.data.sum(axis=-1) > 0)
+            mask *= (mu_max <= saturation_threshold)
+
+            mu_max[mu_max > saturation_threshold] = 0
+            mu_max = np.nanmax(mu_max)
+            n_peaks = int(mu_max) + 10
+            print(n_peaks)
+            # mask *= np.isfinite(mu_init)
+
+            for key, val in params.items():
+
+                if not 'limit' in key:
+
+                    mask *= np.isfinite(val)
+
+            # mask[50:] = False
+
+            for i in range(n_ac_levels):
+
+                if mask[i]:
+                    pass
+                    # params['mu_{}'.format(i)] = mu_init[i]
+                    # params['error_mu_{}'.format(i)] = 1
+                    # params['limit_mu_{}'.format(i)] = (0.5 * mu_init[i],
+                    #                                 mu_init[i] * 1.5)
+                    # params['fix_mu_{}'.format(i)] = True
+                    # fit_params_names.append('mu_{}'.format(i))
+
+            print(params)
+
+            ndf = (histo.data > 0).sum() - len(fit_params_names)
+
+            def cost(param):
+
+                baseline = param[0]
+                gain = param[1]
+                sigma_e = param[2]
+                sigma_s = param[3]
+                mu_xt = param[4]
+                # mu = histo.param[5:]
+                mu = (histo.mean() - baseline) / gain
+                mu *= (1 - mu_xt)
+                mu = mu[mask]
+
+                x = histo.bin_centers
+                count = histo.data
+                y_fit = mpe_fit(x, baseline=baseline, gain=gain,
+                                sigma_e=sigma_e, sigma_s=sigma_s,
+                                mu=mu, mu_xt=mu_xt, amplitude=1,
+                                n_peaks=n_peaks)
+
+                # noise = histo[0].data / histo[0].data.sum()
+                # origin = histo[0].min()
+                # start = np.where(histo.bins == origin)[0][0]
+                # end = np.where(histo.bins == histo[0].max())[0][0]
+                # print(origin)
+                # dac = 30
+                # plt.figure()
+                # plt.plot(x, y_fit[dac], label='pdf')
+                 #print(y_fit.shape)
+                # y_fit = convolve1d(y_fit, noise, axis=0, origin=origin)
+
+                # y_fit = convolve1d(y_fit, np.flip(noise), axis=1, origin=origin)
+                # print(y_fit[dac])
+                # plt.plot(x, count[dac] / np.sum(count[dac]), label='data')
+                # plt.plot(x - start, y_fit[dac], label='conv.')
+                # plt.plot(x, noise, label='dark')
+                # plt.yscale('log')
+                # plt.legend()
+                y_fit = y_fit * histo.data[mask].sum()
+                # plt.show()
+                # print(y_fit.shape)
+                count = count[mask]
+                # cost = count - y_fit
+
+                ## MLE
+                mask_empty = count > 0
+                cost = 2 * (y_fit - count * np.log(y_fit))
+                cost[~mask_empty] = 2 * y_fit[~mask_empty]
+
+                #err = histo.errors()[mask]
+                # err[err <= 0] = 1
+                # cost *= histo.data[mask] > 0
+                # cost = (cost / err)**2
+                cost = cost.sum()
+
+                return cost
+
+            m = Minuit(cost, **params,
+                       use_array_call=True,
+                       forced_parameters=fit_params_names,
+                       throw_nan=True)
+            m.migrad(ncall=10000)
+            print(m.values)
+            print(m)
+            print(m.fval / ndf)
+
+            mu = (histo.mean() - m.values['baseline']) / m.values['gain']
+            mu *= (1 - m.values['mu_xt'])
+
+            for i in range(n_ac_levels):
+
+                if not mask[i]:
+
+                    continue
+                fig = plt.figure()
+                axes = fig.add_subplot(111)
+                histo.draw(index=(i, ), axis=axes, log=True, legend=False,
+                           color='k')
+
+                x = histo.bin_centers
+                y = mpe_fit(histo.bin_centers,
+                             baseline=m.values['baseline'],
+                             sigma_e=m.values['sigma_e'],
+                             sigma_s=m.values['sigma_s'],
+                             mu_xt=m.values['mu_xt'],
+                             amplitude=1,
+                             gain=m.values['gain'],
+                             n_peaks=n_peaks,
+                             mu=mu[i])
+                y = y * histo[i].data.sum()
+                axes.plot(x, y, color='r', label='fit')
+                axes.set_ylim(1, histo[i].data.max() + 10)
+                axes.set_xlim(histo[i].min() - 1, histo[i].max() + 1)
+                plt.show()
+            0 / 0
 
     if args['--save_figures']:
 

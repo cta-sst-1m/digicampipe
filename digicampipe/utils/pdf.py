@@ -21,36 +21,30 @@ def generalized_poisson(k, mu, mu_xt, amplitude=1):
     :param amplitude:
     :return:
     """
+    if isinstance(mu, np.ndarray):
+        mu = mu[:, None]
 
-    if mu_xt < 0 or mu < 0:
+    mask_valid = (mu_xt >= 0) * (mu >= 0) * (k >= 0)
 
-        if isinstance(k, int):
-            return 0
-        else:
-            return np.zeros(len(k))
+    log_amplitude = np.log(amplitude)
+    log_mu = np.log(mu)
 
-    else:
+    temp = np.ones((len(k), k.max()))
 
-        log_amplitude = np.log(amplitude)
-        log_mu = np.log(mu)
+    temp[:] = np.arange(1, k.max() + 1)
+    mask = np.triu_indices(n=temp.shape[0], m=temp.shape[1])
+    temp[mask] = 1
 
-        temp = np.ones((len(k), k.max()))
+    temp = np.log(temp)
+    log_k = np.sum(temp, axis=-1)
 
-        temp[:] = np.arange(1, k.max() + 1)
-        mask = np.triu_indices(n=temp.shape[0], m=temp.shape[1])
-        temp[mask] = 1
+    pdf = log_amplitude + log_mu
+    pdf = pdf + np.log(mu + k * mu_xt) * (k - 1)
+    pdf = pdf + (-mu - k * mu_xt) - log_k
+    pdf = np.exp(pdf)
+    pdf[~mask_valid] = 0
 
-        temp = np.log(temp)
-        log_k = np.sum(temp, axis=-1)
-
-        pdf = log_amplitude + log_mu
-        pdf = pdf + np.log(mu + k * mu_xt) * (k - 1)
-        pdf = pdf + (-mu - k * mu_xt) - log_k
-        pdf = np.exp(pdf)
-
-        pdf[k < 0] = 0
-
-        return pdf
+    return pdf
 
 
 def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
