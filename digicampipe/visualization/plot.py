@@ -3,6 +3,7 @@ import numpy as np
 from ctapipe.visualization import CameraDisplay
 from scipy.stats import norm
 
+from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.instrument.camera import DigiCam
 
 
@@ -159,3 +160,31 @@ def plot_histo(data, x_label='', show_fit=False, limits=None, **kwargs):
     plt.legend(loc='best')
 
     return fig
+
+
+def plot_pulse_templates(
+        pulse_shape_files,
+        axes=None, pixels=None, **kwargs
+):
+    if axes is None:
+        fig, axes = plt.subplots(1, 1)
+    else:
+        fig = axes.fig
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(pulse_shape_files)))
+    for pulse_shape_file, color in zip(pulse_shape_files, colors):
+        template = NormalizedPulseTemplate.create_from_datafiles(
+            input_files=[pulse_shape_file],
+            min_entries_ratio=0.1,
+            pixels=pixels,
+        )
+        template.plot_interpolation(
+            axes=axes,
+            color=color,
+            sigma=1,
+            label=pulse_shape_file,
+            **kwargs
+        )
+        del template
+    axes.set_xlabel('time w.r.t half-height [ns]')
+    axes.set_ylabel('normalized amplitude')
+    return axes

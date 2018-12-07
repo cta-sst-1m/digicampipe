@@ -16,11 +16,17 @@ Options:
                             and standard deviation.
                             If set to "none" the file is not created.
                             [Default: none]
-  --plot=PATH               Path to the output plot. Will show the average
-                            over all events of the trigger rate.
+  --plot=PATH               Path to the output plot. Will plot the normalized
+                            pulse amplitude function of time.
                             If set to "show", the plot is displayed and not
                             saved. If set to "none", no plot is done.
                             [Default: show]
+  --plot_separated=PATH     Path to the output plot. Will plot the normalized
+                            pulse amplitude function of time for each of the
+                            input files.
+                            If set to "show", the plot is displayed and not
+                            saved. If set to "none", no plot is done.
+                            [Default: none]
 """
 import matplotlib.pyplot as plt
 from docopt import docopt
@@ -28,9 +34,11 @@ import os
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils.docopt import convert_text, convert_pixel_args
+from digicampipe.visualization.plot import plot_pulse_templates
 
 
-def main(input_files, output=None, plot="show", pixels=None):
+def main(input_files, output=None, plot="show", plot_separated=None,
+         pixels=None):
     template = NormalizedPulseTemplate.create_from_datafiles(
         input_files=input_files,
         min_entries_ratio=0.1,
@@ -52,6 +60,14 @@ def main(input_files, output=None, plot="show", pixels=None):
             plt.savefig(plot)
             print(plot, 'created')
         plt.close(fig)
+    if plot_separated is not None:
+        ax = plot_pulse_templates(input_files)
+        if plot.lower() == "show":
+            plt.show()
+        else:
+            plt.savefig(plot)
+            print(plot, 'created')
+        plt.close(ax.fig)
 
 
 def entry():
@@ -59,11 +75,13 @@ def entry():
     inputs = args['<input_files>']
     output = convert_text(args['--output'])
     plot = convert_text(args['--plot'])
+    plot_separated = convert_text(args['--plot_separated'])
     pixels = convert_pixel_args(args['--pixels'])
     main(
         input_files=inputs,
         output=output,
         plot=plot,
+        plot_separated=plot_separated,
         pixels=pixels
     )
 
