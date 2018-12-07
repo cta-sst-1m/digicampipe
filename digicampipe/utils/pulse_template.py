@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
+from tqdm import tqdm
 
 from digicampipe.utils.hist2d import Histogram2d
 
@@ -65,7 +66,7 @@ class NormalizedPulseTemplate:
 
     @classmethod
     def create_from_datafiles(cls, input_files, min_entries_ratio=0.1,
-                              pixels=None):
+                              pixels=None, disable_bar=False):
         """
         Create a template from several 2D histogram files obtained by the
         pulse_shape.py script.
@@ -77,7 +78,7 @@ class NormalizedPulseTemplate:
         :return: the created normalised pulse template object
         """
         sum = None
-        for input_file in input_files:
+        for input_file in tqdm(input_files, desc='Files', disable=disable_bar):
             histo_pixels = Histogram2d.load(input_file)
             if sum is None:
                 sum = histo_pixels.astype(np.int64)
@@ -139,7 +140,7 @@ class NormalizedPulseTemplate:
         axes.legend(loc='best')
         return axes
 
-    def plot_interpolation(self, axes=None, sigma=-1., color='ḱ',
+    def plot_interpolation(self, axes=None, sigma=-1., color='k',
                            label='Template interpolation', **kwargs):
         if axes is None:
             fig = plt.figure()
