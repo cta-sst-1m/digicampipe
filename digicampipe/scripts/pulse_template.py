@@ -39,29 +39,29 @@ from digicampipe.visualization.plot import plot_pulse_templates
 
 def main(input_files, output=None, plot="show", plot_separated=None,
          pixels=None):
-    template = NormalizedPulseTemplate.create_from_datafiles(
-        input_files=input_files,
-        min_entries_ratio=0.1,
-        pixels=pixels
-    )
-    if output is not None:
-        if os.path.exists(output):
-            os.remove(output)
-        template.save(output)
-        print(output, 'created')
-    if plot is not None:
-        fig, ax = plt.subplots(1, 1)
-        template.plot(axes=ax)
-        ax.set_xlabel('time [ns]')
-        ax.set_ylabel('normalised amplitude')
-        if plot.lower() == "show":
-            plt.show()
-        else:
-            plt.savefig(plot)
-            print(plot, 'created')
-        plt.close(fig)
+    if output is not None or plot is not None:
+        template = NormalizedPulseTemplate.create_from_datafiles(
+            input_files=input_files,
+            min_entries_ratio=0.1,
+            pixels=pixels
+        )
+        if output is not None:
+            if os.path.exists(output):
+                os.remove(output)
+            template.save(output)
+            print(output, 'created')
+        if plot is not None:
+            fig, ax = plt.subplots(1, 1)
+            template.plot(axes=ax)
+            if plot.lower() == "show":
+                plt.show()
+            else:
+                plt.savefig(plot)
+                print(plot, 'created')
+            plt.close(fig)
     if plot_separated is not None:
-        ax = plot_pulse_templates(input_files)
+        fig, ax = plt.subplots(1, 1)
+        plot_pulse_templates(input_files, axes=ax)
         if plot.lower() == "show":
             plt.show()
         else:
