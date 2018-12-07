@@ -543,7 +543,7 @@ def entry():
 
             print(params)
 
-            ndf = (histo.data > 0).sum() - len(fit_params_names)
+            ndf = np.sum(mask) * len(histo.bin_centers) - len(fit_params_names)
 
             def cost(param):
 
