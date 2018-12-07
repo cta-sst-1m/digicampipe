@@ -51,7 +51,7 @@ def main(input_files, output=None, plot="show", plot_separated=None,
         print(output, 'created')
     if plot is not None:
         fig, ax = plt.subplots(1, 1)
-        template.plot(axes=ax, plot_interp=False)
+        template.plot(axes=ax)
         ax.set_xlabel('time [ns]')
         ax.set_ylabel('normalised amplitude')
         if plot.lower() == "show":
