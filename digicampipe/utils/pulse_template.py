@@ -137,6 +137,8 @@ class NormalizedPulseTemplate:
                         num=len(self.time) * 100)
         axes.errorbar(self.time, self.amplitude, self.amplitude_std,
                       label=label, **kwargs)
+        axes.set_xlabel('time [ns]')
+        axes.set_ylabel('normalised amplitude [a.u.]')
         axes.legend(loc='best')
         return axes
 
@@ -160,4 +162,6 @@ class NormalizedPulseTemplate:
         else:
             axes.plot(t, mean_y, '-', label=label, color=color, **kwargs)
         axes.legend(loc='best')
+        axes.set_xlabel('time [ns]')
+        axes.set_ylabel('normalised amplitude [a.u.]')
         return axes
