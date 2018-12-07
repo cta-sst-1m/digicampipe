@@ -70,6 +70,7 @@ def test_pulse_template_integral():
 def test_pulse_template_plot():
     template = NormalizedPulseTemplate.load(template_filename)
     template.plot()
+    template.plot_interpolation()
 
 
 def test_pulse_template_normalization():

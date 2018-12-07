@@ -71,7 +71,7 @@ class NormalizedPulseTemplate:
         pulse_shape.py script.
         :param input_files: 2D histogram files.
         :param min_entries_ratio: minimum ratio of elemnets in a time bin over
-        the maximum number of elemnets in any time bin. If a time bin has a
+        the maximum number of elements in any time bin. If a time bin has a
         ratio lower than that, it won't be used in the template.
         :param pixels: list of pixels to take into account.
         :return: the created normalised pulse template object
@@ -111,7 +111,6 @@ class NormalizedPulseTemplate:
                         assume_sorted=True)
 
     def integral(self):
-
         return np.trapz(y=self.amplitude, x=self.time)
 
     def compute_charge_amplitude_ratio(self, integral_width, dt_sampling):
@@ -129,19 +128,35 @@ class NormalizedPulseTemplate:
 
         return 1 / charge_to_amplitude_factor
 
-    def plot(self, axes=None, plot_interp=True, **kwargs):
-
+    def plot(self, axes=None, label='Template data-points', **kwargs):
         if axes is None:
             fig = plt.figure()
             axes = fig.add_subplot(111)
-
         t = np.linspace(self.time.min(), self.time.max(),
                         num=len(self.time) * 100)
-
         axes.errorbar(self.time, self.amplitude, self.amplitude_std,
-                      label='Template data-points', **kwargs)
-        if plot_interp:
-            axes.plot(t, self(t), '-', label='Interpolated template')
+                      label=label, **kwargs)
         axes.legend(loc='best')
+        return axes
 
+    def plot_interpolation(self, axes=None, sigma=-1., color='ḱ',
+                           label='Template interpolation', **kwargs):
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(111)
+        t = np.linspace(self.time.min(), self.time.max(),
+                        num=len(self.time) * 100)
+        mean_y = self.__call__(t)
+        std_y = self.std(t)
+        if sigma > 0:
+            axes.fill_between(
+                t,
+                mean_y + sigma * std_y,
+                mean_y - sigma * std_y,
+                alpha=0.3, color=color, label=label
+            )
+            axes.plot(t, mean_y, '-', color=color, **kwargs)
+        else:
+            axes.plot(t, mean_y, '-', label=label, color=color, **kwargs)
+        axes.legend(loc='best')
         return axes
