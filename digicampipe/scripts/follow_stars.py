@@ -74,7 +74,7 @@ def nsb_rate(
     if len(files) == 1 and not files[0].endswith('.fz'):
         table = Table.read(files[0])[:max_events]
         data = dict(table)
-        data['nsb_rate'] = data['nsb_rate'] * u.GHz
+        data['nsb_rate'] = np.array(data['nsb_rate']) * u.GHz
     else:
         dark_histo = Histogram1D.load(dark_histo_file)
         n_pixel = len(DigiCam.geometry.neighbors)
@@ -185,7 +185,8 @@ def nsb_rate(
     rate_ghz = np.array(data['nsb_rate'][0].to(u.GHz).value)
     display.image = rate_ghz
     if plot_nsb_range is None:
-        plot_nsb_range = (np.min(rate_ghz), np.max(rate_ghz))
+        min_range_rate = np.max([np.min(rate_ghz), 50e-3])
+        plot_nsb_range = (min_range_rate, np.max(rate_ghz))
     display.set_limits_minmax(*plot_nsb_range)
     display.add_colorbar(ax=ax)
     bad_pixels = np.arange(
@@ -198,7 +199,8 @@ def nsb_rate(
     if stars is True:
         vizier = Vizier(
             columns=['RAJ2000', 'DEJ2000', 'Pmag', ' Bmag'],
-            column_filters={"Pmag": "<6"}
+            column_filters={"Pmag": "<6"},
+            row_limit=-1,
         )
         stars_table = vizier.query_region(
             AltAz(
