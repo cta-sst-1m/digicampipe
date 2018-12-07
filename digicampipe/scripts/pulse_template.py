@@ -62,12 +62,12 @@ def main(input_files, output=None, plot="show", plot_separated=None,
     if plot_separated is not None:
         fig, ax = plt.subplots(1, 1)
         plot_pulse_templates(input_files, axes=ax)
-        if plot.lower() == "show":
+        if plot_separated.lower() == "show":
             plt.show()
         else:
-            plt.savefig(plot)
-            print(plot, 'created')
-        plt.close(ax.fig)
+            plt.savefig(plot_separated)
+            print(plot_separated, 'created')
+        plt.close(fig)
 
 
 def entry():
