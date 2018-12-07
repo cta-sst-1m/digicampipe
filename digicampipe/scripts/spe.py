@@ -255,8 +255,8 @@ def entry():
                 number_of_zeros = fitter.parameters['a_0']
                 window_length = 4 * n_samples
                 rate = compute_dark_rate(number_of_zeros,
-                                          n_entries,
-                                          window_length)
+                                         n_entries,
+                                         window_length)
                 results[i, 'electronic_noise'] = fitter.parameters['sigma_e']
                 results[i, 'dark_count_rate'] = rate
 
