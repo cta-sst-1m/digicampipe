@@ -403,7 +403,7 @@ def entry():
 
         if not debug:
 
-            with fitsio.FITS(results_filename, 'rw') as f:
+            with fitsio.FITS(results_filename, 'rw', clobber=True) as f:
 
                 f.write(results.to_records(index=False))
 
