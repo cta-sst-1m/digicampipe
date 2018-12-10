@@ -581,7 +581,7 @@ def entry():
             print(fitter.parameters, fitter.errors)
             print(fitter.fit_test())
 
-            for i in range(n_ac_levels[mask]):
+            for i in range(n_histo):
 
                 fitter.draw_fit(index=i)
             plt.show()
