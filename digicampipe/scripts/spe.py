@@ -50,62 +50,9 @@ from digicampipe.calib.peak import find_pulse_with_max, \
     find_pulse_fast
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.scripts import raw
-from digicampipe.scripts.fmpe import FMPEFitter
+from digicampipe.utils.fitter import MaxHistoFitter, SPEFitter
 from digicampipe.utils.docopt import convert_pixel_args, \
     convert_int, convert_text
-from digicampipe.utils.pdf import fmpe_pdf_10
-
-
-class MaxHistoFitter(FMPEFitter):
-    def __init__(self, histogram, estimated_gain, **kwargs):
-        n_peaks = 2
-        super(MaxHistoFitter, self).__init__(histogram, estimated_gain,
-                                             n_peaks, **kwargs)
-        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                                     'sigma_e': '$\sigma_e$',
-                                     'sigma_s': '$\sigma_s$',
-                                     'a_0': None, 'a_1': None}
-
-    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1):
-        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'a_0': a_0, 'a_1': a_1, 'bin_width': 0}
-
-        return fmpe_pdf_10(x, **params)
-
-
-class SPEFitter(FMPEFitter):
-    def __init__(self, histogram, estimated_gain, **kwargs):
-        n_peaks = 4
-        super(SPEFitter, self).__init__(histogram, estimated_gain, n_peaks,
-                                        **kwargs)
-        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                                     'sigma_e': '$\sigma_e$',
-                                     'sigma_s': '$\sigma_s$',
-                                     'a_1': None, 'a_2': None, 'a_3': None,
-                                     'a_4': None}
-
-    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
-        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'a_0': 0, 'a_1': a_1, 'a_2': a_2,
-                  'a_3': a_3, 'a_4': a_4, 'bin_width': 0}
-
-        return fmpe_pdf_10(x, **params)
-
-    def initialize_fit(self):
-        init_params = super(SPEFitter, self).initialize_fit()
-
-        init_params['a_4'] = init_params['a_3']
-        init_params['a_3'] = init_params['a_2']
-        init_params['a_2'] = init_params['a_1']
-        init_params['a_1'] = init_params['a_0']
-
-        init_params['baseline'] = init_params['baseline'] - init_params['gain']
-
-        del init_params['a_0']
-
-        self.initial_parameters = init_params
-
-        return init_params
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):

@@ -70,6 +70,32 @@ def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
         return 0
 
 
+def mpe_fit(x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude, n_peaks):
+
+    if n_peaks > 0:
+
+        x = x - baseline
+        photoelectron_peak = np.arange(n_peaks, dtype=np.int)
+        sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
+        sigma_n = sigma_n
+        sigma_n = np.sqrt(sigma_n)
+
+        pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
+
+        noise = gaussian(x, photoelectron_peak * gain, sigma_n, amplitude=1)
+
+        # print(pdf.shape, b.shape)
+        pdf = pdf.dot(noise.T)
+        # print(pdf.shape)
+        # pdf = np.sum(pdf, axis=1)
+
+        return pdf * amplitude
+
+    else:
+
+        return np.zeros(x.shape)
+
+
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,
                 a_2=0, a_3=0, a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
     # sigma_e = np.sqrt(sigma_e**2 - 2**2 / 12)

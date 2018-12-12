@@ -33,7 +33,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
-from histogram.fit import HistogramFitter
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
 import pandas as pd
@@ -42,199 +41,12 @@ import fitsio
 from astropy.table import Table
 from matplotlib.backends.backend_pdf import PdfPages
 
-from digicampipe.scripts import mpe
+from digicampipe.scripts.mpe import compute as mpe_compute
 from digicampipe.utils.docopt import convert_int, \
     convert_pixel_args, convert_text
-from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.pdf import fmpe_pdf_10
+from digicampipe.utils.fitter import FMPEFitter
+
 from digicampipe.visualization.plot import plot_array_camera, plot_histo
-
-
-class FMPEFitter(HistogramFitter):
-    def __init__(self, histogram, estimated_gain, n_peaks=10, **kwargs):
-
-        self.estimated_gain = estimated_gain
-        self.n_peaks = n_peaks
-        super(FMPEFitter, self).__init__(histogram, **kwargs)
-
-        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                                     'sigma_e': '$\sigma_e$',
-                                     'sigma_s': '$\sigma_s$',
-                                     'a_0': None, 'a_1': None, 'a_2': None,
-                                     'a_3': None,
-                                     'a_4': None, 'a_5': None, 'a_6': None,
-                                     'a_7': None, 'a_8': None, 'a_9': None,
-                                     'bin_width': None}
-
-    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1, a_2,
-            a_3, a_4, a_5, a_6, a_7, a_8, a_9):
-
-        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'a_0': a_0, 'a_1': a_1, 'a_2': a_2,
-                  'a_3': a_3, 'a_4': a_4, 'a_5': a_5, 'a_6': a_6, 'a_7': a_7,
-                  'a_8': a_8, 'a_9': a_9, 'bin_width': 0}
-
-        return fmpe_pdf_10(x, **params)
-
-    def initialize_fit(self):
-
-        y = self.count.astype(np.float)
-        x = self.bin_centers
-        min_dist = self.estimated_gain / 3
-        min_dist = int(min_dist)
-
-        n_peaks = self.n_peaks
-
-        cleaned_y = np.convolve(y, np.ones(min_dist), mode='same')
-        bin_width = np.diff(x)
-        bin_width = np.mean(bin_width)
-
-        if (x != np.sort(x)).any():
-            raise ValueError('x must be sorted !')
-
-        d_y = np.diff(cleaned_y)
-        indices = np.arange(len(y))
-        peak_mask = np.zeros(y.shape, dtype=bool)
-        peak_mask[1:-1] = (d_y[:-1] > 0) * (d_y[1:] <= 0)
-        peak_mask[-min_dist:] = 0
-        peak_indices = indices[peak_mask]
-        peak_indices = peak_indices[:min(len(peak_indices), n_peaks)]
-
-        if len(peak_indices) <= 1:
-            raise PeakNotFound('Not enough peak found for : \n'
-                               'Min distance : {} \n '
-                               'Need a least 2 peaks, found {}!!'.
-                               format(min_dist, len(peak_indices)))
-
-        x_peak = x[peak_indices]
-        y_peak = y[peak_indices]
-        gain = np.diff(x_peak)
-        weights = y_peak[:-1] ** 2
-        gain = np.average(gain, weights=weights)
-
-        sigma = np.zeros(len(peak_indices))
-        mean_peak_x = np.zeros(len(peak_indices))
-        amplitudes = np.zeros(len(peak_indices))
-
-        distance = int(gain / 2)
-
-        if distance < bin_width:
-            raise ValueError(
-                'Distance between peaks must be >= {} the bin width'
-                ''.format(bin_width))
-
-        n_x = len(x)
-
-        for i, peak_index in enumerate(peak_indices):
-            left = x[peak_index] - distance
-            left = np.searchsorted(x, left)
-            left = max(0, left)
-            right = x[peak_index] + distance + 1
-            right = np.searchsorted(x, right)
-            right = min(n_x - 1, right)
-
-            amplitudes[i] = np.sum(y[left:right]) * bin_width
-            mean_peak_x[i] = np.average(x[left:right], weights=y[left:right])
-
-            sigma[i] = np.average((x[left:right] - mean_peak_x[i]) ** 2,
-                                  weights=y[left:right])
-            sigma[i] = np.sqrt(sigma[i] - bin_width ** 2 / 12)
-
-        gain = np.diff(mean_peak_x)
-        weights = None
-        # weights = amplitudes[:-1] ** 2
-        gain = np.average(gain, weights=weights)
-
-        sigma_e = np.sqrt(sigma[0] ** 2)
-        sigma_s = (sigma[1:] ** 2 - sigma_e ** 2) / np.arange(1, len(sigma), 1)
-        sigma_s = np.mean(sigma_s)
-
-        if sigma_s < 0:
-            sigma_s = sigma_e ** 2
-
-        sigma_s = np.sqrt(sigma_s)
-
-        params = {'baseline': mean_peak_x[0], 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'gain': gain}
-
-        for i in range(n_peaks):
-
-            if i < len(amplitudes):
-
-                value = amplitudes[i]
-
-            else:
-
-                value = amplitudes.min()
-
-            params['a_{}'.format(i)] = value
-
-        self.initial_parameters = params
-
-        return params
-
-    def compute_fit_boundaries(self):
-
-        limit_params = {}
-        init_params = self.initial_parameters
-
-        baseline = init_params['baseline']
-        gain = init_params['gain']
-        sigma_e = init_params['sigma_e']
-        sigma_s = init_params['sigma_s']
-
-        limit_params['limit_baseline'] = (baseline - sigma_e,
-                                          baseline + sigma_e)
-        limit_params['limit_gain'] = (0.5 * gain, 1.5 * gain)
-        limit_params['limit_sigma_e'] = (0.5 * sigma_e, 1.5 * sigma_e)
-        limit_params['limit_sigma_s'] = (0.5 * sigma_s, 1.5 * sigma_s)
-
-        for key, val in init_params.items():
-
-            if key[:2] == 'a_':
-                limit_params['limit_{}'.format(key)] = (0.5 * val, val * 1.5)
-
-        self.boundary_parameter = limit_params
-
-        return limit_params
-
-    def compute_data_bounds(self):
-
-        x = self.histogram.bin_centers
-        bin_width = np.diff(self.histogram.bins)
-        y = self.histogram.data
-        if not self.parameters:
-            params = self.initial_parameters
-
-        else:
-            params = self.parameters
-
-        n_peaks = self.n_peaks
-
-        mask = (y > 0) * (x < n_peaks * self.estimated_gain)
-
-        if 'gain' in params.keys() and 'baseline' in params.keys():
-
-            gain = params['gain']
-            baseline = params['baseline']
-            amplitudes = []
-
-            for key, val in params.items():
-
-                if key[:2] == 'a_':
-                    amplitudes.append(val)
-
-            amplitudes = np.array(amplitudes)
-            amplitudes = amplitudes[amplitudes > 0]
-            n_peaks = len(amplitudes)
-
-            min_bin = baseline - gain / 2
-            max_bin = baseline + gain * (n_peaks - 1)
-            max_bin += gain / 2
-
-            mask *= (x <= max_bin) * (x >= min_bin)
-
-        return x[mask], y[mask], bin_width[mask]
 
 
 def compute(files, max_events, pixel_id, n_samples, timing_filename,
@@ -245,7 +57,7 @@ def compute(files, max_events, pixel_id, n_samples, timing_filename,
 
         pulse_indices = f[1]['timing'].read() // 4
 
-    amplitude_histo, charge_histo = mpe.compute(
+    amplitude_histo, charge_histo = mpe_compute(
         files,
         pixel_id, max_events, pulse_indices, integral_width,
         shift, bin_width,
@@ -405,7 +217,7 @@ def entry():
 
             with fitsio.FITS(results_filename, 'rw', clobber=True) as f:
 
-                f.write(results.to_records(index=False))
+                f.write(results.to_records(index=False), extname='FMPE')
 
     if figure_path:
 
