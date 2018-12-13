@@ -39,14 +39,11 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 import numpy as np
 from ctapipe.visualization import CameraDisplay
-from ctapipe.coordinates import CameraFrame, HorizonFrame
 from docopt import docopt
 import yaml
 from astropy import units as u
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle
 from astropy.time import Time
 from astropy.table import Table
-from astroquery.vizier import Vizier
 from pkg_resources import resource_filename
 from datetime import datetime
 
@@ -59,6 +56,8 @@ from digicampipe.scripts.bad_pixels import get_bad_pixels
 from digicampipe.calib.charge import _get_average_matrix_bad_pixels
 from digicampipe.io.event_stream import calibration_event_stream, \
     add_slow_data_calibration
+from digicampipe.utils.transformations import transform_azel_to_xy, \
+    get_stars_in_fov
 
 
 def nsb_rate(
@@ -66,11 +65,10 @@ def nsb_rate(
         output=None, plot="show", plot_nsb_range=None, norm="log",
         plot_baselines=False, disable_bar=False, max_events=None, n_skip=10,
         stars=True,
-        site=(50.090815 * u.deg, 19.887937 * u.deg, 214.034 * u.m),  # krakow
         bias_resistance=1e4 * u.Ohm, cell_capacitance=5e-14 * u.Farad
 ):
     files = np.atleast_1d(files)
-    site_location = EarthLocation(lat=site[0], lon=site[1], height=site[2])
+
     if len(files) == 1 and not files[0].endswith('.fz'):
         table = Table.read(files[0])[:max_events]
         data = dict(table)
@@ -172,8 +170,8 @@ def nsb_rate(
         plt.show()
         plt.close(fig2)
 
-    az_obs = np.array(data['az'])
-    el_obs = np.array(data['el'])
+    az_obs = np.array(data['az']) * u.deg
+    el_obs = np.array(data['el']) * u.deg
     n_event = len(data['timestamp'])
     fig1, ax = plt.subplots(1, 1, figsize=(16, 12), dpi=50)
     date = datetime.fromtimestamp(data['timestamp'][0]*1e-9)
@@ -197,61 +195,17 @@ def nsb_rate(
     display.axes.set_ylim([-500., 500.])
     plt.tight_layout()
     if stars is True:
-        vizier = Vizier(
-            columns=['RAJ2000', 'DEJ2000', 'Pmag', ' Bmag'],
-            column_filters={"Pmag": "<6"},
-            row_limit=-1,
+        stars_az, stars_alt, stars_pmag = get_stars_in_fov(
+            az_obs[0], el_obs[0], time_obs
         )
-        stars_table = vizier.query_region(
-            AltAz(
-                alt=el_obs[0] * u.deg,
-                az=az_obs[0] * u.deg,
-                obstime=time_obs[0],
-                location=site_location
-            ),
-            radius=Angle(10, "deg"),
-            catalog='I/254'
-        )[0]
-        stars_pmag = stars_table['Pmag']
-        stars_alt = np.zeros([len(stars_pmag), n_event]) * u.deg
-        stars_az = np.zeros([len(stars_pmag), n_event]) * u.deg
-        for star_idx in range(len(stars_pmag)):
-            skycoord = SkyCoord(
-                ra=stars_table['RAJ2000'][star_idx] * u.deg,
-                dec=stars_table['DEJ2000'][star_idx] * u.deg
-            )
-            star_pos = skycoord.transform_to(
-                AltAz(obstime=time_obs, location=site_location)
-            )
-            stars_alt[star_idx, :] = star_pos.alt
-            stars_az[star_idx, :] = star_pos.az
-        stars_x_ctapipe = np.zeros([len(stars_pmag), n_event]) * u.mm
-        stars_y_ctapipe = np.zeros([len(stars_pmag), n_event]) * u.mm
-        for event in range(len(time_obs)):
-            pd = SkyCoord(
-                alt=el_obs[event] * u.deg,
-                az=az_obs[event] * u.deg,
-                frame=HorizonFrame()
-            )
-            cam_frame = CameraFrame(
-                focal_length=5.6 * u.m,
-                rotation=90 * u.deg,
-                pointing_direction=pd,
-                array_direction=pd,
-            )
-            stars_sky = SkyCoord(
-                alt=stars_alt[:, event],
-                az=stars_az[:, event],
-                frame=HorizonFrame()
-            )
-            stars_cam = stars_sky.transform_to(cam_frame)
-            stars_x_ctapipe[:, event] = -stars_cam.x
-            stars_y_ctapipe[:, event] = stars_cam.y
+        stars_x, stars_y = transform_azel_to_xy(
+            stars_az, stars_alt, az_obs, el_obs
+        )
         point_stars = []
         for index_star in range(len(stars_pmag)):
             point_star, = ax.plot(
-                stars_x_ctapipe[index_star, 0],
-                stars_y_ctapipe[index_star, 0],
+                stars_x[index_star, 0],
+                stars_y[index_star, 0],
                 'ok',
                 ms=20-2*stars_pmag[index_star],
                 mew=3,
@@ -274,10 +228,10 @@ def nsb_rate(
         if stars is True:
             for index_star in range(len(stars_pmag)):
                 point_stars[index_star].set_xdata(
-                    stars_x_ctapipe[index_star, i]
+                    stars_x[index_star, i]
                 )
                 point_stars[index_star].set_ydata(
-                    stars_y_ctapipe[index_star, i]
+                    stars_y[index_star, i]
                 )
 
     anim = FuncAnimation(
