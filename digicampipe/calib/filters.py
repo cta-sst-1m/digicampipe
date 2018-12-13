@@ -32,9 +32,11 @@ def set_pixels_to_zero(event_stream, unwanted_pixels):
 def filter_event_types(event_stream, flags=(CameraEventType.PATCH7,)):
     for event in event_stream:
         for telescope_id in event.r0.tels_with_data:
-            flag = event.r0.tel[telescope_id].camera_event_type
-            if flag in flags:
-                yield event
+            event_type = event.r0.tel[telescope_id].camera_event_type
+
+            for flag in flags:
+                if flag in event_type:
+                    yield event
 
 
 def filter_shower(event_stream, min_photon):

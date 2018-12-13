@@ -163,7 +163,7 @@ def fill_baseline_r0(event_stream, n_bins=10000):
             if n_events is None:
                 n_events = n_bins // adc_samples.shape[1]
 
-            if r0_camera.camera_event_type in CameraEventType.INTERNAL:
+            if CameraEventType.INTERNAL in r0_camera.camera_event_type:
 
                 baselines.append(adc_samples.mean(axis=1))
                 baselines = baselines[-n_events:]
