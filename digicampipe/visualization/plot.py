@@ -163,7 +163,7 @@ def plot_histo(data, x_label='', show_fit=False, limits=None, **kwargs):
 
 
 def plot_pulse_templates(
-        pulse_shape_files,
+        pulse_shape_files, xscale='linear', yscale='linear',
         axes=None, pixels=None, **kwargs
 ):
     if axes is None:
@@ -172,11 +172,16 @@ def plot_pulse_templates(
         fig = axes.get_figure()
     colors = plt.cm.rainbow(np.linspace(0, 1, len(pulse_shape_files)))
     for pulse_shape_file, color in zip(pulse_shape_files, colors):
-        template = NormalizedPulseTemplate.create_from_datafiles(
-            input_files=[pulse_shape_file],
-            min_entries_ratio=0.1,
-            pixels=pixels,
-        )
+        if pulse_shape_file.endswith(".fits") or \
+                pulse_shape_file.endswith(".fits.gz"):
+            template = NormalizedPulseTemplate.create_from_datafiles(
+                input_files=[pulse_shape_file],
+                min_entries_ratio=0.1,
+                pixels=pixels,
+            )
+        elif pulse_shape_file.endswith(".txt")or \
+                pulse_shape_file.endswith(".dat"):
+            template = NormalizedPulseTemplate.load(pulse_shape_file)
         template.plot_interpolation(
             axes=axes,
             color=color,
@@ -185,6 +190,8 @@ def plot_pulse_templates(
             **kwargs
         )
         del template
+    axes.set_xscale(xscale, nonposx='clip')
+    axes.set_yscale(yscale, nonposy='clip')
     axes.set_xlabel('time w.r.t half-height [ns]')
     axes.set_ylabel('normalized amplitude')
     return axes
