@@ -27,6 +27,12 @@ Options:
                             If set to "show", the plot is displayed and not
                             saved. If set to "none", no plot is done.
                             [Default: none]
+  --xscale=STRING           "linear", "log", "symlog" or "logit". The X axis
+                            scale type to apply. See Axes.set_xscale().
+                            [Default: linear]
+  --yscale=STRING           "linear", "log", "symlog" or "logit". The Y axis
+                            scale type to apply. See Axes.set_yscale().
+                            [Default: linear]
 """
 import matplotlib.pyplot as plt
 from docopt import docopt
@@ -38,7 +44,7 @@ from digicampipe.visualization.plot import plot_pulse_templates
 
 
 def main(input_files, output=None, plot="show", plot_separated=None,
-         pixels=None):
+         pixels=None, xscale="linear", yscale="linear"):
     if output is not None or plot is not None:
         template = NormalizedPulseTemplate.create_from_datafiles(
             input_files=input_files,
@@ -53,6 +59,8 @@ def main(input_files, output=None, plot="show", plot_separated=None,
         if plot is not None:
             fig, ax = plt.subplots(1, 1)
             template.plot(axes=ax)
+            ax.set_xscale(xscale)
+            ax.set_yscale(yscale)
             if plot.lower() == "show":
                 plt.show()
             else:
@@ -61,7 +69,9 @@ def main(input_files, output=None, plot="show", plot_separated=None,
             plt.close(fig)
     if plot_separated is not None:
         fig, ax = plt.subplots(1, 1)
-        plot_pulse_templates(input_files, axes=ax)
+        plot_pulse_templates(
+            input_files, xscale=xscale, yscale=yscale, axes=ax
+        )
         if plot_separated.lower() == "show":
             plt.show()
         else:
@@ -77,11 +87,15 @@ def entry():
     plot = convert_text(args['--plot'])
     plot_separated = convert_text(args['--plot_separated'])
     pixels = convert_pixel_args(args['--pixels'])
+    xscale = args['--xscale']
+    yscale = args['--yscale']
     main(
         input_files=inputs,
         output=output,
         plot=plot,
         plot_separated=plot_separated,
+        xscale=xscale,
+        yscale=yscale,
         pixels=pixels
     )
 
