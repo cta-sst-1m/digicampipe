@@ -4,6 +4,7 @@ from pkg_resources import resource_filename
 import tempfile
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
+from digicampipe.visualization.plot import plot_pulse_templates
 
 template_filename = resource_filename(
     'digicampipe',
@@ -71,6 +72,8 @@ def test_pulse_template_plot():
     template = NormalizedPulseTemplate.load(template_filename)
     template.plot()
     template.plot_interpolation()
+    plot_pulse_templates([template_filename], xscale='linear', yscale='linear')
+    plot_pulse_templates([template_filename], xscale='log', yscale='log')
 
 
 def test_pulse_template_normalization():
