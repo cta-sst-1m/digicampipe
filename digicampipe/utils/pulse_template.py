@@ -143,7 +143,8 @@ class NormalizedPulseTemplate:
         return axes
 
     def plot_interpolation(self, axes=None, sigma=-1., color='k',
-                           label='Template interpolation', **kwargs):
+                           label='Template interpolation', cumulative=False,
+                           **kwargs):
         if axes is None:
             fig = plt.figure()
             axes = fig.add_subplot(111)
@@ -161,6 +162,10 @@ class NormalizedPulseTemplate:
             axes.plot(t, mean_y, '-', color=color, **kwargs)
         else:
             axes.plot(t, mean_y, '-', label=label, color=color, **kwargs)
+        if cumulative:
+            integ = np.cumsum(mean_y)
+            axes.plot(t, 1 - integ/integ[-1], '--', color=color,
+                      label=label + ' integrated', **kwargs)
         axes.legend(loc='best')
         axes.set_xlabel('time [ns]')
         axes.set_ylabel('normalised amplitude [a.u.]')
