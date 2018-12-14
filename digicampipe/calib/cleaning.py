@@ -20,11 +20,18 @@ def compute_cleaning_1(events, snr=3, overwrite=True):
         yield event
 
 
-def compute_tailcuts_clean(events, geom, overwrite=True, **kwargs):
+def compute_tailcuts_clean(events, geom, picture_thresh, boundary_thresh,
+                           overwrite=True, **kwargs):
     for event in events:
 
         image = event.data.reconstructed_number_of_pe
-        mask = cleaning.tailcuts_clean(geom=geom, image=image, **kwargs)
+
+        mask = event.data.cleaning_mask
+        image[~mask] = 0
+        mask = cleaning.tailcuts_clean(geom=geom, image=image,
+                                       picture_thresh=picture_thresh,
+                                       boundary_thresh=boundary_thresh,
+                                       **kwargs)
 
         if overwrite:
 

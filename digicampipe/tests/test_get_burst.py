@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 from pkg_resources import resource_filename
 
-from digicampipe.scripts.get_burst import entry as get_burst
+from digicampipe.scripts.get_burst import get_burst
 
 
 example_file2_path = resource_filename(
@@ -29,7 +29,7 @@ def test_get_burst():
             get_burst(
                 files, plot_baseline=None, n_previous_events=100,
                 threshold_lsb=2., output=output1, expand=10, merge_sec=5.,
-                video_prefix=None
+                video_prefix=None,
             )
         except SystemExit:
             no_burst = True

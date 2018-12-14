@@ -15,7 +15,7 @@ from docopt import docopt
 from glob import glob
 import os
 import re
-
+import numpy as np
 
 def tryint(s):
     try:
@@ -32,12 +32,38 @@ def alphanum_key(s):
 
 
 def entry(inputs, output):
-    if len(inputs) < 2:
+    if len(inputs) < 1:
         raise AttributeError('digicam-concatenate must take 1 output and at '
-                             'least 2 inputs files as arguments')
-    tables = [Table.read(input) for input in inputs]
-    result = vstack(tables)
+                             'least 1 input file as arguments')
+    tables = []
+    for input in inputs:
+        if os.path.isfile(input):
+            tables.append(Table.read(input))
+        else:
+            print('WARNING:', input, 'does not exist, skipping it.')
+    columns_type = {}
+    for table in tables:
+        for column_idx in range(len(table.columns)):
+            column = table.columns[column_idx]
+            type = column.dtype
+            if np.all(np.logical_or(column == 0, column==1)):
+                type = bool
+            if column.name in columns_type.keys():
+                columns_type[column.name] = np.result_type(
+                    type,
+                    columns_type[column.name]
+                )
+            else:
+                columns_type[column.name] = type
+    tables_stackable = []
+    for table in tables:
+        columns_converted = []
+        for key, val in columns_type.items():
+            columns_converted.append(table.columns[key].astype(val))
+        tables_stackable.append(Table(columns_converted))
+    result = vstack(tables_stackable)
     if os.path.isfile(output):
+        print('WARNING:', output, 'existed, overwriting it.')
         os.remove(output)
     result.write(output)
 

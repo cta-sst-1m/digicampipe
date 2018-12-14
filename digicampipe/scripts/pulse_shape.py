@@ -16,7 +16,7 @@ Options:
   --output_hist=PATH        Output histogram file, if not given, we replace the
                             extension of the 1st input file to 'fits.gz'.
   --time_range_ns=LIST      Minimum and maximum time in ns w.r.t. half maximum
-                            of the pulse during rise time [default: -10,40].
+                            of the pulse during rise time [default: -10,190].
   --amplitude_range=LIST    Minimum and maximum amplitude of the template
                             normalised in integrated charge [default: -.1,0.4].
   --integration_range=LIST  Minimum and maximum indexes of samples used in the
@@ -26,7 +26,7 @@ Options:
   --charge_range=LIST       Minimum and maximum integrated charge in LSB used
                             to build the histogram [default: 1000,8000].
   --n_bin=INT               Number of bins for the 2d histograms
-                            [default: 100].
+                            [default: 500].
   --disable_bar             use if you want to disable the progress bar.
 """
 import numpy as np

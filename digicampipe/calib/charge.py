@@ -27,12 +27,8 @@ def compute_charge(events, integral_width, shift):
     :param events: a stream of events
     :param integral_width: width of the integration window
     :param shift: shift to the pulse index
-    :param maximum_width: width of the region (bin size) to compute charge,
-    maximum value is retained. (not implemented yet)
     :return:
     """
-
-    # bins = np.arange(-maximum_width, maximum_width + 1, 1)
 
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
@@ -53,169 +49,83 @@ def compute_charge(events, integral_width, shift):
         yield event
 
 
-def rescale_pulse(events, pde_func, xt_func, gain_func):
+def correct_voltage_drop(events, pde_func, xt_func, gain_func):
 
     for event in events:
 
         baseline_shift = event.data.baseline_shift
+
         pde_drop = pde_func(baseline_shift)
         xt_drop = xt_func(baseline_shift)
         gain_drop = gain_func(baseline_shift)
 
         scale = pde_drop * xt_drop * gain_drop
-
-        print(scale)
-
-        event.data.adc_samples = event.data.adc_samples / scale
+        event.data.reconstructed_number_of_pe /= scale
 
         yield event
 
 
-def compute_charge_with_saturation(events, integral_width,
-                                   saturation_threshold=300,
-                                   debug=False):
+def compute_dynamic_charge(events, integral_width, saturation_threshold=3000,
+                           threshold_pulse=0.1, debug=False,  pulse_tail=False,
+                           ):
     """
     :param events: a stream of events
-    :param integral_width: width of the integration window
-    :param saturation_threshold: if the maximum value of the waveform is above
-    this threshold the waveform charge will be treated as saturated
-    (type) float, ndarray
-    :param debug: for debugging purposes
-    :return yield events
-    """
-
-    for count, event in enumerate(events):
-
-        adc_samples = event.data.adc_samples
-        max_value = np.max(adc_samples, axis=-1)
-        saturated_pulse = max_value > saturation_threshold
-
-        convolved_signal = convolve1d(
-            adc_samples,
-            np.ones(integral_width),
-            axis=-1
-        )
-
-        charge = np.max(convolved_signal, axis=-1)
-
-        if np.any(saturated_pulse):
-            adc_samples = adc_samples[saturated_pulse]
-
-            # cumulative_adc_samples = np.cumsum(adc_samples, axis=-1)
-            # diff2_adc_samples = np.diff(diff_adc_samples, axis=-1)
-            # start_bin[:, :-1] = (adc_samples[:, :-1] < threshold_rising)
-            #  * (adc_samples[:, 1:] >= threshold_rising)
-            # end_bin[:, 1:-1] = (cumulative_adc_samples[:, 1:-1]
-            #  >= threshold_falling) * (diff_adc_samples[:, :-1] < 0)
-            # end_bin[:, 1:-1] = end_bin[:, 1:-1]
-            #  * (adc_samples[:, :-2] > 0) * (adc_samples[:, 1:-1] <=0)
-            diff_adc_samples = np.diff(adc_samples, axis=-1)
-            samples = np.arange(adc_samples.shape[-1])
-            max_diff = np.argmax(diff_adc_samples, axis=-1)[:, None] - 1
-            start_bin = (samples <= max_diff)
-
-            min_diff = np.argmin(diff_adc_samples, axis=-1)[:, None]
-            end_bin = (samples >= min_diff)
-
-            window = start_bin + end_bin
-            window = ~window
-            temp = adc_samples[window]
-            temp = np.sum(temp, axis=-1)
-            charge[saturated_pulse] = temp
-
-        event.data.reconstructed_charge = charge
-
-        if debug:
-            pixel = 0
-            print(charge)
-            print(window[0], start_bin[0], end_bin[0])
-
-            plt.figure()
-            plt.plot(adc_samples[pixel])
-            plt.plot(adc_samples[window][0], marker='x')
-
-            plt.figure()
-            plt.plot(np.cumsum(adc_samples, axis=-1)[0])
-
-            plt.figure()
-            plt.plot(np.diff(adc_samples)[0])
-            plt.show()
-
-        yield event
-
-
-def compute_charge_with_saturation_and_threshold(events, integral_width,
-                                                 saturation_threshold=3000,
-                                                 threshold_pulse=0.1,
-                                                 debug=False, trigger_bin=15,
-                                                 n_samples=50,
-                                                 pulse_tail=False,
-                                                 ):
-    """
-
-    :param events: a stream of events
-    :param integral_width: width of the integration window
+    :param integral_width: width of the integration window for non-saturated
+    pulses
+    :param saturation_threshold: threshold corresponding to the pulse amplitude
+    in unit of LSB at which the signal is considered saturated
+    :param threshold_pulse: relative threshold (of pulse amplitude)
+    at which the pulse area is integrated.
+    :param debug: Enter the debug mode
+    :param pulse_tail: Use or not the tail of the pulse for charge computation
     :return:
     """
-    left = max(2, integral_width)
-    right = 5
-    n_pixels = 1296
 
-    # signal_window = np.zeros((n_pixels, n_samples), dtype=bool)
-    # signal_window[:, trigger_bin] = True
-
-    samples = np.arange(n_samples)
-    samples = np.tile(samples, n_pixels).reshape(n_pixels, n_samples)
-
-    trigger_sample = trigger_bin
-    trigger_bin = (samples == trigger_bin[:, None])
-    # print(np.sum(signal_window, axis=-1))
-
-    if isinstance(threshold_pulse, float) or isinstance(threshold_pulse, int):
-        threshold_pulse = np.ones(n_pixels) * threshold_pulse
-    if isinstance(saturation_threshold, float) or \
-            isinstance(saturation_threshold, int):
-        saturation_threshold = np.ones(n_pixels) * saturation_threshold
-
-    threshold_pulse = threshold_pulse * saturation_threshold
+    assert threshold_pulse <= 1
 
     for count, event in enumerate(events):
 
-        adc_samples = event.data.adc_samples
-        # restricted_adc_samples = adc_samples * signal_window
+        if count == 0:
 
-        # amplitude = np.max(restricted_adc_samples, axis=-1)
-        amplitude = adc_samples[trigger_bin]
+            n_pixels, n_samples = event.data.adc_samples.shape
+            samples = np.arange(n_samples)
+            samples = np.tile(samples, n_pixels).reshape((n_pixels, n_samples))
+
+            if isinstance(threshold_pulse, float) or isinstance(
+                    threshold_pulse, int
+            ):
+                threshold_pulse = np.ones(n_pixels) * threshold_pulse
+
+            if isinstance(saturation_threshold, float) or isinstance(
+                    saturation_threshold, int
+            ):
+                saturation_threshold = np.ones(n_pixels) * saturation_threshold
+
+            threshold_pulse = threshold_pulse * saturation_threshold
+            threshold_pulse = threshold_pulse[:, None]
+
+        adc_samples = event.data.adc_samples
+        amplitude = np.max(adc_samples, axis=-1)
+
+        trigger_bin = event.data.pulse_mask
 
         saturated_pulse = amplitude > saturation_threshold
+        saturated = np.any(saturated_pulse)
+        event.data.saturated = saturated
 
-        # convolved_signal = convolve1d(
-        #    adc_samples,
-        #    np.ones(integral_width),
-        #    axis=-1,
-        #    mode='constant',
-        #    cval=0,
-        # )
-
-        max_arg = np.argmax(trigger_bin,
-                            axis=-1)  # np.argmax(convolved_signal, axis=-1)
+        max_arg = np.argmax(trigger_bin, axis=-1)
         start_bin = (samples <= (max_arg[:, None] - integral_width / 2))
         end_bin = (samples > (max_arg[:, None] + integral_width / 2))
         window = ~(start_bin + end_bin)
-        charge = np.sum(adc_samples * window, axis=-1)
-        # charge = np.max(convolved_signal, axis=-1)
 
-        if np.any(saturated_pulse):
+        if saturated:
 
             adc = adc_samples[saturated_pulse]
             smp = samples[saturated_pulse]
             threshold = threshold_pulse[saturated_pulse]
-            threshold = threshold[:, None]
+            trigger_sample = max_arg[saturated_pulse]
 
-            # start_point = (adc[:, :-1] <= threshold) * \
-            #              (adc[:, 1:] > threshold)
-            # start_point = np.argmax(start_point, axis=-1)[:, None]
-            start_point = trigger_sample[saturated_pulse] - 3
+            start_point = trigger_sample - 3
             start_bin = (smp < start_point[:, None])
             start_bin = start_bin[:, :-1]
 
@@ -233,10 +143,7 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
 
             window[saturated_pulse, :-1] = win
 
-            temp = adc * window[saturated_pulse]
-            temp = np.sum(temp, axis=-1)
-
-            charge[saturated_pulse] = temp
+        charge = np.sum(adc_samples * window, axis=-1)
 
         event.data.reconstructed_charge = charge
         event.data.reconstructed_amplitude = amplitude
@@ -246,8 +153,6 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
             pixel = 0
             time = np.arange(adc_samples.shape[-1]) * 4
             window = window[pixel]
-            # lower = time[window[pixel]].min()
-            # upper = time[window[pixel]].max()
 
             plt.figure()
             plt.step(time, np.cumsum(adc_samples, axis=-1)[pixel])
@@ -287,7 +192,9 @@ def compute_charge_with_saturation_and_threshold(events, integral_width,
         yield event
 
 
-def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
+def compute_number_of_pe_from_interpolator(events, charge_to_pe_function,
+                                           debug=False):
+
     for event in events:
 
         charge = event.data.reconstructed_charge
@@ -295,12 +202,14 @@ def compute_number_of_pe_from_table(events, charge_to_pe_function, debug=False):
         event.data.reconstructed_number_of_pe = pe
 
         if debug:
+            print(charge)
             print(pe)
 
         yield event
 
 
 def compute_amplitude(events):
+
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
         pulse_indices = event.data.pulse_mask
@@ -313,6 +222,7 @@ def compute_amplitude(events):
 
 
 def compute_full_waveform_charge(events):
+
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
         charges = np.sum(adc_samples, axis=-1)
@@ -386,7 +296,7 @@ def compute_photo_electron(events, gains):
 
         gain_drop = event.data.gain_drop
         corrected_gains = gains * gain_drop
-        pe = np.nansum(charge, axis=-1) / corrected_gains
+        pe = charge / corrected_gains
         event.data.reconstructed_number_of_pe = pe
 
         yield event
@@ -406,4 +316,52 @@ def compute_sample_photo_electron(events, gain_amplitude):
         gain_drop = event.data.gain_drop[:, None]
         sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop)
         event.data.sample_pe = sample_pe
+        yield event
+
+
+def _get_average_matrix_bad_pixels(geom, bad_pixels):
+    n_pixel = len(geom.neighbors)
+    pixels = np.arange(n_pixel, dtype=int)
+    good_pixels_mask = np.ones(n_pixel, dtype=bool)
+    good_pixels_mask[bad_pixels] = False
+    good_pixels = pixels[good_pixels_mask]
+    average_matrix = np.zeros([n_pixel, n_pixel])
+    for i, pix in enumerate(pixels):
+        pix_neighbors = np.array(geom.neighbors[pix])
+        # remove neighbors which are part of bad_pixels
+        bad_neighbors = np.intersect1d(pix_neighbors, bad_pixels,
+                                       assume_unique=True)
+        for bad_neighbor in bad_neighbors:
+            pix_neighbors = pix_neighbors[pix_neighbors != bad_neighbor]
+        average_matrix[i, pix_neighbors] = 1. / len(pix_neighbors)
+    return average_matrix[:, good_pixels]
+
+
+def interpolate_bad_pixels(events, geom, bad_pixels):
+    n_pixel = len(geom.neighbors)
+    pixels = np.arange(n_pixel, dtype=int)
+    good_pixels_mask = np.ones(n_pixel, dtype=bool)
+    good_pixels_mask[bad_pixels] = False
+    good_pixels = pixels[good_pixels_mask]
+    average_matrix = _get_average_matrix_bad_pixels(geom, bad_pixels)
+    for event in events:
+        pe = event.data.reconstructed_number_of_pe
+        baseline_shift = event.data.baseline_shift
+        nsb_rate = event.data.nsb_rate
+        mask = np.isfinite(pe) * np.isfinite(baseline_shift) * \
+               (baseline_shift > 0)
+
+        all_bad_pixels = np.arange(pe.shape[-1])[~mask]
+        all_bad_pixels = np.append(all_bad_pixels, bad_pixels)
+        all_bad_pixels = np.unique(all_bad_pixels)
+        # correct p.e. , baseline shift and NSB
+        pe[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            pe[good_pixels])
+        event.data.reconstructed_number_of_pe = pe
+        baseline_shift[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            baseline_shift[good_pixels])
+        event.data.baseline_shift = baseline_shift
+        nsb_rate[all_bad_pixels] = average_matrix[all_bad_pixels, :].dot(
+            nsb_rate[good_pixels])
+        event.data.nsb_rate = nsb_rate
         yield event
