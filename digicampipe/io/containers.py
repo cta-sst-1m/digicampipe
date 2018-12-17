@@ -15,12 +15,13 @@ from os.path import isfile
 
 import numpy as np
 from astropy import units as u
-from astropy.time import Time
 from ctapipe.core import Container, Map
 from ctapipe.core import Field
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io.containers import HillasParametersContainer
 from ctapipe.io.serializer import Serializer
+from ctapipe.io.containers import MCEventContainer, ReconstructedContainer, \
+    MCHeaderContainer, CentralTriggerContainer
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
@@ -35,13 +36,6 @@ __all__ = ['CameraEventType',
            'DL1Container',
            'DL1CameraContainer',
            'MCEventContainer',
-           'MCHeaderContainer',
-           'MCCameraEventContainer',
-           'CentralTriggerContainer',
-           'ReconstructedContainer',
-           'ReconstructedShowerContainer',
-           'ReconstructedEnergyContainer',
-           'ParticleClassificationContainer',
            'DataContainer']
 
 
@@ -243,147 +237,6 @@ class DL0Container(Container):
     event_id = Field(-1, "event id number")
     tels_with_data = Field([], "list of telescopes with data")
     tel = Field(Map(DL0CameraContainer), "map of tel_id to DL0CameraContainer")
-
-
-class MCCameraEventContainer(Container):
-    """
-    Storage of mc data for a single telescope that change per event
-    """
-    photo_electron_image = Field(
-        Map(), "reference image in pure photoelectrons, with no noise"
-    )
-    reference_pulse_shape = Field(
-        None, "reference pulse shape for each channel"
-    )
-    time_slice = Field(0, "width of time slice", unit=u.ns)
-    dc_to_pe = Field(None, "DC/PE calibration arrays from MC file")
-    pedestal = Field(None, "pedestal calibration arrays from MC file")
-    azimuth_raw = Field(
-        0, "Raw azimuth angle [radians from N->E] for the telescope"
-    )
-    altitude_raw = Field(0, "Raw altitude angle [radians] for the telescope")
-    azimuth_cor = Field(
-        0, "the tracking Azimuth corrected for pointing errors for \
-        the telescope"
-    )
-    altitude_cor = Field(
-        0, "the tracking Altitude corrected for pointing \
-        errors for the telescope"
-    )
-
-
-class MCEventContainer(Container):
-    """
-    Monte-Carlo
-    """
-    energy = Field(0.0, "Monte-Carlo Energy", unit=u.TeV)
-    alt = Field(0.0, "Monte-carlo altitude", unit=u.deg)
-    az = Field(0.0, "Monte-Carlo azimuth", unit=u.deg)
-    core_x = Field(0.0, "MC core position", unit=u.m)
-    core_y = Field(0.0, "MC core position", unit=u.m)
-    h_first_int = Field(0.0, "Height of first interaction")
-    tel = Field(
-        Map(MCCameraEventContainer), "map of tel_id to MCCameraEventContainer"
-    )
-
-    mc_event_offset_fov = Field(
-        Map(ndarray),
-        "offset of pointing direction in camera \
-        f.o.v. divided by focal length, i.e. \
-        converted to radians: [0] = Camera x \
-        (downwards in normal pointing, i.e. \
-        increasing Alt) [1] = Camera y -> Az.")
-
-
-class MCHeaderContainer(Container):
-    """
-    Monte-Carlo information that doesn't change per event
-    """
-    run_array_direction = Field([], (
-        "the tracking/pointing direction in "
-        "[radians]. Depending on 'tracking_mode' "
-        "this either contains: "
-        "[0]=Azimuth, [1]=Altitude in mode 0, "
-        "OR "
-        "[0]=R.A., [1]=Declination in mode 1."
-    ))
-
-
-class CentralTriggerContainer(Container):
-    gps_time = Field(Time, "central average time stamp")
-    tels_with_trigger = Field([], "list of telescopes with data")
-
-
-class ReconstructedShowerContainer(Container):
-    """
-    Standard output of algorithms reconstructing shower geometry
-    """
-
-    alt = Field(0.0, "reconstructed altitude", unit=u.deg)
-    alt_uncert = Field(0.0, "reconstructed altitude uncertainty", unit=u.deg)
-    az = Field(0.0, "reconstructed azimuth", unit=u.deg)
-    az_uncertainty = Field(0.0, 'reconstructed azimuth uncertainty',
-                           unit=u.deg)
-    core_x = Field(0.0, 'reconstructed x coordinate of the core position',
-                   unit=u.m)
-    core_y = Field(0.0, 'reconstructed y coordinate of the core position',
-                   unit=u.m)
-    core_uncertainty = Field(0.0, 'uncertainty of the reconstructed core \
-                             position', unit=u.m)
-    h_max = Field(0.0, 'reconstructed height of the shower maximum')
-    h_max_uncertainty = Field(0.0, 'uncertainty of h_max')
-    is_valid = (False,
-                ('direction validity flag. True if the shower direction'
-                 'was properly reconstructed by the algorithm'))
-    tel_ids = Field([],
-                    ('list of the telescope ids used in the'
-                     ' reconstruction of the shower'))
-    average_size = Field(0.0, 'average size of used')
-    goodness_of_fit = Field(0.0, 'measure of algorithm success (if fit)')
-
-
-class ReconstructedEnergyContainer(Container):
-    """
-    Standard output of algorithms estimating energy
-    """
-    energy = Field(-1.0, 'reconstructed energy', unit=u.TeV)
-    energy_uncertainty = Field(
-        -1.0, 'reconstructed energy uncertainty',
-        unit=u.TeV
-    )
-    is_valid = Field(False,
-                     ('energy reconstruction validity flag. True if '
-                      'the energy was properly reconstructed by the '
-                      'algorithm'))
-    goodness_of_fit = Field(0.0, 'goodness of the algorithm fit')
-
-
-class ParticleClassificationContainer(Container):
-    """
-    Standard output of gamma/hadron classification algorithms
-    """
-    prediction = Field(0.0,
-                       ('prediction of the classifier, defined between '
-                        '[0,1], where values close to 0 are more '
-                        'gamma-like, and values close to 1 more '
-                        'hadron-like'))
-    is_valid = Field(False,
-                     ('classificator validity flag. True if the '
-                      'predition was successful within the algorithm '
-                      'validity range'))
-
-    goodness_of_fit = Field(0.0, 'goodness of the algorithm fit')
-
-
-class ReconstructedContainer(Container):
-    """ collect reconstructed shower info from multiple algorithms """
-
-    shower = Field(Map(ReconstructedShowerContainer),
-                   "Map of algorithm name to shower info")
-    energy = Field(Map(ReconstructedEnergyContainer),
-                   "Map of algorithm name to energy info")
-    classification = Field(Map(ParticleClassificationContainer),
-                           "Map of algorithm name to classification info")
 
 
 class DataContainer(Container):
