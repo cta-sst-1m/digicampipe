@@ -10,8 +10,9 @@ Options:
   <INPUT>                   List of zfits input files. Typically a single
                             night observing a single source.
   --aux_basepath=DIR        Base directory for the auxilary data.
-                            If set to "search", It will try to determine it
-                            from the input files.
+                            If set to "search", it will try to determine it
+                            from the path of the first input file. If set to
+                            "none", no auxiliary data will be added.
                             [Default: search]
   --max_events=N            Maximum number of events to analyze
   -o FILE --output=FILE     file where to store the results.
@@ -126,11 +127,12 @@ def main_pipeline(
     # define pipeline
     events = calibration_event_stream(files, max_events=max_events,
                                       disable_bar=disable_bar)
-    events = add_slow_data_calibration(
-        events, basepath=aux_basepath,
-        aux_services=('DriveSystem', 'DigicamSlowControl', 'MasterSST1M',
-                      'SafetyPLC', 'PDPSlowControl')
-    )
+    if aux_basepath is not None:
+        events = add_slow_data_calibration(
+            events, basepath=aux_basepath,
+            aux_services=('DriveSystem', 'DigicamSlowControl', 'MasterSST1M',
+                          'SafetyPLC', 'PDPSlowControl')
+        )
     events = baseline.fill_dark_baseline(events, dark_baseline)
     events = baseline.fill_digicam_baseline(events)
     events = tagging.tag_burst_from_moving_average_baseline(events)
@@ -199,55 +201,56 @@ def main_pipeline(
         data_to_store.miss = data_to_store.miss * r.unit
         data_to_store.baseline = np.mean(event.data.digicam_baseline)
         data_to_store.nsb_rate = np.mean(event.data.nsb_rate)
-        temp_crate1 = event.slow_data.DigicamSlowControl.Crate1_T
-        temp_crate2 = event.slow_data.DigicamSlowControl.Crate2_T
-        temp_crate3 = event.slow_data.DigicamSlowControl.Crate3_T
-        temp_digicam = np.array(
-            np.hstack([temp_crate1, temp_crate2, temp_crate3])
-        )
-        temp_digicam_mean = np.mean(
-            temp_digicam[np.logical_and(temp_digicam > 0, temp_digicam < 60)]
-        )
-        data_to_store.digicam_temperature = temp_digicam_mean
-        temp_sector1 = event.slow_data.PDPSlowControl.Sector1_T
-        temp_sector2 = event.slow_data.PDPSlowControl.Sector2_T
-        temp_sector3 = event.slow_data.PDPSlowControl.Sector3_T
-        temp_pdp = np.array(
-            np.hstack([temp_sector1, temp_sector2, temp_sector3])
-        )
-        temp_pdp_mean = np.mean(
-            temp_pdp[np.logical_and(temp_pdp > 0, temp_pdp < 60)]
-        )
-        data_to_store.pdp_temperature = temp_pdp_mean
-        target_radec = event.slow_data.MasterSST1M.target_radec
-        data_to_store.target_ra = target_radec[0]
-        data_to_store.target_dec = target_radec[1]
-        status_leds = event.slow_data.SafetyPLC.SPLC_CAM_Status
-        # bit 8 of status_LEDs is about on/off, bit 9 about blinking
-        data_to_store.pointing_leds_on = bool((status_leds & 1 << 8) >> 8)
-        data_to_store.pointing_leds_blink = bool((status_leds & 1 << 9) >> 9)
-        hv_sector1 = event.slow_data.PDPSlowControl.Sector1_HV
-        hv_sector2 = event.slow_data.PDPSlowControl.Sector2_HV
-        hv_sector3 = event.slow_data.PDPSlowControl.Sector3_HV
-        hv_pdp = np.array(
-            np.hstack([hv_sector1, hv_sector2, hv_sector3]), dtype=bool
-        )
-        data_to_store.all_hv_on = np.all(hv_pdp)
-        ghv_sector1 = event.slow_data.PDPSlowControl.Sector1_GHV
-        ghv_sector2 = event.slow_data.PDPSlowControl.Sector2_GHV
-        ghv_sector3 = event.slow_data.PDPSlowControl.Sector3_GHV
-        ghv_pdp = np.array(
-            np.hstack([ghv_sector1, ghv_sector2, ghv_sector3]), dtype=bool
-        )
-        data_to_store.all_ghv_on = np.all(ghv_pdp)
-        is_on_source = bool(event.slow_data.DriveSystem.is_on_source)
-        data_to_store.is_on_source = is_on_source
-        is_tracking = bool(event.slow_data.DriveSystem.is_tracking)
-        data_to_store.is_tracking = is_tracking
-        data_to_store.shower = bool(event.data.shower)
-        data_to_store.border = bool(event.data.border)
-        data_to_store.burst = bool(event.data.burst)
-        data_to_store.saturated = bool(event.data.saturated)
+        if aux_basepath is not None:
+            temp_crate1 = event.slow_data.DigicamSlowControl.Crate1_T
+            temp_crate2 = event.slow_data.DigicamSlowControl.Crate2_T
+            temp_crate3 = event.slow_data.DigicamSlowControl.Crate3_T
+            temp_digicam = np.array(
+                np.hstack([temp_crate1, temp_crate2, temp_crate3])
+            )
+            temp_digicam_mean = np.mean(
+                temp_digicam[np.logical_and(temp_digicam > 0, temp_digicam < 60)]
+            )
+            data_to_store.digicam_temperature = temp_digicam_mean
+            temp_sector1 = event.slow_data.PDPSlowControl.Sector1_T
+            temp_sector2 = event.slow_data.PDPSlowControl.Sector2_T
+            temp_sector3 = event.slow_data.PDPSlowControl.Sector3_T
+            temp_pdp = np.array(
+                np.hstack([temp_sector1, temp_sector2, temp_sector3])
+            )
+            temp_pdp_mean = np.mean(
+                temp_pdp[np.logical_and(temp_pdp > 0, temp_pdp < 60)]
+            )
+            data_to_store.pdp_temperature = temp_pdp_mean
+            target_radec = event.slow_data.MasterSST1M.target_radec
+            data_to_store.target_ra = target_radec[0]
+            data_to_store.target_dec = target_radec[1]
+            status_leds = event.slow_data.SafetyPLC.SPLC_CAM_Status
+            # bit 8 of status_LEDs is about on/off, bit 9 about blinking
+            data_to_store.pointing_leds_on = bool((status_leds & 1 << 8) >> 8)
+            data_to_store.pointing_leds_blink = bool((status_leds & 1 << 9) >> 9)
+            hv_sector1 = event.slow_data.PDPSlowControl.Sector1_HV
+            hv_sector2 = event.slow_data.PDPSlowControl.Sector2_HV
+            hv_sector3 = event.slow_data.PDPSlowControl.Sector3_HV
+            hv_pdp = np.array(
+                np.hstack([hv_sector1, hv_sector2, hv_sector3]), dtype=bool
+            )
+            data_to_store.all_hv_on = np.all(hv_pdp)
+            ghv_sector1 = event.slow_data.PDPSlowControl.Sector1_GHV
+            ghv_sector2 = event.slow_data.PDPSlowControl.Sector2_GHV
+            ghv_sector3 = event.slow_data.PDPSlowControl.Sector3_GHV
+            ghv_pdp = np.array(
+                np.hstack([ghv_sector1, ghv_sector2, ghv_sector3]), dtype=bool
+            )
+            data_to_store.all_ghv_on = np.all(ghv_pdp)
+            is_on_source = bool(event.slow_data.DriveSystem.is_on_source)
+            data_to_store.is_on_source = is_on_source
+            is_tracking = bool(event.slow_data.DriveSystem.is_tracking)
+            data_to_store.is_tracking = is_tracking
+            data_to_store.shower = bool(event.data.shower)
+            data_to_store.border = bool(event.data.border)
+            data_to_store.burst = bool(event.data.burst)
+            data_to_store.saturated = bool(event.data.saturated)
         for key, val in event.hillas.items():
             data_to_store[key] = val
         output_file.add_container(data_to_store)
