@@ -61,7 +61,7 @@ def event_stream(filelist, source=None, max_events=None, disable_bar=False,
         data_stream = source(url=file, disable_bar=disable_bar, **kwargs)
         try:
             for event in data_stream:
-                tel = event.r0.tels_with_data[0]
+                tel = list(event.r0.tels_with_data)[0]
                 event_id = event.r0.tel[tel].camera_event_number
                 if event_id_range[0] and event_id <= event_id_range[0]:
                     continue

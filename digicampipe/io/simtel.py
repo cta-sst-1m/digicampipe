@@ -149,25 +149,22 @@ def simtel_event_source(url, camera=None, max_events=None,
             tracking_positions = array_event['tracking_positions']
             for tel_id, telescope_event in telescope_events.items():
                 telescope_description = telescope_descriptions[tel_id]
+                pedestal = array_event['camera_monitorings'][tel_id]['pedestal']
                 data.mc.tel[tel_id].dc_to_pe = \
                 array_event['laser_calibrations'][tel_id]['calib']
-                data.mc.tel[tel_id].pedestal = \
-                array_event['camera_monitorings'][tel_id]['pedestal']
+                data.mc.tel[tel_id].pedestal = pedestal
                 adc_samples = telescope_event.get('adc_samples')
+                n_pixel = adc_samples.shape[-2]
                 if adc_samples is None:
                     adc_samples = telescope_event['adc_sums'][:, :, np.newaxis]
-                data.r0.tel[tel_id].waveform = adc_samples
+                data.r0.tel[tel_id].adc_samples = adc_samples
                 data.r0.tel[tel_id].num_samples = adc_samples.shape[-1]
                 # We should not calculate stuff in an event source
                 # if this is not needed, we calculate it for nothing
-                data.r0.tel[tel_id].image = adc_samples.sum(axis=-1)
-
-                pixel_lists = telescope_event['pixel_lists']
-                data.r0.tel[tel_id].num_trig_pix = \
-                pixel_lists.get(0, {'pixels': 0})['pixels']
-                if data.r0.tel[tel_id].num_trig_pix > 0:
-                    data.r0.tel[tel_id].trig_pix_id = pixel_lists[0][
-                        'pixel_list']
+                data.r0.tel[tel_id].adc_sums = adc_samples.sum(axis=-1)
+                baseline = pedestal / adc_samples.shape[1]
+                data.r0.tel[tel_id].digicam_baseline = np.squeeze(baseline)
+                data.r0.tel[tel_id].camera_event_number = event_id
 
                 pixel_settings = telescope_description['pixel_settings']
                 data.mc.tel[tel_id].reference_pulse_shape = pixel_settings[
@@ -176,8 +173,6 @@ def simtel_event_source(url, camera=None, max_events=None,
                     pixel_settings['ref_step'])
                 data.mc.tel[tel_id].time_slice = float(
                     pixel_settings['time_slice'])
-
-                n_pixel = data.r0.tel[tel_id].waveform.shape[-2]
 
                 data.mc.tel[tel_id].photo_electron_image = array_event.get(
                     'photoelectrons', {}
