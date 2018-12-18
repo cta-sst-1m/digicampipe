@@ -2,8 +2,7 @@ import os
 from astropy import units as u
 import pkg_resources
 
-from digicampipe.io.hessio import hessio_get_list_event_ids
-from digicampipe.io.hessio import hessio_event_source
+from digicampipe.io.simtel import simtel_event_source
 from digicampipe.io.event_stream import event_stream, calibration_event_stream
 
 example_file_path = pkg_resources.resource_filename(
@@ -27,7 +26,7 @@ example_file_path_1 = pkg_resources.resource_filename(
 )
 
 
-EVENT_ID = 1
+EVENT_ID = 102
 EVENTS_IN_EXAMPLE_FILE = 1
 ENERGY = 10 * u.TeV
 
@@ -35,17 +34,12 @@ ENERGY = 10 * u.TeV
 def test_and_benchmark_event_source(benchmark):
     @benchmark
     def loop():
-        for _ in hessio_event_source(example_file_path):
+        for _ in simtel_event_source(example_file_path):
             pass
 
 
-def test_count_number_event():
-    events_id = hessio_get_list_event_ids(example_file_path)
-    assert len(events_id) == EVENTS_IN_EXAMPLE_FILE
-
-
 def test_event_id():
-    for data in hessio_event_source(example_file_path):
+    for data in simtel_event_source(example_file_path):
         event_id = data.r0.event_id
         energy = data.mc.energy
         break
@@ -89,7 +83,6 @@ def test_calibration_event_stream():
 
 
 if __name__ == '__main__':
-    test_count_number_event()
     test_event_id()
     test_event_stream()
     test_calibration_event_stream()
