@@ -189,9 +189,6 @@ def main_pipeline(
         data_to_store.local_time = event.data.local_time
         data_to_store.event_type = event.event_type
         data_to_store.event_id = event.event_id
-        data_to_store.az = event.slow_data.DriveSystem.current_position_az
-        data_to_store.el = event.slow_data.DriveSystem.current_position_el
-
         r = event.hillas.r
         phi = event.hillas.phi
         psi = event.hillas.psi
@@ -201,7 +198,14 @@ def main_pipeline(
         data_to_store.miss = data_to_store.miss * r.unit
         data_to_store.baseline = np.mean(event.data.digicam_baseline)
         data_to_store.nsb_rate = np.mean(event.data.nsb_rate)
+        data_to_store.shower = bool(event.data.shower)
+        data_to_store.border = bool(event.data.border)
+        data_to_store.burst = bool(event.data.burst)
+        data_to_store.saturated = bool(event.data.saturated)
+
         if aux_basepath is not None:
+            data_to_store.az = event.slow_data.DriveSystem.current_position_az
+            data_to_store.el = event.slow_data.DriveSystem.current_position_el
             temp_crate1 = event.slow_data.DigicamSlowControl.Crate1_T
             temp_crate2 = event.slow_data.DigicamSlowControl.Crate2_T
             temp_crate3 = event.slow_data.DigicamSlowControl.Crate3_T
@@ -247,10 +251,6 @@ def main_pipeline(
             data_to_store.is_on_source = is_on_source
             is_tracking = bool(event.slow_data.DriveSystem.is_tracking)
             data_to_store.is_tracking = is_tracking
-            data_to_store.shower = bool(event.data.shower)
-            data_to_store.border = bool(event.data.border)
-            data_to_store.burst = bool(event.data.burst)
-            data_to_store.saturated = bool(event.data.saturated)
         for key, val in event.hillas.items():
             data_to_store[key] = val
         output_file.add_container(data_to_store)
@@ -283,7 +283,7 @@ def entry():
     saturation_threshold = convert_float(args['--saturation_threshold'])
     threshold_pulse = convert_float(args['--threshold_pulse'])
 
-    if aux_basepath.lower() == "search":
+    if aux_basepath is not None and aux_basepath.lower() == "search":
         input_dir = np.unique([os.path.dirname(file) for file in files])
         if len(input_dir) > 1:
             raise AttributeError(
