@@ -7,7 +7,7 @@ Usage:
 
 Options:
   -h --help                     Show this screen.
-  <INPUT>                       Output file from digicam-pipeline.
+  <INPUT>                       Intput file (output from digicam-pipeline).
                                 [Default: ./hillas.fits]
   --plot_scan2d=PATH            path to the plot for a 2d scan of the source
                                 position for the number of shower with alpha <
