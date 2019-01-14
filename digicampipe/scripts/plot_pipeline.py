@@ -63,6 +63,7 @@ from matplotlib.gridspec import GridSpec
 from digicampipe.utils.docopt import convert_text, convert_list_float
 from digicampipe.image.hillas import correct_hillas, compute_alpha, arrival_lessard
 
+
 def correlation_plot(pipeline_data, title=None, plot="show"):
     fig = plt.figure(figsize=(24, 12))
     subplot = 0
@@ -718,14 +719,14 @@ def entry():
     plot_map_disp = convert_text(args['--plot_map_disp'])
     plot_pipeline(
         hillas_file=hillas_file,
-        cut_length_gte=43,  # Whipple:43
-        cut_length_lte=16,  # Whipple:16
-        cut_width_gte=16,  # Whipple:16
-        cut_width_lte=7.3,  # Whipple:7.3
-        cut_length_over_width_gte=None,
-        cut_length_over_width_lte=None,
+        cut_length_gte=None,  # Whipple:43 # 2017:None
+        cut_length_lte=None,  # Whipple:16 # 2017:None
+        cut_width_gte=None,  # Whipple:16 # 2017:None
+        cut_width_lte=None,  # Whipple:7.3 # 2017:None
+        cut_length_over_width_gte=3,  # Whipple:None # 2017:3
+        cut_length_over_width_lte=1.5,  # Whipple:None # 2017:1.5
         cut_intensity_gte=None,
-        cut_intensity_lte=None,
+        cut_intensity_lte=100,  # Whipple:None # 2017: 100?
         cut_skewness_gte=None,
         cut_skewness_lte=None,
         cut_border_eq=True,
