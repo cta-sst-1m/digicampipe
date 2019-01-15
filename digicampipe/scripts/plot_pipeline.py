@@ -168,7 +168,8 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
         if key in ['border', 'kurtosis', 'event_id',
                    'event_type', 'burst', 'saturated', 'shower',
                    'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
-                   'all_ghv_on', 'is_on_source', 'is_tracking']:
+                   'all_ghv_on', 'is_on_source', 'is_tracking',
+                   'digicam_temperature']:
             continue
         subplot += 1
         print(subplot, '/', 20, 'plotting', key)
@@ -190,7 +191,17 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
                 binmin = -2
                 binmax = 2
             if key == 'nsb_rate':
+                binmin = np.max(binmin, 0)
                 binmax = 3
+            if key == 'alpha':
+                binmin = 0
+                binmax = np.pi / 2
+            if key == 'psi':
+                binmin = 0
+                binmax = np.pi
+            if key == 'phi':
+                binmin = 0
+                binmax = np.pi
             bins = np.linspace(binmin, binmax, 100)
             h, bins, p = plt.hist(val_split, bins=bins, stacked=True)
         plt.xlabel(key)
@@ -382,6 +393,7 @@ def cut_data(
         cut_nsb_rate_lte=None,
         cut_r_gte=None,
         cut_r_lte=None,
+        cut_n_island_gte=None,
 ):
     selection = np.isfinite(pipeline_data['intensity'])
     if cut_length_gte is not None:
@@ -537,6 +549,13 @@ def cut_data(
         print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: r > ',
               cut_nsb_rate_lte, 'mm')
+    if cut_n_island_gte is not None:
+        event_pass = pipeline_data['number_of_island'] < cut_n_island_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events cut with selection: n_island < ',
+              cut_n_island_gte, 'mm')
     return selection
 
 
@@ -565,6 +584,7 @@ def get_data_and_selection(
         cut_nsb_rate_lte=None,
         cut_r_gte=None,
         cut_r_lte=None,
+        cut_n_island_gte=None,
 ):
     data = Table.read(hillas_file, format='fits')
     data = data.to_pandas()
@@ -597,6 +617,7 @@ def get_data_and_selection(
         cut_nsb_rate_lte=cut_nsb_rate_lte,
         cut_r_gte=cut_r_gte,
         cut_r_lte=cut_r_lte,
+        cut_n_island_gte=cut_n_island_gte,
     )
     return data, selection
 
@@ -626,6 +647,7 @@ def plot_pipeline(
         cut_nsb_rate_lte=None,
         cut_r_gte=None,
         cut_r_lte=None,
+        cut_n_island_gte=None,
         alphas_min=(1, 2, 5, 10, 20),
         plot_scan2d=None,
         plot_showers_center=None,
@@ -663,6 +685,7 @@ def plot_pipeline(
         cut_nsb_rate_lte=cut_nsb_rate_lte,
         cut_r_gte=cut_r_gte,
         cut_r_lte=cut_r_lte,
+        cut_n_island_gte=cut_n_island_gte,
     )
     selection_no_burst = np.logical_and(selection, data['burst'] == False)
 
@@ -742,6 +765,7 @@ def entry():
         cut_nsb_rate_lte=.1,
         cut_r_gte=None ,
         cut_r_lte=None,
+        cut_n_island_gte=1,
         alphas_min=alphas_min,
         plot_scan2d=plot_scan2d,
         plot_showers_center=plot_showers_center,
