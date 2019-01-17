@@ -283,7 +283,8 @@ def main_pipeline(
                 np.hstack([temp_crate1, temp_crate2, temp_crate3])
             )
             temp_digicam_mean = np.mean(
-                temp_digicam[np.logical_and(temp_digicam > 0, temp_digicam < 60)]
+                temp_digicam[np.logical_and(temp_digicam > 0,
+                                            temp_digicam < 60)]
             )
             data_to_store.digicam_temperature = temp_digicam_mean
             temp_sector1 = event.slow_data.PDPSlowControl.Sector1_T

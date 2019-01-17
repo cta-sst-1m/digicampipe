@@ -61,7 +61,8 @@ from tqdm import tqdm
 from matplotlib.gridspec import GridSpec
 
 from digicampipe.utils.docopt import convert_text, convert_list_float
-from digicampipe.image.hillas import correct_hillas, compute_alpha, arrival_lessard
+from digicampipe.image.hillas import correct_hillas, compute_alpha, \
+    arrival_lessard
 
 
 def correlation_plot(pipeline_data, title=None, plot="show"):
@@ -261,7 +262,7 @@ def scan_2d_plot(
     y_fov_bins = np.linspace(y_fov_start - dy / 2, y_fov_end + dy / 2,
                              num_steps + 1)
     num_alpha = len(alphas_min)
-    N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
+    n = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
 
     X, Y = np.meshgrid(x_fov, y_fov)
@@ -276,7 +277,7 @@ def scan_2d_plot(
         alpha = compute_alpha(phi, hillas['psi'])
         alpha = np.rad2deg(alpha)
         alpha = alpha[..., None] < alphas_min
-        N += alpha
+        n += alpha
 
     for ai, alpha_min in enumerate(alphas_min):
         if len(alphas_min) > 1:
@@ -285,12 +286,12 @@ def scan_2d_plot(
             plot_name = plot
         fig = plt.figure(figsize=(16, 12))
         ax1 = fig.add_subplot(111)
-        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N[:, :, ai],
+        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, n[:, :, ai],
                              rasterized=True, cmap='nipy_spectral')
         plt.ylabel('FOV Y [mm]')
         plt.xlabel('FOV X [mm]')
         cbar = fig.colorbar(pcm)
-        cbar.set_label('N of events')
+        cbar.set_label('# of events')
         plt.grid()
         plt.tight_layout()
         if plot == "show":
@@ -550,12 +551,12 @@ def cut_data(
               'events cut with selection: r > ',
               cut_nsb_rate_lte, 'mm')
     if cut_n_island_gte is not None:
-        event_pass = pipeline_data['number_of_island'] < cut_n_island_gte
+        event_pass = pipeline_data['number_of_island'] > cut_n_island_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
               'events cut with selection: n_island < ',
-              cut_n_island_gte, 'mm')
+              cut_n_island_gte)
     return selection
 
 
@@ -765,7 +766,7 @@ def entry():
         cut_nsb_rate_lte=.1,
         cut_r_gte=None ,
         cut_r_lte=None,
-        cut_n_island_gte=1,
+        cut_n_island_gte=2,
         alphas_min=alphas_min,
         plot_scan2d=plot_scan2d,
         plot_showers_center=plot_showers_center,
