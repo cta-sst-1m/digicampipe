@@ -351,7 +351,7 @@ def entry():
     debug = args['--debug']
     parameters_filename = convert_text(args['--parameters'])
     template_filename = convert_text(args['--template'])
-    nevent_plot = convert_text(args['--nevent_plot'])
+    nevent_plot = convert_int(args['--nevent_plot'])
     event_plot_filename = convert_text(args['--event_plot_filename'])
     disable_bar = args['--disable_bar']
     saturation_threshold = convert_float(args['--saturation_threshold'])
