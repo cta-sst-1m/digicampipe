@@ -49,6 +49,7 @@ Options:
                                 reading files.
 """
 import os
+import sys
 import astropy.units as u
 import numpy as np
 import yaml
@@ -329,6 +330,7 @@ def main_pipeline(
         print(hillas_filename, 'created.')
     except ValueError:
         print('WARNING: no data to save,', hillas_filename, 'not created.')
+    sys.exit(0)
 
 
 def entry():
