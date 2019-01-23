@@ -9,8 +9,8 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
-  --timing_histo_filename=FILE.  Folder where to store the results.
-  --timing_results_filename=FILE File to which the results of the timing
+  --timing_histo_filename=FILE Folder where to store the results.
+  --output=FILE               File to which the results of the timing
                               analysis are stored
   --ac_levels=<DAC>           LED AC DAC level
   -c --compute                Compute the data.
@@ -91,7 +91,7 @@ def entry():
     ac_levels = convert_list_int(args['--ac_levels'])
 
     output_path = os.path.dirname(timing_histo_filename)
-    results_filename = args['--timing_results_filename']
+    results_filename = args['--output']
 
     if not os.path.exists(output_path):
         raise IOError('Path for output does not exists \n')
@@ -110,7 +110,7 @@ def entry():
 
         with fitsio.FITS(results_filename, 'rw') as f:
 
-            f.write([timing], names=['timing'])
+            f.write([timing], names=['timing'], extname='TIMING')
 
     if args['--save_figures']:
 
