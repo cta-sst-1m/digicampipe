@@ -55,7 +55,7 @@ def compute(files, max_events, pixel_id, n_samples, timing_filename,
 
     with fitsio.FITS(timing_filename, 'r') as f:
 
-        pulse_indices = f[1]['timing'].read() // 4
+        pulse_indices = f['TIMING']['timing'].read() // 4
 
     amplitude_histo, charge_histo = mpe_compute(
         files,
