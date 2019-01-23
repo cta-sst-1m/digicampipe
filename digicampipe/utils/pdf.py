@@ -2,6 +2,7 @@ import numpy as np
 
 
 def gaussian(x, mean, sigma, amplitude):
+
     x = np.atleast_1d(x)
     pdf = (x[:, np.newaxis] - mean) ** 2 / (2 * sigma ** 2)
     pdf = np.exp(-pdf)
