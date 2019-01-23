@@ -254,7 +254,7 @@ def entry():
                 results['mu_xt'].append(np.nan)
                 results['gain'].append(np.nan)
 
-        with fitsio.FITS(results_filename, 'rw', clobber=True) as f:
+        with fitsio.FITS(results_filename, 'rw') as f:
 
             results = {key: np.array(val) for key, val in results.items()}
             f.write(results, extname='SPE')

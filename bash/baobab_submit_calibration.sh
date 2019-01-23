@@ -7,7 +7,7 @@ echo -e "Starting job: " `date` '\nJob array ID ' ${SLURM_ARRAY_TASK_ID}
 # sbatch 3_raw_dark.sh
 sbatch 4_spe.sh
 job1=$(sbatch --parsable 5_timing.sh);
-job2=$(sbatch --parsable --dependency=afterok:${job1} 6_fmpe.sh );
+# job2=$(sbatch --parsable --dependency=afterok:${job1} 6_fmpe.sh );
 # sbatch 6_fmpe.sh
 # sbatch 7_mpe.sh
 # sbatch --dependency=afterany:${job2} 7_mpe.sh

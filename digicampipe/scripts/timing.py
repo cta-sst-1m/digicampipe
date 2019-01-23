@@ -110,8 +110,8 @@ def entry():
 
         with fitsio.FITS(results_filename, 'rw') as f:
 
-            f.write([timing, ac_levels],
-                    names=['timing', 'ac_levels'],
+            f.write([timing, pixel_id],
+                    names=['timing', 'pixel_id'],
                     extname='TIMING')
 
     if args['--save_figures']:
