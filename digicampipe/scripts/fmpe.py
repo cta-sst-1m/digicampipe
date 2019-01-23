@@ -22,7 +22,6 @@ Options:
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
   --ncall=N                   Number of calls for the fit [default: 10000]
-  --timing=PATH               Timing filename
   --n_samples=N               Number of samples in readout window
   --charge_histo_filename=FILE
   --amplitude_histo_filename=FILE
@@ -49,11 +48,11 @@ from digicampipe.utils.fitter import FMPEFitter
 from digicampipe.visualization.plot import plot_array_camera, plot_histo
 
 
-def compute(files, max_events, pixel_id, n_samples, timing_filename,
+def compute(files, max_events, pixel_id, n_samples, results_filename,
             charge_histo_filename, amplitude_histo_filename, save,
             integral_width, shift, bin_width):
 
-    with fitsio.FITS(timing_filename, 'r') as f:
+    with fitsio.FITS(results_filename, 'r') as f:
 
         pulse_indices = f['TIMING']['timing'].read() // 4
 
@@ -139,7 +138,6 @@ def entry():
     charge_histo_filename = args['--charge_histo_filename']
     amplitude_histo_filename = args['--amplitude_histo_filename']
     results_filename = args['--results_filename']
-    timing_filename = args['--timing']
     n_samples = int(args['--n_samples'])
     ncall = int(args['--ncall'])
     estimated_gain = float(args['--estimated_gain'])
@@ -149,7 +147,7 @@ def entry():
                 max_events=max_events,
                 pixel_id=pixel_id,
                 n_samples=n_samples,
-                timing_filename=timing_filename,
+                results_filename=results_filename,
                 charge_histo_filename=charge_histo_filename,
                 amplitude_histo_filename=amplitude_histo_filename,
                 save=True,

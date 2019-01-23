@@ -174,11 +174,9 @@ def entry():
     ac_led_filename = args['--ac_led_filename']
     estimated_gain = 20
 
-    timing_filename = args['--timing']
+    with fitsio.FITS(results_filename, 'r') as f:
 
-    with fitsio.FITS(timing_filename, 'r') as f:
-
-        timing = f[1]['timing'].read()
+        timing = f['TIMING']['timing'].read()
 
     charge_histo_filename = args['--compute_output']
     fmpe_results_filename = args['--gain']
