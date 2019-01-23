@@ -25,7 +25,7 @@ Options:
   --n_samples=N               Number of samples in readout window
   --charge_histo_filename=FILE
   --amplitude_histo_filename=FILE
-  --results_filename=FILE
+  --output=FILE
   --estimated_gain=N          Estimated gain for the fit
 """
 import os
@@ -137,7 +137,7 @@ def entry():
 
     charge_histo_filename = args['--charge_histo_filename']
     amplitude_histo_filename = args['--amplitude_histo_filename']
-    results_filename = args['--results_filename']
+    results_filename = args['--output']
     n_samples = int(args['--n_samples'])
     ncall = int(args['--ncall'])
     estimated_gain = float(args['--estimated_gain'])

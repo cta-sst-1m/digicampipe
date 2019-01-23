@@ -8,7 +8,7 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse.
-  --fit_output=OUTPUT         File where to store the fit results.
+  --output=OUTPUT         File where to store the fit results.
                               [default: ./fit_results.npz]
   --ac_led_filename=OUTPUT    File to store the ACLED calibration
                               [default: ./ac_led.fits]
@@ -35,7 +35,6 @@ Options:
   --adc_max=N                 Highest LSB value for the histogram
                               [default: 2000]
   --gain=FILE                 Calibration params to use in the fit
-  --timing=TIMING_HISTO       Timing histogram
 """
 import os
 
@@ -154,7 +153,7 @@ def entry():
     debug = args['--debug']
 
     max_events = convert_int(args['--max_events'])
-    results_filename = args['--fit_output']
+    results_filename = args['--output']
     dir_output = os.path.dirname(results_filename)
 
     if not os.path.exists(dir_output):
@@ -275,7 +274,7 @@ def entry():
 
                         else:
 
-                            f['FMPE'].append(data)
+                            f['FMPE_2'].append(data)
 
                 except Exception as exception:
 

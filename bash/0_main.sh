@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 source $HOME/.bashrc
+activate_conda
 source activate digicampipe
 
 export MATPLOTLIBRC='../matplotlibrc'
@@ -54,8 +55,8 @@ export -p tolist
 
 ### OUTPUT FILES ###
 
-# DATE=`date +%Y%m%d`
-DATE=20181203
+DATE=`date +%Y%m%d`
+# DATE=20181203
 export DIGICAM_FOLDER='/sst1m/analyzed/calib/'$DATE'/'
 mkdir -p $DIGICAM_FOLDER
 mkdir -p $DIGICAM_FOLDER'figures/'
@@ -79,3 +80,4 @@ export MPE_RESULTS=$DIGICAM_FOLDER'mpe_results.fits'
 export AC_LED_FILE=$DIGCAM_FOLDER'ac_led.fits'
 export TEMPLATE_FILE=$DIGICAM_FOLDER'template.txt'
 export BASELINE_SHIFT_RESULTS=$DIGICAM_FOLDER'baseline_shift_results.fits'
+export CALIBRATION_FILE=$DIGICAM_FOLDER'calibration_results.fits'
