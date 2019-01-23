@@ -15,7 +15,7 @@ Options:
   --raw_histo_filename=FILE    File path of the raw histogram
                                [Default: ./raw_histo.pk]
   -o OUTPUT --output=OUTPUT    Output file path to store the results.
-                               [Default: ./results.npz]
+                               [Default: ./results.fits]
   -c --compute                 Compute the data.
   -f --fit                     Fit.
   -d --display                 Display.
@@ -184,11 +184,8 @@ def entry():
 
     if args['--fit']:
 
-        columns = ['dark_count_rate', 'electronic_noise', 'crosstalk', 'gain',
-                   'pixels_id']
-        data = np.zeros((n_pixels, len(columns))) * np.nan
-        results = pd.DataFrame(data=data, columns=columns)
-        results['pixel_id'] = pixel_id
+        results = {'dcr': [], 'sigma_e': [], 'mu_xt': [],
+                   'gain': [], 'pixels_ids': pixel_id}
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
@@ -204,8 +201,8 @@ def entry():
                 rate = compute_dark_rate(number_of_zeros,
                                          n_entries,
                                          window_length)
-                results[i, 'electronic_noise'] = fitter.parameters['sigma_e']
-                results[i, 'dark_count_rate'] = rate
+                results['sigma_e'].append(fitter.parameters['sigma_e'])
+                results['dcr'].append(rate)
 
                 if debug:
                     fitter.draw()
@@ -218,6 +215,9 @@ def entry():
                 print('Could not compute dark count rate'
                       ' in pixel {}'.format(pixel))
                 print(e)
+
+                results['sigma_e'].append(np.nan)
+                results['dcr'].append(np.nan)
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
@@ -236,8 +236,8 @@ def entry():
                 crosstalk = (n_entries - params['a_1']) / n_entries
                 gain = params['gain']
 
-                results[i, 'crosstalk'] = crosstalk
-                results[i, 'gain'] = gain
+                results['mu_xt'].append(crosstalk)
+                results['gain'].append(gain)
 
                 if debug:
                     fitter.draw()
@@ -251,9 +251,13 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-        with fitsio.FITS(results_filename, 'rw') as f:
+                results['mu_xt'].append(np.nan)
+                results['gain'].append(np.nan)
 
-            f.write(results.to_records(index=False))
+        with fitsio.FITS(results_filename, 'rw', clobber=True) as f:
+
+            results = {key: np.array(val) for key, val in results.items()}
+            f.write(results, extname='SPE')
 
     save_figure = convert_text(args['--save_figures'])
     if save_figure is not None:

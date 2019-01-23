@@ -42,9 +42,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from docopt import docopt
-from histogram.fit import HistogramFitter
 from histogram.histogram import Histogram1D
-from iminuit import describe, Minuit
+from iminuit import describe
 from tqdm import tqdm
 from astropy.table import Table
 import fitsio
@@ -59,12 +58,28 @@ from digicampipe.calib.peak import fill_pulse_indices
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_int, \
     convert_pixel_args, convert_list_int
-from digicampipe.utils.pdf import mpe_distribution_general, gaussian, \
-    generalized_poisson
+from digicampipe.utils.pdf import mpe_distribution_general
 from digicampipe.instrument.light_source import ACLED
-from digicampipe.utils.exception import PeakNotFound
-from digicampipe.utils.pdf import fmpe_pdf_10
 from digicampipe.utils.fitter import MPEFitter, FMPEFitter, MPECombinedFitter
+
+
+def compute_pe(charge, baseline, crosstalk, gain):
+
+    mu = (charge - baseline) / gain * (1 - crosstalk)
+
+    return mu
+
+
+def compute_pe_error(charge, baseline, crosstalk, gain,
+                     charge_error, baseline_error, crosstalk_error,
+                     gain_error, mu):
+
+    mu_error = np.abs(1 / (charge - baseline)) * (charge_error + baseline_error)
+    mu_error += np.abs(1 / gain) * gain_error
+    mu_error += np.abs(1 / (1 - crosstalk)) * crosstalk_error
+    mu_error = mu_error * mu
+
+    return mu_error
 
 
 def plot_event(events, pixel_id):
@@ -449,8 +464,9 @@ def entry():
                     params['limit_baseline'] = (params['limit_baseline'][1],
                                                 params['limit_baseline'][0])
 
-                mu_max = (histo.max() - params['baseline'])
-                mu_max = mu_max / params['gain']
+                mu_max = compute_pe(histo.max(),
+                                    baseline=params['baseline'],
+                                    crosstalk=0, gain=params['gain'])
 
                 mask = np.ones(histo.shape[0], dtype=bool)
                 mask *= (histo.underflow == 0) * (histo.overflow == 0)
@@ -474,11 +490,21 @@ def entry():
                 data = fitter.results_to_dict()
                 data['mean'] = histo.mean()
                 data['std'] = histo.std()
-                data['mu'] = (data['mean'] - data['baseline'])
-                data['mu'] /= data['gain']
-                data['mu'] *= (1. - data['mu_xt'])
+                mean_error = data['std'] / np.sqrt(histo.data.sum(axis=-1))
+                data['mu'] = compute_pe(data['mean'], baseline=data['baseline'],
+                                        gain=data['gain'],
+                                        crosstalk=data['mu_xt'])
                 data['mu'][~mask] = np.nan
-                data['error_mu'] = data['mu'] * np.nan
+                data['error_mu'] = compute_pe_error(data['mean'],
+                                                    baseline=data['baseline'],
+                                                    gain=data['gain'],
+                                                    crosstalk=data['mu_xt'],
+                                                    charge_error=mean_error,
+                                                    baseline_error=data['error_baseline'],
+                                                    gain_error=data['error_gain'],
+                                                    crosstalk_error=data['error_mu_xt'],
+                                                    mu=data['mu'])
+                data['error_mu'][~mask] = np.nan
                 data['pixel_ids'] = np.array(pixel_id)
                 data['n_peaks'] = np.array(n_peaks)
                 data['ac_levels'] = np.array(ac_levels)
@@ -550,7 +576,6 @@ def entry():
                     for i, row in enumerate(table):
 
                         data = dict(zip(column_names, row))
-                        data['error_mu'] = data['mu'] * np.nan
                         fit_params_names = describe(MPECombinedFitter.pdf)[2:]
                         fit_params_names.append('mu')
 
