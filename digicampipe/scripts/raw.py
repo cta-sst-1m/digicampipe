@@ -3,30 +3,32 @@
 Do a raw data histogram
 
 Usage:
-  digicam-raw [options] [--] <INPUT>...
+  digicam-raw compute --output=FILE [options] <INPUT>...
+  digicam-raw display <INPUT>
+  digicam-raw save_figure --output=FILE <INPUT>
 
 Options:
-  -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
-  -o FILE --output=FILE.      File where to store the results.
-                              [Default: ./raw_histo.fits]
-  -c --compute                Compute the raw data histograms.
-  -d --display                Display.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
-  --baseline_subtracted       Perform baseline subtraction to the raw data
-  --figure_path=PATH          Path where to save the figures
-                              [default: None]
-  --baseline_filename=FILE    Output path for DigiCam calculated baseline
-                              histogram. If "none" the histogram will not be
-                              computed. FILE should end with '.pk'
-                              [Default: none]
-  --event_types=<TYPE>        Comma separated list of integers corresponding to
-                              the events types that are taken into the
-                              histogram (others are discarded).
-                              If set to "none", all events are included.
-                              [Default: none]
-  --disable_bar               If used, the progress bar is not show while
-                              reading files.
+    -h --help                   Show this screen.
+    --max_events=N              Maximum number of events to analyse
+    -o FILE --output=FILE.      File where to store the results.
+    -p --pixel=<PIXEL>          Give a list of pixel IDs.
+    --baseline_subtracted       Perform baseline subtraction to the raw data
+    --baseline_filename=FILE    Output path for DigiCam calculated baseline
+                                histogram. If "none" the histogram will not be
+                                computed. FILE should end with '.pk'
+                                [Default: none]
+    --event_types=<TYPE>        Comma separated list of integers corresponding
+                                to the events types that are taken into the
+                                histogram (others are discarded).
+                                If set to "none", all events are included.
+                                [Default: none]
+    --disable_bar               If used, the progress bar is not show while
+                                reading files.
+
+Commands:
+    compute                     Compute the histogram
+    display                     Display the histogram
+    save_figure                 Save the figures to the output
 """
 import os
 
@@ -99,24 +101,18 @@ def compute_baseline_histogram(files, max_events, pixel_id, filename,
 
 def entry():
     args = docopt(__doc__)
+
     files = args['<INPUT>']
     max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     base_sub = args['--baseline_subtracted']
-    raw_histo_filename = args['--output']
+    output = args['--output']
     event_types = convert_list_int(args['--event_types'])
-    baseline_filename = args['--baseline_filename']
+    baseline_filename = convert_text(args['--baseline_filename'])
     disable_bar = args['--disable_bar']
-    figure_path = convert_text(args['--figure_path'])
-    if baseline_filename.lower() == 'none':
-        baseline_filename = None
-    output_path = os.path.dirname(raw_histo_filename)
-    if not os.path.exists(output_path) and output_path != "":
-        raise IOError('Path {} for output '
-                      'does not exists \n'.format(output_path))
 
-    if args['--compute']:
-        compute(files, max_events, pixel_id, raw_histo_filename, event_types,
+    if args['compute']:
+        compute(files, max_events, pixel_id, output, event_types,
                 disable_bar=disable_bar, baseline_subtracted=base_sub)
         if baseline_filename:
             compute_baseline_histogram(
@@ -124,13 +120,14 @@ def entry():
                 disable_bar=disable_bar
             )
 
-    if figure_path:
+    if args['save_figure']:
 
-        raw_histo = Histogram1D.load(raw_histo_filename)
-        raw_histo.save_figures(figure_path, log=True, x_label='[LSB]')
+        raw_histo = Histogram1D.load(files[0])
+        raw_histo.save_figures(output, log=True, x_label='[LSB]')
 
-    if args['--display']:
-        raw_histo = Histogram1D.load(raw_histo_filename)
+    if args['display']:
+
+        raw_histo = Histogram1D.load(files[0])
         pixel = 0
         raw_histo.draw(index=(pixel,), log=True, legend=False,
                        label='Histogram {}'.format(pixel), x_label='[LSB]')
