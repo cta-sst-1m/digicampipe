@@ -7,6 +7,6 @@
 
 source 0_main.sh
 
-digicam-raw --compute --output=$GHV_OFF_RAW_HISTO ${DIGICAM_GHV_OFF_FILES[@]}
-digicam-raw --figure_path=$DIGICAM_FOLDER'figures/raw_ghv_off_histo.pdf' --output=$GHV_OFF_RAW_HISTO ${DIGICAM_GHV_OFF_FILES[@]}
+digicam-raw compute --output=$GHV_OFF_RAW_HISTO ${DIGICAM_GHV_OFF_FILES[@]}
+digicam-raw save_figure --output=$DIGICAM_FOLDER'figures/raw_ghv_off_histo.pdf' $GHV_OFF_RAW_HISTO
 digicam-rate-scan --compute --output=$GHV_OFF_RATE_SCAN --threshold_step=1 ${DIGICAM_GHV_OFF_FILES[@]}
