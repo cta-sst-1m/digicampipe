@@ -178,6 +178,8 @@ def data_quality(
                 count = 0
                 init_time = 0
                 shower_count = 0
+                az = 0
+                el = 0
                 file.add_container(container)
         output_path = os.path.dirname(histo_filename)
         if not os.path.exists(output_path):

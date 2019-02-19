@@ -44,8 +44,8 @@ def test_bad_pixels_params():
 
 
 def test_bad_pixels_dark():
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        dark_filename = os.path.join(tmpdirname, 'dark.pk')
+    with tempfile.TemporaryDirectory() as tmp_dir_name:
+        dark_filename = os.path.join(tmp_dir_name, 'dark.pk')
         compute_raw(
             files=[dark200_file_path],
             max_events=None,
@@ -60,8 +60,8 @@ def test_bad_pixels_dark():
 
 
 def test_bad_pixels_all():
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        dark_filename = os.path.join(tmpdirname, 'dark.pk')
+    with tempfile.TemporaryDirectory() as tmp_dir_name:
+        dark_filename = os.path.join(tmp_dir_name, 'dark.pk')
         compute_raw(
             files=[dark200_file_path],
             max_events=None,
@@ -79,17 +79,16 @@ def test_bad_pixels_all():
         assert np.all(bad_pixels == bad_pixels_true)
 
 
-
 def test_bad_pixels_plot():
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        plot = os.path.join(tmpdirname, 'test.png')
+    with tempfile.TemporaryDirectory() as tmp_dir_name:
+        plot = os.path.join(tmp_dir_name, 'test.png')
         get_bad_pixels(parameters_filename, plot=plot, output=None)
         assert os.path.isfile(plot)
 
 
 def test_bad_pixels_save():
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        out = os.path.join(tmpdirname, 'test.png')
+    with tempfile.TemporaryDirectory() as tmp_dir_name:
+        out = os.path.join(tmp_dir_name, 'test.png')
         get_bad_pixels(parameters_filename, plot=None, output=out)
         assert os.path.isfile(out)
         with open(out) as file:
@@ -98,6 +97,8 @@ def test_bad_pixels_save():
 
 
 if __name__ == '__main__':
+    test_bad_pixels_params()
+    test_bad_pixels_dark()
     test_bad_pixels_all()
     test_bad_pixels_plot()
     test_bad_pixels_save()

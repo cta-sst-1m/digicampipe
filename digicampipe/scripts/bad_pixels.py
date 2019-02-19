@@ -1,23 +1,34 @@
 """
 Determine bad pixels from a calibration file.
 Usage:
-  bad_pixels.py [options] [--] <INPUT>
+  bad_pixels.py [options]
 
 Options:
   --help                        Show this
-  <INPUT>                       Calibration YAML file used to determine the
-                                bad pixels. Output of ???
+  --calib_file=PATH             Calibration YAML file used to determine the
+                                bad pixels together with --nsigma_gain and
+                                --nsigma_elecnoise
+                                [Default: none]
   --nsigma_gain=INT             Number of sigmas around the mean value
                                 acceptable for the gain. If the gain value of a
                                 pixel is outside of the acceptable range, this
                                 pixel is considered bad.
-                                [Default: 3]
+                                [Default: 5]
   --nsigma_elecnoise=INT        Number of sigmas around the mean value
                                 acceptable for the electronic noise. If the
                                 electronic noise value of a pixel is outside
                                 of the acceptable range, this pixel is
                                 considered bad.
-                                [Default: 3]
+                                [Default: 5]
+  --dark_histo=FILE             Histogram of the adc samples during dark run
+                                used to determine the bad pixels together with
+                                --nsigma_dark
+                                [Default: none]
+  --nsigma_dark=INT             Number of sigmas around the mean value
+                                acceptable for raw adc values in dark. If the
+                                value of a pixel is outside of the acceptable
+                                range, this pixel is considered bad.
+                                [Default: 8]
   --plot=FILE                   path to the output plot. Will show the
                                 histograms of the values used to determine bad
                                 pixels and highlight those.
@@ -44,7 +55,7 @@ from digicampipe.utils.docopt import convert_int, convert_text
 def get_bad_pixels(
         calib_file=None, nsigma_gain=5, nsigma_elecnoise=5,
         dark_histo=None, nsigma_dark=8,
-        plot="show", output=None
+        plot="none", output=None
 ):
     bad_pix = np.array([], dtype=int)
     if calib_file is not None:
@@ -96,13 +107,15 @@ def get_bad_pixels(
 
 def entry():
     args = docopt(__doc__)
-    calib_file = args['<INPUT>']
+    calib_file = convert_text(args['--calib_file'])
     nsigma_gain = convert_int(args['--nsigma_gain'])
     nsigma_elecnoise = convert_int(args['--nsigma_elecnoise'])
+    dark_file = convert_text(args['dark_histo'])
+    nsigma_dark = convert_int(args['--nsigma_dark'])
     plot = convert_text(args['--plot'])
     output = convert_text(args['--output'])
     bad_pix = get_bad_pixels(calib_file, nsigma_gain, nsigma_elecnoise,
-                             plot, output)
+                             dark_file, nsigma_dark, plot, output)
     print('bad pixels found:', bad_pix)
 
 

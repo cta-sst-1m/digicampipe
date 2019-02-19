@@ -51,6 +51,9 @@ class AuxService:
         takes some time, result will maybe be cached.
         '''
         paths = self.get_paths(date)
+        if len(paths) == 0:
+            raise RuntimeError("no data found for " + self.name + " on " +
+                               str(date))
         combined_table = combine_tables(paths)
 
         # side effect!
