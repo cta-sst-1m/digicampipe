@@ -19,7 +19,6 @@ def entry():
     args = docopt(__doc__)
 
     event_id = args['--event_id']
-    print(event_id)
     if event_id == 'None':
 
         event_id = None
