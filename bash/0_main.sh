@@ -1,8 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/env bash
 
 source $HOME/.bashrc
-activate_conda
-source activate digicampipe
+$HOME/.miniconda3/bin/activate digicampipe
 
 export MATPLOTLIBRC='../matplotlibrc'
 
@@ -42,6 +41,7 @@ export DIGICAM_GAIN_APPROX=20
 export DIGICAM_LSB_MIN=-10
 export DIGICAM_LSB_MAX=3000
 export DIGICAM_LSB_BIN=1
+export DIGICAM_SATURATION_THRESHOLD=3000
 
 function tolist () {
     local array="$@"
@@ -55,8 +55,8 @@ export -p tolist
 
 ### OUTPUT FILES ###
 
-DATE=`date +%Y%m%d`
-# DATE=20181203
+# DATE=`date +%Y%m%d`
+DATE=20190123
 export DIGICAM_FOLDER='/sst1m/analyzed/calib/'$DATE'/'
 mkdir -p $DIGICAM_FOLDER
 mkdir -p $DIGICAM_FOLDER'figures/'

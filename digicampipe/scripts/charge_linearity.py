@@ -3,14 +3,14 @@
 Do the charge linearity anaylsis
 
 Usage:
-  digicam-charge-linearity [options] [--] <INPUT>...
+  digicam-charge-linearity compute --output=FILE --input=FILE --ac_levels=<DAC> --dc_levels=<DAC> [options] <INPUT>...
 
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse.
-  --output_file=OUTPUT        File where to store the fit results.
+  --output=FILE        File where to store the fit results.
                               [default: ./fit_results.npz]
-  -c --compute                Compute the data.
+  --input=FILE
   -d --display                Display.
   -v --debug                  Enter the debug mode.
   -p --pixel=<PIXEL>          Give a list of pixel IDs.
@@ -21,12 +21,14 @@ Options:
   --integral_width=N          number of bins to integrate over
                               [default: 7].
   --save_figures              Save the plots to the OUTPUT folder
-  --timing=FILE               Timing npz.
   --saturation_threshold=N    Saturation threshold in LSB
                               [default: 3000]
   --pulse_tail                Use pulse tail for charge integration
   --integration_method=STR    Integration method (static or dynamic)
                               [Default: dynamic]
+
+Commands:
+  compute                     Compute the charge linearity
 """
 
 
@@ -41,7 +43,7 @@ from digicampipe.calib.baseline import subtract_baseline, fill_digicam_baseline
 from digicampipe.calib.charge import compute_dynamic_charge, compute_charge
 from digicampipe.calib.peak import fill_pulse_indices
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_dac_level, convert_pixel_args, convert_max_events_args
+from digicampipe.utils.docopt import convert_list_int, convert_pixel_args, convert_int
 
 
 def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
@@ -59,20 +61,24 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
     for file in files:
         assert os.path.exists(file)
 
-    shape = (len(dc_levels), len(ac_levels), n_pixels)
+    shape = (n_pixels, len(dc_levels), len(ac_levels))
     baseline_mean = np.zeros(shape)
     baseline_std = np.zeros(shape)
     charge_mean = np.zeros(shape)
     charge_std = np.zeros(shape)
     waveform_std = np.zeros(shape)
-    ac = np.ones(shape)
-    dc = np.ones(shape)
+    ac = np.zeros(shape)
+    dc = np.zeros(shape)
 
-    count = np.zeros(shape[:-1])
+    count = np.zeros(shape)
 
-    for i, dc_level, in tqdm(enumerate(dc_levels), total=n_dc_level):
+    '''
 
-        for j, ac_level in tqdm(enumerate(ac_levels), total=n_ac_level):
+    for i, dc_level, in tqdm(enumerate(dc_levels), total=n_dc_level,
+                             desc='DC level'):
+
+        for j, ac_level in tqdm(enumerate(ac_levels), total=n_ac_level,
+                                desc='AC level'):
 
             index_file = i * n_ac_level + j
             file = files[index_file]
@@ -80,6 +86,7 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
             events = calibration_event_stream(file, max_events=max_events)
             events = fill_digicam_baseline(events)
             events = subtract_baseline(events)
+            events = fill_pulse_indices(events, pulse_indices=timing)
 
             if method == 'dynamic':
 
@@ -87,59 +94,67 @@ def compute(files, ac_levels, dc_levels, output_filename, max_events, pixels,
                     events,
                     integral_width=integral_width,
                     debug=debug,
-                    trigger_bin=timing - shift,
                     saturation_threshold=saturation_threshold,
                     pulse_tail=pulse_tail)
 
             if method == 'static':
 
-                events = fill_pulse_indices(events, pulse_indices=timing)
                 events = compute_charge(events, integral_width=integral_width,
                                         shift=shift)
 
             for n, event in enumerate(events):
 
-                charge_mean[i, j] += event.data.reconstructed_charge
-                charge_std[i, j] += event.data.reconstructed_charge**2
+                charge_mean[:, i, j] += event.data.reconstructed_charge
+                charge_std[:, i, j] += event.data.reconstructed_charge**2
 
-                baseline_mean[i, j] += event.data.baseline
-                baseline_std[i, j] += event.data.baseline**2
+                baseline_mean[:, i, j] += event.data.baseline
+                baseline_std[:, i, j] += event.data.baseline**2
 
-                waveform_std[i, j] += event.data.adc_samples[:, 1]**2
+                waveform_std[:, i, j] += event.data.adc_samples[:, 1]**2
 
-            ac[i, j] *= ac_level
-            dc[i, j] *= dc_level
-            count[i, j] = n + 1
+            ac[:, i, j] = ac_level
+            dc[:, i, j] = dc_level
+            count[:, i, j] = n + 1
 
-    charge_mean /= count[..., None]
-    charge_std /= count[..., None]
-    baseline_mean /= count[..., None]
-    baseline_std /= count[..., None]
-    waveform_std /= count[..., None]
+    charge_mean /= count
+    charge_std /= count
+    baseline_mean /= count
+    baseline_std /= count
+    waveform_std /= count
+
+    
 
     charge_std = np.sqrt(charge_std - charge_mean**2)
     baseline_std = np.sqrt(baseline_std - baseline_mean**2)
     waveform_std = np.sqrt(waveform_std)
 
-    with fitsio.FITS(output_filename, 'rw', clobber=True) as f:
 
-        data = [charge_mean, charge_std, baseline_mean, baseline_std,
-                waveform_std, ac, dc]
+    '''
 
-        names = ['charge_mean', 'charge_std', 'baseline_mean', 'baseline_std',
-                 'waveform_std', 'ac_levels', 'dc_levels']
+    data = [charge_mean, charge_std, baseline_mean, baseline_std,
+            waveform_std, ac, dc]
 
-        f.write(data, names=names)
+    names = ['charge_mean', 'charge_std', 'baseline_mean', 'baseline_std',
+             'waveform_std', 'ac_levels', 'dc_levels']
+
+    data = dict(zip(names, data))
+
+    np.savez(output_filename, **data)
+
+    # with fitsio.FITS(output_filename, 'rw') as f:
+
+    #  f.write(data, extname='LINEARITY')
 
 
 def entry():
     args = docopt(__doc__)
 
     files = args['<INPUT>']
-    ac_levels = convert_dac_level(args['--ac_levels'])
-    dc_levels = convert_dac_level(args['--dc_levels'])
-    output_filename = args['--output_file']
-    max_events = convert_max_events_args(args['--max_events'])
+    ac_levels = convert_list_int(args['--ac_levels'])
+    dc_levels = convert_list_int(args['--dc_levels'])
+    output_filename = args['--output']
+    input_filename = args['--input']
+    max_events = convert_int(args['--max_events'])
     pixels = convert_pixel_args(args['--pixel'])
     integral_width = float(args['--integral_width'])
     shift = int(args['--shift'])
@@ -148,10 +163,12 @@ def entry():
     debug = args['--debug']
     method = args['--integration_method']
 
-    if args['--compute']:
+    if args['compute']:
 
-        timing = args['--timing']
-        timing = np.load(timing)['time'] // 4
+        with fitsio.FITS(input_filename, 'r') as f:
+
+            timing = f['TIMING']['timing'].read()
+            timing = timing // 4
 
         compute(files=files, ac_levels=ac_levels, dc_levels=dc_levels,
                 output_filename=output_filename, max_events=max_events,
@@ -166,7 +183,7 @@ def entry():
 
             with fitsio.FITS(file, 'r') as f:
 
-                table = f[1].read()
+                table = f['LINEARITY'].read()
                 data = table
 
         charge_mean = data['charge_mean']

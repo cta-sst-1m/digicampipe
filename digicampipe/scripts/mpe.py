@@ -3,21 +3,18 @@
 Do the Multiple Photoelectron anaylsis and calibrate the AC LEDs
 
 Usage:
-  digicam-mpe [options] [--] <INPUT>...
+  digicam-mpe compute --output=FILE --ac_levels=<DAC> --calib=FILE [options] <INPUT>...
+  digicam-mpe fit summed --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL>] [options] <INPUT>
+  digicam-mpe fit combined --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL>] [options] <INPUT>
+  digicam-mpe fit single --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL>] [options] <INPUT>
+  digicam-mpe display <INPUT>
+  digicam-mpe combine --output=FILE <INPUT>...
+  digicam-mpe save_figure --output=FILE --ac_levels=<DAC> --calib=FILE <INPUT>
 
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse.
-  --output=OUTPUT         File where to store the fit results.
-                              [default: ./fit_results.npz]
-  --ac_led_filename=OUTPUT    File to store the ACLED calibration
-                              [default: ./ac_led.fits]
-  --compute_output=OUTPUT     File where to store the compute results.
-                              [default: ./charge_histo_ac_level.pk]
-  -c --compute                Compute the data.
-  -f --fit                    Fit.
-  --fit_combine               Fit the histograms in a combined way.
-  --fit_summed                Fit the full MPE spectrum.
+  -o --output=FILE            Output file.
   --ncall=N                   ncall for fit [default: 10000].
   -d --display                Display.
   -v --debug                  Enter the debug mode.
@@ -27,14 +24,23 @@ Options:
                               [default: 0].
   --integral_width=N          number of bins to integrate over
                               [default: 7].
-  --figure_path=FILE          Name of the PDF file to save the figures
   --bin_width=N               Bin width (in LSB) of the histogram
                               [default: 1]
   --adc_min=N                 Lowest LSB value for the histogram
                               [default: -10]
   --adc_max=N                 Highest LSB value for the histogram
                               [default: 2000]
-  --gain=FILE                 Calibration params to use in the fit
+  --calib=FILE                Calibration FITS filename
+
+Commands:
+  compute                     Compute the histogram
+  fit
+  summed
+  combined
+  single
+  save_figure
+  display
+  combine                     Combine the output to a single file
 """
 import os
 
@@ -61,10 +67,12 @@ from digicampipe.utils.pdf import mpe_distribution_general
 from digicampipe.instrument.light_source import ACLED
 from digicampipe.utils.fitter import MPEFitter, FMPEFitter, MPECombinedFitter
 
+N_PIXELS = 1296
+
 
 def compute_pe(charge, baseline, crosstalk, gain):
 
-    mu = (charge - baseline) / gain * (1 - crosstalk)
+    mu = (charge - baseline) / gain * (1. - crosstalk)
 
     return mu
 
@@ -147,18 +155,295 @@ def compute(files, pixel_id, max_events, pulse_indices, integral_width,
     return amplitude_histo, charge_histo
 
 
+def fit_summed_mpe(histo_filename, pixel_ids, estimated_gain=20, ncall=10000,
+                   debug=False,
+                   ):
+
+    n_pixels = len(pixel_ids)
+
+    names = ['baseline', 'error_baseline', 'gain',
+             'error_gain', 'sigma_e', 'error_sigma_e', 'sigma_s',
+             'error_sigma_s', 'a_0', 'error_a_0', 'a_1',
+             'error_a_1', 'a_2', 'error_a_2', 'a_3', 'error_a_3',
+             'a_4', 'error_a_4', 'a_5', 'error_a_5', 'a_6',
+             'error_a_6', 'a_7', 'error_a_7', 'a_8', 'error_a_8',
+             'a_9', 'error_a_9', 'chi_2', 'ndf', 'pixel_ids']
+    formats = ['f8'] * (len(names) - 2)
+    formats = formats + ['i8', 'i8']
+
+    data = {key: np.zeros(N_PIXELS, dtype=formats[i]) * np.nan for i, key in enumerate(names)}
+    data['pixel_ids'] = np.arange(N_PIXELS)
+
+    for i, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
+                            desc='Pixel'):
+
+        pixel_id = int(pixel_id)
+        histo = Histogram1D.load(histo_filename, rows=(None, pixel_id))
+        histo = histo.combine()
+
+        try:
+
+            fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
+                                throw_nan=True)
+            fitter.fit(ncall=ncall)
+
+            fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
+                                initial_parameters=fitter.parameters,
+                                throw_nan=True)
+            fitter.fit(ncall=ncall)
+
+            results = fitter.results_to_dict()
+            for key, val in results.items():
+
+                data[key][pixel_id] = val
+
+            if debug:
+
+                x_label = 'Charge [LSB]'
+                label = 'Pixel {}'.format(pixel_id)
+
+                fitter.draw(x_label=x_label, label=label,
+                            legend=False)
+                fitter.draw_fit(x_label=x_label, label=label,
+                                legend=False)
+                fitter.draw_init(x_label=x_label, label=label,
+                                 legend=False)
+
+                print(data)
+
+                plt.show()
+
+        except Exception as exception:
+
+            print('Could not fit MPE_SUMMED in pixel {}'.format(pixel_id))
+            print(exception)
+
+    return data
+
+
+def fit_combined_mpe(histo_filename, pixel_ids, init_params,
+                     ac_levels, saturation_threshold=300, ncall=10000,
+                     debug=False):
+
+    n_pixels = len(pixel_ids)
+    n_ac_levels = len(ac_levels)
+
+    names = ['baseline', 'error_baseline', 'gain', 'error_gain', 'sigma_e',
+             'error_sigma_e', 'sigma_s', 'error_sigma_s', 'mu_xt',
+             'error_mu_xt', 'chi_2', 'ndf', 'mean', 'std',
+             'n_peaks', 'ac_levels']
+
+    data = {key: np.zeros(N_PIXELS) * np.nan for key in names}
+    data['pixel_ids'] = np.arange(N_PIXELS)
+    data['mean'] = np.zeros((N_PIXELS, n_ac_levels)) * np.nan
+    data['std'] = np.zeros((N_PIXELS, n_ac_levels)) * np.nan
+    data['mu'] = np.zeros((N_PIXELS, n_ac_levels)) * np.nan
+    data['error_mu'] = np.zeros((N_PIXELS, n_ac_levels)) * np.nan
+    data['ac_levels'] = np.zeros((N_PIXELS, n_ac_levels)) * np.nan
+    data['ac_levels'][:] = ac_levels
+
+    for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
+                            desc='Pixel', leave=False):
+
+        try:
+
+            init_param = {}
+            for key, val in init_params.items():
+
+                init_param[key] = val[pixel_id]
+
+            pixel_id = int(pixel_id)
+            histo = Histogram1D.load(histo_filename, rows=(None, pixel_id))
+            params = {'baseline': init_param['baseline'],
+                      'error_baseline': init_param['error_baseline'],
+                      'limit_baseline': (init_param['baseline'] * 0.8,
+                                         init_param['baseline'] * 1.2),
+                      'gain': init_param['gain'],
+                      'limit_gain': (init_param['gain'] * 0.9,
+                                     init_param['gain'] * 1.1),
+                      'error_gain': init_param['error_gain'],
+                      'sigma_e': init_param['sigma_e'],
+                      'error_sigma_e': init_param['error_sigma_e'],
+                      'limit_sigma_e': (init_param['sigma_e'] * 0.9,
+                                        init_param['sigma_e'] * 1.1),
+                      'sigma_s': init_param['sigma_s'],
+                      'error_sigma_s': init_param['error_sigma_s'],
+                      'limit_sigma_s': (init_param['sigma_s'] * 0.9,
+                                        init_param['sigma_s'] * 1.1),
+                      'mu_xt': 0.1,
+                      'limit_mu_xt': (0.001, 0.99),
+                      'error_mu_xt': 0.1,
+                      }
+
+            if init_param['baseline'] < 0:
+
+                params['limit_baseline'] = (params['limit_baseline'][1],
+                                            params['limit_baseline'][0])
+
+            mu_max = compute_pe(histo.max(),
+                                baseline=params['baseline'],
+                                crosstalk=0, gain=params['gain'])
+
+            mask = np.ones(histo.shape[0], dtype=bool)
+            mask *= (histo.underflow == 0) * (histo.overflow == 0)
+            mask *= (histo.data.sum(axis=-1) > 0)
+            mask *= (mu_max <= saturation_threshold)
+
+            mu_max[mu_max > saturation_threshold] = 0
+            mu_max = np.nanmax(mu_max)
+            n_peaks = int(mu_max) + 10
+
+            n_histo = int(mask.sum())
+            valid_histo = Histogram1D(bin_edges=histo.bins,
+                                      data_shape=(n_histo,))
+            valid_histo.data = histo.data[mask]
+
+            fitter = MPECombinedFitter(valid_histo, n_peaks=n_peaks,
+                                       throw_nan=True, **params)
+            fitter.fit(ncall=ncall)
+
+            results = fitter.results_to_dict()
+            for key, val in results.items():
+
+                data[key][pixel_id] = val
+
+            n_entries = histo.data.sum(axis=-1)
+
+            data['mean'][pixel_id] = histo.mean()
+            data['std'][pixel_id] = histo.std()
+            mean_error = data['std'][pixel_id] / np.sqrt(n_entries)
+            data['mu'][pixel_id] = compute_pe(
+                data['mean'][pixel_id],
+                baseline=data['baseline'][pixel_id],
+                gain=data['gain'][pixel_id],
+                crosstalk=data['mu_xt'][pixel_id])
+
+            data['mu'][pixel_id][~mask] = np.nan
+            data['error_mu'][pixel_id] = compute_pe_error(
+                data['mean'][pixel_id],
+                baseline=data['baseline'][pixel_id],
+                gain=data['gain'][pixel_id],
+                crosstalk=data['mu_xt'][pixel_id],
+                charge_error=mean_error,
+                baseline_error=data['error_baseline'][pixel_id],
+                gain_error=data['error_gain'][pixel_id],
+                crosstalk_error=data['error_mu_xt'][pixel_id],
+                mu=data['mu'][pixel_id])
+
+            data['error_mu'][pixel_id][~mask] = np.nan
+            data['n_peaks'][pixel_id] = n_peaks
+
+        except Exception as e:
+
+            print('Could not fit pixel {}'.format(pixel_id))
+        #   raise e
+
+        if debug:
+
+            print(results)
+            print(data)
+
+    return data
+
+
+def fit_single_mpe(histo_filename, ac_levels, pixel_ids, init_params,
+                   ncall=10000, debug=False):
+
+    n_pixels = N_PIXELS
+    n_ac_levels = len(ac_levels)
+
+    names = ['baseline', 'gain', 'mu', 'mu_xt', 'sigma_e', 'sigma_s',
+             'std', 'mean', 'pixel_ids', 'baseline_error',
+             'gain_error', 'mu_error', 'mu_xt_error', 'sigma_e_error',
+             'sigma_s_error', 'chi2', 'ndf']
+
+    data = {name: np.zeros((n_ac_levels, n_pixels)) * np.nan for name in names}
+    ac_limit = [np.inf] * n_pixels
+
+    for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
+                            desc='DAC level', leave=False):
+
+        for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
+                                desc='Pixel',
+                                leave=False):
+
+            histo = Histogram1D.load(histo_filename, row=(i, j))
+            data['mean'][i, j] = histo.mean()
+            data['std'][i, j] = histo.std()
+
+            if histo.overflow > 0 or histo.data.sum() == 0:
+                continue
+
+            fit_params_names = describe(mpe_distribution_general)
+            options = {'fix_n_peaks': True}
+            fixed_params = {}
+
+            for param in fit_params_names:
+
+                if param in init_params.keys():
+                    name = 'fix_' + param
+
+                    options[name] = True
+                    fixed_params[param] = init_params[param][pixel_id]
+
+            if i > 0:
+
+                if data['mu'][i - 1, j] > 5:
+                    ac_limit[j] = min(i, ac_limit[j])
+                    ac_limit[j] = int(ac_limit[j])
+
+                    weights_fit = data['chi_2'][:ac_limit[j], j]
+                    weights_fit = weights_fit / data['ndf'][:ac_limit[j], j]
+
+                    options['fix_mu_xt'] = True
+
+                    temp = data['mu_xt'][:ac_limit[j], j] * weights_fit
+                    temp = np.nansum(temp)
+                    temp = temp / np.nansum(weights_fit)
+                    fixed_params['mu_xt'] = temp
+
+            try:
+
+                fitter = MPEFitter(histogram=histo, cost='MLE',
+                                   pedantic=0, print_level=0,
+                                   throw_nan=True,
+                                   fixed_params=fixed_params,
+                                   **options)
+
+                fitter.fit(ncall=ncall)
+
+                if debug:
+                    x_label = '[LSB]'
+                    label = 'Pixel {}'.format(pixel_id)
+                    fitter.draw(legend=False, x_label=x_label, label=label)
+                    fitter.draw_init(legend=False, x_label=x_label,
+                                     label=label)
+                    fitter.draw_fit(legend=False, x_label=x_label,
+                                    label=label)
+                    plt.show()
+
+                param = fitter.results_to_dict()
+
+                for key, val in param.items():
+
+                    data[key][i, j] = val
+
+            except Exception as e:
+
+                print(e)
+                print('Could not fit pixel {} for DAC level {}'.format(
+                    pixel_id, ac_level))
+
+    return data
+
+
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
     debug = args['--debug']
 
     max_events = convert_int(args['--max_events'])
-    results_filename = args['--output']
-    dir_output = os.path.dirname(results_filename)
-
-    if not os.path.exists(dir_output):
-        raise IOError('Path {} for output '
-                      'does not exists \n'.format(dir_output))
+    output = args['--output']
 
     pixel_ids = convert_pixel_args(args['--pixel'])
     integral_width = int(args['--integral_width'])
@@ -167,20 +452,19 @@ def entry():
     ncall = int(args['--ncall'])
     ac_levels = convert_list_int(args['--ac_levels'])
     n_pixels = len(pixel_ids)
-    n_ac_levels = len(ac_levels)
+
+    if ac_levels is not None:
+        n_ac_levels = len(ac_levels)
     adc_min = int(args['--adc_min'])
     adc_max = int(args['--adc_max'])
-    ac_led_filename = args['--ac_led_filename']
+    calib_filename = args['--calib']
     estimated_gain = 20
 
-    with fitsio.FITS(results_filename, 'r') as f:
+    if args['compute']:
 
-        timing = f['TIMING']['timing'].read()
+        with fitsio.FITS(calib_filename, 'r') as f:
 
-    charge_histo_filename = args['--compute_output']
-    fmpe_results_filename = args['--gain']
-
-    if args['--compute']:
+            timing = f['TIMING']['timing'].read()
 
         if n_ac_levels != len(files):
             raise ValueError('n_ac_levels = {} != '
@@ -193,9 +477,9 @@ def entry():
                                 adc_max * integral_width, bin_width),
             data_shape=(n_ac_levels, n_pixels,))
 
-        if os.path.exists(charge_histo_filename):
+        if os.path.exists(output):
             raise IOError(
-                'File {} already exists'.format(charge_histo_filename))
+                'File {} already exists'.format(output))
 
         for i, (file, ac_level) in tqdm(enumerate(zip(files, ac_levels)),
                                         total=n_ac_levels, desc='DAC level',
@@ -218,319 +502,93 @@ def entry():
                 charge_histo.fill(event.data.reconstructed_charge,
                                   indices=i)
 
-        charge_histo.save(charge_histo_filename, )
+        charge_histo.save(output)
 
-    if args['--fit_summed']:
+    if args['fit']:
 
-        with fitsio.FITS(results_filename, 'rw') as f:
+        data = {}
 
-            for i, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
-                                    desc='Pixel'):
+        data_summed = fit_summed_mpe(histo_filename=files[0],
+                                     pixel_ids=pixel_ids,
+                                     estimated_gain=estimated_gain,
+                                     ncall=ncall,
+                                     debug=debug)
 
-                pixel_id = int(pixel_id)
-                histo = Histogram1D.load(charge_histo_filename, rows=(None,
-                                                                      pixel_id))
-                histo = histo.combine()
+        if args['combined']:
 
-                try:
+            data_combined = fit_combined_mpe(histo_filename=files[0],
+                                             pixel_ids=pixel_ids,
+                                             init_params=data_summed,
+                                             ac_levels=ac_levels,
+                                             ncall=ncall,
+                                             debug=debug)
+            data['MPE_COMBINED'] = data_combined
 
-                    fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
-                                        throw_nan=True)
-                    fitter.fit(ncall=ncall)
+        if args['single']:
 
-                    fitter = FMPEFitter(histo, estimated_gain=estimated_gain,
-                                        initial_parameters=fitter.parameters,
-                                        throw_nan=True)
-                    fitter.fit(ncall=ncall)
+            data_single = fit_single_mpe(histo_filename=files[0],
+                                         ac_levels=ac_levels,
+                                         pixel_ids=pixel_ids,
+                                         init_params=data_summed,
+                                         ncall=ncall,
+                                         debug=debug)
+            data['MPE_SINGLE'] = data_single
 
-                    data = fitter.results_to_dict()
-                    data['pixel_ids'] = np.array(pixel_id)
+        with fitsio.FITS(output, 'rw') as f:
 
-                    for key, val in data.items():
+            if 'MPE_SUMMED' not in f:
 
-                        data[key] = val.reshape(1, -1)
+                data['MPE_SUMMED'] = data_summed
 
-                    if debug:
+            for analysis, result in data.items():
 
-                        x_label = 'Charge [LSB]'
-                        label = 'Pixel {}'.format(pixel_id)
+                f.write_table(data=result,
+                              extname=analysis,
+                              table_type='binary')
 
-                        fitter.draw(x_label=x_label, label=label,
-                                    legend=False)
-                        fitter.draw_fit(x_label=x_label, label=label,
-                                        legend=False)
-                        fitter.draw_init(x_label=x_label, label=label,
-                                         legend=False)
+    if args['combine']:
 
-                        print(data)
+        output_data = {}
 
-                        plt.show()
+        for i, file in enumerate(files):
 
-                    else:
+            with fitsio.FITS(file, 'r') as f_in:
+
+                for j, table in enumerate(f_in):
+
+                    if j == 0:
+
+                        continue
+
+                    ext = table.get_extname()
+
+                    if i == 0:
+
+                        output_data[ext] = {}
+
+                    for col in table.get_colnames():
 
                         if i == 0:
+                            output_data[ext][col] = table.read(columns=col)
 
-                            f.write(data, extname='FMPE')
+                        output_data[ext][col][i] = table.read(columns=col,
+                                                              rows=i)
 
-                        else:
+        with fitsio.FITS(output, 'rw', clobber=True) as f_out:
 
-                            f['FMPE_2'].append(data)
+            for table_name, data in output_data.items():
 
-                except Exception as exception:
+                f_out.write_table(data, extname=table_name)
 
-                    print('Could not fit FMPE in pixel {}'.format(pixel_id))
-                    print(exception)
+    if args['save_figure']:
 
-    if args['--fit']:
+        pdf = PdfPages(args['--output'])
 
-        init_param = Table.read(fmpe_results_filename, format='fits',
-                                hdu='FMPE')
-        init_param = init_param.to_pandas()
-
-        gain = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_e = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_s = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        baseline = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu_xt = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        amplitude = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        gain_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_e_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        sigma_s_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        baseline_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        mu_xt_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        amplitude_error = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        mean = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        std = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        chi_2 = np.zeros((n_ac_levels, n_pixels)) * np.nan
-        ndf = np.zeros((n_ac_levels, n_pixels)) * np.nan
-
-        ac_limit = [np.inf] * n_pixels
-
-        for i, ac_level in tqdm(enumerate(ac_levels), total=n_ac_levels,
-                                desc='DAC level', leave=False):
-
-            for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
-                                    desc='Pixel',
-                                    leave=False):
-
-                histo = Histogram1D.load(charge_histo_filename, row=(i, j))
-
-                mean[i, j] = histo.mean()
-                std[i, j] = histo.std()
-
-                if histo.overflow > 0 or histo.data.sum() == 0:
-                    continue
-
-                fit_params_names = describe(mpe_distribution_general)
-                options = {'fix_n_peaks': True}
-                fixed_params = {}
-
-                for param in fit_params_names:
-
-                    if param in init_param.keys():
-                        name = 'fix_' + param
-
-                        options[name] = True
-                        fixed_params[param] = init_param[param][pixel_id]
-
-                if i > 0:
-
-                    if mu[i - 1, j] > 5:
-                        ac_limit[j] = min(i, ac_limit[j])
-                        ac_limit[j] = int(ac_limit[j])
-
-                        weights_fit = chi_2[:ac_limit[j], j]
-                        weights_fit = weights_fit / ndf[:ac_limit[j], j]
-
-                        options['fix_mu_xt'] = True
-
-                        temp = mu_xt[:ac_limit[j], j] * weights_fit
-                        temp = np.nansum(temp)
-                        temp = temp / np.nansum(weights_fit)
-                        fixed_params['mu_xt'] = temp
-
-                try:
-
-                    fitter = MPEFitter(histogram=histo, cost='MLE',
-                                       pedantic=0, print_level=0,
-                                       throw_nan=True,
-                                       fixed_params=fixed_params,
-                                       **options)
-
-                    fitter.fit(ncall=ncall)
-
-                    if debug:
-                        x_label = '[LSB]'
-                        label = 'Pixel {}'.format(pixel_id)
-                        fitter.draw(legend=False, x_label=x_label, label=label)
-                        fitter.draw_init(legend=False, x_label=x_label,
-                                         label=label)
-                        fitter.draw_fit(legend=False, x_label=x_label,
-                                        label=label)
-                        plt.show()
-
-                    param = fitter.parameters
-                    param_err = fitter.errors
-                    gain[i, j] = param['gain']
-                    sigma_e[i, j] = param['sigma_e']
-                    sigma_s[i, j] = param['sigma_s']
-                    baseline[i, j] = param['baseline']
-                    mu[i, j] = param['mu']
-                    mu_xt[i, j] = param['mu_xt']
-                    amplitude[i, j] = param['amplitude']
-
-                    gain_error[i, j] = param_err['gain']
-                    sigma_e_error[i, j] = param_err['sigma_e']
-                    sigma_s_error[i, j] = param_err['sigma_s']
-                    baseline_error[i, j] = param_err['baseline']
-                    mu_error[i, j] = param_err['mu']
-                    mu_xt_error[i, j] = param_err['mu_xt']
-                    amplitude_error[i, j] = param_err['amplitude']
-
-                    chi_2[i, j] = fitter.fit_test() * fitter.ndf
-                    ndf[i, j] = fitter.ndf
-
-                except Exception as e:
-
-                    print(e)
-                    print('Could not fit pixel {} for DAC level {}'.format(
-                        pixel_id, ac_level))
-
-        with fitsio.FITS(results_filename, 'rw') as f:
-
-            data = [baseline, gain, mu, mu_xt, sigma_e, sigma_s, std, mean,
-                    pixel_ids, baseline_error, gain_error, mu_error,
-                    mu_xt_error, sigma_e_error, sigma_s_error, chi_2,
-                    ndf]
-
-            names = ['baseline', 'gain', 'mu', 'mu_xt', 'sigma_e', 'sigma_s',
-                     'std', 'mean', 'pixel_ids', 'baseline_error',
-                     'gain_error', 'mu_error', 'mu_xt_error', 'sigma_e_error',
-                     'sigma_s_error', 'chi2', 'ndf']
-            f.write(data, names=names, extname='MPE_SINGLE')
-            print(f)
-            print(f[-1])
-
-        ac_led = ACLED(ac_levels, mu.T, mu_error.T)
-        ac_led.save(ac_led_filename)
-
-    if args['--fit_combine']:
-
-        saturation_threshold = 300
-
-        with fitsio.FITS(results_filename, 'rw') as f:
-
-            for j, pixel_id in tqdm(enumerate(pixel_ids), total=n_pixels,
-                                    desc='Pixel', leave=False):
-                pixel_id = int(pixel_id)
-                histo = Histogram1D.load(charge_histo_filename, rows=(None,
-                                                                      pixel_id))
-
-                names = f['FMPE'].get_colnames()
-                init_param = f['FMPE'].read(row=j)[0]
-                init_param = dict(zip(names, init_param))
-
-                params = {'baseline': init_param['baseline'],
-                          'error_baseline': init_param['error_baseline'],
-                          'limit_baseline': (init_param['baseline'] * 0.8,
-                                             init_param['baseline'] * 1.2),
-                          'gain': init_param['gain'],
-                          'limit_gain': (init_param['gain'] * 0.9,
-                                         init_param['gain'] * 1.1),
-                          'error_gain': init_param['error_gain'],
-                          'sigma_e': init_param['sigma_e'],
-                          'error_sigma_e': init_param['error_sigma_e'],
-                          'limit_sigma_e': (init_param['sigma_e'] * 0.9,
-                                            init_param['sigma_e'] * 1.1),
-                          'sigma_s': init_param['sigma_s'],
-                          'error_sigma_s': init_param['error_sigma_s'],
-                          'limit_sigma_s': (init_param['sigma_s'] * 0.9,
-                                            init_param['sigma_s'] * 1.1),
-                          'mu_xt': 0.1,
-                          'limit_mu_xt': (0.001, 0.99),
-                          'error_mu_xt': 0.1,
-                          }
-
-                if init_param['baseline'] < 0:
-
-                    params['limit_baseline'] = (params['limit_baseline'][1],
-                                                params['limit_baseline'][0])
-
-                mu_max = compute_pe(histo.max(),
-                                    baseline=params['baseline'],
-                                    crosstalk=0, gain=params['gain'])
-
-                mask = np.ones(histo.shape[0], dtype=bool)
-                mask *= (histo.underflow == 0) * (histo.overflow == 0)
-                mask *= (histo.data.sum(axis=-1) > 0)
-                mask *= (mu_max <= saturation_threshold)
-
-                mu_max[mu_max > saturation_threshold] = 0
-                mu_max = np.nanmax(mu_max)
-                n_peaks = int(mu_max) + 10
-
-                n_histo = int(mask.sum())
-                valid_histo = Histogram1D(bin_edges=histo.bins,
-                                          data_shape=(n_histo,))
-                valid_histo.data = histo.data[mask]
-
-                fitter = MPECombinedFitter(valid_histo, n_peaks=n_peaks,
-                                           throw_nan=True, **params)
-
-                fitter.fit(ncall=10000)
-
-                data = fitter.results_to_dict()
-                data['mean'] = histo.mean()
-                data['std'] = histo.std()
-                mean_error = data['std'] / np.sqrt(histo.data.sum(axis=-1))
-                data['mu'] = compute_pe(data['mean'], baseline=data['baseline'],
-                                        gain=data['gain'],
-                                        crosstalk=data['mu_xt'])
-                data['mu'][~mask] = np.nan
-                data['error_mu'] = compute_pe_error(data['mean'],
-                                                    baseline=data['baseline'],
-                                                    gain=data['gain'],
-                                                    crosstalk=data['mu_xt'],
-                                                    charge_error=mean_error,
-                                                    baseline_error=data['error_baseline'],
-                                                    gain_error=data['error_gain'],
-                                                    crosstalk_error=data['error_mu_xt'],
-                                                    mu=data['mu'])
-                data['error_mu'][~mask] = np.nan
-                data['pixel_ids'] = np.array(pixel_id)
-                data['n_peaks'] = np.array(n_peaks)
-                data['ac_levels'] = np.array(ac_levels)
-
-                for key, val in data.items():
-
-                    data[key] = val.reshape(1, -1)
-
-                if j == 0:
-
-                    f.write(data, extname='MPE_COMBINED')
-                else:
-
-                    f['MPE_COMBINED'].append(data)
-
-                print(f)
-                print(f['MPE_COMBINED'])
-                print(f['MPE_COMBINED']['mu_xt'].read())
-                print(f['MPE_COMBINED']['pixel_ids'].read())
-
-    if args['--figure_path'] is not None:
-
-        pdf = PdfPages(args['--figure_path'])
-
-        with fitsio.FITS(results_filename, 'r') as f:
+        with fitsio.FITS(calib_filename, 'r') as f:
 
             for table in f:
 
-                if table.get_extname() == 'FMPE':
+                if table.get_extname() == 'MPE_SUMMED':
 
                     column_names = table.get_colnames()
 
@@ -549,7 +607,7 @@ def entry():
                             fit_errors[key] = data['error_' + key]
                             fit_results[key] = data[key]
 
-                        histo = Histogram1D.load(charge_histo_filename,
+                        histo = Histogram1D.load(files[0],
                                                  rows=(None, pixel_id))
                         histo = histo.combine()
 
@@ -587,7 +645,7 @@ def entry():
                             fit_results['mu'] = fit_results['mu'][j]
                             fit_errors['mu'] = fit_errors['mu'][j]
 
-                            histo = Histogram1D.load(charge_histo_filename,
+                            histo = Histogram1D.load(files[0],
                                                      rows=(j, pixel_id))
 
                             valid = np.isfinite(fit_results['mu'])
@@ -631,32 +689,13 @@ def entry():
                             plt.close(fig)
         pdf.close()
 
-        0/0
-
-        fig = plt.figure()
-        axes = fig.add_subplot(111)
-
-        ac_led = ACLED.load(ac_led_filename)
-
-        for i in tqdm(range(len(ac_led.y))):
-
-            ac_led.plot(axes=axes, pixel=i)
-
-            figure_name = 'ac_led_pixel_{}'.format(i)
-            figure_name = os.path.join(dir_output, figure_name)
-
-            fig.savefig(figure_name)
-            fig.clf()
-
-    if args['--display']:
+    if args['display']:
 
         pixel_id = 0
 
-        charge_histo = Histogram1D.load(charge_histo_filename)
+        charge_histo = Histogram1D.load(files[0])
         charge_histo.draw(index=(0, pixel_id), log=False, legend=False)
 
-        ac_led = ACLED.load(ac_led_filename)
-        ac_led.plot(pixel=pixel_id)
 
         plt.show()
 

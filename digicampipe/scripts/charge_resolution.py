@@ -112,7 +112,8 @@ def compute(files, ac_levels, dc_levels, output_filename, dark_charge, dark_base
                                             saturation_threshold=saturation_threshold,
                                             pulse_tail=pulse_tail)
 
-            events = compute_number_of_pe_from_table(events, pe_interpolator, debug=debug)
+            events = compute_number_of_pe_from_table(events, pe_interpolator,
+                                                     debug=debug)
             events = correct_voltage_drop(events, gain_func=_gain_drop_from_baseline_shift,
                                           xt_func=_crosstalk_drop_from_baseline_shift,
                                           pde_func=_pde_drop_from_baseline_shift)
