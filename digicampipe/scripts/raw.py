@@ -114,8 +114,7 @@ def entry():
     event_types = convert_list_int(args['--event_types'])
     baseline_filename = convert_text(args['--baseline_filename'])
     disable_bar = args['--disable_bar']
-    if baseline_filename.lower() == 'none':
-        baseline_filename = None
+
     output_path = os.path.dirname(raw_histo_filename)
     if not os.path.exists(output_path) and output_path != "":
         raise IOError('Path {} for output '
