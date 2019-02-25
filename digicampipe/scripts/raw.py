@@ -115,7 +115,7 @@ def entry():
     baseline_filename = convert_text(args['--baseline_filename'])
     disable_bar = args['--disable_bar']
 
-    output_path = os.path.dirname(raw_histo_filename)
+    output_path = os.path.dirname(output)
     if not os.path.exists(output_path) and output_path != "":
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
