@@ -109,15 +109,15 @@ def compute_baseline_histogram(files, filename, max_events=None, pixel_id=None,
 
 def fit_gaussian(filename, output, debug=False):
 
-    histos = Histogram1D.load(filename)
-    n_pixels = histos.shape[0]
-    colnames = ['mean', 'error_mean', 'sigma', 'error_sigma', 'amplitude',
-                'error_amplitude', 'chi_2', 'ndf']
-    data = {key: np.zeros(n_pixels) for key in colnames}
+    histograms = Histogram1D.load(filename)
+    n_pixels = histograms.shape[0]
+    column_names = ['mean', 'error_mean', 'sigma', 'error_sigma', 'amplitude',
+                    'error_amplitude', 'chi_2', 'ndf']
+    data = {key: np.zeros(n_pixels) for key in column_names}
 
     for i in tqdm(range(n_pixels), total=n_pixels, desc='Pixel'):
 
-        histo = histos[i]
+        histo = histograms[i]
 
         try:
 
@@ -131,15 +131,13 @@ def fit_gaussian(filename, output, debug=False):
                 fitter.draw_fit()
                 plt.show()
 
-        except Exception as e:
+        except Exception:
 
-            results = {key: np.array(np.nan) for key in colnames}
+            results = {key: np.array(np.nan) for key in column_names}
 
         for key, val in results.items():
 
             data[key][i] = val
-
-    print(data)
 
     with FITS(output, 'rw') as f:
 
