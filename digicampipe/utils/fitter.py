@@ -1,6 +1,6 @@
 import numpy as np
 
-from digicampipe.utils.pdf import fmpe_pdf_10, mpe_fit
+from digicampipe.utils.pdf import fmpe_pdf_10, mpe_fit, gaussian
 from digicampipe.utils.exception import PeakNotFound
 from histogram.fit import HistogramFitter
 
@@ -383,3 +383,56 @@ class MPECombinedFitter(HistogramFitter):
                     n_peaks=self.n_peaks) * self.amplitude
 
         return y
+
+
+class GaussianFitter(HistogramFitter):
+
+    def initialize_fit(self):
+
+        x = self.bin_centers
+        y = self.count
+
+        mean = np.average(x, weights=y)
+        std = np.average((x - mean) ** 2, weights=y)
+        std = np.sqrt(std)
+        amplitude = np.sum(y, dtype=np.float)
+
+        self.initial_parameters = {'mean': mean, 'sigma': std,
+                                   'amplitude': amplitude}
+
+    def compute_data_bounds(self):
+
+        mask = self.histogram.data > 0
+
+        return self.histogram.bin_centers[mask], self.histogram.data[mask], np.diff(self.histogram.bins)[mask]
+
+    def compute_fit_boundaries(self):
+
+        bounds = {}
+
+        for key, val in self.initial_parameters.items():
+
+            if val > 0:
+                bounds['limit_' + key] = (val * 0.5, val * 1.5)
+
+            else:
+
+                bounds['limit_' + key] = (val * 1.5, val * 0.5)
+
+        self.boundary_parameter = bounds
+
+    def pdf(self, x, mean, sigma, amplitude):
+
+        pdf = (x - mean) / (np.sqrt(2) * sigma)
+        pdf = - pdf ** 2
+        pdf = np.exp(pdf)
+        pdf = pdf * amplitude / (sigma * np.sqrt(2 * np.pi))
+
+        return pdf
+
+    def log_pdf(self, x, mean, sigma, amplitude):
+
+        temp = np.log(amplitude) - np.log(sigma * np.sqrt(2 * np.pi))
+        temp = temp - ((x - mean) / (sigma * np.sqrt(2))) ** 2
+
+        return temp

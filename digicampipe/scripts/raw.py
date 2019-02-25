@@ -6,6 +6,7 @@ Usage:
   digicam-raw compute --output=FILE [options] <INPUT>...
   digicam-raw display <INPUT>
   digicam-raw save_figure --output=FILE <INPUT>
+  digicam-raw fit --output=FILE <INPUT>
 
 Options:
     -h --help                   Show this screen.
@@ -29,6 +30,7 @@ Commands:
     compute                     Compute the histogram
     display                     Display the histogram
     save_figure                 Save the figures to the output
+    fit                         Fit a gaussian on to the histogram
 """
 import os
 import matplotlib.pyplot as plt
@@ -36,11 +38,13 @@ import numpy as np
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
+from fitsio import FITS
 
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
     convert_list_int, convert_text
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
+from digicampipe.utils.fitter import GaussianFitter
 
 
 def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
@@ -103,6 +107,47 @@ def compute_baseline_histogram(files, filename, max_events=None, pixel_id=None,
         return baseline_histo
 
 
+def fit_gaussian(filename, output, debug=False):
+
+    histos = Histogram1D.load(filename)
+    n_pixels = histos.shape[0]
+    colnames = ['mean', 'error_mean', 'sigma', 'error_sigma', 'amplitude',
+                'error_amplitude', 'chi_2', 'ndf']
+    data = {key: np.zeros(n_pixels) for key in colnames}
+
+    for i in tqdm(range(n_pixels), total=n_pixels, desc='Pixel'):
+
+        histo = histos[i]
+
+        try:
+
+            fitter = GaussianFitter(histo)
+            fitter.fit()
+            results = fitter.results_to_dict()
+
+            if debug:
+
+                fitter.draw_init()
+                fitter.draw_fit()
+                plt.show()
+
+        except Exception as e:
+
+            results = {key: np.array(np.nan) for key in colnames}
+
+        for key, val in results.items():
+
+            data[key][i] = val
+
+    print(data)
+
+    with FITS(output, 'rw') as f:
+
+        f.write(data=data, extname='RAW')
+
+    return
+
+
 def entry():
     args = docopt(__doc__)
 
@@ -138,6 +183,10 @@ def entry():
                 pixel_id=pixel_id,
                 disable_bar=disable_bar
             )
+
+    if args['fit']:
+
+        fit_gaussian(files[0], output)
 
     if args['save_figure']:
 
