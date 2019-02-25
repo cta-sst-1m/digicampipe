@@ -96,7 +96,7 @@ def test_pipeline():
             boundary_threshold=15,
             saturation_threshold=3000,
             threshold_pulse=0.1,
-            disable_bar=True
+            disable_bar=True,
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
@@ -120,6 +120,7 @@ def test_pipeline_plot():
     with tempfile.TemporaryDirectory() as tmpdirname:
         dark_filename = os.path.join(tmpdirname, 'dark.pk')
         hillas_filename = os.path.join(tmpdirname, 'hillas.fits')
+        event_plot_filename = os.path.join(tmpdirname, 'events.png')
         compute_raw(
             files=[dark200_file_path],
             max_events=None,
@@ -142,11 +143,15 @@ def test_pipeline_plot():
             bad_pixels=None,
             saturation_threshold=3000,
             threshold_pulse=0.1,
-            disable_bar=True
+            disable_bar=True,
+            event_plot_filename=event_plot_filename,
+            nevent_plot=24
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         nevent = len(hdul[1].data['local_time'])
         assert nevent > 0
+        assert os.path.isfile(event_plot_filename)
+        assert os.path.isfile(event_plot_filename.replace('.png', '_1.png'))
         shower_plot = os.path.join(tmpdirname, 'shower_center.png')
         hillas_plot = os.path.join(tmpdirname, 'hillas.png')
         cor_all_plot = os.path.join(tmpdirname, 'correlation_all.png')
@@ -193,5 +198,5 @@ def test_pipeline_plot():
 
 
 if __name__ == '__main__':
-    test_pipeline()
+    # test_pipeline()
     test_pipeline_plot()

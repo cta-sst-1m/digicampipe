@@ -26,8 +26,8 @@ def compute_alpha(phi, psi):
     """
 
     # phi and psi range [-np.pi, +np.pi]
-    alpha = np.abs(phi - psi)
-    alpha = np.minimum(np.abs(np.pi - alpha), alpha)
+    alpha = np.mod(phi - psi, np.pi)  # alpha in [0, np.pi]
+    alpha = np.minimum(np.pi - alpha, alpha)  # put alpha in [0, np.pi/2]
 
     return alpha
 
