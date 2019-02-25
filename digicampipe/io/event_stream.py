@@ -66,9 +66,9 @@ def event_stream(filelist, source=None, max_events=None, disable_bar=False,
                 if event_id_range[0] and event_id <= event_id_range[0]:
                     continue
                 if event_id_range[1] and event_id > event_id_range[1]:
-                    raise StopIteration
+                    return
                 if count >= max_events:
-                    raise StopIteration
+                    return
                 count += 1
                 yield event
         except EOFError as e:
