@@ -8,5 +8,6 @@
 source 0_main.sh
 conda activate digicampipe
 
-digicam-raw compute --output=$GHV_OFF_RAW_HISTO ${DIGICAM_GHV_OFF_FILES[@]}
+# digicam-raw compute --output=$GHV_OFF_RAW_HISTO ${DIGICAM_GHV_OFF_FILES[@]}
+digicam-raw fit --output=$CALIBRATION_FILE $GHV_OFF_RAW_HISTO
 # digicam-raw save_figure --output=$DIGICAM_FOLDER'figures/raw_ghv_off_histo.pdf' $GHV_OFF_RAW_HISTO

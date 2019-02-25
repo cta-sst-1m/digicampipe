@@ -32,10 +32,10 @@ do
 
     for j in "${!DIGICAM_AC_LEVEL[@]}";
 
+
     do
 
         FILE=$INPUT_FOLDER'ff-SST1M.simtel_'${DIGICAM_AC_LEVEL[$j]}'pe_'${DC_LEVEL[$i]}'MHz.gz'
-
 
         if [ "$i" -eq "0" ];
         then
@@ -46,13 +46,16 @@ do
                 GHV_OFF_FILES=($FILE)
 
             fi
+        fi
+        if [ "$i" -eq "1" ];
+        then
 
-            if [ "$j" -eq "1" ];
+            if [ "$j" -eq "0" ];
             then
+
                 DARK_FILES=($FILE)
 
             fi
-
         fi
 
         if [ "$j" -eq "0" ];
