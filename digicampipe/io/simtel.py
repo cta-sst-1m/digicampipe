@@ -157,6 +157,7 @@ def simtel_event_source(url, camera=None, max_events=None,
                 n_pixel = adc_samples.shape[-2]
                 if adc_samples is None:
                     adc_samples = telescope_event['adc_sums'][:, :, np.newaxis]
+                adc_samples = np.squeeze(adc_samples)
                 data.r0.tel[tel_id].adc_samples = adc_samples
                 data.r0.tel[tel_id].num_samples = adc_samples.shape[-1]
                 # We should not calculate stuff in an event source
