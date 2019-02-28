@@ -162,15 +162,23 @@ def test_pulse_template_save():
                       template_load.amplitude_std)
 
 
-def test_save_fits():
+def test_save_and_load_fits():
 
     data = np.ones(100)
     time = np.arange(100)
 
-    template = NormalizedPulseTemplate(amplitude=data, time=time)
+    template_saved = NormalizedPulseTemplate(amplitude=data, time=time)
 
-    with tempfile.NamedTemporaryFile(suffix='.fits') as f:
-        template.save(f.name)
+    with tempfile.TemporaryDirectory(suffix='.fits') as tmp_dir:
+        filename = os.path.join(tmp_dir, 'test.fits')
+        template_saved.save(filename)
+
+        template_loaded = NormalizedPulseTemplate.load(filename)
+
+        assert np.all(template_saved.time == template_loaded.time)
+        assert np.all(template_saved.amplitude == template_loaded.amplitude)
+        assert np.all(template_saved.amplitude_std ==
+                      template_loaded.amplitude_std)
 
 
 if __name__ == '__main__':
