@@ -33,6 +33,8 @@ Options:
   --yscale=STRING           "linear", "log", "symlog" or "logit". The Y axis
                             scale type to apply. See Axes.set_yscale().
                             [Default: linear]
+  --per_pixel               Run the analysis per pixel (simple sum
+                            over waveforms)
 """
 import matplotlib.pyplot as plt
 from docopt import docopt
@@ -82,11 +84,11 @@ def main(input_files, output=None, plot="show", plot_separated=None,
         plt.close(fig)
 
 
-def per_pixel(input_files, output):
+def simple_template(input_files, output):
 
     for i, event in enumerate(calibration_event_stream(input_files)):
 
-        data = event.adc_samples
+        data = event.data.adc_samples
 
         if i == 0:
 
@@ -117,15 +119,23 @@ def entry():
     pixels = convert_pixel_args(args['--pixels'])
     xscale = args['--xscale']
     yscale = args['--yscale']
-    main(
-        input_files=inputs,
-        output=output,
-        plot=plot,
-        plot_separated=plot_separated,
-        xscale=xscale,
-        yscale=yscale,
-        pixels=pixels
-    )
+    per_pixel = args['--per_pixel']
+
+    if per_pixel:
+
+        simple_template(inputs, output)
+
+    else:
+
+        main(
+            input_files=inputs,
+            output=output,
+            plot=plot,
+            plot_separated=plot_separated,
+            xscale=xscale,
+            yscale=yscale,
+            pixels=pixels
+        )
 
 
 if __name__ == '__main__':
