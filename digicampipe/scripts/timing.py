@@ -154,7 +154,10 @@ def entry():
         plt.xlabel('DAC level')
         plt.ylabel('Reconstructed pulse time [ns]')
 
-        pulse_time = np.load(results_filename)['time']
+        with fitsio.FITS(results_filename, 'r') as f:
+
+            table = f['TIMING']
+            pulse_time = table['timing'].read()
 
         plot_array_camera(pulse_time, label='time of pulse [ns]',
                           allow_pick=True)
