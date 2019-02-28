@@ -6,10 +6,11 @@
 #SBATCH --job-name='timing'
 
 source 0_main.sh
+conda activate digicampipe
 
 pixels=$(tolist "${DIGICAM_PIXELS[@]}")
 ac_levels=$(tolist "${DIGICAM_AC_LEVEL[@]}")
 
-digicam-timing --compute --pixels=$pixels --output=$CALIBRATION_FILE --timing_histo_filename=$TIMING_HISTO --n_samples=$DIGICAM_N_SAMPLES --ac_levels=$ac_levels ${DIGICAM_AC_FILES[@]}
-digicam-timing --fit --pixels=$pixels --output=$CALIBRATION_FILE --timing_histo_filename=$TIMING_HISTO --n_samples=$DIGICAM_N_SAMPLES --ac_levels=$ac_levels ${DIGICAM_AC_FILES[@]}
+# digicam-timing --compute --pixels=$pixels --output=$CALIBRATION_FILE --timing_histo_filename=$TIMING_HISTO --n_samples=$DIGICAM_N_SAMPLES --ac_levels=$ac_levels ${DIGICAM_AC_FILES[@]}
+# digicam-timing --fit --pixels=$pixels --output=$CALIBRATION_FILE --timing_histo_filename=$TIMING_HISTO --n_samples=$DIGICAM_N_SAMPLES --ac_levels=$ac_levels ${DIGICAM_AC_FILES[@]}
 digicam-timing --display --output=$CALIBRATION_FILE --timing_histo_filename=$TIMING_HISTO --n_samples=$DIGICAM_N_SAMPLES --ac_levels=$ac_levels ${DIGICAM_AC_FILES[@]}

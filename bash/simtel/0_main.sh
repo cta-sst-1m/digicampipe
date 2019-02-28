@@ -19,7 +19,7 @@ INPUT_FOLDER='/home/mckeags/AC-DC_Scans/'
 # export DIGICAM_AC_DC_FILES_2=($(echo /sst1m/raw/2018/07/01/SST1M_01/SST1M_01_20180701_{434..497}.fits.fz))
 
 
-export DIGICAM_AC_LEVEL=(0 2 3 4 5 8 12)
+export DIGICAM_AC_LEVEL=(0 1 2 3 4 5 8 12)
 DC_LEVEL=('0' '3.000' '18.000' '30.00' '50.00' '100.0' '175.000' '300.0' '500.0' '1000.0')
 export DIGICAM_DC_LEVEL=(0, 3, 18, 30, 50, 100, 175, 300, 500, 1000)
 
@@ -39,7 +39,6 @@ do
 
         if [ "$i" -eq "0" ];
         then
-            AC_FILES+=($FILE)
 
             if [ "$j" -eq "0" ];
             then
@@ -49,6 +48,8 @@ do
         fi
         if [ "$i" -eq "1" ];
         then
+
+            AC_FILES+=($FILE)
 
             if [ "$j" -eq "0" ];
             then
@@ -87,10 +88,10 @@ else
 fi
 
 
-export DIGICAM_INTEGRAL_WIDTH=7
+export DIGICAM_INTEGRAL_WIDTH=1
 export DIGICAM_INTEGRAL_SHIFT=0
 export DIGICAM_N_SAMPLES=50
-export DIGICAM_GAIN_APPROX=20
+export DIGICAM_GAIN_APPROX=5
 export DIGICAM_LSB_MIN=-10
 export DIGICAM_LSB_MAX=3000
 export DIGICAM_LSB_BIN=1
@@ -108,8 +109,8 @@ export -p tolist
 
 ### OUTPUT FILES ###
 
-DATE=`date +%Y%m%d`
-# DATE=20190123
+#DATE=`date +%Y%m%d`
+DATE=20190225
 export DIGICAM_FOLDER='/home/alispach/data/ACDC_simtel'/$DATE'/'
 mkdir -p $DIGICAM_FOLDER
 mkdir -p $DIGICAM_FOLDER'figures/'

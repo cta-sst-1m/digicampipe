@@ -3,10 +3,9 @@
 Do the Multiple Photoelectron anaylsis and calibrate the AC LEDs
 
 Usage:
-  digicam-mpe compute --output=FILE --ac_levels=<DAC> --calib=FILE [options] <INPUT>...
-  digicam-mpe fit summed --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL>] [options] <INPUT>
-  digicam-mpe fit combined --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL>] [options] <INPUT>
-  digicam-mpe fit single --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL>] [options] <INPUT>
+  digicam-mpe compute --output=FILE --ac_levels=<DAC> --calib=FILE [--pixel=<PIXEL> --shift=N --integral_width=N --adc_min=N --adc_max=N] <INPUT>...
+  digicam-mpe fit combined --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL> --estimated_gain=N --ncall=N] [options] <INPUT>
+  digicam-mpe fit single --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL> --estimated_gain=N --ncall=N] [options] <INPUT>
   digicam-mpe display <INPUT>
   digicam-mpe combine --output=FILE <INPUT>...
   digicam-mpe save_figure --output=FILE --ac_levels=<DAC> --calib=FILE <INPUT>
@@ -31,11 +30,11 @@ Options:
   --adc_max=N                 Highest LSB value for the histogram
                               [default: 2000]
   --calib=FILE                Calibration FITS filename
-
+  --estimated_gain=N          Estimated value for gain
+                              [default: 20]
 Commands:
   compute                     Compute the histogram
   fit
-  summed
   combined
   single
   save_figure
@@ -283,11 +282,16 @@ def fit_combined_mpe(histo_filename, pixel_ids, init_params,
             mu_max = compute_pe(histo.max(),
                                 baseline=params['baseline'],
                                 crosstalk=0, gain=params['gain'])
+            mu_estimated = compute_pe(histo.mean(),
+                                      baseline=params['baseline'],
+                                      crosstalk=0.08,
+                                      gain=params['gain'])
 
             mask = np.ones(histo.shape[0], dtype=bool)
             mask *= (histo.underflow == 0) * (histo.overflow == 0)
             mask *= (histo.data.sum(axis=-1) > 0)
             mask *= (mu_max <= saturation_threshold)
+            mask *= (mu_estimated > 1)
 
             mu_max[mu_max > saturation_threshold] = 0
             mu_max = np.nanmax(mu_max)
@@ -336,9 +340,23 @@ def fit_combined_mpe(histo_filename, pixel_ids, init_params,
         except Exception as e:
 
             print('Could not fit pixel {}'.format(pixel_id))
-        #   raise e
+            raise e
 
         if debug:
+
+            for i in range(n_ac_levels):
+
+                histo = Histogram1D.load(histo_filename, rows=(i, pixel_id))
+
+                fitter_debug = MPECombinedFitter(
+                    histo, n_peaks=data['n_peaks'][pixel_id])
+                fitter_debug.parameters = fitter.parameters
+                fitter_debug.errors = fitter.errors
+
+                fitter_debug.draw_fit(x_label='[LSB]',
+                                  log=False,
+                                  legend=False)
+                plt.show()
 
             print(results)
             print(data)
@@ -458,7 +476,7 @@ def entry():
     adc_min = int(args['--adc_min'])
     adc_max = int(args['--adc_max'])
     calib_filename = args['--calib']
-    estimated_gain = 20
+    estimated_gain = float(args['--estimated_gain'])
 
     if args['compute']:
 

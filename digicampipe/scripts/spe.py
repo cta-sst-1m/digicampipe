@@ -263,7 +263,6 @@ def entry():
     if save_figure is not None:
         output_path = save_figure
         spe_histo = Histogram1D.load(charge_histo_filename)
-        spe_amplitude = Histogram1D.load(charge_histo_filename)
         raw_histo = Histogram1D.load(raw_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
@@ -272,11 +271,15 @@ def entry():
         if not os.path.exists(figure_directory):
             os.makedirs(figure_directory)
 
-        histograms = [spe_histo, spe_amplitude, raw_histo, max_histo]
-        names = ['histogram_charge/', 'histogram_amplitude/', 'histogram_raw/',
+        histograms = [spe_histo, max_histo]
+        names = ['histogram_charge/',
                  'histo_max/']
 
+        fitters = [SPEFitter, MaxHistoFitter]
+
         for i, histo in enumerate(histograms):
+
+
 
             figure = plt.figure()
             histogram_figure_directory = figure_directory + names[i]
