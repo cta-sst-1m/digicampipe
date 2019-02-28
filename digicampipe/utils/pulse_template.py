@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 from tqdm import tqdm
+from fitsio import FITS
+import os
 
 from digicampipe.utils.hist2d import Histogram2d
 
@@ -31,19 +33,45 @@ class NormalizedPulseTemplate:
                                        time=self.time)
 
     def save(self, filename):
-        data = np.vstack([self.time, self.amplitude, self.amplitude_std])
-        np.savetxt(filename, data.T)
+
+        if filename.endwith('.fits'):
+
+            with FITS(filename, 'rw') as f:
+
+                data = [self.time, self.amplitude.T, self.amplitude_std.T]
+                names = ['time', 'amplitude', 'amplitude_std']
+                f.write(data=data, names=names, extname='PULSE_TEMPLATE')
+
+        else:
+
+            data = np.vstack([self.time, self.amplitude, self.amplitude_std])
+            np.savetxt(filename, data.T)
 
     @classmethod
     def load(cls, filename):
-        data = np.loadtxt(filename).T
-        assert len(data) in [2, 3]
-        if len(data) == 2:  # no std in file
-            t, x = data
-            return cls(amplitude=x, time=t)
-        elif len(data) == 3:
-            t, x, dx = data
-            return cls(amplitude=x, time=t, amplitude_std=dx)
+
+        if filename.endwith('.fits'):
+
+            with FITS(filename, 'r') as f:
+
+                time = f['PULSE_TEMPLATE']['time'].read()
+                amplitude = f['PULSE_TEMPLATE']['amplitude'].read().T
+                amplitude_std = f['PULSE_TEMPLATE']['amplitude_std'].read().T
+
+            return cls(amplitude=amplitude, time=time,
+                       amplitude_std=amplitude_std)
+
+        else:
+
+            data = np.loadtxt(filename).T
+            assert len(data) in [2, 3]
+            if len(data) == 2:  # no std in file
+                t, x = data
+                return cls(amplitude=x, time=t)
+            elif len(data) == 3:
+                t, x, dx = data
+                return cls(amplitude=x, time=t, amplitude_std=dx)
+
 
     @classmethod
     def create_from_datafile(cls, input_file, min_entries_ratio=0.1):

@@ -37,10 +37,12 @@ Options:
 import matplotlib.pyplot as plt
 from docopt import docopt
 import os
+import numpy as np
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils.docopt import convert_text, convert_pixel_args
 from digicampipe.visualization.plot import plot_pulse_templates
+from digicampipe.io.event_stream import calibration_event_stream
 
 
 def main(input_files, output=None, plot="show", plot_separated=None,
@@ -78,6 +80,32 @@ def main(input_files, output=None, plot="show", plot_separated=None,
             plt.savefig(plot_separated)
             print(plot_separated, 'created')
         plt.close(fig)
+
+
+def per_pixel(input_files, output):
+
+    for i, event in enumerate(calibration_event_stream(input_files)):
+
+        data = event.adc_samples
+
+        if i == 0:
+
+            waveform_mean = np.zeros(data.shape)
+            waveform_std = np.zeros(data.shape)
+
+        waveform_mean += data
+        waveform_std += data**2
+
+    waveform_mean /= (i + 1)
+    waveform_std /= (i + 1)
+    waveform_std -= waveform_mean**2
+    waveform_std = np.sqrt(waveform_std)
+    time = np.arange(data.shape[-1]) * 4.
+
+    template = NormalizedPulseTemplate(waveform_mean, time=time,
+                                       amplitude_std=waveform_std)
+
+    template.save(output)
 
 
 def entry():
