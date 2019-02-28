@@ -34,7 +34,7 @@ class NormalizedPulseTemplate:
 
     def save(self, filename):
 
-        if filename.endwith('.fits'):
+        if filename.endswith('.fits'):
 
             with FITS(filename, 'rw') as f:
 
@@ -50,7 +50,7 @@ class NormalizedPulseTemplate:
     @classmethod
     def load(cls, filename):
 
-        if filename.endwith('.fits'):
+        if filename.endswith('.fits'):
 
             with FITS(filename, 'r') as f:
 

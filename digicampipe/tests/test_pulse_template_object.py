@@ -161,6 +161,7 @@ def test_pulse_template_save():
         assert np.all(template_saved.amplitude_std ==
                       template_load.amplitude_std)
 
+
 def test_save_fits():
 
     data = np.ones(100)
@@ -168,7 +169,7 @@ def test_save_fits():
 
     template = NormalizedPulseTemplate(amplitude=data, time=time)
 
-    with tempfile.NamedTemporaryFile(suffix='.fits') as f
+    with tempfile.NamedTemporaryFile(suffix='.fits') as f:
         template.save(f.name)
 
 
