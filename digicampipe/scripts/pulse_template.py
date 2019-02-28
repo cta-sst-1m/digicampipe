@@ -89,6 +89,7 @@ def simple_template(input_files, output):
     for i, event in enumerate(calibration_event_stream(input_files)):
 
         data = event.data.adc_samples
+        data = data - event.data.digicam_baseline[:, None]
 
         if i == 0:
 
@@ -98,9 +99,9 @@ def simple_template(input_files, output):
         waveform_mean += data
         waveform_std += data**2
 
-    waveform_mean /= (i + 1)
-    waveform_std /= (i + 1)
-    waveform_std -= waveform_mean**2
+    waveform_mean /= (i + 1.)
+    waveform_std /= (i + 1.)
+    waveform_std = waveform_std - waveform_mean**2
     waveform_std = np.sqrt(waveform_std)
     time = np.arange(data.shape[-1]) * 4.
 

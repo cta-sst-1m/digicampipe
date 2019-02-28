@@ -6,4 +6,5 @@ DATA_BASE_DIR=/sst1m/raw/2018/
 
 source 0_main.sh
 
-digicam-pulse-template --output=$TEMPLATE_FILE --per_pixel ${DIGICAM_AC_FILES[10]}
+rm $TEMPLATE_FILE
+digicam-pulse-template --output=$TEMPLATE_FILE --per_pixel ${DIGICAM_AC_FILES[@]:20:10}
