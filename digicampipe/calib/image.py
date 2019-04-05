@@ -4,14 +4,13 @@ import numpy as np
 
 def compute_hillas_parameters(events, geom):
 
-    for event in events:
+    for i,event in enumerate(events):
 
         mask = event.data.cleaning_mask
-        image = event.data.reconstructed_number_of_pe
-        image = np.ma.masked_array(image, mask=~mask)
-
+        image = event.data.reconstructed_number_of_pe.copy()
+        image[image<0] = 0
+        image[mask] = 0
         try:
-
             hillas = hillas_parameters(geom, image)
             event.hillas = hillas
 
