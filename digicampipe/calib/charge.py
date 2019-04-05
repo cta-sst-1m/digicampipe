@@ -322,13 +322,7 @@ def apply_wdw_transmittance_correction_factor(events, wdw_number, apply_corr_fac
 
             yield event
     else:
-        for count, event in enumerate(events):
-            if count==305:
-                print(626, event.data.baseline[626])
-                print(626, event.data.adc_samples[626])
-                print(626, event.data.reconstructed_amplitude[626])
-                print(626, event.data.reconstructed_charge[626])
-                print(626, event.data.reconstructed_number_of_pe[626])
+        for event in events:
             yield event
 
 
