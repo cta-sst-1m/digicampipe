@@ -5,6 +5,7 @@ channels:
 - cta-observatory
 dependencies:
 - aenum
+- python=3.6
 - astropy
 - astroquery
 - ctapipe-extra=0.2.*
@@ -24,7 +25,7 @@ dependencies:
 - pip
 - protobuf
 - pyqt
-- pytest
+- pytest=3.*
 - PyYAML
 - scikit-learn
 - scikit-image
