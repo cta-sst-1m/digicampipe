@@ -24,7 +24,7 @@ dependencies:
 - photutils
 - pip
 - protobuf
-- pyqt
+- pyqt<=5.11
 - pytest=3.*
 - PyYAML
 - scikit-learn
