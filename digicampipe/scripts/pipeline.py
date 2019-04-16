@@ -47,6 +47,10 @@ Options:
                                 shown. [Default: none]
   --disable_bar                 If used, the progress bar is not show while
                                 reading files.
+  --wdw_number=INT              Window that was used for the measurement.
+                                [default: 1].
+  --apply_corr_factor           If used, correction factors corresponding
+                                to the window non-uniformity are applied.
 """
 import os
 import sys
@@ -164,7 +168,8 @@ def main_pipeline(
         debug, hillas_filename, parameters_filename,
         picture_threshold, boundary_threshold, template_filename,
         saturation_threshold, threshold_pulse, nevent_plot=12,
-        event_plot_filename=None, bad_pixels=None, disable_bar=False
+        event_plot_filename=None, bad_pixels=None, disable_bar=False,
+        wdw_number=1, apply_corr_factor=False,
 ):
     # get configuration
     with open(parameters_filename) as file:
@@ -218,6 +223,7 @@ def main_pipeline(
         pulse_tail=False,
     )
     events = charge.compute_photo_electron(events, gains=gain)
+    events = charge.apply_wdw_transmittance_correction_factor(events, wdw_number, apply_corr_factor)
     events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
     events = cleaning.compute_tailcuts_clean(
         events, geom=geom, overwrite=True,
@@ -357,7 +363,8 @@ def entry():
     disable_bar = args['--disable_bar']
     saturation_threshold = convert_float(args['--saturation_threshold'])
     threshold_pulse = convert_float(args['--threshold_pulse'])
-
+    wdw_number = convert_int(args['--wdw_number'])
+    apply_corr_factor = args['--apply_corr_factor']
     if aux_basepath is not None and aux_basepath.lower() == "search":
         input_dir = np.unique([os.path.dirname(file) for file in files])
         if len(input_dir) > 1:
@@ -392,7 +399,9 @@ def entry():
         threshold_pulse=threshold_pulse,
         saturation_threshold=saturation_threshold,
         nevent_plot=nevent_plot,
-        event_plot_filename=event_plot_filename
+        event_plot_filename=event_plot_filename,
+        wdw_number = wdw_number,
+        apply_corr_factor = apply_corr_factor,
     )
 
 
