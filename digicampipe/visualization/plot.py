@@ -66,7 +66,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
     if limits is not None:
 
         mask *= (data >= limits[0]) * (data <= limits[1])
-    data = np.ma.masked_array(data, mask=~mask)
+    data[~mask] = 0
 
     fig = plt.figure()
     cam = DigiCam

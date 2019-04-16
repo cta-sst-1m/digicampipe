@@ -97,6 +97,8 @@ def test_pipeline():
             saturation_threshold=3000,
             threshold_pulse=0.1,
             disable_bar=True,
+            wdw_number=1,
+            apply_corr_factor=False
         )
         hdul = fits.open(os.path.join(tmpdirname, 'hillas.fits'))
         cols = [c.name for c in hdul[1].columns]
@@ -198,5 +200,5 @@ def test_pipeline_plot():
 
 
 if __name__ == '__main__':
-    # test_pipeline()
+    test_pipeline()
     test_pipeline_plot()

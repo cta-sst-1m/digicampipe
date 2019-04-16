@@ -255,8 +255,7 @@ def main_pipeline(
             print(event.data.baseline_shift)
             print(event.data.border)
             plot_array_camera(np.max(event.data.adc_samples, axis=-1))
-            plot_array_camera(np.nanmax(
-                event.data.reconstructed_charge, axis=-1))
+            plot_array_camera(event.data.reconstructed_charge)
             plot_array_camera(event.data.cleaning_mask.astype(float))
             plot_array_camera(event.data.reconstructed_number_of_pe)
             plt.show()
@@ -339,7 +338,6 @@ def main_pipeline(
         print(hillas_filename, 'created.')
     except ValueError:
         print('WARNING: no data to save,', hillas_filename, 'not created.')
-    sys.exit(0)
 
 
 def entry():

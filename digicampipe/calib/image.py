@@ -8,8 +8,8 @@ def compute_hillas_parameters(events, geom):
 
         mask = event.data.cleaning_mask
         image = event.data.reconstructed_number_of_pe.copy()
-        image[image<0] = 0
-        image[mask] = 0
+        image[image < 0] = 0
+        image[~mask] = 0
         try:
             hillas = hillas_parameters(geom, image)
             event.hillas = hillas
