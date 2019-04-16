@@ -223,7 +223,9 @@ def main_pipeline(
         pulse_tail=False,
     )
     events = charge.compute_photo_electron(events, gains=gain)
-    events = charge.apply_wdw_transmittance_correction_factor(events, wdw_number, apply_corr_factor)
+    events = charge.apply_wdw_transmittance_correction_factor(
+        events, wdw_number, apply_corr_factor
+    )
     events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
     events = cleaning.compute_tailcuts_clean(
         events, geom=geom, overwrite=True,
