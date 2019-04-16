@@ -26,7 +26,7 @@ dependencies:
 - protobuf
 - pyqt<=5.11
 - pytest=3.*
-- PyYAML
+- PyYAML=3.13
 - scikit-learn
 - scikit-image
 - scipy
