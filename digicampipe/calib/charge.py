@@ -20,6 +20,17 @@ TEMPLATE_FILENAME = resource_filename(
 
 PULSE_TEMPLATE = NormalizedPulseTemplate.load(TEMPLATE_FILENAME)
 
+list_wdw = ['1st', '2nd']
+corr_factor_windows = [
+    resource_filename(
+        'digicampipe',
+        os.path.join(
+            'tests',
+            'resources',
+            'corr_factor_{}_wdw.txt'.format(list_wdw[i])
+        )
+    ) for i in range(len(list_wdw))
+]
 
 def compute_charge(events, integral_width, shift):
     """
@@ -312,8 +323,7 @@ def apply_wdw_transmittance_correction_factor(events, wdw_number, apply_corr_fac
     """
     if apply_corr_factor:
         for event in events:
-            list_wdw = ['1st', '2nd']
-            corr_factor_path = "/Users/Nicolas/ctasoft/digicampipe/digicampipe/tests/resources/corr_factor_{}_wdw.txt".format(list_wdw[wdw_number-1])
+            corr_factor_path = corr_factor_windows[wdw_number-1]
             wdw_corr_factor = np.loadtxt(corr_factor_path, unpack=True, skiprows=1, usecols=1)
             number_pe = event.data.reconstructed_number_of_pe
 
