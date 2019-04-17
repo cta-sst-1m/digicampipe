@@ -5,6 +5,7 @@ channels:
 - cta-observatory
 dependencies:
 - aenum
+- python=3.6
 - astropy
 - astroquery
 - ctapipe-extra=0.2.*
@@ -23,9 +24,9 @@ dependencies:
 - photutils
 - pip
 - protobuf
-- pyqt
-- pytest
-- PyYAML
+- pyqt<=5.11
+- pytest=3.*
+- PyYAML=3.13
 - scikit-learn
 - scikit-image
 - scipy
@@ -42,7 +43,7 @@ dependencies:
   - git+https://github.com/iminuit/probfit.git
   - https://github.com/cta-sst-1m/protozfitsreader/archive/v1.4.2.tar.gz
   - git+https://github.com/cta-observatory/pyhessio.git
-  - git+https://github.com/cta-observatory/ctapipe.git
+  - git+https://github.com/cta-observatory/ctapipe.git@a1fc0eb62612e0be4f121a37b5791049eb7adc2a
   - git+https://github.com/cta-sst-1m/CTS.git
   - git+https://github.com/dstndstn/astrometry.net.git
   - git+https://github.com/cta-sst-1m/histogram.git

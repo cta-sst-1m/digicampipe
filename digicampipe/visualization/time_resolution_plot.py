@@ -155,11 +155,12 @@ def plot_resol(data_file, legend, ax=None):
         load_data(data_file)
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
-    ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
-    ax.plot([20*pde, 20*pde], [.9, 1.1], 'r-', label=None)
-    ax.plot([20*pde, 2e3*pde], [1.5, 1.5], 'b--',
-            label='requirement B-TEL-1640')
+    # ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
+    # ax.plot([20*pde, 20*pde], [.9, 1.1], 'r-', label=None)
+    ax.plot([20*pde, 2e3*pde], [3, 3], 'b--', label='requirement B-TEL-1640')
     ax.plot([20*pde, 20*pde], [1.4, 1.6], 'b-', label=None)
+    ax.plot([20*pde, 2e3*pde], [2, 2], 'm-.', label='requirement B-TEL-1030')
+    ax.plot([20*pde, 2e3*pde], [1.9, 2.1], 'm-', label=None)
     plot_zone(
         true_pe,
         std_t_all,

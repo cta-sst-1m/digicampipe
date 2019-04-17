@@ -7,7 +7,7 @@ Usage:
 
 Options:
   -h --help                     Show this screen.
-  <INPUT>                       Output file from digicam-pipeline.
+  <INPUT>                       Intput file (output from digicam-pipeline).
                                 [Default: ./hillas.fits]
   --plot_scan2d=PATH            path to the plot for a 2d scan of the source
                                 position for the number of shower with alpha <
@@ -61,7 +61,9 @@ from tqdm import tqdm
 from matplotlib.gridspec import GridSpec
 
 from digicampipe.utils.docopt import convert_text, convert_list_float
-from digicampipe.image.hillas import correct_hillas, compute_alpha, arrival_lessard
+from digicampipe.image.hillas import correct_hillas, compute_alpha, \
+    arrival_lessard
+
 
 def correlation_plot(pipeline_data, title=None, plot="show"):
     fig = plt.figure(figsize=(24, 12))
@@ -167,7 +169,8 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
         if key in ['border', 'kurtosis', 'event_id',
                    'event_type', 'burst', 'saturated', 'shower',
                    'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
-                   'all_ghv_on', 'is_on_source', 'is_tracking']:
+                   'all_ghv_on', 'is_on_source', 'is_tracking',
+                   'digicam_temperature']:
             continue
         subplot += 1
         print(subplot, '/', 20, 'plotting', key)
@@ -189,7 +192,17 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
                 binmin = -2
                 binmax = 2
             if key == 'nsb_rate':
+                binmin = np.max(binmin, 0)
                 binmax = 3
+            if key == 'alpha':
+                binmin = 0
+                binmax = np.pi / 2
+            if key == 'psi':
+                binmin = 0
+                binmax = np.pi
+            if key == 'phi':
+                binmin = 0
+                binmax = np.pi
             bins = np.linspace(binmin, binmax, 100)
             h, bins, p = plt.hist(val_split, bins=bins, stacked=True)
         plt.xlabel(key)
@@ -249,7 +262,7 @@ def scan_2d_plot(
     y_fov_bins = np.linspace(y_fov_start - dy / 2, y_fov_end + dy / 2,
                              num_steps + 1)
     num_alpha = len(alphas_min)
-    N = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
+    n = np.zeros([num_steps, num_steps, num_alpha], dtype=int)
     print('2D scan calculation:')
 
     X, Y = np.meshgrid(x_fov, y_fov)
@@ -264,7 +277,7 @@ def scan_2d_plot(
         alpha = compute_alpha(phi, hillas['psi'])
         alpha = np.rad2deg(alpha)
         alpha = alpha[..., None] < alphas_min
-        N += alpha
+        n += alpha
 
     for ai, alpha_min in enumerate(alphas_min):
         if len(alphas_min) > 1:
@@ -273,12 +286,12 @@ def scan_2d_plot(
             plot_name = plot
         fig = plt.figure(figsize=(16, 12))
         ax1 = fig.add_subplot(111)
-        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, N[:, :, ai],
+        pcm = ax1.pcolormesh(x_fov_bins, y_fov_bins, n[:, :, ai],
                              rasterized=True, cmap='nipy_spectral')
         plt.ylabel('FOV Y [mm]')
         plt.xlabel('FOV X [mm]')
         cbar = fig.colorbar(pcm)
-        cbar.set_label('N of events')
+        cbar.set_label('# of events')
         plt.grid()
         plt.tight_layout()
         if plot == "show":
@@ -381,6 +394,7 @@ def cut_data(
         cut_nsb_rate_lte=None,
         cut_r_gte=None,
         cut_r_lte=None,
+        cut_n_island_gte=None,
 ):
     selection = np.isfinite(pipeline_data['intensity'])
     if cut_length_gte is not None:
@@ -388,154 +402,161 @@ def cut_data(
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: length < ', cut_length_gte)
+              'events pass with selection: length < ', cut_length_gte)
     if cut_length_lte is not None:
         event_pass = pipeline_data['length'] > cut_length_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: length > ', cut_length_lte)
+              'events pass with selection: length > ', cut_length_lte)
     if cut_width_gte is not None:
         event_pass = pipeline_data['width'] < cut_width_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: width < ', cut_width_gte)
+              'events pass with selection: width < ', cut_width_gte)
     if cut_width_lte is not None:
         event_pass = pipeline_data['width'] > cut_width_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: width > ', cut_width_lte)
+              'events pass with selection: width > ', cut_width_lte)
     if cut_length_over_width_gte is not None:
         length_over_width = pipeline_data['length'] / pipeline_data['width']
         event_pass = length_over_width < cut_length_over_width_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: l/w < ', cut_length_over_width_gte)
+              'events pass with selection: l/w < ', cut_length_over_width_gte)
     if cut_length_over_width_lte is not None:
         length_over_width = pipeline_data['length'] / pipeline_data['width']
         event_pass = length_over_width > cut_length_over_width_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: l/w > ',
+              'events pass with selection: l/w > ',
               cut_length_over_width_lte)
     if cut_intensity_gte is not None:
         event_pass = pipeline_data['intensity'] < cut_intensity_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: intensity < ',
+              'events pass with selection: intensity < ',
               cut_intensity_gte)
     if cut_intensity_lte is not None:
         event_pass = pipeline_data['intensity'] > cut_intensity_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: intensity > ',
+              'events pass with selection: intensity > ',
               cut_intensity_lte)
     if cut_skewness_gte is not None:
         event_pass = pipeline_data['skewness'] < cut_skewness_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: skewness < ',
+              'events pass with selection: skewness < ',
               cut_skewness_gte)
     if cut_skewness_lte is not None:
         event_pass = pipeline_data['skewness'] > cut_skewness_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: skewness > ',
+              'events pass with selection: skewness > ',
               cut_skewness_lte)
     if cut_border_eq is not None:
         event_pass = pipeline_data['border'] != cut_border_eq
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: border !=', cut_border_eq)
+              'events pass with selection: border !=', cut_border_eq)
     if cut_burst_eq is not None:
         event_pass = pipeline_data['burst'] != cut_burst_eq
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: burst !=', cut_burst_eq)
+              'events pass with selection: burst !=', cut_burst_eq)
     if cut_saturated_eq is not None:
         event_pass = pipeline_data['saturated'] != cut_saturated_eq
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: saturated !=', cut_saturated_eq)
+              'events pass with selection: saturated !=', cut_saturated_eq)
     if cut_led_on_eq is not None:
         event_pass = pipeline_data['pointing_leds_on'] != cut_led_on_eq
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: LEDs on !=', cut_led_on_eq)
+              'events pass with selection: LEDs on !=', cut_led_on_eq)
     if cut_led_blink_eq is not None:
         event_pass = pipeline_data['pointing_leds_blink'] != cut_led_blink_eq
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: LEDs blink !=', cut_led_blink_eq)
+              'events pass with selection: LEDs blink !=', cut_led_blink_eq)
     if cut_target_ra_gte is not None:
         event_pass = pipeline_data['target_ra'] < cut_target_ra_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: target\'s ra < ',
+              'events pass with selection: target\'s ra < ',
               cut_target_ra_gte)
     if cut_target_ra_lte is not None:
         event_pass = pipeline_data['target_ra'] > cut_target_ra_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: target\'s ra > ',
+              'events pass with selection: target\'s ra > ',
               cut_target_ra_lte)
     if cut_target_dec_gte is not None:
         event_pass = pipeline_data['target_dec'] < cut_target_dec_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: target\'s dec < ',
+              'events pass with selection: target\'s dec < ',
               cut_target_dec_gte)
     if cut_target_dec_lte is not None:
         event_pass = pipeline_data['target_dec'] > cut_target_dec_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: target\'s dec > ',
+              'events pass with selection: target\'s dec > ',
               cut_target_dec_lte)
     if cut_nsb_rate_gte is not None:
         event_pass = pipeline_data['nsb_rate'] < cut_nsb_rate_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: nsb rate < ',
+              'events pass with selection: nsb rate < ',
               cut_nsb_rate_gte, 'GHz')
     if cut_nsb_rate_lte is not None:
         event_pass = pipeline_data['nsb_rate'] > cut_nsb_rate_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: nsb rate > ',
+              'events pass with selection: nsb rate > ',
               cut_nsb_rate_lte, 'GHz')
     if cut_r_gte is not None:
         event_pass = pipeline_data['r'] < cut_r_gte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: r < ',
+              'events pass with selection: r < ',
               cut_nsb_rate_gte, 'mm')
     if cut_r_lte is not None:
         event_pass = pipeline_data['r'] > cut_r_lte
         old_selection = selection
         selection = np.logical_and(selection, event_pass)
         print(np.sum(selection), '/', np.sum(old_selection),
-              'events cut with selection: r > ',
+              'events pass with selection: r > ',
               cut_nsb_rate_lte, 'mm')
+    if cut_n_island_gte is not None:
+        event_pass = pipeline_data['number_of_island'] < cut_n_island_gte
+        old_selection = selection
+        selection = np.logical_and(selection, event_pass)
+        print(np.sum(selection), '/', np.sum(old_selection),
+              'events pass with selection: n_island < ',
+              cut_n_island_gte)
     return selection
 
 
@@ -564,6 +585,7 @@ def get_data_and_selection(
         cut_nsb_rate_lte=None,
         cut_r_gte=None,
         cut_r_lte=None,
+        cut_n_island_gte=None,
 ):
     data = Table.read(hillas_file, format='fits')
     data = data.to_pandas()
@@ -596,6 +618,7 @@ def get_data_and_selection(
         cut_nsb_rate_lte=cut_nsb_rate_lte,
         cut_r_gte=cut_r_gte,
         cut_r_lte=cut_r_lte,
+        cut_n_island_gte=cut_n_island_gte,
     )
     return data, selection
 
@@ -625,6 +648,7 @@ def plot_pipeline(
         cut_nsb_rate_lte=None,
         cut_r_gte=None,
         cut_r_lte=None,
+        cut_n_island_gte=None,
         alphas_min=(1, 2, 5, 10, 20),
         plot_scan2d=None,
         plot_showers_center=None,
@@ -662,6 +686,7 @@ def plot_pipeline(
         cut_nsb_rate_lte=cut_nsb_rate_lte,
         cut_r_gte=cut_r_gte,
         cut_r_lte=cut_r_lte,
+        cut_n_island_gte=cut_n_island_gte,
     )
     selection_no_burst = np.logical_and(selection, data['burst'] == False)
 
@@ -718,14 +743,14 @@ def entry():
     plot_map_disp = convert_text(args['--plot_map_disp'])
     plot_pipeline(
         hillas_file=hillas_file,
-        cut_length_gte=43,  # Whipple:43
-        cut_length_lte=16,  # Whipple:16
-        cut_width_gte=16,  # Whipple:16
-        cut_width_lte=7.3,  # Whipple:7.3
-        cut_length_over_width_gte=None,
-        cut_length_over_width_lte=None,
+        cut_length_gte=None,  # Whipple:43 # 2017:None
+        cut_length_lte=None,  # Whipple:16 # 2017:None
+        cut_width_gte=None,  # Whipple:16 # 2017:None
+        cut_width_lte=None,  # Whipple:7.3 # 2017:None
+        cut_length_over_width_gte=3,  # Whipple:None # 2017:3
+        cut_length_over_width_lte=1.5,  # Whipple:None # 2017:1.5
         cut_intensity_gte=None,
-        cut_intensity_lte=None,
+        cut_intensity_lte=100,  # Whipple:None # 2017: 100?
         cut_skewness_gte=None,
         cut_skewness_lte=None,
         cut_border_eq=True,
@@ -741,6 +766,7 @@ def entry():
         cut_nsb_rate_lte=.1,
         cut_r_gte=None ,
         cut_r_lte=None,
+        cut_n_island_gte=2,
         alphas_min=alphas_min,
         plot_scan2d=plot_scan2d,
         plot_showers_center=plot_showers_center,

@@ -88,7 +88,7 @@ def test_bad_pixels_plot():
 
 def test_bad_pixels_save():
     with tempfile.TemporaryDirectory() as tmp_dir_name:
-        out = os.path.join(tmp_dir_name, 'test.png')
+        out = os.path.join(tmp_dir_name, 'test.yml')
         get_bad_pixels(parameters_filename, plot=None, output=out)
         assert os.path.isfile(out)
         with open(out) as file:
