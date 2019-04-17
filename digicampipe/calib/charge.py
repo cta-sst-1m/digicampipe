@@ -313,18 +313,24 @@ def compute_photo_electron(events, gains):
         yield event
 
 
-def apply_wdw_transmittance_correction_factor(events, wdw_number, apply_corr_factor):
+def apply_wdw_transmittance_correction_factor(
+        events, wdw_number, apply_corr_factor):
     """
-    Rescale the number of pe for each pixel by the correction factor due to non uniformity of window transmittance
+    Rescale the number of pe for each pixel by the correction factor due to
+    non uniformity of window transmittance
     :param events: a stream of events
-    :param wdw_number: select the window that was used to take data (and the corresponding correction factors)
-    :param apply_corr_factor: Boolean, choose whether to apply or not the window correction factors
-    :return: if the function is applied (apply_corr_factor==True), rescaled number of pe for each pixel
+    :param wdw_number: select the window that was used to take data
+    (and the corresponding correction factors)
+    :param apply_corr_factor: Boolean, choose whether to apply or not the
+    window correction factors
+    :return: if the function is applied (apply_corr_factor==True), rescaled
+    number of pe for each pixel
     """
     if apply_corr_factor:
         for event in events:
             corr_factor_path = corr_factor_windows[wdw_number-1]
-            wdw_corr_factor = np.loadtxt(corr_factor_path, unpack=True, skiprows=1, usecols=1)
+            wdw_corr_factor = np.loadtxt(corr_factor_path,
+                                         unpack=True, skiprows=1, usecols=1)
             number_pe = event.data.reconstructed_number_of_pe
 
             pe_corr = number_pe / wdw_corr_factor

@@ -400,8 +400,8 @@ def entry():
         saturation_threshold=saturation_threshold,
         nevent_plot=nevent_plot,
         event_plot_filename=event_plot_filename,
-        wdw_number = wdw_number,
-        apply_corr_factor = apply_corr_factor,
+        wdw_number=wdw_number,
+        apply_corr_factor=apply_corr_factor,
     )
 
 
