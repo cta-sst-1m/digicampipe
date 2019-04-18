@@ -1,11 +1,9 @@
 import pytest
-
+from digicampipe.image.lidccd.cones_image import ConesImage, cones_simu
+from digicampipe.image.lidccd.cones_image import simu_match
 
 @pytest.mark.deselect
 def test_cone_simu():
-    from digicampipe.image.lidccd.cones_image import ConesImage, cones_simu
-    from digicampipe.image.lidccd.cones_image import simu_match
-
     # create an image  with a geometry compatible to the camera with
     # known angle, spacing between pixels etc...
     test_image, true_positions = cones_simu(
