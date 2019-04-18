@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from astropy.stats import sigma_clipped_stats
