@@ -139,8 +139,9 @@ class NormalizedPulseTemplate:
                         bounds_error=False, fill_value=np.inf,
                         assume_sorted=True)
 
-    def integral(self):
-        return np.trapz(y=self.amplitude, x=self.time)
+    def integral(self, order=1):
+
+        return np.trapz(y=self.amplitude**order, x=self.time)
 
     def compute_charge_amplitude_ratio(self, integral_width, dt_sampling):
 
