@@ -149,9 +149,10 @@ def simtel_event_source(url, camera=None, max_events=None,
             tracking_positions = array_event['tracking_positions']
             for tel_id, telescope_event in telescope_events.items():
                 telescope_description = telescope_descriptions[tel_id]
-                pedestal = array_event['camera_monitorings'][tel_id]['pedestal']
-                data.mc.tel[tel_id].dc_to_pe = \
-                array_event['laser_calibrations'][tel_id]['calib']
+                camera_monitorings = array_event['camera_monitorings'][tel_id]
+                pedestal = camera_monitorings['pedestal']
+                laser_calib = array_event['laser_calibrations'][tel_id]
+                data.mc.tel[tel_id].dc_to_pe = laser_calib['calib']
                 data.mc.tel[tel_id].pedestal = pedestal
                 adc_samples = telescope_event.get('adc_samples')
                 n_pixel = adc_samples.shape[-2]
