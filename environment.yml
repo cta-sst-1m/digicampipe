@@ -11,6 +11,7 @@ dependencies:
 - cython
 - docopt
 - fitsio
+- gxx_linux-64 # required for Arch users ()
 - h5py
 - hdf5
 - humanize
@@ -47,3 +48,4 @@ dependencies:
   - git+https://github.com/dstndstn/astrometry.net.git
   - git+https://github.com/cta-sst-1m/histogram.git
   - git+https://github.com/uvemas/ViTables.git
+  - git+https://github.com/cta-observatory/pyeventio.git
