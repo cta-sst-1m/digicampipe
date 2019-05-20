@@ -154,8 +154,20 @@ def simtel_event_source(url, camera=None, max_events=None,
                 laser_calib = array_event['laser_calibrations'][tel_id]
                 data.mc.tel[tel_id].dc_to_pe = laser_calib['calib']
                 data.mc.tel[tel_id].pedestal = pedestal
+
                 adc_samples = telescope_event.get('adc_samples')
                 n_pixel = adc_samples.shape[-2]
+
+                data.inst.geom[tel_id] = camera.geometry
+                data.inst.cluster_matrix_7[tel_id] = \
+                    camera.cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = \
+                    camera.cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = camera.patch_matrix
+                data.inst.num_channels[tel_id] = adc_samples.shape[0]
+                data.inst.num_pixels[tel_id] = adc_samples.shape[1]
+                data.inst.num_samples[tel_id] = adc_samples.shape[2]
+
                 if adc_samples is None:
                     adc_samples = telescope_event['adc_sums'][:, :, np.newaxis]
                 adc_samples = np.squeeze(adc_samples)
