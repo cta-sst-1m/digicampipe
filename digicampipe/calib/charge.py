@@ -306,7 +306,10 @@ def compute_photo_electron(events, gains):
         charge = event.data.reconstructed_charge
 
         gain_drop = event.data.gain_drop
-        corrected_gains = gains * gain_drop
+        if type(gain_drop) != type:
+            corrected_gains = gains * gain_drop
+        else:
+            corrected_gains = gains
         pe = charge / corrected_gains
         event.data.reconstructed_number_of_pe = pe
 
@@ -353,8 +356,11 @@ def compute_sample_photo_electron(events, gain_amplitude):
     """
     for count, event in enumerate(events):
         adc_samples = event.data.adc_samples
-        gain_drop = event.data.gain_drop[:, None]
-        sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop)
+        gain_drop = event.data.gain_drop
+        if type(gain_drop) != type:
+            sample_pe = adc_samples / (gain_amplitude[:, None] * gain_drop[:, None])
+        else:
+            sample_pe = adc_samples / (gain_amplitude[:, None])
         event.data.sample_pe = sample_pe
         yield event
 

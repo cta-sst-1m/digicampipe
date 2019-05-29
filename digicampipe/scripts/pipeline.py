@@ -196,23 +196,23 @@ def main_pipeline(
     # define pipeline
     events = calibration_event_stream(files, max_events=max_events,
                                       disable_bar=disable_bar)
-    if aux_basepath is not None:
+    if aux_basepath is not None and aux_basepath != 'none':
         events = add_slow_data_calibration(
             events, basepath=aux_basepath,
             aux_services=('DriveSystem', 'DigicamSlowControl', 'MasterSST1M',
                           'SafetyPLC', 'PDPSlowControl')
         )
-    events = baseline.fill_dark_baseline(events, dark_baseline)
+    #events = baseline.fill_dark_baseline(events, dark_baseline)
     events = baseline.fill_digicam_baseline(events)
-    events = tagging.tag_burst_from_moving_average_baseline(events)
-    events = baseline.compute_baseline_shift(events)
+    #events = tagging.tag_burst_from_moving_average_baseline(events)
+    #events = baseline.compute_baseline_shift(events)
     events = baseline.subtract_baseline(events)
     events = filters.filter_clocked_trigger(events)
-    events = baseline.compute_nsb_rate(events, gain_amplitude,
-                                       pulse_area, crosstalk,
-                                       bias_resistance, cell_capacitance)
-    events = baseline.compute_gain_drop(events, bias_resistance,
-                                        cell_capacitance)
+    #events = baseline.compute_nsb_rate(events, gain_amplitude,
+                                       #pulse_area, crosstalk,
+                                       #bias_resistance, cell_capacitance)
+    #events = baseline.compute_gain_drop(events, bias_resistance,
+                                        #cell_capacitance)
     events = peak.find_pulse_with_max(events)
     events = charge.compute_dynamic_charge(
         events,
@@ -226,7 +226,7 @@ def main_pipeline(
     events = charge.apply_wdw_transmittance_correction_factor(
         events, wdw_number, apply_corr_factor
     )
-    events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
+    #events = charge.interpolate_bad_pixels(events, geom, bad_pixels)
     events = cleaning.compute_tailcuts_clean(
         events, geom=geom, overwrite=True,
         picture_thresh=picture_threshold,
@@ -271,7 +271,10 @@ def main_pipeline(
         data_to_store.miss = compute_miss(r=r.value, alpha=alpha.value)
         data_to_store.miss = data_to_store.miss * r.unit
         data_to_store.baseline = np.mean(event.data.digicam_baseline)
-        data_to_store.nsb_rate = np.mean(event.data.nsb_rate)
+        if type(event.data.nsb_rate) != type:
+            data_to_store.nsb_rate = np.mean(event.data.nsb_rate)
+        else:
+            data_to_store.nsb_rate = 0
         data_to_store.shower = bool(event.data.shower)
         data_to_store.border = bool(event.data.border)
         data_to_store.burst = bool(event.data.burst)
@@ -280,7 +283,7 @@ def main_pipeline(
             geom, event.data.cleaning_mask
         )
         data_to_store.number_of_island = num_islands
-        if aux_basepath is not None:
+        if aux_basepath is not None and aux_basepath != 'none':
             data_to_store.az = event.slow_data.DriveSystem.current_position_az
             data_to_store.el = event.slow_data.DriveSystem.current_position_el
             temp_crate1 = event.slow_data.DigicamSlowControl.Crate1_T
@@ -330,6 +333,10 @@ def main_pipeline(
             data_to_store.is_on_source = is_on_source
             is_tracking = bool(event.slow_data.DriveSystem.is_tracking)
             data_to_store.is_tracking = is_tracking
+        for key in data_to_store.fields:
+            if type(data_to_store[key]) == type:
+                data_to_store[key] = 0
+
         for key, val in event.hillas.items():
             data_to_store[key] = val
         output_file.add_container(data_to_store)
@@ -365,7 +372,7 @@ def entry():
     threshold_pulse = convert_float(args['--threshold_pulse'])
     wdw_number = convert_int(args['--wdw_number'])
     apply_corr_factor = args['--apply_corr_factor']
-    if aux_basepath is not None and aux_basepath.lower() == "search":
+    if aux_basepath is not None and  aux_basepath.lower() == "search":
         input_dir = np.unique([os.path.dirname(file) for file in files])
         if len(input_dir) > 1:
             raise AttributeError(

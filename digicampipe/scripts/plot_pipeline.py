@@ -170,7 +170,7 @@ def hillas_plot(pipeline_data, selection, plot="show", yscale='log'):
                    'event_type', 'burst', 'saturated', 'shower',
                    'pointing_leds_on', 'pointing_leds_blink', 'all_hv_on',
                    'all_ghv_on', 'is_on_source', 'is_tracking',
-                   'digicam_temperature']:
+                   'digicam_temperature','number_of_island']:
             continue
         subplot += 1
         print(subplot, '/', 20, 'plotting', key)
@@ -324,8 +324,8 @@ def map_disp(pipeline_data, xis, plot='show', num_steps=(20, 20),
     x_bkb, y_bkb = arrival_lessard(pipeline_data[bkg_mask], -xis)
     for i, xi in enumerate(np.unique(xis)):
         fig = plt.figure(figsize=(15, 12))
-        gs = GridSpec(4, 5)
-        ax1 = plt.subplot(gs[:3, :3])
+        gs = GridSpec(4, 13)
+        ax1 = plt.subplot(gs[:3, :9])
         h_bkg, _, _ = np.histogram2d(x_bkb[:, i], y_bkb[:, i],
                                      bins=(x_bin, y_bin))
         h, _, _ = np.histogram2d(x[:, i], y[:, i],
@@ -336,21 +336,23 @@ def map_disp(pipeline_data, xis, plot='show', num_steps=(20, 20),
         # plt.plot(pipeline_data['x'][data_mask][data_center],
         #          pipeline_data['y'][data_mask][data_center], 'r+', ms=10)
         plt.grid()
+        '''
         ax5 = plt.subplot(gs[3, 3:])
         plotted = pipeline_data['width']  # pipeline_data['length']/pipeline_data['width']
         ax5.hist(plotted[data_mask][data_center][pipeline_data['skewness'] > 0], facecolor='b')
         ax5.hist(plotted[data_mask][data_center][pipeline_data['skewness'] < 0], facecolor='r')
+        '''
         # colorbar
-        ax4 = plt.subplot(gs[:3, 4])
+        ax4 = plt.subplot(gs[:3, 12])
         plt.colorbar(img, cax=ax4)
         # projection on Y axis
-        ax2 = plt.subplot(gs[:3, 3], sharey=ax1)
+        ax2 = plt.subplot(gs[:3, 9:12], sharey=ax1)
         ax2.plot(np.sum(h, axis=0), y_fov, label='data')
         ax2.plot(np.sum(h_bkg, axis=0), y_fov, label='bkg')
         ax2.plot(np.sum(h-h_bkg, axis=0), y_fov, label='excess')
         plt.setp(ax2.get_yticklabels(), visible=False)
         # projection on X axis
-        ax3 = plt.subplot(gs[3, :3], sharex=ax1)
+        ax3 = plt.subplot(gs[3, :9], sharex=ax1)
         ax3.plot(x_fov, np.sum(h, axis=1), label='data')
         ax3.plot(x_fov, np.sum(h_bkg, axis=1), label='bkg')
         ax3.plot(x_fov, np.sum(h-h_bkg, axis=1), label='excess')
@@ -358,7 +360,7 @@ def map_disp(pipeline_data, xis, plot='show', num_steps=(20, 20),
         plt.setp(ax3.get_xticklabels(), visible=False)
         plt.tight_layout()
         if len(xis)> 1:
-            plot_name = plot.replace('.png', '_xi{:.2f}.png'.format(xi))
+            plot_name = plot.replace('.pdf', '_xi{:.2f}.pdf'.format(xi))
         else:
             plot_name = plot
         if plot == "show":
@@ -762,9 +764,9 @@ def entry():
         cut_target_ra_lte=82,
         cut_target_dec_gte=23,
         cut_target_dec_lte=21,
-        cut_nsb_rate_gte=0.6 ,
-        cut_nsb_rate_lte=.1,
-        cut_r_gte=None ,
+        cut_nsb_rate_gte=0.6,  # 0.6
+        cut_nsb_rate_lte=.1,  # 0.1
+        cut_r_gte=None,
         cut_r_lte=None,
         cut_n_island_gte=2,
         alphas_min=alphas_min,

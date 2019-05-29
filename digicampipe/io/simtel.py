@@ -14,7 +14,7 @@ from astropy.time import Time
 from eventio.simtel.simtelfile import SimTelFile
 from ctapipe.io.simteleventsource import SimTelEventSource
 
-from digicampipe.io.containers import DataContainer
+from digicampipe.io.containers import DataContainer, CameraEventType
 
 
 logger = logging.getLogger(__name__)
@@ -154,10 +154,11 @@ def simtel_event_source(url, camera=None, max_events=None,
                 laser_calib = array_event['laser_calibrations'][tel_id]
                 data.mc.tel[tel_id].dc_to_pe = laser_calib['calib']
                 data.mc.tel[tel_id].pedestal = pedestal
-                adc_samples = telescope_event.get('adc_samples')
+                adc_samples = telescope_event.get('adc_samples').squeeze()
                 n_pixel = adc_samples.shape[-2]
                 if adc_samples is None:
                     adc_samples = telescope_event['adc_sums'][:, :, np.newaxis]
+                data.r0.tel[tel_id].camera_event_type = CameraEventType.PATCH7
                 data.r0.tel[tel_id].adc_samples = adc_samples
                 data.r0.tel[tel_id].num_samples = adc_samples.shape[-1]
                 # We should not calculate stuff in an event source
@@ -169,7 +170,7 @@ def simtel_event_source(url, camera=None, max_events=None,
 
                 pixel_settings = telescope_description['pixel_settings']
                 data.mc.tel[tel_id].reference_pulse_shape = pixel_settings[
-                    'refshape'].astype('float64')
+                    'ref_shape'].astype('float64')
                 data.mc.tel[tel_id].meta['refstep'] = float(
                     pixel_settings['ref_step'])
                 data.mc.tel[tel_id].time_slice = float(
