@@ -26,6 +26,7 @@ Options:
                               [Default: none]
   --disable_bar               If used, the progress bar is not show while
                               reading files.
+  --sample_range=LIST         If used, define a sample range smaller than the default which is [initial, last]
 """
 import os
 import matplotlib.pyplot as plt
@@ -35,13 +36,12 @@ from histogram.histogram import Histogram1D
 from tqdm import tqdm
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
-    convert_list_int
+from digicampipe.utils.docopt import convert_int, convert_pixel_args, convert_list_int
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
 
 
 def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
-            disable_bar=False, baseline_subtracted=False):
+            disable_bar=False, baseline_subtracted=False, sample_range=None):
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
@@ -51,11 +51,11 @@ def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
         n_pixels = len(pixel_id)
         events = calibration_event_stream(
             files, pixel_id=pixel_id, max_events=max_events,
-            disable_bar=disable_bar)
+            disable_bar=disable_bar, sample_range=sample_range)
         if baseline_subtracted:
-            bin_edges = np.arange(-100, 4095, 1)
+            bin_edges = np.arange(-100, 4097, 1)
         else:
-            bin_edges = np.arange(0, 4095, 1)
+            bin_edges = np.arange(0, 4097, 1)
         raw_histo = Histogram1D(
             data_shape=(n_pixels,),
             bin_edges=bin_edges,
@@ -65,6 +65,7 @@ def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
             if event_types and event.event_type not in event_types:
                 continue
             samples = event.data.adc_samples
+            #print(samples.shape)
             if baseline_subtracted:
                 samples = samples - event.data.digicam_baseline[:, None]
             raw_histo.fill(samples)
@@ -110,6 +111,7 @@ def entry():
     event_types = convert_list_int(args['--event_types'])
     baseline_filename = args['--baseline_filename']
     disable_bar = args['--disable_bar']
+    sample_range = convert_list_int(args['--sample_range'])
     if baseline_filename.lower() == 'none':
         baseline_filename = None
     output_path = os.path.dirname(raw_histo_filename)
@@ -125,7 +127,8 @@ def entry():
             pixel_id=pixel_id,
             event_types=event_types,
             disable_bar=disable_bar,
-            baseline_subtracted=base_sub
+            baseline_subtracted=base_sub,
+            sample_range=sample_range
         )
         if baseline_filename:
             compute_baseline_histogram(
