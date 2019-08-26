@@ -1,101 +1,79 @@
 #!/bin/env bash
 
-source $HOME/.bashrc
-$HOME/.miniconda3/bin/activate digicampipe
+# source $HOME/.bashrc
+# activate_conda
+#$HOME/.miniconda3/bin/activate digicampipe
 
-export MATPLOTLIBRC=$HOME'/ctasoft/digicampipe/matplotlibrc'
+export MATPLOTLIBRC='../../matplotlibrc'
 
+
+DATE=`date +%Y%m%d`
+DATE='20190527'
+# export DIGICAM_FOLDER='/sst1m/MC/simtel/ACDC/analyzed/'$DATE'/no_nsb/'
+# export DIGICAM_FOLDER='/sst1m/MC/simtel/ACDC/analyzed/'$DATE'/'
+export DIGICAM_FOLDER='/sst1m/MC/simtel/ACDC/analyzed/'$DATE'/scaled/'
+mkdir -p $DIGICAM_FOLDER
+mkdir -p $DIGICAM_FOLDER'figures/'
+INPUT_FOLDER='/sst1m/MC/simtel/ACDC/'
 
 ### INPUT FILES ###
+pes=(0.0 1.0 1.15 1.33 1.53 1.76 2.02 2.33 2.68 3.09 3.56 4.09 4.71 5.43 6.25 7.2 8.29 9.54 10.99 12.65 14.56 16.77 19.31 22.23 25.6)
+#pes=(0.0 1.0 1.15 1.33 1.53 1.76 2.68 3.09 3.56 4.09 4.71 5.43 6.25 7.2 8.29 9.54 10.99 12.65 14.56 16.77 19.31 22.23 25.6)
+n_ac=${#pes[@]}
+# ac_levels=({0..22..1})
+ac_levels=({0..24..1})
+nsb='3'
+#files=($(echo $INPUT_FOLDER'ff-1m.simtel_0.0pe_'$nsb'MHz.gz'))
+files=($(echo $INPUT_FOLDER'ff-1m_scaled.simtel_0.0pe_'$nsb'MHz.gz'))
 
-INPUT_FOLDER='/home/mckeags/AC-DC_Scans/'
-
-# export DIGICAM_GHV_OFF_FILES=($(echo /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1292..1299}.fits.fz))
-# export DIGICAM_GHV_ON_FILES=($(echo /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1286..1292}.fits.fz))
-# export DIGICAM_DARK_FILES=($(echo /sst1m/raw/2018/06/27/SST1M_01/SST1M_01_20180627_{1276..1279}.fits.fz))
-# export DIGICAM_AC_FILES=($(echo /sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{1350..1454}.fits.fz))
-# export DIGICAM_DC_FILES=($(echo /sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{1455..1504}.fits.fz))
-# export DIGICAM_AC_DC_FILES=($(echo /sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{1505..2087}.fits.fz))
-# export DIGICAM_AC_DC_FILES_2=($(echo /sst1m/raw/2018/07/01/SST1M_01/SST1M_01_20180701_{434..497}.fits.fz))
-
-
-export DIGICAM_AC_LEVEL=(0 1 2 3 4 5 8 12)
-DC_LEVEL=('0' '3.000' '18.000' '30.00' '50.00' '100.0' '175.000' '300.0' '500.0' '1000.0')
-export DIGICAM_DC_LEVEL=(0, 3, 18, 30, 50, 100, 175, 300, 500, 1000)
-
-AC_FILES=()
-DC_FILES=()
-ACDC_FILES=()
-
-for i in "${!DIGICAM_DC_LEVEL[@]}";
+for (( i=1; i<$n_ac; i++ ));
 do
-
-    for j in "${!DIGICAM_AC_LEVEL[@]}";
-
-
-    do
-
-        FILE=$INPUT_FOLDER'ff-SST1M.simtel_'${DIGICAM_AC_LEVEL[$j]}'pe_'${DC_LEVEL[$i]}'MHz.gz'
-
-        if [ "$i" -eq "0" ];
-        then
-
-            if [ "$j" -eq "0" ];
-            then
-                GHV_OFF_FILES=($FILE)
-
-            fi
-        fi
-        if [ "$i" -eq "1" ];
-        then
-
-            AC_FILES+=($FILE)
-
-            if [ "$j" -eq "0" ];
-            then
-
-                DARK_FILES=($FILE)
-
-            fi
-        fi
-
-        if [ "$j" -eq "0" ];
-        then
-
-            DC_FILES+=($FILE)
-
-        fi
-
-
-
-        ACDC_FILES+=($FILE)
-    done
-
+    # files+=($(echo $INPUT_FOLDER'ff-1m.simtel_'${pes[i]}'pe_'$nsb'MHz.gz'))
+    files+=($(echo $INPUT_FOLDER'ff-1m_scaled.simtel_'${pes[i]}'pe_'$nsb'MHz.gz'))
 done
 
-export DIGICAM_DARK_FILES=${DARK_FILES[@]}
-export DIGICAM_GHV_OFF_FILES=${GHV_OFF_FILES[@]}
-export DIGICAM_AC_FILES=${AC_FILES[@]}
-export DIGICAM_DC_FILES=${DC_FILES[@]}
-export DIGICAM_ACDC_FILES=${ACDC_FILES[@]}
+# export DIGICAM_GHV_OFF_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0pe_0MHz.gz))
+export DIGICAM_GHV_OFF_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0.0pe_0MHz.gz))
+# export DIGICAM_GHV_ON_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0pe_0MHz.gz))
+export DIGICAM_GHV_ON_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0.0pe_0MHz.gz))
+# export DIGICAM_DARK_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0pe_3MHz.gz))
+export DIGICAM_DARK_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0.0pe_3MHz.gz))
+# export DIGICAM_AC_FILES=($(echo $INPUT_FOLDER/ff-1m.simtel_0pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_1pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_2pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_4pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_5pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_10pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_25pe_3MHz.gz $INPUT_FOLDER/ff-1m.simtel_50pe_3MHz.gz))
+export DIGICAM_AC_FILES=${files[@]}
+# export DIGICAM_DC_FILES=($(echo /sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{1455..1504}.fits.fz))
+# export DIGICAM_AC_DC_FILES_1=($(echo /sst1m/raw/2018/06/28/SST1M_01/SST1M_01_20180628_{1505..2087}.fits.fz))
+# export DIGICAM_AC_DC_FILES_2=($(echo /sst1m/raw/2018/07/01/SST1M_01/SST1M_01_20180701_{434..497}.fits.fz))
+
+# export DIGICAM_AC_LEVEL=({0..7..1})
+export DIGICAM_AC_LEVEL=${ac_levels[@]}
+# export DIGICAM_AC_LEVEL_1=({0..18..2} {20..440..10})
+# export DIGICAM_AC_LEVEL_2=({0..18..2} {20..440..20})
+# export DIGICAM_DC_LEVEL=({200..445..5})
+# export DIGICAM_DC_LEVEL_1=({200..440..10})
+# export DIGICAM_DC_LEVEL_2=(${DIGICAM_DC_LEVEL_1[@]:12:2})
+# export DIGICAM_DC_LEVEL_1=(${DIGICAM_DC_LEVEL_1[@]:0:11})
+
+export DIGICAM_INTEGRAL_WIDTH=7
+export DIGICAM_INTEGRAL_SHIFT=0
+export DIGICAM_N_SAMPLES=50
+export DIGICAM_GAIN_APPROX=16
+export DIGICAM_LSB_MIN=-10
+export DIGICAM_LSB_MAX=3000
+export DIGICAM_LSB_BIN=1
+export DIGICAM_SATURATION_THRESHOLD=3000
 
 PIXEL=$1
 
 if [ -z "$PIXEL" ]; then
     export DIGICAM_PIXELS=({0..1295..1})
+    info=$(printf '_window_%03d_shift_%03d' $DIGICAM_INTEGRAL_WIDTH $DIGICAM_INTEGRAL_SHIFT)
+
 else
     export DIGICAM_PIXELS=($PIXEL)
+    info=$(printf '_window_%03d_shift_%03d_pixel_%04d' $DIGICAM_INTEGRAL_WIDTH $DIGICAM_INTEGRAL_SHIFT $PIXEL)
+
 fi
 
-
-export DIGICAM_INTEGRAL_WIDTH=1
-export DIGICAM_INTEGRAL_SHIFT=0
-export DIGICAM_N_SAMPLES=50
-export DIGICAM_GAIN_APPROX=5
-export DIGICAM_LSB_MIN=-10
-export DIGICAM_LSB_MAX=3000
-export DIGICAM_LSB_BIN=1
-export DIGICAM_SATURATION_THRESHOLD=999999
 
 function tolist () {
     local array="$@"
@@ -109,29 +87,27 @@ export -p tolist
 
 ### OUTPUT FILES ###
 
-#DATE=`date +%Y%m%d`
-DATE=20190225
-export DIGICAM_FOLDER='/home/alispach/data/ACDC_simtel'/$DATE'/'
-mkdir -p $DIGICAM_FOLDER
-mkdir -p $DIGICAM_FOLDER'figures/'
 
-export GHV_OFF_RAW_HISTO=$DIGICAM_FOLDER'ghv_off_raw_histo.fits'
-export GHV_OFF_RATE_SCAN=$DIGICAM_FOLDER'ghv_off_rate_scan.fits'
-export GHV_ON_RAW_HISTO=$DIGICAM_FOLDER'ghv_on_raw_histo.fits'
-export GHV_ON_RATE_SCAN=$DIGICAM_FOLDER'ghv_on_rate_scan_histo.fits'
-export DARK_RAW_HISTO=$DIGICAM_FOLDER'dark_raw_histo.fits'
-export DARK_RATE_SCAN=$DIGICAM_FOLDER'dark_rate_scan.fits'
-export DARK_MAX_HISTO=$DIGICAM_FOLDER'dark_max_histo.fits'
-export DARK_CHARGE_HISTO=$DIGICAM_FOLDER'dark_charge_histo.fits'
-export SPE_RESULTS=$DIGICAM_FOLDER'spe_results.fits'
-export TIMING_HISTO=$DIGICAM_FOLDER'timing_histo.fits'
-export TIMING_RESULTS=$DIGICAM_FOLDER'timing_results.fits'
-export FMPE_CHARGE_HISTO=$DIGICAM_FOLDER'fmpe_charge_histo.fits'
-export FMPE_AMPLITUDE_HISTO=$DIGICAM_FOLDER'fmpe_amplitude_histo.fits'
-export FMPE_RESULTS=$DIGICAM_FOLDER'fmpe_results.fits'
-export MPE_CHARGE_HISTO=$DIGICAM_FOLDER'mpe_charge_histo.fits'
-export MPE_RESULTS=$DIGICAM_FOLDER'mpe_results.fits'
-export AC_LED_FILE=$DIGCAM_FOLDER'ac_led.fits'
-export TEMPLATE_FILE=$DIGICAM_FOLDER'template.txt'
-export BASELINE_SHIFT_RESULTS=$DIGICAM_FOLDER'baseline_shift_results.fits'
-export CALIBRATION_FILE=$DIGICAM_FOLDER'calibration_results.fits'
+export GHV_OFF_RAW_HISTO=$DIGICAM_FOLDER'ghv_off_raw_histo'$info'.fits'
+export GHV_OFF_RATE_SCAN=$DIGICAM_FOLDER'ghv_off_rate_scan'$info'.fits'
+export GHV_ON_RAW_HISTO=$DIGICAM_FOLDER'ghv_on_raw_histo'$info'.fits'
+export GHV_ON_RATE_SCAN=$DIGICAM_FOLDER'ghv_on_rate_scan_histo'$info'.fits'
+export DARK_RAW_HISTO=$DIGICAM_FOLDER'dark_raw_histo'$info'.fits'
+export DARK_RATE_SCAN=$DIGICAM_FOLDER'dark_rate_scan'$info'.fits'
+export DARK_MAX_HISTO=$DIGICAM_FOLDER'dark_max_histo'$info'.fits'
+export DARK_CHARGE_HISTO=$DIGICAM_FOLDER'dark_charge_histo'$info'.fits'
+export SPE_RESULTS=$DIGICAM_FOLDER'spe_results'$info'.fits'
+export TIMING_HISTO=$DIGICAM_FOLDER'timing_histo'$info'.fits'
+export TIMING_RESULTS=$DIGICAM_FOLDER'timing_results'$info'.fits'
+export FMPE_CHARGE_HISTO=$DIGICAM_FOLDER'fmpe_charge_histo'$info'.fits'
+export FMPE_AMPLITUDE_HISTO=$DIGICAM_FOLDER'fmpe_amplitude_histo'$info'.fits'
+export FMPE_RESULTS=$DIGICAM_FOLDER'fmpe_results'$info'.fits'
+export MPE_CHARGE_HISTO=$DIGICAM_FOLDER'mpe_charge_histo'$info'.fits'
+export MPE_RESULTS=$DIGICAM_FOLDER'mpe_results'$info'.fits'
+export AC_LED_FILE=$DIGCAM_FOLDER'ac_led'$info'.fits'
+export TEMPLATE_FILE=$DIGICAM_FOLDER'pulse_shape'$info'.fits'
+export BASELINE_SHIFT_RESULTS=$DIGICAM_FOLDER'baseline_shift_results'$info'.fits'
+export CALIBRATION_FILE=$DIGICAM_FOLDER'calibration_results'$info'.fits'
+
+export GHV_OFF_RAW_FIGURE=$DIGICAM_FOLDER'figures/ghv_off_raw_histo'$info'.pdf'
+export DARK_RAW_FIGURE=$DIGICAM_FOLDER'figures/raw_histo'$info'.pdf'
