@@ -3,9 +3,7 @@ import numpy as np
 
 
 def compute_hillas_parameters(events, geom):
-
-    for i,event in enumerate(events):
-
+    for event in events:
         mask = event.data.cleaning_mask
         image = event.data.reconstructed_number_of_pe.copy()
         image[image < 0] = 0
@@ -13,9 +11,6 @@ def compute_hillas_parameters(events, geom):
         try:
             hillas = hillas_parameters(geom, image)
             event.hillas = hillas
-
             yield event
-
         except HillasParameterizationError:
-
             continue
