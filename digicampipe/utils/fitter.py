@@ -33,10 +33,15 @@ class FMPEFitter(HistogramFitter):
 
     def initialize_fit(self):
 
+        # It helps yield the smoothing range window, so it could take a windows of about one peak divide by the
+        # smoothing factor, i.e. :
+        # if smoothing_factor = 1, then smoothing window = 1 peak
+        # if smoothing_factor = 2, then smoothing window = half peak, and so on
+        smoothing_factor = 3.0
         y = self.count.astype(np.float)
         x = self.bin_centers
-        min_dist = self.estimated_gain / 3
-        min_dist = int(min_dist)
+        min_dist = (1/smoothing_factor) * self.estimated_gain / self.bin_width[0]
+        min_dist = max(int(min_dist), 1)
 
         n_peaks = self.n_peaks
 
