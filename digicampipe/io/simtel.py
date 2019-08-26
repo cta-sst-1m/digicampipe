@@ -15,7 +15,7 @@ from eventio.simtel.simtelfile import SimTelFile
 from ctapipe.io.simteleventsource import SimTelEventSource
 
 from digicampipe.io.containers import DataContainer
-
+from digicampipe.instrument.camera import DigiCam
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-def simtel_event_source(url, camera=None, max_events=None,
+def simtel_event_source(url, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
                         use_event_id=False, event_id=None, disable_bar=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
