@@ -618,12 +618,19 @@ def entry():
                         fit_results = {}
                         fit_errors = {}
                         pixel_id = int(data['pixel_ids'])
-                        print(pixel_id)
+                        valid = True
 
                         for key in fit_params_names:
 
                             fit_errors[key] = data['error_' + key]
                             fit_results[key] = data[key]
+
+                            if not np.isfinite(fit_results[key]):
+
+                                valid = False
+                        if not valid:
+
+                            continue
 
                         histo = Histogram1D.load(files[0],
                                                  rows=(None, pixel_id))
@@ -663,10 +670,14 @@ def entry():
                             fit_results['mu'] = fit_results['mu'][j]
                             fit_errors['mu'] = fit_errors['mu'][j]
 
+                            valid = np.isfinite(fit_results['mu'])
+
+                            if not valid:
+
+                                continue
+
                             histo = Histogram1D.load(files[0],
                                                      rows=(j, pixel_id))
-
-                            valid = np.isfinite(fit_results['mu'])
 
                             label = 'AC level {}\n Pixel {}' \
                                     ''.format(data['ac_levels'][j],
@@ -702,7 +713,6 @@ def entry():
                                            color='k',
                                            label=label,
                                            x_label='[LSB]')
-
                                 fig.savefig(pdf, format='pdf')
                             plt.close(fig)
         pdf.close()

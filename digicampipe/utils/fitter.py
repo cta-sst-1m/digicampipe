@@ -378,9 +378,14 @@ class MPECombinedFitter(HistogramFitter):
 
             mu = kwargs['mu']
 
-        y = mpe_fit(x, baseline=baseline, gain=gain, sigma_e=sigma_e,
+        # scale = (1 - mu_xt)
+        scale = 1
+        shift = - gain * (1 - 1 / (1 - mu_xt))
+        shift = 0
+        y = mpe_fit(x / scale + shift, baseline=baseline, gain=gain,
+                    sigma_e=sigma_e,
                     sigma_s=sigma_s, mu=mu, mu_xt=mu_xt, amplitude=1,
-                    n_peaks=self.n_peaks) * self.amplitude
+                    n_peaks=self.n_peaks) * self.amplitude / scale
 
         return y
 
