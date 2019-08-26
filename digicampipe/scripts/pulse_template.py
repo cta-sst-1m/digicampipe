@@ -42,10 +42,10 @@ from docopt import docopt
 import os
 import numpy as np
 
-from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils.docopt import convert_text, convert_pixel_args
 from digicampipe.visualization.plot import plot_pulse_templates
+from digicampipe.io.event_stream import calibration_event_stream
 
 
 def main(input_files, output=None, plot="show", plot_separated=None,
@@ -105,18 +105,6 @@ def simple_template(input_files, output):
     waveform_std = waveform_std - waveform_mean**2
     waveform_std = np.sqrt(waveform_std)
     time = np.arange(data.shape[-1]) * 4.
-
-    """
-    plt.plot(waveform_mean.T)
-    plt.xlabel("sample")
-    plt.ylabel("LSB")
-    print(input_files)
-    #plt.title("MOD_3_10_11_12 Generator PLUGGED")
-    #plt.title("MOD_3_10_11_12 Generator UNPLUGGED")
-    #plt.title("MOD_3_10_11_12 Generator OUTPUT 1 : OFF/ OUTPUT 2 : ON")
-    #plt.title("MOD_3_10_11_12 Internal Trigger")
-    plt.show()
-    """
 
     template = NormalizedPulseTemplate(waveform_mean, time=time,
                                        amplitude_std=waveform_std)

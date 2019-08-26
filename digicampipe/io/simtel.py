@@ -15,7 +15,7 @@ from eventio.simtel.simtelfile import SimTelFile
 from ctapipe.io.simteleventsource import SimTelEventSource
 
 from digicampipe.io.containers import DataContainer
-
+from digicampipe.instrument.camera import DigiCam
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-def simtel_event_source(url, camera=None, max_events=None,
+def simtel_event_source(url, camera=DigiCam, max_events=None,
                         allowed_tels=None, requested_event=None,
                         use_event_id=False, event_id=None, disable_bar=False):
     """A generator that streams data from an EventIO/HESSIO MC data file
@@ -154,10 +154,23 @@ def simtel_event_source(url, camera=None, max_events=None,
                 laser_calib = array_event['laser_calibrations'][tel_id]
                 data.mc.tel[tel_id].dc_to_pe = laser_calib['calib']
                 data.mc.tel[tel_id].pedestal = pedestal
+
                 adc_samples = telescope_event.get('adc_samples')
                 n_pixel = adc_samples.shape[-2]
+
+                data.inst.geom[tel_id] = camera.geometry
+                data.inst.cluster_matrix_7[tel_id] = \
+                    camera.cluster_7_matrix
+                data.inst.cluster_matrix_19[tel_id] = \
+                    camera.cluster_19_matrix
+                data.inst.patch_matrix[tel_id] = camera.patch_matrix
+                data.inst.num_channels[tel_id] = adc_samples.shape[0]
+                data.inst.num_pixels[tel_id] = adc_samples.shape[1]
+                data.inst.num_samples[tel_id] = adc_samples.shape[2]
+
                 if adc_samples is None:
                     adc_samples = telescope_event['adc_sums'][:, :, np.newaxis]
+                adc_samples = np.squeeze(adc_samples)
                 data.r0.tel[tel_id].adc_samples = adc_samples
                 data.r0.tel[tel_id].num_samples = adc_samples.shape[-1]
                 # We should not calculate stuff in an event source
