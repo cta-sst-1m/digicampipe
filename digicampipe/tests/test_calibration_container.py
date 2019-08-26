@@ -1,6 +1,7 @@
 import os
 
 import pkg_resources
+import pytest
 
 from digicampipe.io.event_stream import calibration_event_stream, event_stream
 
@@ -42,8 +43,22 @@ def test_calibration_event_stream():
 
         assert len(values[i][2]) == event.adc_samples.shape[0]
 
+# TO BE REVIEWED
+def test_indexError_in_calibration_event_stream():
+
+    with pytest.raises(IndexError):
+        sample_range = [2, 2]
+        calibration_event_stream(example_file_path, sample_range=[sample_range[0], sample_range[1]])
+
+    with pytest.raises(IndexError):
+        sample_range = [1, 0]
+        calibration_event_stream(example_file_path, sample_range=sample_range)
+
+
 
 def test_event_type_enum_behavior():
     for event in calibration_event_stream(example_file_path):
         assert event.event_type in [event.event_type.PATCH7,
                                     event.event_type.INTERNAL]
+
+

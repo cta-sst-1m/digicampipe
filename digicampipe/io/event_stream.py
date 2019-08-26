@@ -82,11 +82,17 @@ def calibration_event_stream(path,
                              max_events=None,
                              event_id_range=(None, None),
                              disable_bar=False,
+                             sample_range=None,
                              **kwargs):
     """
     Event stream for the calibration of the camera based on the observation
     event_stream()
     """
+
+    if sample_range is not None:
+        if sample_range[0] >= sample_range[1]:
+            raise IndexError('sample_ranges values in decreasing order. The order should be INCREASING')
+
     container = CalibrationContainer()
     for event in event_stream(path, max_events=max_events,
                               event_id_range=event_id_range,
@@ -95,11 +101,12 @@ def calibration_event_stream(path,
         container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
         container.event_type = r0_event.camera_event_type
         container.data.adc_samples = r0_event.adc_samples[pixel_id]
+        if sample_range is not None:
+            container.data.adc_samples = container.data.adc_samples[:, slice(sample_range[0], sample_range[1], 1)]
         container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
         container.data.local_time = r0_event.local_camera_clock
         container.data.gps_time = r0_event.gps_time
-        container.data.cleaning_mask = \
-            np.ones(container.data.adc_samples.shape[0], dtype=bool)
+        container.data.cleaning_mask = np.ones(container.data.adc_samples.shape[0], dtype=bool)
         container.event_id = r0_event.camera_event_number
         container.mc = event.mc
         yield container

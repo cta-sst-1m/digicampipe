@@ -69,7 +69,8 @@ def compute(files, max_events, pixel_id, n_samples, ac_levels,
         events = time_method(events)
 
         for event in events:
-            timing_histo.fill(event.data.reconstructed_time, indices=(i, ))
+
+            timing_histo.fill(event.data.reconstructed_time, indices=i)
 
     if save:
         timing_histo.save(filename)

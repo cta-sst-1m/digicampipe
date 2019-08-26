@@ -444,6 +444,7 @@ def entry():
 
         charge_histo = Histogram1D.load(charge_histo_filename)
         charge_histo.draw(index=(0, 0), log=False, legend=False)
+        plt.show()
 
         pass
 
