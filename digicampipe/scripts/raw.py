@@ -158,7 +158,6 @@ def entry():
     baseline_filename = convert_text(args['--baseline_filename'])
     disable_bar = args['--disable_bar']
     sample_range = convert_list_int(args['--sample_range'])
-    output_path = os.path.dirname(raw_histo_filename)
 
     output_path = os.path.dirname(output)
     if not os.path.exists(output_path) and output_path != "":

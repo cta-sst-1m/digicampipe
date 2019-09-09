@@ -17,6 +17,9 @@ class NormalizedPulseTemplate:
             self.amplitude_std = np.array(amplitude_std)
         else:
             self.amplitude_std = self.amplitude * 0
+        self.original_amplitude = self.amplitude
+        self.original_amplitude_std = self.amplitude_std
+
         self._template = self._interpolate()
         self._template_std = self._interpolate_std()
 
@@ -38,8 +41,8 @@ class NormalizedPulseTemplate:
 
             with FITS(filename, 'rw') as f:
 
-                data = [self.time, self.amplitude.T, self.amplitude_std.T]
-                names = ['time', 'amplitude', 'amplitude_std']
+                data = [self.time, self.amplitude.T, self.amplitude_std.T, self.original_amplitude.T, self.original_amplitude_std.T]
+                names = ['time', 'amplitude', 'amplitude_std', 'original_amplitude', 'original_amplitude_std']
                 f.write(data=data, names=names, extname='PULSE_TEMPLATE')
 
         else:
@@ -55,8 +58,8 @@ class NormalizedPulseTemplate:
             with FITS(filename, 'r') as f:
 
                 time = f['PULSE_TEMPLATE']['time'].read()
-                amplitude = f['PULSE_TEMPLATE']['amplitude'].read().T
-                amplitude_std = f['PULSE_TEMPLATE']['amplitude_std'].read().T
+                amplitude = f['PULSE_TEMPLATE']['original_amplitude'].read().T
+                amplitude_std = f['PULSE_TEMPLATE']['original_amplitude_std'].read().T
 
             return cls(amplitude=amplitude, time=time,
                        amplitude_std=amplitude_std)

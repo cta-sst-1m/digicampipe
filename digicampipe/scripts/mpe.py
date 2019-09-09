@@ -3,7 +3,7 @@
 Do the Multiple Photoelectron anaylsis and calibrate the AC LEDs
 
 Usage:
-  digicam-mpe compute --output=FILE --ac_levels=<DAC> --calib=FILE [--pixel=<PIXEL> --shift=N --integral_width=N --adc_min=N --adc_max=N] <INPUT>...
+  digicam-mpe compute --output=FILE --ac_levels=<DAC> --calib=FILE [--pixel=<PIXEL> --shift=N --integral_width=N --adc_min=N --adc_max=N --bin_width=N] <INPUT>...
   digicam-mpe fit combined --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL> --estimated_gain=N --ncall=N] [options] <INPUT>
   digicam-mpe fit single --output=FILE --ac_levels=<DAC> [--pixel=<PIXEL> --estimated_gain=N --ncall=N] [options] <INPUT>
   digicam-mpe display <INPUT>
