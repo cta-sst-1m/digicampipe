@@ -23,8 +23,8 @@ Options:
   --time_range_ns=<RANGE>       Coma separated interval in ns for the pulse
                                 template.
                                 [default: -9.,39.]
-  --normalize_range=<RANGE>     range of samples (inclusive) around the max used
-                                for normalization. If set to 0,0 the
+  --normalize_range=<RANGE>     range of samples (inclusive) around the max
+                                used for the normalization. If set to 0,0 the
                                 normalization is the amplitude of the max.
                                 [default: -3,4]
   --parameters=FILE             Calibration parameters file path. If set to
