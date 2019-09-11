@@ -23,9 +23,9 @@ Options:
   --time_range_ns=<RANGE>       Coma separated interval in ns for the pulse
                                 template.
                                 [default: -9.,39.]
-  --normalize_range=<RANGE>     index of the border samples around the max used
-                                for normalization. If set to 0,0 the
-                                normalization is by the amplitude of the max.
+  --normalize_range=<RANGE>     range of samples (inclusive) around the max
+                                used for the normalization. If set to 0,0 the
+                                normalization is the amplitude of the max.
                                 [default: -3,4]
   --parameters=FILE             Calibration parameters file path. If set to
                                 none, the default one is used.
@@ -68,9 +68,10 @@ template_default = resource_filename(
 )
 
 
-def analyse_ACDC_level(
-    files, max_events, delay_step_ns, time_range_ns, sampling_ns,
-    normalize_range, parameters, template, adc_noise
+def analyse_acdc_level(
+        files, max_events=None, delay_step_ns=0.1, delay_range_ns=(-4., 4.),
+        time_range_ns=(-9., 39.), sampling_ns=4., normalize_range=(-3, 4),
+        parameters=parameters_default, template=template_default, adc_noise=1
 ):
     with open(parameters) as parameters_file:
         calibration_parameters = yaml.load(parameters_file)
@@ -81,19 +82,19 @@ def analyse_ACDC_level(
                                 sampling_ns)
     n_sample_template = len(sample_template)
     template = NormalizedPulseTemplate.load(template)
-    delays = np.arange(-4, 4, delay_step_ns)
+    delays = np.arange(delay_range_ns[0], delay_range_ns[1], delay_step_ns)
     n_delays = len(delays)
     templates_ampl = np.zeros([n_delays, n_sample_template])
     templates_std = np.zeros([n_delays, n_sample_template])
     index_max_template = np.zeros(n_delays, dtype=int)
     for i, delay in enumerate(delays):
         ampl_templ = template(sample_template + delay)
+        std_templ = template.std(sample_template + delay)
         index_max_template[i] = np.argmax(ampl_templ)
         range_integ = index_max_template[i] + normalize_slice
         norm_templ = np.sum(ampl_templ[range_integ])
         templates_ampl[i, :] = ampl_templ / norm_templ
-        std = template.std(sample_template + delay) / norm_templ
-        templates_std[i, :] = std
+        templates_std[i, :] = std_templ / norm_templ
     max_ampl_one_pe = np.max(templates_ampl)
     events = calibration_event_stream(files, max_events=max_events,
                                       disable_bar=True)
@@ -145,8 +146,10 @@ def analyse_ACDC_level(
             good_pix,
             idx_sample_max <= 16
         )
-        sample_norm = adc_samples[rows_norm[good_pix, :],
-                                  column_norm[good_pix, :]]
+        sample_norm = adc_samples[
+            rows_norm[good_pix, :],
+            column_norm[good_pix, :]
+        ]
         norm_pixels = np.sum(sample_norm, axis=1)
         # discard pixels where charge is <= 2.5 LSB (0.5 pe), as normalization
         # is then meaningless
@@ -203,7 +206,7 @@ def main(
     for i, (ac_level, dc_level) in enumerate(unique_ac_dc):
         files_level = files[inverse == i]
         print('analyze file with AC DAC =', ac_level, 'DC DAC =', dc_level)
-        charge, t_fit = analyse_ACDC_level(
+        charge, t_fit = analyse_acdc_level(
             files_level, max_events, delay_step_ns, time_range_ns, sampling_ns,
             normalize_range, parameters, template, adc_noise
         )
