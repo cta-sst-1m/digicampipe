@@ -34,10 +34,7 @@ Options:
                                 resolution between any combination of 2 pixels.
                                 [default: 5.5]
 
-examples:
-$ --plot_summary=data/time_analysis_dc290.png --plot_resolution=data/time_resolution_dc290.png --plot_offset=data/time_offset_dc290.png --plot_rms_difference=data/rms_difference_dc290.png --legend="125MHz NSB, camera average" data/time_ac*_dc290.npz
-$ --plot_summary=data/time_analysis_dc0.png --plot_resolution=data/time_resolution_dc0.png --plot_offset=data/time_offset_dc0.png --plot_rms_difference=data/rms_difference_dc0.png --legend="0MHz NSB, camera average" data/time_ac*_dc0.npz
-
+An example of usage can be found in bash/time_resolution.sh
 """
 from docopt import docopt
 import os
