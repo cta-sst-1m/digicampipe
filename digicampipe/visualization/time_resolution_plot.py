@@ -33,9 +33,12 @@ Options:
   --n_pe_rms_difference=FLOAT   Charge in pe used to calculate the time
                                 resolution between any combination of 2 pixels.
                                 [default: 5.5]
+
+An example of usage can be found in bash/time_resolution.sh
 """
 from docopt import docopt
 import os
+from glob import glob
 import numpy as np
 from tempfile import TemporaryDirectory
 from matplotlib import pyplot as plt
@@ -154,13 +157,13 @@ def plot_resol(data_file, legend, ax=None):
     mean_charge_all, std_charge_all, mean_t_all, std_t_all, true_pe = \
         load_data(data_file)
     if ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8), dpi=100)
     # ax.plot([20*pde, 2e3*pde], [1, 1], 'r-', label='requirement B-TEL-1380')
     # ax.plot([20*pde, 20*pde], [.9, 1.1], 'r-', label=None)
     ax.plot([20*pde, 2e3*pde], [3, 3], 'b--', label='requirement B-TEL-1640')
-    ax.plot([20*pde, 20*pde], [1.4, 1.6], 'b-', label=None)
+    ax.plot([20*pde, 20*pde], [2.8, 3.2], 'b-', label=None)
     ax.plot([20*pde, 2e3*pde], [2, 2], 'm-.', label='requirement B-TEL-1030')
-    ax.plot([20*pde, 2e3*pde], [1.9, 2.1], 'm-', label=None)
+    ax.plot([20*pde, 20*pde], [1.9, 2.1], 'm-', label=None)
     plot_zone(
         true_pe,
         std_t_all,
@@ -281,6 +284,9 @@ def combine(acdc_level_files, output):
 def entry():
     args = docopt(__doc__)
     files = args['<INPUT>']
+    if len(files) == 1:
+        # allow for the input filename to contain a wildcard "*"
+        files = glob(files[0])
     print('files:', files)
     summary_filename = convert_text(args['--plot_summary'])
     resolution_filename = convert_text(args['--plot_resolution'])
