@@ -9,13 +9,15 @@ Usage:
 Options:
   -h --help                   Show this screen.
   --max_events=N              Maximum number of events to analyse
-  --timing_histo_filename=FILE.  Folder where to store the results.
+  --timing_histo_filename=FILE Folder where to store the results.
+  --output=FILE               File to which the results of the timing
+                              analysis are stored
   --ac_levels=<DAC>           LED AC DAC level
   -c --compute                Compute the data.
   -f --fit                    Fit the timing histo.
   -d --display                Display.
   -v --debug                  Enter the debug mode.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
+  -p --pixels=<PIXEL>          Give a list of pixel IDs.
   --save_figures              Save the plots to the OUTPUT folder
   --n_samples=N               Number of samples per waveform
 """
@@ -28,6 +30,7 @@ from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
 from scipy.stats import mode
+import fitsio
 
 from digicampipe.calib.time import compute_time_from_max
 from digicampipe.io.event_stream import calibration_event_stream
@@ -69,7 +72,8 @@ def compute(files, max_events, pixel_id, n_samples, ac_levels,
         events = time_method(events)
 
         for event in events:
-            timing_histo.fill(event.data.reconstructed_time, indices=(i, ))
+
+            timing_histo.fill(event.data.reconstructed_time, indices=i)
 
     if save:
         timing_histo.save(filename)
@@ -82,13 +86,13 @@ def entry():
     files = args['<INPUT>']
 
     max_events = convert_int(args['--max_events'])
-    pixel_id = convert_pixel_args(args['--pixel'])
+    pixel_id = convert_pixel_args(args['--pixels'])
     n_samples = int(args['--n_samples'])
     timing_histo_filename = args['--timing_histo_filename']
     ac_levels = convert_list_int(args['--ac_levels'])
 
     output_path = os.path.dirname(timing_histo_filename)
-    results_filename = os.path.join(output_path, 'timing.npz')
+    results_filename = args['--output']
 
     if not os.path.exists(output_path):
         raise IOError('Path for output does not exists \n')
@@ -100,12 +104,16 @@ def entry():
         # or try to use compute_time_from_leading_edge)
 
     if args['--fit']:
-        timing_histo = Histogram1D.load(timing_histo_filename)
 
+        timing_histo = Histogram1D.load(timing_histo_filename)
         timing = timing_histo.mode()
         timing = mode(timing, axis=0)[0][0]
 
-        np.savez(results_filename, time=timing)
+        with fitsio.FITS(results_filename, 'rw') as f:
+
+            f.write([timing, pixel_id],
+                    names=['timing', 'pixel_ids'],
+                    extname='TIMING')
 
     if args['--save_figures']:
 
@@ -147,7 +155,10 @@ def entry():
         plt.xlabel('DAC level')
         plt.ylabel('Reconstructed pulse time [ns]')
 
-        pulse_time = np.load(results_filename)['time']
+        with fitsio.FITS(results_filename, 'r') as f:
+
+            table = f['TIMING']
+            pulse_time = table['timing'].read()
 
         plot_array_camera(pulse_time, label='time of pulse [ns]',
                           allow_pick=True)
