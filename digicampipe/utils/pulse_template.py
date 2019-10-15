@@ -135,7 +135,7 @@ class NormalizedPulseTemplate:
             axes = fig.add_subplot(111)
         t = np.linspace(self.time.min(), self.time.max(),
                         num=len(self.time) * 100)
-        axes.errorbar(self.time, self.amplitude, self.amplitude_std,
+        axes.errorbar(self.time, self.amplitude, self.amplitude_std/2,
                       label=label, **kwargs)
         axes.set_xlabel('time [ns]')
         axes.set_ylabel('normalised amplitude [a.u.]')
