@@ -5,7 +5,7 @@ Usage:
 
 Options:
   --help                        Show this
-  <INPUT>                       PATH to the directory containing the list of files to analyse.
+  <INPUT>                       PATH to the directory containing the list of "fits" files to analyse.
                                 The first file (0000) is always the Dark Count.
                                 The following are the different intensity levels starting by the lowest
   --module_id_list=LIST         List of the modules ID to be analyse.
