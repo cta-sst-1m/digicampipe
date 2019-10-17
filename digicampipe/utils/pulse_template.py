@@ -129,6 +129,14 @@ class NormalizedPulseTemplate:
 
         return 1 / charge_to_amplitude_factor
 
+    def pdf(self, t, t_0):
+
+        y = self(t, t_0=t_0) / self.integral()
+        mask = y <= 0
+        y[mask] = 1E-10
+
+        return y
+
     def plot(self, axes=None, label='Template data-points', **kwargs):
         if axes is None:
             fig = plt.figure()
