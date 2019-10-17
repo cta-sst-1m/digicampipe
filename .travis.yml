@@ -46,7 +46,7 @@ script:
 - pytest digicampipe
 - make -C docs/ html
 - |
-  if [ "${TRAVIS_EVENT_TYPE}" == "cron" ]; then
+  if [ "${TRAVIS_EVENT_TYPE}" == "cron" ] || [ "${TRAVIS_EVENT_TYPE}" == "api" ]; then
     travis_wait 30 pytest -c all_tests.ini digicampipe
   fi
 env:

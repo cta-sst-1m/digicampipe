@@ -1,7 +1,6 @@
 import decimal
 from decimal import Decimal, ROUND_HALF_EVEN
 
-import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
 from astropy.io import fits
@@ -27,6 +26,7 @@ from digicampipe.image.lidccd.utils import (
     fit_gauss_2d,
 )
 from digicampipe.instrument import geometry
+import matplotlib.pyplot as plt
 
 camera_config_file = resource_filename(
     'digicampipe',

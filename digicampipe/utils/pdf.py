@@ -2,6 +2,7 @@ import numpy as np
 
 
 def gaussian(x, mean, sigma, amplitude):
+
     x = np.atleast_1d(x)
     pdf = (x[:, np.newaxis] - mean) ** 2 / (2 * sigma ** 2)
     pdf = np.exp(-pdf)
@@ -21,36 +22,30 @@ def generalized_poisson(k, mu, mu_xt, amplitude=1):
     :param amplitude:
     :return:
     """
+    if isinstance(mu, np.ndarray):
+        mu = mu[:, None]
 
-    if mu_xt < 0 or mu < 0:
+    mask_valid = (mu_xt >= 0) * (mu >= 0) * (k >= 0)
 
-        if isinstance(k, int):
-            return 0
-        else:
-            return np.zeros(len(k))
+    log_amplitude = np.log(amplitude)
+    log_mu = np.log(mu)
 
-    else:
+    temp = np.ones((len(k), k.max()))
 
-        log_amplitude = np.log(amplitude)
-        log_mu = np.log(mu)
+    temp[:] = np.arange(1, k.max() + 1)
+    mask = np.triu_indices(n=temp.shape[0], m=temp.shape[1])
+    temp[mask] = 1
 
-        temp = np.ones((len(k), k.max()))
+    temp = np.log(temp)
+    log_k = np.sum(temp, axis=-1)
 
-        temp[:] = np.arange(1, k.max() + 1)
-        mask = np.triu_indices(n=temp.shape[0], m=temp.shape[1])
-        temp[mask] = 1
+    pdf = log_amplitude + log_mu
+    pdf = pdf + np.log(mu + k * mu_xt) * (k - 1)
+    pdf = pdf + (-mu - k * mu_xt) - log_k
+    pdf = np.exp(pdf)
+    pdf[~mask_valid] = 0
 
-        temp = np.log(temp)
-        log_k = np.sum(temp, axis=-1)
-
-        pdf = log_amplitude + log_mu
-        pdf = pdf + np.log(mu + k * mu_xt) * (k - 1)
-        pdf = pdf + (-mu - k * mu_xt) - log_k
-        pdf = np.exp(pdf)
-
-        pdf[k < 0] = 0
-
-        return pdf
+    return pdf
 
 
 def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
@@ -74,6 +69,32 @@ def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
     else:
 
         return 0
+
+
+def mpe_fit(x, baseline, gain, sigma_e, sigma_s, mu, mu_xt, amplitude, n_peaks):
+
+    if n_peaks > 0:
+
+        x = x - baseline
+        photoelectron_peak = np.arange(n_peaks, dtype=np.int)
+        sigma_n = sigma_e ** 2 + photoelectron_peak * sigma_s ** 2
+        sigma_n = sigma_n
+        sigma_n = np.sqrt(sigma_n)
+
+        pdf = generalized_poisson(photoelectron_peak, mu, mu_xt)
+
+        noise = gaussian(x, photoelectron_peak * gain, sigma_n, amplitude=1)
+
+        # print(pdf.shape, b.shape)
+        pdf = pdf.dot(noise.T)
+        # print(pdf.shape)
+        # pdf = np.sum(pdf, axis=1)
+
+        return pdf * amplitude
+
+    else:
+
+        return np.zeros(x.shape)
 
 
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,

@@ -33,14 +33,19 @@ Options:
   --yscale=STRING           "linear", "log", "symlog" or "logit". The Y axis
                             scale type to apply. See Axes.set_yscale().
                             [Default: linear]
+  --per_pixel               Run the analysis per pixel (simple sum
+                            over waveforms)
 """
+
 import matplotlib.pyplot as plt
 from docopt import docopt
 import os
+import numpy as np
 
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 from digicampipe.utils.docopt import convert_text, convert_pixel_args
 from digicampipe.visualization.plot import plot_pulse_templates
+from digicampipe.io.event_stream import calibration_event_stream
 
 
 def main(input_files, output=None, plot="show", plot_separated=None,
@@ -80,6 +85,33 @@ def main(input_files, output=None, plot="show", plot_separated=None,
         plt.close(fig)
 
 
+def simple_template(input_files, output):
+
+    for i, event in enumerate(calibration_event_stream(input_files)):
+
+        data = event.data.adc_samples
+        data = data - event.data.digicam_baseline[:, None]
+
+        if i == 0:
+
+            waveform_mean = np.zeros(data.shape)
+            waveform_std = np.zeros(data.shape)
+
+        waveform_mean += data
+        waveform_std += data**2
+
+    waveform_mean /= (i + 1.)
+    waveform_std /= (i + 1.)
+    waveform_std = waveform_std - waveform_mean**2
+    waveform_std = np.sqrt(waveform_std)
+    time = np.arange(data.shape[-1]) * 4.
+
+    template = NormalizedPulseTemplate(waveform_mean, time=time,
+                                       amplitude_std=waveform_std)
+
+    template.save(output)
+
+
 def entry():
     args = docopt(__doc__)
     inputs = args['<input_files>']
@@ -89,15 +121,23 @@ def entry():
     pixels = convert_pixel_args(args['--pixels'])
     xscale = args['--xscale']
     yscale = args['--yscale']
-    main(
-        input_files=inputs,
-        output=output,
-        plot=plot,
-        plot_separated=plot_separated,
-        xscale=xscale,
-        yscale=yscale,
-        pixels=pixels
-    )
+    per_pixel = args['--per_pixel']
+
+    if per_pixel:
+
+        simple_template(inputs, output)
+
+    else:
+
+        main(
+            input_files=inputs,
+            output=output,
+            plot=plot,
+            plot_separated=plot_separated,
+            xscale=xscale,
+            yscale=yscale,
+            pixels=pixels
+        )
 
 
 if __name__ == '__main__':

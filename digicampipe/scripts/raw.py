@@ -3,29 +3,35 @@
 Do a raw data histogram
 
 Usage:
-  digicam-raw [options] [--] <INPUT>...
+  digicam-raw compute --output=FILE [options] <INPUT>...
+  digicam-raw display <INPUT>
+  digicam-raw save_figure --output=FILE <INPUT>
+  digicam-raw fit --output=FILE <INPUT>
 
 Options:
-  -h --help                   Show this screen.
-  --max_events=N              Maximum number of events to analyse
-  -o FILE --output=FILE.      File where to store the results.
-                              [Default: ./raw_histo.fits]
-  -c --compute                Compute the raw data histograms.
-  -d --display                Display.
-  -p --pixel=<PIXEL>          Give a list of pixel IDs.
-  --baseline_subtracted       Perform baseline subtraction to the raw data
-  --save_figures              Save the plots to the same folder as output file.
-  --baseline_filename=FILE    Output path for DigiCam calculated baseline
-                              histogram. If "none" the histogram will not be
-                              computed. FILE should end with '.pk'
-                              [Default: none]
-  --event_types=<TYPE>        Comma separated list of integers corresponding to
-                              the events types that are taken into the
-                              histogram (others are discarded).
-                              If set to "none", all events are included.
-                              [Default: none]
-  --disable_bar               If used, the progress bar is not show while
-                              reading files.
+    -h --help                   Show this screen.
+    --max_events=N              Maximum number of events to analyse
+    -o FILE --output=FILE.      File where to store the results.
+    -p --pixel=<PIXEL>          Give a list of pixel IDs.
+    --baseline_subtracted       Perform baseline subtraction to the raw data
+    --baseline_filename=FILE    Output path for DigiCam calculated baseline
+                                histogram. If "none" the histogram will not be
+                                computed. FILE should end with '.pk'
+                                [Default: none]
+    --event_types=<TYPE>        Comma separated list of integers corresponding
+                                to the events types that are taken into the
+                                histogram (others are discarded).
+                                If set to "none", all events are included.
+                                [Default: none]
+    --disable_bar               If used, the progress bar is not show while
+                                reading files.
+    --sample_range=LIST         If used, define a sample range smaller than the default which is [initial, last]
+
+Commands:
+    compute                     Compute the histogram
+    display                     Display the histogram
+    save_figure                 Save the figures to the output
+    fit                         Fit a gaussian on to the histogram
 """
 import os
 import matplotlib.pyplot as plt
@@ -33,15 +39,16 @@ import numpy as np
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
+from fitsio import FITS
 
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_int, convert_pixel_args, \
-    convert_list_int
+from digicampipe.utils.docopt import convert_int, convert_pixel_args, convert_list_int, convert_text
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
+from digicampipe.utils.fitter import GaussianFitter
 
 
 def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
-            disable_bar=False, baseline_subtracted=False):
+            disable_bar=False, baseline_subtracted=False, sample_range=None):
     if os.path.exists(filename) and len(files) == 0:
         raw_histo = Histogram1D.load(filename)
         return raw_histo
@@ -51,11 +58,11 @@ def compute(files, filename, max_events=None, pixel_id=None, event_types=None,
         n_pixels = len(pixel_id)
         events = calibration_event_stream(
             files, pixel_id=pixel_id, max_events=max_events,
-            disable_bar=disable_bar)
+            disable_bar=disable_bar, sample_range=sample_range)
         if baseline_subtracted:
-            bin_edges = np.arange(-100, 4095, 1)
+            bin_edges = np.arange(-100, 4097, 1)
         else:
-            bin_edges = np.arange(0, 4095, 1)
+            bin_edges = np.arange(0, 4097, 1)
         raw_histo = Histogram1D(
             data_shape=(n_pixels,),
             bin_edges=bin_edges,
@@ -100,32 +107,73 @@ def compute_baseline_histogram(files, filename, max_events=None, pixel_id=None,
         return baseline_histo
 
 
+def fit_gaussian(filename, output, debug=False):
+
+    histograms = Histogram1D.load(filename)
+    n_pixels = histograms.shape[0]
+    column_names = ['mean', 'error_mean', 'sigma', 'error_sigma', 'amplitude',
+                    'error_amplitude', 'chi_2', 'ndf']
+    data = {key: np.zeros(n_pixels) for key in column_names}
+
+    for i in tqdm(range(n_pixels), total=n_pixels, desc='Pixel'):
+
+        histo = histograms[i]
+
+        try:
+
+            fitter = GaussianFitter(histo)
+            fitter.fit()
+            results = fitter.results_to_dict()
+
+            if debug:
+
+                fitter.draw_init()
+                fitter.draw_fit()
+                plt.show()
+
+        except Exception:
+
+            results = {key: np.array(np.nan) for key in column_names}
+
+        for key, val in results.items():
+
+            data[key][i] = val
+
+    with FITS(output, 'rw') as f:
+
+        f.write(data=data, extname='RAW')
+
+    return
+
+
 def entry():
     args = docopt(__doc__)
+
     files = args['<INPUT>']
     max_events = convert_int(args['--max_events'])
     pixel_id = convert_pixel_args(args['--pixel'])
     base_sub = args['--baseline_subtracted']
-    raw_histo_filename = args['--output']
+    output = args['--output']
     event_types = convert_list_int(args['--event_types'])
-    baseline_filename = args['--baseline_filename']
+    baseline_filename = convert_text(args['--baseline_filename'])
     disable_bar = args['--disable_bar']
-    if baseline_filename.lower() == 'none':
-        baseline_filename = None
-    output_path = os.path.dirname(raw_histo_filename)
+    sample_range = convert_list_int(args['--sample_range'])
+
+    output_path = os.path.dirname(output)
     if not os.path.exists(output_path) and output_path != "":
         raise IOError('Path {} for output '
                       'does not exists \n'.format(output_path))
 
-    if args['--compute']:
+    if args['compute']:
         compute(
             files=files,
-            filename=raw_histo_filename,
+            filename=output,
             max_events=max_events,
             pixel_id=pixel_id,
             event_types=event_types,
             disable_bar=disable_bar,
-            baseline_subtracted=base_sub
+            baseline_subtracted=base_sub,
+            sample_range=sample_range
         )
         if baseline_filename:
             compute_baseline_histogram(
@@ -136,26 +184,18 @@ def entry():
                 disable_bar=disable_bar
             )
 
-    if args['--save_figures']:
-        raw_histo = Histogram1D.load(raw_histo_filename)
-        path = os.path.join(output_path, 'figures/', 'raw_histo/')
-        if not os.path.exists(path):
-            os.makedirs(path)
-        figure = plt.figure()
-        for i, pixel in tqdm(enumerate(pixel_id), total=len(pixel_id)):
-            axis = figure.add_subplot(111)
-            figure_path = os.path.join(path, 'pixel_{}.pdf')
-            try:
-                raw_histo.draw(index=(i,), axis=axis, log=True, legend=False)
-                figure.savefig(figure_path.format(pixel))
-            except Exception as e:
-                print('Could not save pixel {} to : {} \n'.
-                      format(pixel, figure_path))
-                print(e)
-            axis.remove()
+    if args['fit']:
 
-    if args['--display']:
-        raw_histo = Histogram1D.load(raw_histo_filename)
+        fit_gaussian(files[0], output)
+
+    if args['save_figure']:
+
+        raw_histo = Histogram1D.load(files[0])
+        raw_histo.save_figures(output, log=True, x_label='[LSB]')
+
+    if args['display']:
+
+        raw_histo = Histogram1D.load(files[0])
         pixel = 0
         raw_histo.draw(index=(pixel,), log=True, legend=False,
                        label='Histogram {}'.format(pixel), x_label='[LSB]')

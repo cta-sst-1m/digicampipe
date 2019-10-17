@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 from tqdm import tqdm
+from fitsio import FITS
+import os
 
 from digicampipe.utils.hist2d import Histogram2d
 
@@ -15,6 +17,9 @@ class NormalizedPulseTemplate:
             self.amplitude_std = np.array(amplitude_std)
         else:
             self.amplitude_std = self.amplitude * 0
+        self.original_amplitude = self.amplitude
+        self.original_amplitude_std = self.amplitude_std
+
         self._template = self._interpolate()
         self._template_std = self._interpolate_std()
 
@@ -31,19 +36,45 @@ class NormalizedPulseTemplate:
                                        time=self.time)
 
     def save(self, filename):
-        data = np.vstack([self.time, self.amplitude, self.amplitude_std])
-        np.savetxt(filename, data.T)
+
+        if filename.endswith('.fits'):
+
+            with FITS(filename, 'rw') as f:
+
+                data = [self.time, self.amplitude.T, self.amplitude_std.T, self.original_amplitude.T, self.original_amplitude_std.T]
+                names = ['time', 'amplitude', 'amplitude_std', 'original_amplitude', 'original_amplitude_std']
+                f.write(data=data, names=names, extname='PULSE_TEMPLATE')
+
+        else:
+
+            data = np.vstack([self.time, self.amplitude, self.amplitude_std])
+            np.savetxt(filename, data.T)
 
     @classmethod
     def load(cls, filename):
-        data = np.loadtxt(filename).T
-        assert len(data) in [2, 3]
-        if len(data) == 2:  # no std in file
-            t, x = data
-            return cls(amplitude=x, time=t)
-        elif len(data) == 3:
-            t, x, dx = data
-            return cls(amplitude=x, time=t, amplitude_std=dx)
+
+        if filename.endswith('.fits'):
+
+            with FITS(filename, 'r') as f:
+
+                time = f['PULSE_TEMPLATE']['time'].read()
+                amplitude = f['PULSE_TEMPLATE']['original_amplitude'].read().T
+                amplitude_std = f['PULSE_TEMPLATE']['original_amplitude_std'].read().T
+
+            return cls(amplitude=amplitude, time=time,
+                       amplitude_std=amplitude_std)
+
+        else:
+
+            data = np.loadtxt(filename).T
+            assert len(data) in [2, 3]
+            if len(data) == 2:  # no std in file
+                t, x = data
+                return cls(amplitude=x, time=t)
+            elif len(data) == 3:
+                t, x, dx = data
+                return cls(amplitude=x, time=t, amplitude_std=dx)
+
 
     @classmethod
     def create_from_datafile(cls, input_file, min_entries_ratio=0.1):
@@ -63,6 +94,8 @@ class NormalizedPulseTemplate:
         min_entries = np.max([2, tbin_max_entries*min_entries_ratio])
         ts, ampl, ampl_std = histo.fit_y(min_entries=min_entries)
         return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
+
+
 
     @classmethod
     def create_from_datafiles(cls, input_files, min_entries_ratio=0.1,
@@ -111,8 +144,9 @@ class NormalizedPulseTemplate:
                         bounds_error=False, fill_value=np.inf,
                         assume_sorted=True)
 
-    def integral(self):
-        return np.trapz(y=self.amplitude, x=self.time)
+    def integral(self, order=1):
+
+        return np.trapz(y=self.amplitude**order, x=self.time)
 
     def compute_charge_amplitude_ratio(self, integral_width, dt_sampling):
 
@@ -141,6 +175,8 @@ class NormalizedPulseTemplate:
         axes.set_ylabel('normalised amplitude [a.u.]')
         axes.legend(loc='best')
         return axes
+
+
 
     def plot_interpolation(self, axes=None, sigma=-1., color='k',
                            label='Template interpolation', cumulative=False,
