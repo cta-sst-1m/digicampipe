@@ -503,7 +503,8 @@ def entry():
                                         total=n_ac_levels, desc='DAC level',
                                         leave=False):
 
-            time[i] = timing[pixel_ids]
+            #time[i] = timing[pixel_ids]
+            time[i] = timing
             pulse_indices = time[i] // 4
 
             events = calibration_event_stream(file, pixel_id=pixel_ids,
