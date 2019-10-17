@@ -68,6 +68,14 @@ def test_pulse_template_integral():
     assert template.integral() == PULSE_AREA
 
 
+def test_pulse_template_pdf():
+    template = NormalizedPulseTemplate.load(template_filename)
+    times = np.linspace(-template.time.max(), template.time.max(), num=1000)
+    t_0 = 10
+    y = template.pdf(times, t_0)
+    np.testing.assert_almost_equal(np.trapz(y, times), 1)
+
+
 def test_pulse_template_plot():
     template = NormalizedPulseTemplate.load(template_filename)
     template.plot()

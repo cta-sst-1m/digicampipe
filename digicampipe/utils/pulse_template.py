@@ -131,9 +131,11 @@ class NormalizedPulseTemplate:
 
     def pdf(self, t, t_0):
 
-        y = self(t, t_0=t_0) / self.integral()
+        y = self(t, t_0=t_0)
         mask = y <= 0
         y[mask] = 1E-10
+        integral = np.trapz(y, x=t)
+        y = y/ integral
 
         return y
 
