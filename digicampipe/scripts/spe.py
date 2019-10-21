@@ -31,6 +31,8 @@ Options:
                                Figures are not saved is set to none
                                [default: none]
   --ncall=N                    Number of calls for the fit [default: 10000]
+  --estimated_gain=N           Estimated gain to fit the parameters
+                               [default: 20.0]
   --n_samples=N                Number of samples per waveform
 
 """
@@ -57,8 +59,8 @@ from digicampipe.utils.docopt import convert_pixel_args, \
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
     p_0 = number_of_zeros / total_number_of_events
-    rate = - np.log(p_0)
-    rate /= time
+    mu_poisson = - np.log(p_0)
+    rate = mu_poisson / time
 
     return rate
 
@@ -167,19 +169,33 @@ def entry():
     pulse_finder_threshold = float(args['--pulse_finder_threshold'])
 
     n_samples = int(args['--n_samples'])  # TODO access this in a better way !
-    estimated_gain = 20
+    estimated_gain = float(args['--estimated_gain'])
     ncall = int(args['--ncall'])
 
     if args['--compute']:
-        raw_histo = raw.compute(files, max_events=max_events,
-                                pixel_id=pixel_id, filename=raw_histo_filename)
+        raw_histo = raw.compute(files=files,
+                                max_events=max_events,
+                                pixel_id=pixel_id,
+                                filename=raw_histo_filename)
+
         baseline = raw_histo.mode()
 
-        compute_max_histo(files, max_histo_filename, pixel_id, max_events,
-                          integral_width, shift, baseline)
+        compute_max_histo(files=files,
+                          histo_filename=max_histo_filename,
+                          pixel_id=pixel_id,
+                          max_events=max_events,
+                          integral_width=integral_width,
+                          shift=shift,
+                          baseline=baseline)
 
-        compute_spe(files, charge_histo_filename, pixel_id, baseline,
-                    max_events, integral_width, shift, pulse_finder_threshold,
+        compute_spe(files=files,
+                    histo_filename=charge_histo_filename,
+                    pixel_id=pixel_id,
+                    baseline=baseline,
+                    max_events=max_events,
+                    integral_width=integral_width,
+                    shift=shift,
+                    pulse_finder_threshold=pulse_finder_threshold,
                     debug=debug)
 
     if args['--fit']:
@@ -187,8 +203,8 @@ def entry():
         results = {'dcr': [], 'sigma_e': [], 'mu_xt': [],
                    'gain': [], 'pixels_ids': pixel_id}
 
-        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
-                             desc='Pixel'):
+        for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels, desc='Pixel'):
+
             histo = Histogram1D.load(max_histo_filename, rows=i)
 
             try:
