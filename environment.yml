@@ -29,7 +29,7 @@ dependencies:
 - PyYAML=3.13
 - scikit-learn
 - scikit-image
-- scipy
+- scipy>=1.2.0
 - sphinx_rtd_theme
 - traitlets
 - pip:
