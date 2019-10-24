@@ -275,8 +275,8 @@ do
 
   # NO NEED TO SPECIFY THE PIXEL LIST SINCE IT IS OBTAINED FROM FIT COMBINED TABLE
   output_fit_combined_pdf=$OUTPUT_PDFS'/fit_combine.pdf'
-  #rm $output_fit_combined_pdf
-  #digicam-mpe save_figure --output=$output_fit_combined_pdf --ac_levels=$level_string --calib=$output_fit_combined_mpe $output_compute_mpe
+  rm $output_fit_combined_pdf
+  digicam-mpe save_figure --output=$output_fit_combined_pdf --ac_levels=$level_string --calib=$output_fit_combined_mpe $output_compute_mpe
 
   echo -e '###########################################'
   echo -e '###  Waveform templates for all levels  ###'
