@@ -85,12 +85,18 @@ def main(input_files, output=None, plot="show", plot_separated=None,
         plt.close(fig)
 
 
-def simple_template(input_files, output):
+def simple_template(input_files, output, pixels):
 
     for i, event in enumerate(calibration_event_stream(input_files)):
 
         data = event.data.adc_samples
         data = data - event.data.digicam_baseline[:, None]
+
+        if pixels is not None:
+            data = event.data.adc_samples[pixels[0]]
+            for pixel_id in pixels:
+                data = np.vstack((data, event.data.adc_samples[pixel_id]))
+            data = np.delete(data, 0, 0)
 
         if i == 0:
 
@@ -102,7 +108,7 @@ def simple_template(input_files, output):
 
     waveform_mean /= (i + 1.)
     waveform_std /= (i + 1.)
-    waveform_std = waveform_std - waveform_mean**2
+    waveform_std = (i + 1.)/(i + 1. -1.) * (waveform_std - waveform_mean**2)
     waveform_std = np.sqrt(waveform_std)
     time = np.arange(data.shape[-1]) * 4.
 
@@ -125,7 +131,7 @@ def entry():
 
     if per_pixel:
 
-        simple_template(inputs, output)
+        simple_template(inputs, output, pixels)
 
     else:
 

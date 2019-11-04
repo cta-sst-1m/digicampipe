@@ -288,7 +288,7 @@ do
     echo -e '------------ Level '$c' template ------------'
     echo -e '-------------------------------------------'
 
-    output_template=$OUTPUT_FITS'/template_level0'$c'.fits'
+    output_template=$OUTPUT_FITS'/template_level_0'$c'.fits'
     rm $output_template
     digicam-pulse-template --per_pixel --pixel=$pixel_string --output=$output_template ${filename[$c]}
   done
