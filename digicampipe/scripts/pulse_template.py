@@ -85,18 +85,14 @@ def main(input_files, output=None, plot="show", plot_separated=None,
         plt.close(fig)
 
 
-def simple_template(input_files, output, pixels):
+def simple_template(input_files, output, pixels=None):
 
     for i, event in enumerate(calibration_event_stream(input_files)):
 
         data = event.data.adc_samples
         data = data - event.data.digicam_baseline[:, None]
 
-        if pixels is not None:
-            data = event.data.adc_samples[pixels[0]]
-            for pixel_id in pixels:
-                data = np.vstack((data, event.data.adc_samples[pixel_id]))
-            data = np.delete(data, 0, 0)
+        data = data[pixels]
 
         if i == 0:
 
