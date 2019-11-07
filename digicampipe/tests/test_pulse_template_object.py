@@ -181,5 +181,17 @@ def test_save_and_load_fits():
                       template_loaded.amplitude_std)
 
 
+def test_normalization_for_array_template():
+
+    data_1 = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 9, 2, 5, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 13, -4, 5, 1, 1, 1, 1, 1, 1]])
+    data_2 = -np.array([[1, 1, 1, 1, 1, 1, 1, 1, 9, 2, 5, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 13, -4, 5, 1, 1, 1, 1, 1, 1]])
+    time = np.arange(data_1.shape[1])
+    template_positive = NormalizedPulseTemplate(amplitude=data_1, time=time)
+    template_negative = NormalizedPulseTemplate(amplitude=data_2, time=time)
+
+    assert (template_positive.amplitude.max(axis=-1) == 1).all()
+    assert (template_negative.amplitude.max(axis=-1) == 1).all()
+
+
 if __name__ == '__main__':
-    test_pulse_template_save()
+    test_normalization_for_array_template()

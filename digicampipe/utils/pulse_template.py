@@ -125,13 +125,13 @@ class NormalizedPulseTemplate:
         return cls(time=ts[0], amplitude=ampl[0], amplitude_std=ampl_std[0])
 
     def _interpolate(self):
-        if abs(np.min(self.amplitude)) <= abs(np.max(self.amplitude)):
 
-            normalization = np.max(self.amplitude)
+        min_amplitude = np.min(self.amplitude, axis=-1)
+        max_amplitude = np.max(self.amplitude, axis=-1)
 
-        else:
-
-            normalization = np.min(self.amplitude)
+        is_positive = np.abs(min_amplitude) <= np.abs(max_amplitude)
+        normalization = max_amplitude * is_positive + min_amplitude * ~is_positive
+        normalization = normalization[..., None]
 
         self.amplitude = self.amplitude / normalization
         self.amplitude_std = self.amplitude_std / normalization
