@@ -148,6 +148,7 @@ class EventViewer():
     def next(self, event=None, step=1):
         for i, event in zip(range(step), self.event_stream):
             pass
+        print(event.r0.tels_with_data)
         telescope_id = event.r0.tels_with_data[0]
         self.event_id = event.r0.tel[telescope_id].camera_event_number
         self.r0_container = event.r0.tel[telescope_id]
