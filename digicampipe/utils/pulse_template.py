@@ -129,13 +129,12 @@ class NormalizedPulseTemplate:
 
         return 1 / charge_to_amplitude_factor
 
-    def pdf(self, t, t_0):
+    def pdf(self, t, t_0=0.):
 
         y = self(t, t_0=t_0)
-        mask = y <= 0
-        y[mask] = 1E-10
-        integral = np.trapz(y, x=t)
-        y = y/ integral
+        # times = np.ones(y.shape) * t
+        # integral = np.trapz(y=y, x=times, axis=0)
+        y = y / self.integral()
 
         return y
 
