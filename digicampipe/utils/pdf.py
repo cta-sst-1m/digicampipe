@@ -188,3 +188,19 @@ if __name__ == '__main__':
     plt.plot(x, pdf, label='area : {}'.format(np.sum(pdf) * x_width))
     plt.legend()
     plt.show()
+
+
+def gaussian2d(photo_electrons, x, y, x_cm, y_cm, width, length, psi):
+
+    scale_w = 1. / (2. * width**2)
+    scale_l = 1. / (2. * length**2)
+    a = np.cos(psi)**2 * scale_l + np.sin(psi)**2 * scale_w
+    b = np.sin(2 * psi) * (scale_w - scale_l) / 2.
+    c = np.cos(psi)**2 * scale_w + np.sin(psi)**2 * scale_l
+
+    norm = 1. / (2 * np.pi * width * length)
+
+    pdf = - (a * (x - x_cm)**2 - 2 * b * (x - x_cm) * (y - y_cm) + c * (y - y_cm)**2)
+    pdf = np.exp(pdf) * norm * photo_electrons
+
+    return pdf
