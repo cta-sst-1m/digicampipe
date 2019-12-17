@@ -1,0 +1,282 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation instructions &mdash; digicampipe 0.1.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Containers and Data Levels" href="../containers/index.html" />
+    <link rel="prev" title="Welcome to digicampipe’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> digicampipe
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#continous-integration-with-travis">Continous integration with Travis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../containers/index.html">Containers and Data Levels</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">digicampipe</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation instructions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/install/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="installation-instructions">
+<h1>Installation instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
+<p>For the installation instruction refer to <a class="reference external" href="https://github.com/calispac/digicampipe/blob/master/README.md">README.md</a></p>
+</div>
+<div class="section" id="continous-integration-with-travis">
+<h1>Continous integration with Travis<a class="headerlink" href="#continous-integration-with-travis" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://about.travis-ci.com/">Travis CI</a> is a popular continious integration system.</p>
+<p>Bellow the .travis.yml file that is used to run Travis. This is executed at each pull request.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>language: generic
+
+
+matrix:
+  include:
+    - os: linux
+      python: 3.5
+      env:
+        - PYTHON_VERSION=3.5
+        - MINICONDA_URL=https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    - os: linux
+      python: 3.6
+      env:
+        - PYTHON_VERSION=3.6
+        - MINICONDA_URL=https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    - os: osx
+      python: 3.5
+      env:
+        - PYTHON_VERSION=3.5
+        - MINICONDA_URL=https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    - os: osx
+      python: 3.6
+      env:
+        - PYTHON_VERSION=3.6
+        - MINICONDA_URL=https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+
+
+before_install:
+  - export MPLBACKEND=&#39;Agg&#39;
+
+install:
+- wget $MINICONDA_URL -O miniconda.sh
+- bash miniconda.sh -b -p $HOME/miniconda
+- export PATH=&quot;$HOME/miniconda/bin:$PATH&quot;
+- hash -r
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
+
+- conda create -q -n digicampipe python=$PYTHON_VERSION pip
+- conda env update -f environment.yml
+- source activate digicampipe
+- pip install --upgrade pip
+- pip install .
+script:
+- pytest digicampipe
+- make -C docs/ html
+- |
+  if [ &quot;${TRAVIS_EVENT_TYPE}&quot; == &quot;cron&quot; ]; then
+    travis_wait 30 pytest -c all_tests.ini digicampipe
+  fi
+env:
+  global:
+  - GITHUB_REPO: github.com/cta-sst-1m/digicampipe.git
+  - secure: kLTHK+/IvcLsozvC7cpphcn7MDSlKY0GTAYjlB/R4kR5BTlMVUJXVEYz1JPjUqdMQFu4OgurwAOi6P6G9Z3bhaBCMS9gBozEEOTWdtbc230NoSC3D02H+LPkYpmAvjMx9sW2l2rbSD03okXc/TK+IEcbBkosb/4fOB+YM77zWQ6JeDHrbDX11bFuLk2LbErCOal9Nxpiex6+6KDUyLVdxV4wcdOrTOJkCRL4/fJOUBejX1JGClpUMbMosxlFz+tcJ5hrLP9XFzfyMrcND3LBItjORJfD5VPdGCrNqAAHO0n0NT+TqTPwcoaMEXjhOm3lYw2u2kq8LEqBa1f5BxehR6y04xFy60QM7wyqYLg/C9TpYsCsp4iFvKAKcqn1IvBKV9P6xgPCGmgGf7a5YeoBcMMowatT7GKwCeF44TpBYl1lew2WxKWhtpmwjzsC5D6hJXxAkMAf96SIEK5J+cfeWI0T57eEfZlU0j/0ztxnlzIHkhre8oacUUlEGE2vxRLVEvr7GCfj81SpuRbyw0Yi+QtYF5VPNCUsNnTk7HUGPvUpmXo1ZCzn0FJ2NvFV2gd4MERHYK9WISR9wSeWEt4yTJ2N4pTFvxzHCEzL0uzCv0tpnVUVv2YfPu0hBHhVBHHPd3A3nCRIs9UuXN+O61aYEKwdFrC1yRiWMBBT+ZLuXa8=
+  - secure: V4konUGMX//pMfRauwZus5BKwMA2z+tK/j/CnZFQGGbeyxkCRY3FroJZ/tAIOaQs/Q4RcS7YpcQDyP83VBbT3TecEzUIsSsL2nDmhXFHSSSaKwjSRqF9zG5/ubhGaZNcGZd8RLGW5GvPUWprUo08jBnxzEYOSPYtM8qaqn/wFhaGQgMlWC48udP/yGroxU0qMZkXs7KAA02YsdF7/J/m665hXWj3ATCywA5dB9fVZl5DrYr6Sm6kVM+cHmJ0wtWGALajcjezWklft1ZnSKJGCoyjkP4pq1vGG5QUg3Nj+0eJwHU4d1hGhaUnN7GPUEPoeiqqd9IzUZKteArWVIW/RKnarxE9Za/GP38/osj86RboA0WjL6pmnEy4ZWe8P9QltEptouM843uWJLcpcs52T8Lyuww0gefrPPXdadBKQJNe/nyTlCnrbIDCa4PbZoJ+3SlOjDR5ER2P6TyNOmHNRyZT4uQcrYvguUoZgkVvgqVLPlxaByBcCHK+CyI4MH+hlrVg/djZEQWja5ivkc3nS2Hk7cFdjGUmdHRhNIKoAfdajhsH22mhL6seYiT+Reb/UUl67/xx8tie42f9AaKzxl/p07c6H+JlCNB4+vdshCsbHgUQ70Nfsv1a+KnlzE1MHBntNzBkbS8i4tB7Svl1n9JQPzn+lkPSdwKolcDCagM=
+  - secure: z19wcPrlooM7UJHuSIwqUIW6hpB2ZxHk262IQdjiAXgv8aydWquixvtCE68Kk1XwPkoHYOsDDI+DtvLUrclOOfNCghSfkC7+FiGF3aiKWfOrXQr6U9ocFywqz31QMgisugeU/iOJUeQ/Z42U+AdHvX7qOX8r7kBRcpCSwxZH/gu3MCRfpSsjfqJpJyfbdc0gYz4ITVs6kWS0tZ9408BPBnKoCJJYeSeT7SFks58+SyKN860ZoMW2YhEC6Q9GpdhjSI5P9r7Tl1A8ysMhx+gnq4fITJFZpMJ/oqOK6GIrvfm5Dq8YgsX2W6yFki8n7cMZuteZVAbHB8QUGiyJct3ZbFDD1ErzH7KUpfYqBWg2GTLfxCEqpgypbF+gTEIAm9bzKhU7CsAJdwbUFJkvZs6Rn1e58AM8wKL5pzizkExWouF6tQZlABcAPvRj/gA9wG63BsfHX1A2bNG5nxhNMYEOsKYwB/IgfmUhJkgH3RJyWXD4l6hbe9SGg0CW35z9viYRP+MEvGYnntaxS1myJF896CxtFz3IFiNOcNYb9oqc6pQeuseQsNsJrZUg5tD6yjwn7iR0Ui7n0rJsAscw7g1OnjDh7rX/CIrfunftJNzm/Xy9T1xiFAjSIBAgeJjjjA+WC4f70VfJNR52J6+YBV4WRtNvGKT8L2OjlwXMFN+vTY4=
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  local_dir: docs/build/html
+  on:
+    branch: master
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../containers/index.html" class="btn btn-neutral float-right" title="Containers and Data Levels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to digicampipe’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, SST-1M
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

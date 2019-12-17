@@ -1,0 +1,566 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>digicampipe.io.containers &mdash; digicampipe 0.1.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> digicampipe
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/index.html">Installation instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/index.html#continous-integration-with-travis">Continous integration with Travis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../containers/index.html">Containers and Data Levels</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">digicampipe</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>digicampipe.io.containers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for digicampipe.io.containers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Container structures for data that should be read or written to disk. The main</span>
+<span class="sd">data container is DataContainer() and holds the containers of each data</span>
+<span class="sd">processing level. The data processing levels start from R0 up to DL2, where R0</span>
+<span class="sd">holds the cameras raw data and DL2 the air shower high-level parameters.</span>
+<span class="sd">In general each major pipeline step is associated with a given data level.</span>
+<span class="sd">Please keep in mind that the data level definition and the associated fields</span>
+<span class="sd">might change rapidly as there is no final data level definition.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">aenum</span> <span class="kn">import</span> <span class="n">IntFlag</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">gzip</span> <span class="kn">import</span> <span class="nb">open</span> <span class="k">as</span> <span class="n">gzip_open</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">remove</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isfile</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">ctapipe.core</span> <span class="kn">import</span> <span class="n">Container</span><span class="p">,</span> <span class="n">Map</span>
+<span class="kn">from</span> <span class="nn">ctapipe.core</span> <span class="kn">import</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">ctapipe.instrument</span> <span class="kn">import</span> <span class="n">SubarrayDescription</span>
+<span class="kn">from</span> <span class="nn">ctapipe.io.containers</span> <span class="kn">import</span> <span class="n">HillasParametersContainer</span>
+<span class="kn">from</span> <span class="nn">ctapipe.io.serializer</span> <span class="kn">import</span> <span class="n">Serializer</span>
+<span class="kn">from</span> <span class="nn">ctapipe.io.containers</span> <span class="kn">import</span> <span class="n">MCEventContainer</span><span class="p">,</span> <span class="n">ReconstructedContainer</span><span class="p">,</span> \
+    <span class="n">MCHeaderContainer</span><span class="p">,</span> <span class="n">CentralTriggerContainer</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CameraEventType&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;InstrumentContainer&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;R0Container&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;R0CameraContainer&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;R1Container&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;R1CameraContainer&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DL0Container&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DL0CameraContainer&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DL1Container&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DL1CameraContainer&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;MCEventContainer&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;DataContainer&#39;</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">CameraEventType</span><span class="p">(</span><span class="n">IntFlag</span><span class="p">):</span>
+    <span class="c1"># from https://github.com/cta-sst-1m/digicampipe/issues/244</span>
+    <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="mh">0x0</span>
+    <span class="n">PATCH7</span> <span class="o">=</span> <span class="mh">0x1</span>  <span class="c1"># algorithm 0 trigger - PATCH7</span>
+    <span class="n">PATCH19</span> <span class="o">=</span> <span class="mh">0x2</span>  <span class="c1"># algorithm 1 trigger - PATCH19</span>
+    <span class="n">MUON_TRIGGER</span> <span class="o">=</span> <span class="mh">0x4</span>  <span class="c1"># algorithm 2 trigger - MUON</span>
+    <span class="n">INTERNAL</span> <span class="o">=</span> <span class="mh">0x8</span>  <span class="c1"># internal or external trigger</span>
+    <span class="n">EXTMSTR</span> <span class="o">=</span> <span class="mh">0x10</span>  <span class="c1"># unused (0) / external (on master only)</span>
+    <span class="n">BIT5</span> <span class="o">=</span> <span class="mh">0x20</span>  <span class="c1"># unused (0)</span>
+    <span class="n">BIT6</span> <span class="o">=</span> <span class="mh">0x40</span>  <span class="c1"># unused (0)</span>
+    <span class="n">CONTINUOUS</span> <span class="o">=</span> <span class="mh">0x80</span>  <span class="c1"># continuous readout marker</span>
+    <span class="n">MUON_DETECT</span> <span class="o">=</span> <span class="mh">0x10000</span>  <span class="c1"># camera server detected muon</span>
+    <span class="n">HILLAS</span> <span class="o">=</span> <span class="mh">0x20000</span>  <span class="c1"># camera server computed Hillas parametrs</span>
+
+
+<span class="k">class</span> <span class="nc">InstrumentContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Storage of header info that does not change with event. This is a</span>
+<span class="sd">    temporary hack until the Instrument module and database is fully</span>
+<span class="sd">    implemented.  Eventually static information like this will not be</span>
+<span class="sd">    part of the data stream, but be loaded and accessed from</span>
+<span class="sd">    functions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">subarray</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">SubarrayDescription</span><span class="p">(</span><span class="s2">&quot;MonteCarloArray&quot;</span><span class="p">),</span>
+                     <span class="s2">&quot;SubarrayDescription from the instrument module&quot;</span><span class="p">)</span>
+    <span class="n">optical_foclen</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">ndarray</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to focal length&quot;</span><span class="p">)</span>
+    <span class="n">tel_pos</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">ndarray</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to telescope position&quot;</span><span class="p">)</span>
+    <span class="n">pixel_pos</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">ndarray</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to pixel positions&quot;</span><span class="p">)</span>
+    <span class="n">telescope_ids</span> <span class="o">=</span> <span class="n">Field</span><span class="p">([],</span> <span class="s2">&quot;list of IDs of telescopes used in the run&quot;</span><span class="p">)</span>
+    <span class="n">num_pixels</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to number of pixels in camera&quot;</span><span class="p">)</span>
+    <span class="n">num_channels</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to number of channels&quot;</span><span class="p">)</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to number of samples&quot;</span><span class="p">)</span>
+    <span class="n">geom</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;map of tel_if to CameraGeometry&#39;</span><span class="p">)</span>
+    <span class="n">cam</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;map of tel_id to Camera&#39;</span><span class="p">)</span>
+    <span class="n">optics</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="s1">&#39;map of tel_id to CameraOptics&#39;</span><span class="p">)</span>
+    <span class="n">cluster_matrix_7</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;map of tel_id of cluster 7 matrix&#39;</span><span class="p">)</span>
+    <span class="n">cluster_matrix_19</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">Map</span><span class="p">(</span><span class="n">ndarray</span><span class="p">),</span>
+        <span class="s1">&#39;map of tel_id of cluster 19 matrix&#39;</span>
+    <span class="p">)</span>
+    <span class="n">patch_matrix</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;map of tel_id of patch matrix&#39;</span><span class="p">)</span>
+    <span class="n">mirror_dish_area</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+                             <span class="s2">&quot;map of tel_id to the area of the mirror dish&quot;</span><span class="p">,</span>
+                             <span class="n">unit</span><span class="o">=</span><span class="n">u</span><span class="o">.</span><span class="n">m</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">mirror_numtiles</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
+                            <span class="s2">&quot;map of tel_id to the number of </span><span class="se">\</span>
+<span class="s2">                            tiles for the mirror&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DL1CameraContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Storage of output of camera calibrationm e.g the final calibrated</span>
+<span class="sd">    image in intensity units and other per-event calculated</span>
+<span class="sd">    calibration information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">pe_samples</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;numpy array containing data volume reduced </span><span class="se">\</span>
+<span class="s2">                       p.e. samples (n_channels x n_pixels)&quot;</span><span class="p">)</span>
+    <span class="n">cleaning_mask</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;mask for clean pixels&quot;</span><span class="p">)</span>
+    <span class="n">time_bin</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;numpy array containing the bin of maximum </span><span class="se">\</span>
+<span class="s2">                    (n_pixels)&quot;</span><span class="p">)</span>
+    <span class="n">pe_samples_trace</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;numpy array containing data volume </span><span class="se">\</span>
+<span class="s2">                             reduced p.e. samples (n_channels x n_pixels, </span><span class="se">\</span>
+<span class="s2">                             n_samples)&quot;</span><span class="p">)</span>
+    <span class="n">on_border</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;Boolean telling if the shower touches the camera </span><span class="se">\</span>
+<span class="s2">                      border or not&quot;</span><span class="p">)</span>
+    <span class="n">time_spread</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;Time elongation of the shower&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DL1Container</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; DL1 Calibrated Camera Images and associated data&quot;&quot;&quot;</span>
+    <span class="n">tel</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">DL1CameraContainer</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to DL1CameraContainer&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="R0CameraContainer"><a class="viewcode-back" href="../../../containers/index.html#digicampipe.io.containers.R0CameraContainer">[docs]</a><span class="k">class</span> <span class="nc">R0CameraContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Storage of raw data from a single telescope</span>
+
+<span class="sd">    :param pixel_flags: a ndarray to flag the pixels</span>
+<span class="sd">    :type pixel_flags: ndarray (n_pixels, ) (bool)</span>
+<span class="sd">    :param adc_samples: a ndarray (n_pixels, n_samples) containing</span>
+<span class="sd">                        the waveforms in each pixel</span>
+<span class="sd">    :type adc_samples: ndarray (n_pixels, n_samples, ) (uint16)</span>
+<span class="sd">    :param adc_sums: numpy array containing integrated ADC data</span>
+<span class="sd">                     (n_channels, x n_pixels)</span>
+<span class="sd">    :type adc_sums: ndarray (n_channels, x n_pixels)</span>
+<span class="sd">    :param baseline: baseline holder for baseline computation using</span>
+<span class="sd">                     clocked triggers</span>
+<span class="sd">    :type baseline: ndarray (n_pixels, ) (float)</span>
+<span class="sd">    :param digicam_baseline: baseline computed by DigiCam of pre-samples</span>
+<span class="sd">                             (using 1024 samples)</span>
+<span class="sd">    :type digicam_baseline: ndarray (n_pixels, ) (uint16)</span>
+<span class="sd">    :param standard_deviation: baseline standard deviation holder for baseline</span>
+<span class="sd">                               computed using clocked triggers</span>
+<span class="sd">    :type standard deviation: ndarray (n_pixels, ) (float)</span>
+<span class="sd">    :param dark_baseline: baseline holder for baseline computed in dark</span>
+<span class="sd">                          condition (lid closed)</span>
+<span class="sd">    :type dark_baseline: ndarray (n_pixels, ) (float)</span>
+<span class="sd">    :param hv_off_baseline: baseline computed with sensors just bellow</span>
+<span class="sd">                            breakdown voltage (or without bias voltage applied)</span>
+<span class="sd">    :type hv_off_baseline: ndarray (n_pixels, ) (float)</span>
+<span class="sd">    :param camera_event_id: unique event identification provided by DigiCam</span>
+<span class="sd">    :type camera_event_id: (int)</span>
+<span class="sd">    :param camera_event_number: event number within the first trigger of</span>
+<span class="sd">                                operation</span>
+<span class="sd">    :type camera_event_number: (int)</span>
+<span class="sd">    :param local_camera_clock: time stamp from internal DigiCam clock (ns)</span>
+<span class="sd">    :type local_camera_clock: (int)</span>
+<span class="sd">    :param gps_time: time stamp provided by a precise external clock</span>
+<span class="sd">                     (synchronized between hardware components)</span>
+<span class="sd">    :type gps_time: (int)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pixel_flags</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;numpy array containing pixel flags&#39;</span><span class="p">)</span>
+    <span class="n">adc_samples</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span>
+                        <span class="s2">&quot;numpy array containing ADC samples&quot;</span>
+                        <span class="s2">&quot;(n_channels x n_pixels, n_samples)&quot;</span><span class="p">)</span>
+    <span class="n">adc_sums</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;numpy array containing integrated ADC data&quot;</span>
+                              <span class="s2">&quot;(n_channels, x n_pixels)&quot;</span><span class="p">)</span>
+    <span class="n">baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;number of time samples for telescope&quot;</span><span class="p">)</span>
+    <span class="n">digicam_baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;Baseline computed by DigiCam&#39;</span><span class="p">)</span>
+    <span class="n">standard_deviation</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;number of time samples for telescope&quot;</span><span class="p">)</span>
+    <span class="n">dark_baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;dark baseline&#39;</span><span class="p">)</span>
+    <span class="n">hv_off_baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;HV off baseline&#39;</span><span class="p">)</span>
+    <span class="n">camera_event_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;Camera event number&#39;</span><span class="p">)</span>
+    <span class="n">camera_event_number</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;camera event number&quot;</span><span class="p">)</span>
+    <span class="n">local_camera_clock</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="s2">&quot;camera timestamp&quot;</span><span class="p">)</span>
+    <span class="n">gps_time</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="s2">&quot;gps timestamp&quot;</span><span class="p">)</span>
+    <span class="n">white_rabbit_time</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="s2">&quot;precise white rabbit based timestamp&quot;</span><span class="p">)</span>
+    <span class="n">_camera_event_type</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">CameraEventType</span><span class="p">,</span> <span class="s2">&quot;camera event type&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">camera_event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_camera_event_type</span>
+
+    <span class="nd">@camera_event_type</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">camera_event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_camera_event_type</span> <span class="o">=</span> <span class="n">CameraEventType</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">array_event_type</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;array event type&quot;</span><span class="p">)</span>
+    <span class="n">trigger_input_traces</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;trigger patch trace (n_patches)&quot;</span><span class="p">)</span>
+    <span class="n">trigger_input_offline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;trigger patch trace (n_patches)&quot;</span><span class="p">)</span>
+    <span class="n">trigger_output_patch7</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;trigger 7 patch cluster trace </span><span class="se">\</span>
+<span class="s2">                                  (n_clusters)&quot;</span><span class="p">)</span>
+    <span class="n">trigger_output_patch19</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;trigger 19 patch cluster trace </span><span class="se">\</span>
+<span class="s2">                                   (n_clusters)&quot;</span><span class="p">)</span>
+    <span class="n">trigger_input_7</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;trigger input CLUSTER7&#39;</span><span class="p">)</span>
+    <span class="n">trigger_input_19</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;trigger input CLUSTER19&#39;</span><span class="p">)</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;number of time samples for telescope&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">R0Container</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Storage of a Merged Raw Data Event</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;run id number&quot;</span><span class="p">)</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;event id number&quot;</span><span class="p">)</span>
+    <span class="n">tels_with_data</span> <span class="o">=</span> <span class="n">Field</span><span class="p">([],</span> <span class="s2">&quot;list of telescopes with data&quot;</span><span class="p">)</span>
+    <span class="n">tel</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">R0CameraContainer</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to R0CameraContainer&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">R1CameraContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Storage of r1 calibrated data from a single telescope</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">adc_samples</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;baseline subtracted ADCs, (n_pixels, </span><span class="se">\</span>
+<span class="s2">                        n_samples)&quot;</span><span class="p">)</span>
+    <span class="n">nsb</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;nsb rate in GHz&quot;</span><span class="p">)</span>
+    <span class="n">pde</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;Photo Detection Efficiency at given NSB&quot;</span><span class="p">)</span>
+    <span class="n">gain_drop</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;gain drop&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">R1Container</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Storage of a r1 calibrated Data Event</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;run id number&quot;</span><span class="p">)</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;event id number&quot;</span><span class="p">)</span>
+    <span class="n">tels_with_data</span> <span class="o">=</span> <span class="n">Field</span><span class="p">([],</span> <span class="s2">&quot;list of telescopes with data&quot;</span><span class="p">)</span>
+    <span class="n">tel</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">R1CameraContainer</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to R1CameraContainer&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DL0CameraContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Storage of data volume reduced dl0 data from a single telescope</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">DL0Container</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Storage of a data volume reduced Event</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;run id number&quot;</span><span class="p">)</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;event id number&quot;</span><span class="p">)</span>
+    <span class="n">tels_with_data</span> <span class="o">=</span> <span class="n">Field</span><span class="p">([],</span> <span class="s2">&quot;list of telescopes with data&quot;</span><span class="p">)</span>
+    <span class="n">tel</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Map</span><span class="p">(</span><span class="n">DL0CameraContainer</span><span class="p">),</span> <span class="s2">&quot;map of tel_id to DL0CameraContainer&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DataContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Top-level container for all event information.</span>
+<span class="sd">    Each field is representing a specific data processing level from (R0 to</span>
+<span class="sd">    DL2) Please keep in mind that the data level definition and the associated</span>
+<span class="sd">    fields might change rapidly as there is not a final data format. The data</span>
+<span class="sd">    levels R0, R1, DL1, contains sub-containers for each telescope.</span>
+<span class="sd">    After DL2 the data is not processed at the telescope level.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">r0</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">R0Container</span><span class="p">(),</span> <span class="s2">&quot;Raw Data&quot;</span><span class="p">)</span>
+    <span class="n">r1</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">R1Container</span><span class="p">(),</span> <span class="s2">&quot;Raw Common Data&quot;</span><span class="p">)</span>
+    <span class="n">dl0</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">DL0Container</span><span class="p">(),</span> <span class="s2">&quot;DL0 Data Volume Reduced Data&quot;</span><span class="p">)</span>
+    <span class="n">dl1</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">DL1Container</span><span class="p">(),</span> <span class="s2">&quot;DL1 Calibrated image&quot;</span><span class="p">)</span>
+    <span class="n">dl2</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ReconstructedContainer</span><span class="p">(),</span> <span class="s2">&quot;Reconstructed Shower Information&quot;</span><span class="p">)</span>
+    <span class="n">mc</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">MCEventContainer</span><span class="p">(),</span> <span class="s2">&quot;Monte-Carlo data&quot;</span><span class="p">)</span>
+    <span class="n">mcheader</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">MCHeaderContainer</span><span class="p">(),</span> <span class="s2">&quot;Monte-Carlo run header data&quot;</span><span class="p">)</span>
+    <span class="n">inst</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">InstrumentContainer</span><span class="p">(),</span> <span class="s2">&quot;Instrumental information&quot;</span><span class="p">)</span>
+    <span class="n">slow_data</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Slow Data Information&quot;</span><span class="p">)</span>
+    <span class="n">trig</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">CentralTriggerContainer</span><span class="p">(),</span> <span class="s2">&quot;central trigger information&quot;</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;number of events processed&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">load_from_pickle_gz</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+    <span class="n">file</span> <span class="o">=</span> <span class="n">gzip_open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="n">pickle</span><span class="o">.</span><span class="n">UnpicklingError</span><span class="p">):</span>
+            <span class="k">return</span>
+
+
+<span class="k">def</span> <span class="nf">save_to_pickle_gz</span><span class="p">(</span><span class="n">event_stream</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_events</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">isfile</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;remove old&#39;</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">)</span>
+            <span class="n">remove</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s1">&#39;exist, exiting...&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">Serializer</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">file</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;pickle&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">counter_events</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">event_stream</span><span class="p">:</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">add_container</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">counter_events</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">max_events</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">counter_events</span> <span class="o">&gt;=</span> <span class="n">max_events</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">CalibrationEventContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    description test</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Raw</span>
+
+    <span class="n">adc_samples</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;the raw data&#39;</span><span class="p">)</span>
+    <span class="n">digicam_baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;the baseline computed by the camera&#39;</span><span class="p">)</span>
+    <span class="n">local_time</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;timestamps&#39;</span><span class="p">)</span>
+    <span class="n">gps_time</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Processed</span>
+
+    <span class="n">dark_baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;the baseline computed in dark&#39;</span><span class="p">)</span>
+    <span class="n">baseline_shift</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;the baseline shift&#39;</span><span class="p">)</span>
+    <span class="n">nsb_rate</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;Night sky background rate&#39;</span><span class="p">)</span>
+    <span class="n">gain_drop</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;Gain drop&#39;</span><span class="p">)</span>
+    <span class="n">baseline</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;the reconstructed baseline&#39;</span><span class="p">)</span>
+    <span class="n">baseline_std</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;Baseline std&#39;</span><span class="p">)</span>
+    <span class="n">pulse_mask</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;mask of adc_samples. True if the adc sample&#39;</span>
+                                <span class="s1">&#39;contains a pulse  else False&#39;</span><span class="p">)</span>
+    <span class="n">reconstructed_amplitude</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;array of the same shape as &#39;</span>
+                                             <span class="s1">&#39;adc_samples giving the&#39;</span>
+                                             <span class="s1">&#39; reconstructed pulse amplitude&#39;</span>
+                                             <span class="s1">&#39; for each adc sample&#39;</span><span class="p">)</span>
+    <span class="n">reconstructed_charge</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;array of the same shape as &#39;</span>
+                                          <span class="s1">&#39;adc_samples giving the &#39;</span>
+                                          <span class="s1">&#39;reconstructed charge for each adc &#39;</span>
+                                          <span class="s1">&#39;sample&#39;</span><span class="p">)</span>
+    <span class="n">reconstructed_number_of_pe</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;estimated number of photon &#39;</span>
+                                                <span class="s1">&#39;electrons for each adc sample&#39;</span>
+                                       <span class="p">)</span>
+    <span class="n">sample_pe</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">ndarray</span><span class="p">,</span>
+        <span class="s1">&#39;array of the same shape as adc_samples giving the estimated fraction &#39;</span>
+        <span class="s1">&#39;of photon electrons for each adc sample&#39;</span>
+    <span class="p">)</span>
+    <span class="n">reconstructed_time</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;reconstructed time &#39;</span>
+                                        <span class="s1">&#39;for each adc sample&#39;</span><span class="p">)</span>
+    <span class="n">cleaning_mask</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;cleaning mask, pixel bool array&#39;</span><span class="p">)</span>
+    <span class="n">shower</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;is the event considered as a shower&#39;</span><span class="p">)</span>
+    <span class="n">border</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;is the event after cleaning touchin the camera &#39;</span>
+                         <span class="s1">&#39;borders&#39;</span><span class="p">)</span>
+    <span class="n">burst</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;is the event during a burst&#39;</span><span class="p">)</span>
+    <span class="n">saturated</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;is any pixel signal saturated&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixel_id</span><span class="p">):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;pixel : </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pixel_id</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adc_samples</span><span class="p">[</span><span class="n">pixel_id</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;raw&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse_mask</span><span class="p">[</span><span class="n">pixel_id</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;peak position&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstructed_charge</span><span class="p">[</span><span class="n">pixel_id</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;charge&#39;</span><span class="p">,</span>
+                 <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstructed_amplitude</span><span class="p">[</span><span class="n">pixel_id</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;amplitude&#39;</span><span class="p">,</span>
+                 <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">CalibrationContainerMeta</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;time of the event&#39;</span><span class="p">)</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;event id&#39;</span><span class="p">)</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;event type&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">CalibrationContainer</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This Container() is used for the camera calibration pipeline.</span>
+<span class="sd">    It is meant to save each step of the calibration pipeline</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="s1">&#39;List of the input parameters&#39;</span>
+                         <span class="s1">&#39; of the calibration analysis&#39;</span><span class="p">)</span>  <span class="c1"># Should use dict?</span>
+    <span class="n">pixel_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ndarray</span><span class="p">,</span> <span class="s1">&#39;pixel ids&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">CalibrationEventContainer</span><span class="p">()</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;event_id&#39;</span><span class="p">)</span>
+    <span class="n">event_type</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">CameraEventType</span><span class="p">,</span> <span class="s1">&#39;Event type&#39;</span><span class="p">)</span>
+    <span class="n">hillas</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">HillasParametersContainer</span><span class="p">,</span> <span class="s1">&#39;Hillas parameters&#39;</span><span class="p">)</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="n">CalibrationContainerMeta</span><span class="p">()</span>
+    <span class="n">slow_data</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Slow Data Information&quot;</span><span class="p">)</span>
+    <span class="n">mc</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">MCEventContainer</span><span class="p">(),</span> <span class="s2">&quot;Monte-Carlo data&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, SST-1M
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
