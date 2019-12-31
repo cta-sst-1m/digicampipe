@@ -1,4 +1,3 @@
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -6,6 +5,7 @@ from astropy.stats import sigma_clipped_stats
 from photutils import DAOStarFinder
 from scipy import signal
 from skimage.draw import polygon
+import cv2
 
 
 class Rectangle:
