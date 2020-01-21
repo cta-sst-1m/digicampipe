@@ -176,8 +176,6 @@ class NormalizedPulseTemplate:
         axes.legend(loc='best')
         return axes
 
-
-
     def plot_interpolation(self, axes=None, sigma=-1., color='k',
                            label='Template interpolation', cumulative=False,
                            **kwargs):

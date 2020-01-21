@@ -1,99 +1,66 @@
 #!/usr/bin/env python
 """
-Do the parameters histogram for all the modules listed in a folder, each module contains 12 pixels and the idea is to extract the fitted parameters (at maximum 1296 pixel) to display
+Do the parameters histogram for all the modules listed in a folder, each module contains 12 pixels and the idea is
+to extract the fitted parameters (at maximum 1296 pixel) to display. The INPUT is the folder where all the individual modules are.
 
 Usage:
-  digicam-pdp histograms --output=FILE --ac_levels=INT [--debug --fit_mpe_results=STR --fit_spe_results=STR --n_modules=INT --n_hw_pixel=INT] <INPUT>
+    digicam-mts parameters --output=FILE --ac_levels=INT [--debug --save_figure --fit_mpe_results=STR --fit_spe_results=STR --n_modules=INT --n_hw_pixel=INT] <INPUT>
+    digicam-mts waveform_templates --output=PATH --ac_levels=INT --calib_file=FILE [--debug --save_figure --n_modules=INT --n_hw_pixel=INT --template_prefix=STR] <INPUT>
+    digicam-mts charge_templates --output=PATH --ac_levels=INT --calib_file=FILE [--debug --save_figure --fit_mpe_results=STR --fit_spe_results=STR --n_modules=INT --n_hw_pixel=INT --template_prefix=STR] <INPUT>
 
 Options:
     -h --help                   Show this screen.
     -v --debug                  Enter the debug mode.
-    -o --output=FILE            Output file.
-                                [default: ./pdp_results]
-    --fit_mpe_results=STR       Name of the file with the fit results from multiple photon spectrum (digicampipe-mpe fit combined).
+    -o --output=PATH            Output folder.
+                                [Default: ./mts_results]
+    --fit_mpe_results=STR       Name of the file with the fit results from multiple photon spectrum (digicampipe-mpe
+                                fit combined).
                                 [Default: fit_combine.fits]
     --fit_spe_results=STR       Name of the file with the fit from dark count spectra or spe (digicampipe-spe fit).
                                 [Default: dc_spe_results.fits]
+    --template_prefix=STR       Common prefix of the template.fits files on a module. Usually ac_levels + 1 number of template files, label from 0 to ac_levels. Level 0 is for the dark run. [Default: template_level].
     --n_modules=INT             Number of measured modules or input modules.
                                 [Default: 108]
     --n_hw_pixel=INT            Number of pixel per measured or input module.
                                 [Default: 12]
     --ac_levels=INT             number of LED AC DAC levels (this is not a list, unlike other scripts modules)
-    Commands:
-    histograms                  Compute the histogram
+    --save_figure               Saves figures in pdf files in the ouptput folder. [Default: False]
+    --calib_file=FILE           Provide the calibration file obtained from the parameters command. Unavoidable when using the commands waveform_templates or charge_templates.
+                                [Defaut: None]
+Commands:
+    parameters                  Compute the histogram and make the yaml calibration file. Useful to get bad pixel in bad_pixel.py
+    waveform_templates          Compute an average waveform's template from all pixels for all levels. Then make a chi_2_test distribution
+    charge_templates            Compute an average charge's template from all pixels for all levels. Then make a chi_2_test distribution (TO BE COMPLETED)
 """
 
 import os
-
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
+import yaml
+import fitsio
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 from docopt import docopt
+from matplotlib.backends.backend_pdf import PdfPages
 from digicampipe.visualization.plot import plot_histo, plot_array_camera
-from histogram.histogram import Histogram1D
-from iminuit import describe
-from tqdm import tqdm
-from astropy.table import Table
-import fitsio
-from scipy.ndimage.filters import convolve1d, convolve
-
-
-from digicampipe.calib.baseline import fill_digicam_baseline, \
-    subtract_baseline
-from digicampipe.calib.charge import compute_charge, compute_amplitude
-from digicampipe.calib.peak import fill_pulse_indices
-from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.utils.docopt import convert_int, \
-    convert_pixel_args, convert_list_int
-from digicampipe.utils.pdf import mpe_distribution_general
-from digicampipe.instrument.light_source import ACLED
-from digicampipe.utils.fitter import MPEFitter, FMPEFitter, MPECombinedFitter
-
-import fitsio
+import digicampipe.utils.pulse_template as templates
 
 
 def load_camera_config():
+
     # loading pixels id and coordinates from camera config file
     module_id, pixel_hw_id, pixel_sw_id = np.loadtxt(fname='digicampipe/digicampipe/tests/resources/camera_config.cfg',
                                                      unpack=True,
                                                      skiprows=47,
                                                      usecols=(2, 7, 8))
 
-    return module_id, pixel_hw_id, pixel_sw_id
+    module_id = module_id.astype(int)
+    pixel_hw_id = pixel_hw_id.astype(int)
+    pixel_sw_id = pixel_sw_id.astype(int)
 
+    pixel_sw_id, module_id, pixel_hw_id = zip(*sorted(zip(pixel_sw_id, module_id, pixel_hw_id)))
 
-def get_index(module, hw_pixel):
-    """
-    Function that yields the correct index for mapping the software pixel from the hardware pixel id list and module id list gicen by the config file
-    :param module:                  (int) a module number taken from the folder's name containing the fits files.
-                                    for a complete sst-1m camera, values from 1 to 108
-    :param hw_pixel:                (int) a pixel hardware pixel number, taken for a loop np.range(1,13)
-                                    for a complete module of sst-1m camera, values from 1 to 12
-    :return:                        (int) a unique index
-    """
-
-    modules = 108
-    pixels = 12
-
-    module_id_config, pixel_hw_id_config, pixel_sw_id_config = load_camera_config()
-
-    # Indexes with the same module number in camera config module list
-    # This number must be repeated n_pixel times (because n_pixel in each module)
-    index_module = np.argwhere(module_id_config == module).reshape((pixels,))
-
-    # Indexes with the same hw pixel number in camera config hw pixel list
-    # This number must be repeated n_modules times (because n_modules in each measured batch of modules)
-    index_pixel = np.argwhere(pixel_hw_id_config == hw_pixel).reshape((modules,))
-
-    mask = np.isin(element=index_module, test_elements=index_pixel)
-    index = index_module[mask]
-
-    if len(index) > 1:
-        print('Error, not possible to have 2 indexes for a unique pixel')
-        print('Indexes found : {}'.format(index))
-        exit()
-
-    return index
+    return pixel_sw_id, module_id, pixel_hw_id
 
 
 def entry():
@@ -103,158 +70,309 @@ def entry():
     debug = args['--debug']
     mpe_file = args['--fit_mpe_results']
     spe_file = args['--fit_spe_results']
+    template_prefix = args['--template_prefix']
     n_modules = int(args['--n_modules'])
     n_hw_pixels = int(args['--n_hw_pixel'])
     n_light_levels = int(args['--ac_levels'])
+    save_figure = args['--save_figure']
+    calib_file = args['--calib_file']
 
     pixels_in_camera = 1296
 
-    if args['histograms']:
+    pixel_sw_id, module_id, pixel_hw_id = load_camera_config()
+    config_table = np.zeros((pixels_in_camera, 3), dtype=int)
+    config_table[:, 0] = module_id
+    config_table[:, 1] = pixel_hw_id
+    config_table[:, 2] = pixel_sw_id
 
-        mpe_baseline = np.zeros((pixels_in_camera,))
-        mpe_error_baseline = np.zeros((pixels_in_camera,))
-        mpe_gain = np.zeros((pixels_in_camera,))
-        mpe_error_gain = np.zeros((pixels_in_camera,))
-        mpe_sigma_e = np.zeros((pixels_in_camera,))
-        mpe_error_sigma_e = np.zeros((pixels_in_camera,))
-        mpe_sigma_s = np.zeros((pixels_in_camera,))
-        mpe_error_sigma_s = np.zeros((pixels_in_camera,))
-        mpe_mu_xt = np.zeros((pixels_in_camera,))
-        mpe_error_mu_xt = np.zeros((pixels_in_camera,))
-        mpe_chi_2 = np.zeros((pixels_in_camera,))
-        mpe_ndf = np.zeros((pixels_in_camera,))
-        mpe_n_peaks = np.zeros((pixels_in_camera,))
-        mpe_pixel_ids = np.zeros((pixels_in_camera,))
+    dir_list = [int(item) for item in os.listdir(root) if os.path.isdir(os.path.join(root, item))]
+    dir_list = np.sort(np.array(dir_list))
 
-        mpe_ac_levels = np.zeros((pixels_in_camera, n_light_levels))
-        mpe_mean = np.zeros((pixels_in_camera, n_light_levels))
-        mpe_std = np.zeros((pixels_in_camera, n_light_levels))
-        mpe_mu = np.zeros((pixels_in_camera, n_light_levels))
-        mpe_error_mu = np.zeros((pixels_in_camera, n_light_levels))
+    if not os.path.exists(output):
+        os.makedirs(output)
 
-        spe_dcr = np.zeros((pixels_in_camera,))
-        spe_sigma_e = np.zeros((pixels_in_camera,))
-        spe_mu_xt = np.zeros((pixels_in_camera,))
-        spe_gain = np.zeros((pixels_in_camera,))
-        spe_pixels_ids = np.zeros((pixels_in_camera,))
+    if args['parameters']:
+        print('getting parameters from FITS files')
 
-        module_id, pixel_hw_id, pixel_sw_id = load_camera_config()
+        # creation of empty dictionary
+        calibration_data = {'baseline': np.zeros((pixels_in_camera,)),
+                            'gain': np.zeros((pixels_in_camera,)),
+                            'sigma_e': np.zeros((pixels_in_camera,)),
+                            'sigma_s': np.zeros((pixels_in_camera,)),
+                            'xt': np.zeros((pixels_in_camera,)),
+                            'sw_pixel_id': np.zeros((pixels_in_camera,)),
+                            'dcr': np.zeros((pixels_in_camera,))}
 
-        if not os.path.exists(output):
-            os.makedirs(output)
+        for level in range(n_light_levels):
+            calibration_data['mean_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
+            calibration_data['std_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
+            calibration_data['mu_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
 
-        dir_list = [int(item) for item in os.listdir(root) if os.path.isdir(os.path.join(root, item))]
-        dir_list = np.sort(np.array(dir_list))
+        for idx, pixel in enumerate(pixel_sw_id):
 
-        for i, module in enumerate(dir_list):
+            mpe = '{}/{}/fits/{}'.format(root, module_id[idx], mpe_file)
+            spe = '{}/{}/fits/{}'.format(root, module_id[idx], spe_file)
 
-            mpe = '{}/{}/fits/{}'.format(root, module, mpe_file)
-            spe = '{}/{}/fits/{}'.format(root, module, spe_file)
-            if debug:
-                print('Iteration {} in folder : Module {}'.format(i, module))
-
-            for j, pixel in enumerate(range(1, n_hw_pixels+1)):
-
-                index = get_index(module, pixel)
-                sw_index = int(pixel_sw_id[index])
+            with fitsio.FITS(mpe, 'r') as file:
 
                 if debug:
-                    print('Iteration {} in module : Pixel {}'.format(j, pixel))
-                    print('Index number : {}'.format(index))
-                    print('Module number : {}'.format(module_id[index]))
-                    print('HW pixel number : {}'.format(pixel_hw_id[index]))
-                    print('SW pixel number : {}'.format(pixel_sw_id[index]))
-                    print('SW pixel number as int : {}'.format(sw_index))
+                    print('index idx {} : sw-pix {}, mod {}, hw-pix {}'.format(idx, pixel_sw_id[idx], module_id[idx], pixel_hw_id[idx]))
+                    print('file[MPE_COMBINED][key] index {} = hw-pix - 1'.format(pixel_hw_id[idx] - 1))
+                    print(file['MPE_COMBINED'])
 
-                with fitsio.FITS(mpe, 'r') as file:
+                # Pixel from 0 to 11 to be taken into account per module
+                calibration_data['baseline'][pixel] = file['MPE_COMBINED']['baseline'].read()[pixel_hw_id[idx]-1]
+                calibration_data['gain'][pixel] = file['MPE_COMBINED']['gain'].read()[pixel_hw_id[idx]-1]
+                calibration_data['sigma_e'][pixel] = file['MPE_COMBINED']['sigma_e'].read()[pixel_hw_id[idx]-1]
+                calibration_data['sigma_s'][pixel] = file['MPE_COMBINED']['sigma_s'].read()[pixel_hw_id[idx]-1]
+                calibration_data['xt'][pixel] = file['MPE_COMBINED']['mu_xt'].read()[pixel_hw_id[idx]-1]
+                calibration_data['sw_pixel_id'][pixel] = pixel
 
-                    if debug:
-                        print(file)
-                        print(file['MPE_COMBINED'])
+            with fitsio.FITS(spe, 'r') as file:
 
-                    # Pixel from 0 to 11 to be taken into account per module
-                    mpe_baseline[sw_index] = file['MPE_COMBINED']['baseline'].read()[j]
-                    mpe_error_baseline[sw_index] = file['MPE_COMBINED']['error_baseline'].read()[j]
-                    mpe_gain[sw_index] = file['MPE_COMBINED']['gain'].read()[j]
-                    mpe_error_gain[sw_index] = file['MPE_COMBINED']['error_gain'].read()[j]
-                    mpe_sigma_e[sw_index] = file['MPE_COMBINED']['sigma_e'].read()[j]
-                    mpe_error_sigma_e[sw_index] = file['MPE_COMBINED']['error_sigma_e'].read()[j]
-                    mpe_sigma_s[sw_index] = file['MPE_COMBINED']['sigma_s'].read()[j]
-                    mpe_error_sigma_s[sw_index] = file['MPE_COMBINED']['error_sigma_s'].read()[j]
-                    mpe_mu_xt[sw_index] = file['MPE_COMBINED']['mu_xt'].read()[j]
-                    mpe_error_mu_xt[sw_index] = file['MPE_COMBINED']['error_mu_xt'].read()[j]
-                    mpe_chi_2[sw_index] = file['MPE_COMBINED']['chi_2'].read()[j]
-                    mpe_ndf[sw_index] = file['MPE_COMBINED']['ndf'].read()[j]
-                    mpe_n_peaks[sw_index] = file['MPE_COMBINED']['n_peaks'].read()[j]
-                    mpe_pixel_ids[sw_index] = file['MPE_COMBINED']['pixel_ids'].read()[j]
+                if debug:
+                    print('index idx {} : sw-pix {}, mod {}, hw-pix {}'.format(idx, pixel_sw_id[idx], module_id[idx], pixel_hw_id[idx]))
+                    print('file[SPE][key] index {} = hw-pix - 1'.format(pixel_hw_id[idx] - 1))
+                    print(file['SPE'])
 
-                    # An array of size "number of light intensity levels" per pixel
-                    mpe_ac_levels[sw_index] = file['MPE_COMBINED']['ac_levels'].read()[j]
-                    mpe_mean[sw_index] = file['MPE_COMBINED']['mean'].read()[j]
-                    mpe_std[sw_index] = file['MPE_COMBINED']['std'].read()[j]
-                    mpe_mu[sw_index] = file['MPE_COMBINED']['mu'].read()[j]
-                    mpe_error_mu[sw_index] = file['MPE_COMBINED']['error_mu'].read()[j]
+                # Pixel from 0 to 11 to be taken into account per module
+                dcr_in_GHz = file['SPE']['dcr'].read()[pixel_hw_id[idx]-1]
+                # this make the dcr in MHz
+                calibration_data['dcr'][pixel] = dcr_in_GHz * 1e3
 
-                with fitsio.FITS(spe, 'r') as file:
+            with fitsio.FITS(mpe, 'r') as file:
 
-                    if debug:
-                        print(file)
-                        print(file['SPE'])
+                # An array of size "number of light intensity levels" per pixel
+                for level in range(n_light_levels):
+                    calibration_data['mean_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['mean'].read()[pixel_hw_id[idx] - 1][level]
+                    calibration_data['std_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['std'].read()[pixel_hw_id[idx] - 1][level]
+                    calibration_data['mu_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['mu'].read()[pixel_hw_id[idx] - 1][level]
 
-                    # Pixel from 0 to 11 to be taken into account per module
-                    spe_dcr[sw_index] = file['SPE']['dcr'].read()[j]
-                    spe_sigma_e[sw_index] = file['SPE']['sigma_e'].read()[j]
-                    spe_mu_xt[sw_index] = file['SPE']['mu_xt'].read()[j]
-                    spe_gain[sw_index] = file['SPE']['gain'].read()[j]
-                    spe_pixels_ids[sw_index] = file['SPE']['pixels_ids'].read()[j]
+        for key in calibration_data.keys():
+            calibration_data[key] = calibration_data[key].tolist()
 
-        # Single or unique values of parameters for all light levels
-        single_vars = [mpe_baseline,
-                       mpe_gain,
-                       mpe_sigma_e,
-                       mpe_sigma_s,
-                       mpe_mu_xt,
-                       spe_dcr * 1e3]
+        yaml_file_path = '{}/mts_calib_second_cam_20190816.yml'.format(output)
+        with open(yaml_file_path, 'w') as outfile:
+            yaml.dump(calibration_data, outfile, default_flow_style=True)
 
-        single_vars_names = ['Baseline [LSB]',
-                             'Gain [LSB / p.e.]',
-                             r'$\sigma_e$ [LSB]',
-                             r'$\sigma_s$ [LSB]',
-                             r'$\mu_{XT}$ [p.e]',
-                             'Dark Count Rate [MHz]']
+        if save_figure:
+            labels = ['Baseline [LSB]', 'Gain [LSB / p.e.]', r'$\sigma_e$ [LSB]', r'$\sigma_s$ [LSB]',
+                      r'$\mu_{XT}$ [p.e]', 'Software pixel ids', 'Dark Count Rate [MHz]']
 
-        # Multipple values of parameters, one per level
-        multi_vars = [mpe_mean,
-                      mpe_mu]
+            for level in range(n_light_levels):
+                labels.append('Mean in Level {} [LSB]'.format(level + 1))
+                labels.append('Standard deviation on level {} [LSB]'.format(level + 1))
+                labels.append('Generalized Poisson mean {} [p.e.]'.format(level + 1))
 
-        multi_vars_names = ['Mean [LSB]',
-                            r'$\mu$ [p.e.]']
+            pdf_parameters = PdfPages('{}/parameters.pdf'.format(output))
 
-        pdf = PdfPages('{}/parameters.pdf'.format(output))
+            for k, key in enumerate(calibration_data.keys()):
+                if debug:
+                    print('idx : {}, label : {}, and key {}'.format(k, labels[k], key))
 
-        for k, variable in enumerate(single_vars):
+                histo_label = labels[k]
+                fig = plot_histo(data=np.array(calibration_data[key]), x_label=histo_label, bins='auto')
+                pdf_parameters.savefig(fig)
+                plt.close(fig)
 
-            fig = plot_histo(data=variable, x_label=single_vars_names[k], bins='auto')
-            pdf.savefig(fig)
-            fig.clf()
+                cam_display, fig = plot_array_camera(data=np.array(calibration_data[key]), label=histo_label)
+                pdf_parameters.savefig(fig)
+                plt.close(fig)
 
-            cam_display, fig = plot_array_camera(data=variable, label=single_vars_names[k])
-            pdf.savefig(fig)
-            fig.clf()
+            pdf_parameters.close()
 
-        for k, variable in enumerate(multi_vars):
-            for l, level in enumerate(range(0, n_light_levels)):
+    if args['waveform_templates']:
+        print('getting waveform templates from FITS files')
 
-                histogram_label = '{} at light level {}'.format(multi_vars_names[k], l+1)
-                fig = plot_histo(data=variable[:, l], x_label=histogram_label, bins='auto')
-                pdf.savefig(fig)
-                fig.clf()
+        if calib_file is not None:
+            with open(calib_file) as file:
+                calibration_parameters = yaml.load(file)
+        else:
+            print('calib_file.yml not found. Give a calibration file obtain from the parameters command')
+            return
 
-                cam_display, fig = plot_array_camera(data=variable[:, l], label=histogram_label)
-                pdf.savefig(fig)
-                fig.clf()
+        for level in range(n_light_levels + 1):
 
-        pdf.close()
+            for idx, pixel in enumerate(pixel_sw_id):
+
+                template_file = '{}/{}/fits/{}_{:02d}.fits'.format(root, module_id[idx], template_prefix, level)
+                template = templates.NormalizedPulseTemplate.load(template_file)
+
+                if debug:
+                    with fitsio.FITS(template_file, 'r') as file:
+                        print(file['PULSE_TEMPLATE'])
+
+                if idx == 0:
+                    template_list = []
+                    template_list_err = []
+                    template_mean = np.zeros(template.amplitude[pixel_hw_id[idx] - 1].shape)
+                    template_std = np.zeros(template.amplitude_std[pixel_hw_id[idx] - 1].shape)
+
+                # List of the 1296 templates
+                template_list.append(template.amplitude[pixel_hw_id[idx] - 1])
+                template_list_err.append(template.amplitude_std[pixel_hw_id[idx] - 1])
+                # Making an average template recursively
+                template_mean += template.amplitude[pixel_hw_id[idx] - 1]
+                template_std += template.amplitude[pixel_hw_id[idx] - 1]**2
+
+            template_mean /= (idx + 1.) # mean of x
+            template_std /= (idx + 1.) # mean of x**2
+            template_std = (idx + 1.)/(idx + 1. - 1.) * (template_std - template_mean**2)
+            template_std = np.sqrt(template_std)
+
+            # Making the object average template with NormalizedPulseTemplate
+            averaged_template = templates.NormalizedPulseTemplate(template_mean, np.arange(50)*4, template_std)
+
+            # Making chi_2 test for each level.
+            test_array = []
+            time_shift_array = []
+            chi2_array = []
+            # the templates might be shifted in time from the average template, so for best fit, we align them
+            times = np.arange(50) * 4
+            t_fit = np.linspace(-100, 100, num=1000)
+            times = times - t_fit[..., None]
+            y_template = averaged_template(times)
+
+            for k, waveform in enumerate(template_list):
+
+                chi2 = (waveform - y_template)**2 / template_list_err[k]**2
+                chi2 = np.sum(chi2, axis=1)
+                index_fit = np.argmin(chi2)
+
+                test_array.append(chi2[index_fit])
+                time_shift_array.append(t_fit[index_fit])
+                chi2_array.append(chi2)
+
+                if debug:
+                    print('Waveform in pixel {}'.format(k))
+                    print('fitted time shift : {} ns'.format(t_fit[index_fit]))
+                    print('chi2 value in waveform : {}'.format(chi2[index_fit]))
+
+            calibration_parameters['chi_2_test_level_{}'.format(level)] = np.array(test_array).tolist()
+            with open(calib_file, 'w') as file:
+                yaml.dump(calibration_parameters, file, default_flow_style=True)
+
+            if save_figure:
+                pdf_waveforms = PdfPages('{}/{}_{}.pdf'.format(output, template_prefix, level))
+                histo_label = r'$\chi^2$ test in level {}'.format(level)
+                fig = plot_histo(data=np.array(test_array), x_label=histo_label, bins='auto')
+                pdf_waveforms.savefig(fig)
+                plt.close(fig)
+                pdf_waveforms.close()
+
+            if save_figure and debug:
+
+                pdf_waveforms = PdfPages('{}/{}_{}.pdf'.format(output, template_prefix, level))
+                t = np.linspace(0, 200 - 4, num=1000)
+                t_waveform = np.arange(50) * 4
+                y_array = []
+
+                for time in time_shift_array:
+                    y = averaged_template(t - time)
+                    y_array.append(y)
+
+                for j in range(0, len(template_list), 4):
+
+                    fig, axs = plt.subplots(nrows=4, ncols=2, sharex='col')
+
+                    ax = axs[0, 0]
+                    ax.plot(t, y_array[j], color=sns.xkcd_rgb['red'],
+                            label='Level {}, average'.format(level))
+                    ax.plot(t_waveform, waveform, color=sns.xkcd_rgb['amber'],
+                            label='Level {}, pixel {}'.format(level, j))
+                    ax.set_ylabel('N. A.')
+                    ax.legend(frameon=False, fontsize='x-small', loc=0)
+
+                    ax = axs[0, 1]
+                    ax.plot(t_fit, chi2_array[j], label=r'$\chi^2$')
+                    ax.set_ylabel(r'$\chi^2$')
+
+                    ax = axs[1, 0]
+                    ax.plot(t, y_array[j+1], color=sns.xkcd_rgb['red'],
+                            label='Level {}, average'.format(level))
+                    ax.plot(t_waveform, waveform, color=sns.xkcd_rgb['amber'],
+                            label='Level {}, pixel {}'.format(level, j+1))
+                    ax.set_ylabel('N. A.')
+                    ax.legend(frameon=False, fontsize='x-small', loc=0)
+
+                    ax = axs[1, 1]
+                    ax.plot(t_fit, chi2_array[j+1], label=r'$\chi^2$')
+                    ax.set_ylabel(r'$\chi^2$')
+
+                    ax = axs[2, 0]
+                    ax.plot(t, y_array[j+2], color=sns.xkcd_rgb['red'],
+                            label='Level {}, average'.format(level))
+                    ax.plot(t_waveform, waveform, color=sns.xkcd_rgb['amber'],
+                            label='Level {}, pixel {}'.format(level, j+2))
+                    ax.set_ylabel('N. A.')
+                    ax.legend(frameon=False, fontsize='x-small', loc=0)
+
+                    ax = axs[2, 1]
+                    ax.plot(t_fit, chi2_array[j+2], label=r'$\chi^2$')
+                    ax.set_ylabel(r'$\chi^2$')
+
+                    ax = axs[3, 0]
+                    ax.plot(t, y_array[j+3], color=sns.xkcd_rgb['red'],
+                            label='Level {}, average'.format(level))
+                    ax.plot(t_waveform, waveform, color=sns.xkcd_rgb['amber'],
+                            label='Level {}, pixel {}'.format(level, j+3))
+                    ax.set_ylabel('N. A.')
+                    ax.set_xlabel('time [ns]')
+                    ax.legend(frameon=False, fontsize='x-small', loc=0)
+
+                    ax = axs[3, 1]
+                    ax.plot(t_fit, chi2_array[j+3], label=r'$\chi^2$')
+                    ax.set_ylabel(r'$\chi^2$')
+                    ax.set_xlabel('time [ns]')
+
+                    pdf_waveforms.savefig(fig)
+                    plt.close(fig)
+
+                    if j == 100:
+                        break
+
+                fig, ax = plt.subplots()
+
+                for k, waveform in enumerate(template_list):
+
+                    ax.plot(t_waveform, waveform, color=sns.xkcd_rgb['amber'],
+                            label='Waveform in pixel {}, in level {}'.format(k, level))
+                    if waveform is template_list[-1]:
+                        averaged = ax.plot(t, averaged_template(t), color=sns.xkcd_rgb['red'],
+                                           label='Ave. waveform in level {}, over {} pixels'.format(level, idx + 1))
+                        ax.legend(averaged, ('Ave. waveform in level {}, over {} pixels'.format(level, idx + 1),))
+                        ax.set_xlabel('time [ns]')
+                        ax.set_ylabel('Normalized Amplitude')
+                    plt.close(fig)
+
+                pdf_waveforms.savefig(fig)
+
+                histo_label = r'$\chi^2$ test distribution'
+                fig = plot_histo(data=np.array(test_array), x_label=histo_label, bins='auto')
+                pdf_waveforms.savefig(fig)
+                plt.close(fig)
+
+                pdf_waveforms.close()
+
+    if args['charge_templates']:
+        # not implemented yet
+        print('getting waveform templates from FITS files')
+
+        if calib_file is not None:
+            with open(calib_file) as file:
+                calibration_parameters = yaml.load(file)
+        else:
+            print('calib_file.yml not found. Give a calibration file obtain from the parameters command')
+            return
+
+        for idx, pixel in enumerate(pixel_sw_id):
+
+            template_file = '{}/{}/fits/{}_{:02d}.fits'.format(root, module_id[idx], template_prefix, level)
+            template = templates.NormalizedPulseTemplate.load(template_file)
+
+            if debug:
+                with fitsio.FITS(template_file, 'r') as file:
+                    print(file['PULSE_TEMPLATE'])
 
     return
 
