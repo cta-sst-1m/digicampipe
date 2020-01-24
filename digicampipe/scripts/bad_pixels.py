@@ -1,7 +1,8 @@
 """
 Determine bad pixels from a calibration file
 Usage:
-    digicam-bad_pixels compute [options]
+    digicam-bad_pixels table [options]
+    digicam-bad_pixels histogram [options]
     digicam-bad_pixels template [options]
 
 Options:
@@ -26,8 +27,9 @@ Options:
                                 "none" no file is created. It is safe to use the same file as the input. [Default: none]
 
 Commands:
-    compute                     Compute the histogram
+    table                       Compute a bad pixel table with its faulty parameters
     template                    Compute templates
+    histogram                   Compute histograms from the distribution of all parameters
 """
 
 import matplotlib.pyplot as plt
@@ -41,9 +43,9 @@ from histogram.histogram import Histogram1D
 from digicampipe.utils.docopt import convert_int, convert_text, convert_list_str
 
 
-def get_bad_pixels(calib_file=None, keys=None, nsigma=5, nlevels=7,
-                   dark_histo=None, nsigma_dark=8,
-                   plot="none", output=None):
+def get_bad_pixels_table(calib_file=None, keys=None, nsigma=5,
+                         dark_histo=None, nsigma_dark=8,
+                         plot="none", output=None):
 
     bad_pix = np.array([], dtype=int)
     n_pixels = 1296
@@ -113,138 +115,52 @@ def get_bad_pixels(calib_file=None, keys=None, nsigma=5, nlevels=7,
 
     print('file saved at {}'.format(csv_name))
 
+    return table.shape[0]
 
-def get_bad_pixels_bis(calib_file=None, nsigma=5, nlevels=7,
-                   dark_histo=None, nsigma_dark=8,
-                   plot="none", output=None):
+
+def get_bad_pixels_histograms(calib_file=None, nsigma_gain=5, nsigma_elecnoise=5,
+                              nsigma_baseline=5, nsigma_smearing=5,
+                              nsigma_crosstalk=5, nsigma_dcr=5,
+                              dark_histo=None, nsigma_dark=8,
+                              plot="none", output=None):
 
     bad_pix = np.array([], dtype=int)
     if calib_file is not None:
-        # Load all the data from the calibration file
         with open(calib_file) as file:
             calibration_parameters = yaml.load(file)
-
         gain = np.array(calibration_parameters['gain'])
         elecnoise = np.array(calibration_parameters['sigma_e'])
+
         baseline = np.array(calibration_parameters['baseline'])
         smearing = np.array(calibration_parameters['sigma_s'])
         crosstalk = np.array(calibration_parameters['xt'])
         dcr = np.array(calibration_parameters['dcr'])
 
-        chi2 = []
-        for level in range(nlevels):
-            key_name = 'chi2_{}'.format(level)
-            chi2.append(calibration_parameters[key_name])
-        chi2 = np.array(chi2)
-
-        # Masking the empty pixel (not included in the measurements)
         nan_mask = np.logical_or(~np.isfinite(gain), ~np.isfinite(elecnoise))
         nan_mask = np.logical_or(~nan_mask, ~np.isfinite(baseline))
         nan_mask = np.logical_or(~nan_mask, ~np.isfinite(smearing))
         nan_mask = np.logical_or(~nan_mask, ~np.isfinite(crosstalk))
         nan_mask = np.logical_or(~nan_mask, ~np.isfinite(dcr))
 
-        for level in range(nlevels):
-            nan_mask = np.logical_or(~nan_mask, ~np.isfinite(chi2[level]))
+        sigclip_gain = SigmaClip(sigma=nsigma_gain, iters=10,
+                                 cenfunc=np.nanmean, stdfunc=np.nanstd)
+        sigclip_elecnoise = SigmaClip(sigma=nsigma_elecnoise, iters=10,
+                                      cenfunc=np.nanmean, stdfunc=np.nanstd)
+        sigclip_baseline = SigmaClip(sigma=nsigma_baseline, iters=10,
+                                     cenfunc=np.nanmean, stdfunc=np.nanstd)
+        sigclip_smearing = SigmaClip(sigma=nsigma_smearing, iters=10,
+                                     cenfunc=np.nanmean, stdfunc=np.nanstd)
+        sigclip_crosstalk = SigmaClip(sigma=nsigma_crosstalk, iters=10,
+                                      cenfunc=np.nanmean, stdfunc=np.nanstd)
+        sigclip_dcr = SigmaClip(sigma=nsigma_dcr, iters=10,
+                                cenfunc=np.nanmean, stdfunc=np.nanstd)
 
-        # finding the outlier for each distribution
-        sigclip_func = SigmaClip(sigma=nsigma, maxiters=10, cenfunc=np.nanmean, stdfunc=np.nanstd)
-
-        # By applying this mask, I will get only the outlier
-        mask_array = []
-        gain_mask = sigclip_func(gain).mask
-        mask_array.append(gain_mask)
-        elecnoise_mask = sigclip_func(elecnoise).mask
-        mask_array.append(elecnoise_mask)
-        baseline_mask = sigclip_func(baseline).mask
-        mask_array.append(baseline_mask)
-        smearing_mask = sigclip_func(smearing).mask
-        mask_array.append(smearing_mask)
-        crosstalk_mask = sigclip_func(crosstalk).mask
-        mask_array.append(crosstalk_mask)
-        dcr_mask = sigclip_func(dcr).mask
-        mask_array.append(dcr_mask)
-        chi2_mask = []
-        for level in range(nlevels):
-            chi2_mask.append(sigclip_func(chi2[level]).mask)
-            mask_array.append(chi2_mask)
-        chi2_mask = np.array(chi2_mask)
-
-
-        # Therefore, the pixel where is "True" are the outliers
-        gain_outlier = np.argwhere(gain_mask == True)
-        elecnoise_outlier = np.argwhere(elecnoise_mask == True)
-        baseline_outlier = np.argwhere(baseline_mask == True)
-        smearing_outlier = np.argwhere(smearing_mask == True)
-        crosstalk_outlier = np.argwhere(crosstalk_mask == True)
-        dcr_outlier = np.argwhere(dcr_mask == True)
-        chi2_outlier = []
-        for level in range(nlevels):
-            temp = np.transpose(np.argwhere(chi2_mask[level] == True))
-            chi2_outlier.append(temp[0])
-        chi2_outlier = np.array(chi2_outlier)
-
-        for i in range(len(chi2_outlier)):
-            if i == 0:
-                bad_pixels_id = chi2_outlier[i]
-            else:
-                bad_pixels_id = np.append(bad_pixels_id, chi2_outlier[i])
-
-        bad_pixels_id = np.append(bad_pixels_id, gain_outlier)
-        bad_pixels_id = np.append(bad_pixels_id, elecnoise_outlier)
-        bad_pixels_id = np.append(bad_pixels_id, baseline_outlier)
-        bad_pixels_id = np.append(bad_pixels_id, smearing_outlier)
-        bad_pixels_id = np.append(bad_pixels_id, crosstalk_outlier)
-        bad_pixels_id = np.append(bad_pixels_id, dcr_outlier)
-
-        bad_pixels_id = np.unique(bad_pixels_id)
-        print(bad_pixels_id)
-
-        # Making table with matplotlib
-        parameter_names = []
-        parameter_names.append('Gain')
-        parameter_names.append('Noise')
-        parameter_names.append('Baseline')
-        parameter_names.append('Smearing')
-        parameter_names.append('Crosstalk')
-        parameter_names.append('Dark count')
-        for level in range(nlevels):
-            template_name = 'Template {}'.format(level)
-            parameter_names.append(template_name)
-
-        #table = np.zeros((len(bad_pixels_id), len(parameter_names)))
-
-        generic_row = np.arange(len(parameter_names))
-        generic_column = np.arange(len(bad_pixels_id))
-        table = np.zeros((len(generic_column), len(generic_row)))
-        print(table.shape)
-        print(table)
-        for i, row in enumerate(table):
-            if i % 2 == 0:
-                table[i, :] = np.zeros((len(generic_row)))
-            else:
-                table[i, :] = np.ones((len(generic_row)))
-        print(table)
-
-        fig, ax = plt.subplots()
-        clust_data = table
-        collabel = tuple(generic_row)
-        rowlabel = tuple(generic_column)
-        ax.axis('tight')
-        ax.axis('off')
-        the_table = ax.table(cellText=clust_data, colLabels=collabel, loc='center')
-        plt.show()
-
-        import pandas as pd
-        fig, ax = plt.subplots()
-        # hide axes
-        fig.patch.set_visible(False)
-        ax.axis('off')
-        ax.axis('tight')
-        df = pd.DataFrame(table, columns=collabel)
-        ax.table(cellText=df.values, colLabels=df.columns, loc='center')
-        fig.tight_layout()
-        plt.show()
+        gain_mask = sigclip_gain(gain).mask
+        elecnoise_mask = sigclip_elecnoise(elecnoise).mask
+        baseline_mask = sigclip_baseline(baseline).mask
+        smearing_mask = sigclip_smearing(smearing).mask
+        crosstalk_mask = sigclip_crosstalk(crosstalk).mask
+        dcr_mask = sigclip_dcr(dcr).mask
 
         bad_mask = np.logical_or(nan_mask, np.logical_or(gain_mask, elecnoise_mask))
         bad_mask = np.logical_or(bad_mask, np.logical_or(baseline_mask, smearing_mask))
@@ -334,13 +250,14 @@ def entry():
     plot = convert_text(args['--plot'])
     output = convert_text(args['--output'])
 
-    if args['compute']:
+    if args['table']:
 
-        bad_pix = get_bad_pixels(calib_file, keys, nsigma, nlevels, dark_file, nsigma_dark, plot, output)
+        bad_pix = get_bad_pixels_table(calib_file, keys, nsigma, dark_file, nsigma_dark, plot, output)
         print('bad pixels found:', bad_pix)
 
-    if args['template']:
-        print('template')
+    if args['histogram']:
+        bad_pix = get_bad_pixels_histograms(calib_file, keys, nsigma, nlevels, dark_file, nsigma_dark, plot, output)
+        print('bad pixels found:', bad_pix)
 
 
 if __name__ == '__main__':
