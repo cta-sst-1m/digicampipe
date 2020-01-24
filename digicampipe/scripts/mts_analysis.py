@@ -100,7 +100,7 @@ def entry():
                             'sigma_e': np.zeros((pixels_in_camera,)),
                             'sigma_s': np.zeros((pixels_in_camera,)),
                             'xt': np.zeros((pixels_in_camera,)),
-                            'sw_pixel_id': np.zeros((pixels_in_camera,)),
+                            'sw_pixel_id': np.zeros((pixels_in_camera,), dtype=int),
                             'dcr': np.zeros((pixels_in_camera,))}
 
         for level in range(n_light_levels):
@@ -248,7 +248,7 @@ def entry():
                     print('fitted time shift : {} ns'.format(t_fit[index_fit]))
                     print('chi2 value in waveform : {}'.format(chi2[index_fit]))
 
-            calibration_parameters['chi_2_test_level_{}'.format(level)] = np.array(test_array).tolist()
+            calibration_parameters['chi2_{}'.format(level)] = np.array(test_array).tolist()
             with open(calib_file, 'w') as file:
                 yaml.dump(calibration_parameters, file, default_flow_style=True)
 

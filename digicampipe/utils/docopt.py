@@ -40,6 +40,15 @@ def convert_list_float(text):
         return np.array(list_float)
 
 
+def convert_list_str(text):
+    if text is None or text.lower() == 'none':
+        return None
+    else:
+        text = text.split(',')
+        list_str = list(map(str, text))
+        return list_str
+
+
 def convert_pixel_args(text):
     pixel_id = convert_list_int(text)
     if pixel_id is None:
