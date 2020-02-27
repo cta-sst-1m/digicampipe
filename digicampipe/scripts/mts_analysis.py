@@ -4,7 +4,7 @@ Do the parameters histogram for all the modules listed in a folder, each module 
 to extract the fitted parameters (at maximum 1296 pixel) to display. The INPUT is the folder where all the individual modules are.
 
 Usage:
-    digicam-mts parameters --output=FILE --ac_levels=INT [--debug --save_figure --fit_mpe_results=STR --fit_spe_results=STR --n_modules=INT --n_hw_pixel=INT] <INPUT>
+    digicam-mts parameters --output=PATH --output_file=STR --ac_levels=INT [--debug --save_figure --fit_mpe_results=STR --fit_spe_results=STR --n_modules=INT --n_hw_pixel=INT] <INPUT>
     digicam-mts waveform_templates --output=PATH --ac_levels=INT --calib_file=FILE [--debug --save_figure --n_modules=INT --n_hw_pixel=INT --template_prefix=STR] <INPUT>
     digicam-mts charge_templates --output=PATH --ac_levels=INT --calib_file=FILE [--debug --save_figure --fit_mpe_results=STR --fit_spe_results=STR --n_modules=INT --n_hw_pixel=INT --template_prefix=STR] <INPUT>
 
@@ -13,6 +13,7 @@ Options:
     -v --debug                  Enter the debug mode.
     -o --output=PATH            Output folder.
                                 [Default: ./mts_results]
+    --output_file=STR           Calibration file name [Default: calibration_file.yml]
     --fit_mpe_results=STR       Name of the file with the fit results from multiple photon spectrum (digicampipe-mpe
                                 fit combined).
                                 [Default: fit_combine.fits]
@@ -67,6 +68,7 @@ def entry():
     args = docopt(__doc__)
     root = args['<INPUT>']
     output = args['--output']
+    output_file = args['--output_file']
     debug = args['--debug']
     mpe_file = args['--fit_mpe_results']
     spe_file = args['--fit_spe_results']
@@ -101,12 +103,14 @@ def entry():
                             'sigma_s': np.zeros((pixels_in_camera,)),
                             'xt': np.zeros((pixels_in_camera,)),
                             'sw_pixel_id': np.zeros((pixels_in_camera,), dtype=int),
-                            'dcr': np.zeros((pixels_in_camera,))}
+                            'dcr': np.zeros((pixels_in_camera,)),
+                            'charge_chi2': np.zeros((pixels_in_camera,)),
+                            'charge_ndf': np.zeros((pixels_in_camera,))}
 
         for level in range(n_light_levels):
             calibration_data['mean_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
             calibration_data['std_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
-            calibration_data['mu_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
+            calibration_data['pe_{}'.format(level + 1)] = np.zeros((pixels_in_camera,))
 
         for idx, pixel in enumerate(pixel_sw_id):
 
@@ -126,6 +130,8 @@ def entry():
                 calibration_data['sigma_e'][pixel] = file['MPE_COMBINED']['sigma_e'].read()[pixel_hw_id[idx]-1]
                 calibration_data['sigma_s'][pixel] = file['MPE_COMBINED']['sigma_s'].read()[pixel_hw_id[idx]-1]
                 calibration_data['xt'][pixel] = file['MPE_COMBINED']['mu_xt'].read()[pixel_hw_id[idx]-1]
+                calibration_data['charge_chi2'][pixel] = file['MPE_COMBINED']['chi_2'].read()[pixel_hw_id[idx]-1]
+                calibration_data['charge_ndf'][pixel] = file['MPE_COMBINED']['ndf'].read()[pixel_hw_id[idx]-1]
                 calibration_data['sw_pixel_id'][pixel] = pixel
 
             with fitsio.FITS(spe, 'r') as file:
@@ -146,40 +152,53 @@ def entry():
                 for level in range(n_light_levels):
                     calibration_data['mean_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['mean'].read()[pixel_hw_id[idx] - 1][level]
                     calibration_data['std_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['std'].read()[pixel_hw_id[idx] - 1][level]
-                    calibration_data['mu_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['mu'].read()[pixel_hw_id[idx] - 1][level]
+                    calibration_data['pe_{}'.format(level + 1)][pixel] = file['MPE_COMBINED']['mu'].read()[pixel_hw_id[idx] - 1][level]
 
         for key in calibration_data.keys():
             calibration_data[key] = calibration_data[key].tolist()
 
-        yaml_file_path = '{}/mts_calib_second_cam_20190816.yml'.format(output)
+        yaml_file_path = '{}/{}'.format(output, output_file)
         with open(yaml_file_path, 'w') as outfile:
             yaml.dump(calibration_data, outfile, default_flow_style=True)
 
+        print('calibration file {} was saved at {}'.format(output_file, output))
+
         if save_figure:
             labels = ['Baseline [LSB]', 'Gain [LSB / p.e.]', r'$\sigma_e$ [LSB]', r'$\sigma_s$ [LSB]',
-                      r'$\mu_{XT}$ [p.e]', 'Software pixel ids', 'Dark Count Rate [MHz]']
+                      r'$\mu_{XT}$ [p.e]', 'Software pixel ids', 'Dark Count Rate [MHz]', r'$\chi^2_{charge}$', r'$ndf_{charge}$']
 
             for level in range(n_light_levels):
-                labels.append('Mean in Level {} [LSB]'.format(level + 1))
-                labels.append('Standard deviation on level {} [LSB]'.format(level + 1))
-                labels.append('Generalized Poisson mean {} [p.e.]'.format(level + 1))
+                labels.append('Mean in Lvl. {} [LSB]'.format(level + 1))
+                labels.append('STD in Lvl. {} [LSB]'.format(level + 1))
+                labels.append('Number of p.e. in Lvl. {} [p.e.]'.format(level + 1))
 
-            pdf_parameters = PdfPages('{}/parameters.pdf'.format(output))
+            pdf_parameters = PdfPages('{}/parameters_on_camera.pdf'.format(output))
 
-            for k, key in enumerate(calibration_data.keys()):
+            temp_dict = {}
+            for key, value in calibration_data.items():
+                #if key not in ['charge_chi2', 'charge_ndf']:
+                if key not in ['']:
+                    temp_dict[key] = np.array(value)
+
+            for k, key in enumerate(temp_dict.keys()):
                 if debug:
                     print('idx : {}, label : {}, and key {}'.format(k, labels[k], key))
 
                 histo_label = labels[k]
-                fig = plot_histo(data=np.array(calibration_data[key]), x_label=histo_label, bins='auto')
+                mean = np.mean(temp_dict[key])
+                std = np.std(temp_dict[key])
+                fig = plot_histo(data=temp_dict[key], x_label=histo_label, bins=100)
                 pdf_parameters.savefig(fig)
                 plt.close(fig)
+                print('histo {} saved'.format(labels[k]))
 
-                cam_display, fig = plot_array_camera(data=np.array(calibration_data[key]), label=histo_label)
+                cam_display, fig = plot_array_camera(data=temp_dict[key], label=histo_label)
                 pdf_parameters.savefig(fig)
                 plt.close(fig)
+                print('cam display {} saved'.format(labels[k]))
 
             pdf_parameters.close()
+            print('parameters_on_camera.pdf saved in {}'.format(output))
 
     if args['waveform_templates']:
         print('getting waveform templates from FITS files')
@@ -248,7 +267,7 @@ def entry():
                     print('fitted time shift : {} ns'.format(t_fit[index_fit]))
                     print('chi2 value in waveform : {}'.format(chi2[index_fit]))
 
-            calibration_parameters['chi2_{}'.format(level)] = np.array(test_array).tolist()
+            calibration_parameters['template_chi2_{}'.format(level)] = np.array(test_array).tolist()
             with open(calib_file, 'w') as file:
                 yaml.dump(calibration_parameters, file, default_flow_style=True)
 

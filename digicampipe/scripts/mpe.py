@@ -368,12 +368,13 @@ def fit_single_mpe(histo_filename, ac_levels, pixel_ids, init_params,
                    ncall=10000, debug=False):
 
     n_pixels = N_PIXELS
+    # n_pixels = N_PIXELS
     n_ac_levels = len(ac_levels)
 
     names = ['baseline', 'gain', 'mu', 'mu_xt', 'sigma_e', 'sigma_s',
-             'std', 'mean', 'pixel_ids', 'baseline_error',
-             'gain_error', 'mu_error', 'mu_xt_error', 'sigma_e_error',
-             'sigma_s_error', 'chi2', 'ndf']
+             'std', 'mean', 'pixel_ids', 'error_baseline', 'amplitude', 'error_amplitude', 'n_peaks', 'error_n_peaks',
+             'error_gain', 'error_mu', 'error_mu_xt', 'error_sigma_e',
+             'error_sigma_s',  'chi_2', 'ndf']
 
     data = {name: np.zeros((n_ac_levels, n_pixels)) * np.nan for name in names}
     ac_limit = [np.inf] * n_pixels
@@ -385,7 +386,7 @@ def fit_single_mpe(histo_filename, ac_levels, pixel_ids, init_params,
                                 desc='Pixel',
                                 leave=False):
 
-            histo = Histogram1D.load(histo_filename, row=(i, j))
+            histo = Histogram1D.load(histo_filename, rows=(i, j))
             data['mean'][i, j] = histo.mean()
             data['std'][i, j] = histo.std()
 
@@ -401,7 +402,7 @@ def fit_single_mpe(histo_filename, ac_levels, pixel_ids, init_params,
                 if param in init_params.keys():
                     name = 'fix_' + param
 
-                    options[name] = True
+                    # options[name] = True
                     fixed_params[param] = init_params[param][pixel_id]
 
             if i > 0:
@@ -434,13 +435,12 @@ def fit_single_mpe(histo_filename, ac_levels, pixel_ids, init_params,
                     x_label = '[LSB]'
                     label = 'Pixel {}'.format(pixel_id)
                     fitter.draw(legend=False, x_label=x_label, label=label)
-                    fitter.draw_init(legend=False, x_label=x_label,
-                                     label=label)
-                    fitter.draw_fit(legend=False, x_label=x_label,
-                                    label=label)
+                    #fitter.draw_init(legend=False, x_label=x_label, label=label)
+                    fitter.draw_fit(legend=False, x_label=x_label, label=label)
                     plt.show()
 
                 param = fitter.results_to_dict()
+                print(param)
 
                 for key, val in param.items():
 
