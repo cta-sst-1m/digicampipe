@@ -46,7 +46,7 @@ import yaml
 from digicampipe.utils.docopt import convert_int, convert_float, convert_text,\
     convert_list_float, convert_list_int
 from digicampipe.io.event_stream import calibration_event_stream
-from digicampipe.calib.baseline import fill_digicam_baseline, subtract_baseline
+from digicampipe.calib.baseline import fill_digicam_baseline, subtract_baseline, _nsb_rate_from_baseline_shift
 from digicampipe.utils.pulse_template import NormalizedPulseTemplate
 
 
@@ -107,6 +107,7 @@ def analyse_acdc_level(
     samples_events = None
     t_fit = []
     charge = []
+    baselines = []
     for event in events:
         if samples_events is None:
             n_sample = event.data.adc_samples.shape[1]
@@ -188,9 +189,11 @@ def analyse_acdc_level(
         charge_all = np.ones(1296) * np.nan
         charge_all[good_pix] = charge_good_pix
         charge.append(charge_all)
+        baselines.append(event.data.baseline)
     t_fit = np.array(t_fit)
     charge = np.array(charge)
-    return charge, t_fit
+    baselines = np.array(baselines)
+    return charge, t_fit, baselines
 
 
 def main(
@@ -203,12 +206,13 @@ def main(
         return_inverse=True
     )
     files = np.array(files)
+    delay_range_ns = (-4., 4.)
     for i, (ac_level, dc_level) in enumerate(unique_ac_dc):
         files_level = files[inverse == i]
         print('analyze file with AC DAC =', ac_level, 'DC DAC =', dc_level)
-        charge, t_fit = analyse_acdc_level(
-            files_level, max_events, delay_step_ns, time_range_ns, sampling_ns,
-            normalize_range, parameters, template, adc_noise
+        charge, t_fit, baselines = analyse_acdc_level(
+            files_level, max_events, delay_step_ns, delay_range_ns, time_range_ns,
+            sampling_ns, normalize_range, parameters, template, adc_noise
         )
         filename = os.path.join(
             output,
@@ -218,6 +222,8 @@ def main(
         std_charge = np.nanstd(charge, axis=0)
         mean_t = np.nanmean(t_fit, axis=0)
         std_t = np.nanstd(t_fit, axis=0)
+        baselines_mean = np.nanmean(baselines, axis=0)
+        baselines_std = np.nanstd(baselines, axis=0)
         np.savez(
             filename,
             mean_charge=mean_charge,
@@ -225,7 +231,9 @@ def main(
             mean_t=mean_t,
             std_t=std_t,
             ac_level=ac_level,
-            dc_level=dc_level
+            dc_level=dc_level,
+            baselines=baselines_mean,
+            baselines_std = baselines_std
         )
 
 
