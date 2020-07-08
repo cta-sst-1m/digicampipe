@@ -15,7 +15,7 @@ Options:
   --raw_histo_filename=FILE    File path of the raw histogram
                                [Default: ./raw_histo.pk]
   -o OUTPUT --output=OUTPUT    Output file path to store the results.
-                               [Default: ./results.npz]
+                               [Default: ./results.fits]
   -c --compute                 Compute the data.
   -f --fit                     Fit.
   -d --display                 Display.
@@ -41,6 +41,8 @@ import numpy as np
 from docopt import docopt
 from histogram.histogram import Histogram1D
 from tqdm import tqdm
+import pandas as pd
+import fitsio
 
 from digicampipe.calib.baseline import fill_baseline, subtract_baseline
 from digicampipe.calib.charge import compute_charge
@@ -48,62 +50,9 @@ from digicampipe.calib.peak import find_pulse_with_max, \
     find_pulse_fast
 from digicampipe.io.event_stream import calibration_event_stream
 from digicampipe.scripts import raw
-from digicampipe.scripts.fmpe import FMPEFitter
+from digicampipe.utils.fitter import MaxHistoFitter, SPEFitter
 from digicampipe.utils.docopt import convert_pixel_args, \
     convert_int, convert_text
-from digicampipe.utils.pdf import fmpe_pdf_10
-
-
-class MaxHistoFitter(FMPEFitter):
-    def __init__(self, histogram, estimated_gain, **kwargs):
-        n_peaks = 2
-        super(MaxHistoFitter, self).__init__(histogram, estimated_gain,
-                                             n_peaks, **kwargs)
-        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                                     'sigma_e': '$\sigma_e$',
-                                     'sigma_s': '$\sigma_s$',
-                                     'a_0': None, 'a_1': None}
-
-    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_0, a_1):
-        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'a_0': a_0, 'a_1': a_1, 'bin_width': 0}
-
-        return fmpe_pdf_10(x, **params)
-
-
-class SPEFitter(FMPEFitter):
-    def __init__(self, histogram, estimated_gain, **kwargs):
-        n_peaks = 4
-        super(SPEFitter, self).__init__(histogram, estimated_gain, n_peaks,
-                                        **kwargs)
-        self.parameters_plot_name = {'baseline': '$B$', 'gain': 'G',
-                                     'sigma_e': '$\sigma_e$',
-                                     'sigma_s': '$\sigma_s$',
-                                     'a_1': None, 'a_2': None, 'a_3': None,
-                                     'a_4': None}
-
-    def pdf(self, x, baseline, gain, sigma_e, sigma_s, a_1, a_2, a_3, a_4):
-        params = {'baseline': baseline, 'gain': gain, 'sigma_e': sigma_e,
-                  'sigma_s': sigma_s, 'a_0': 0, 'a_1': a_1, 'a_2': a_2,
-                  'a_3': a_3, 'a_4': a_4, 'bin_width': 0}
-
-        return fmpe_pdf_10(x, **params)
-
-    def initialize_fit(self):
-        init_params = super(SPEFitter, self).initialize_fit()
-
-        init_params['a_4'] = init_params['a_3']
-        init_params['a_3'] = init_params['a_2']
-        init_params['a_2'] = init_params['a_1']
-        init_params['a_1'] = init_params['a_0']
-
-        init_params['baseline'] = init_params['baseline'] - init_params['gain']
-
-        del init_params['a_0']
-
-        self.initial_parameters = init_params
-
-        return init_params
 
 
 def compute_dark_rate(number_of_zeros, total_number_of_events, time):
@@ -235,21 +184,15 @@ def entry():
 
     if args['--fit']:
 
-        spe_histo = Histogram1D.load(charge_histo_filename)
-        max_histo = Histogram1D.load(max_histo_filename)
-
-        dark_count_rate = np.zeros(n_pixels) * np.nan
-        electronic_noise = np.zeros(n_pixels) * np.nan
-        crosstalk = np.zeros(n_pixels) * np.nan
-        gain = np.zeros(n_pixels) * np.nan
+        results = {'dcr': [], 'sigma_e': [], 'mu_xt': [],
+                   'gain': [], 'pixels_ids': pixel_id}
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
-            histo = max_histo[i]
-            fitter = MaxHistoFitter(histo, estimated_gain, throw_nan=True)
+            histo = Histogram1D.load(max_histo_filename, rows=i)
 
             try:
-                fitter.fit(ncall=100)
+                fitter = MaxHistoFitter(histo, estimated_gain, throw_nan=True)
                 fitter.fit(ncall=ncall)
 
                 n_entries = histo.data.sum()
@@ -258,9 +201,9 @@ def entry():
                 rate = compute_dark_rate(number_of_zeros,
                                          n_entries,
                                          window_length)
-                electronic_noise[i] = fitter.parameters['sigma_e']
+                results['sigma_e'].append(fitter.parameters['sigma_e'])
+                results['dcr'].append(rate)
 
-                dark_count_rate[i] = rate
                 if debug:
                     fitter.draw()
                     fitter.draw_init(x_label='[LSB]')
@@ -273,27 +216,28 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-        np.savez(results_filename, dcr=dark_count_rate,
-                 sigma_e=electronic_noise, pixel_id=pixel_id)
+                results['sigma_e'].append(np.nan)
+                results['dcr'].append(np.nan)
 
         for i, pixel in tqdm(enumerate(pixel_id), total=n_pixels,
                              desc='Pixel'):
 
-            histo = spe_histo[i]
-            fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
+            histo = Histogram1D.load(charge_histo_filename, rows=i)
 
             try:
 
-                fitter.fit(ncall=100)
+                fitter = SPEFitter(histo, estimated_gain, throw_nan=True)
                 fitter.fit(ncall=ncall)
-
                 params = fitter.parameters
                 n_entries = params['a_1']
                 n_entries += params['a_2']
                 n_entries += params['a_3']
                 n_entries += params['a_4']
-                crosstalk[i] = (n_entries - params['a_1']) / n_entries
-                gain[i] = params['gain']
+                crosstalk = (n_entries - params['a_1']) / n_entries
+                gain = params['gain']
+
+                results['mu_xt'].append(crosstalk)
+                results['gain'].append(gain)
 
                 if debug:
                     fitter.draw()
@@ -307,16 +251,18 @@ def entry():
                       ' in pixel {}'.format(pixel))
                 print(e)
 
-        data = dict(np.load(results_filename))
-        data['crosstalk'] = crosstalk
-        data['gain'] = gain
-        np.savez(results_filename, **data)
+                results['mu_xt'].append(np.nan)
+                results['gain'].append(np.nan)
+
+        with fitsio.FITS(results_filename, 'rw') as f:
+
+            results = {key: np.array(val) for key, val in results.items()}
+            f.write(results, extname='SPE')
 
     save_figure = convert_text(args['--save_figures'])
     if save_figure is not None:
         output_path = save_figure
         spe_histo = Histogram1D.load(charge_histo_filename)
-        spe_amplitude = Histogram1D.load(charge_histo_filename)
         raw_histo = Histogram1D.load(raw_histo_filename)
         max_histo = Histogram1D.load(max_histo_filename)
 
@@ -325,11 +271,15 @@ def entry():
         if not os.path.exists(figure_directory):
             os.makedirs(figure_directory)
 
-        histograms = [spe_histo, spe_amplitude, raw_histo, max_histo]
-        names = ['histogram_charge/', 'histogram_amplitude/', 'histogram_raw/',
+        histograms = [spe_histo, max_histo]
+        names = ['histogram_charge/',
                  'histo_max/']
 
+        fitters = [SPEFitter, MaxHistoFitter]
+
         for i, histo in enumerate(histograms):
+
+
 
             figure = plt.figure()
             histogram_figure_directory = figure_directory + names[i]
