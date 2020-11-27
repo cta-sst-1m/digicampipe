@@ -13,7 +13,7 @@ Options:
   --ncall=N                   Number of calls for the fit [default: 10000]
 """
 
-from digicampipe.utils.fitter import ShowerFitter, MPEShowerFitter
+from digicampipe.utils.fitter import SpaceTimeFitter, PoissonSpaceTimeFitter, HillasFitter, SPESpaceTimeFitter
 from ctapipe.image import hillas_parameters
 from ctapipe.image.timing_parameters import timing_parameters
 import numpy as np
@@ -49,40 +49,55 @@ def entry():
     max_events = int(args['--max_events']) if args['--max_events'] is not None else None
     output_file = args['--output']
 
-    # files = ['/sst1m/MC/simtel_krakow/gamma_100.0_300.0TeV_09.simtel.gz']
-    geom = DigiCam.geometry
+    geometry = DigiCam.geometry
+
 
     hillas_names = ['charge', 't_cm', 'x_cm', 'y_cm',
                     'width', 'length', 'psi', 'v', 'id']
     true_values = {key: [] for key in hillas_names}
     hillas_values = [{key: [] for key in hillas_names},
+                     {key: [] for key in hillas_names},
+                     {key: [] for key in hillas_names},
                      {key: [] for key in hillas_names}]
     fit_values = [{key: [] for key in hillas_names},
+                  {key: [] for key in hillas_names},
+                  {key: [] for key in hillas_names},
                   {key: [] for key in hillas_names}]
     fit_values[0]['lh'] = []
     fit_values[1]['lh'] = []
+    fit_values[2]['lh'] = []
+    fit_values[3]['lh'] = []
     n_pixels = 1296
     n_call = 1000
     gain = 5.7 * np.ones(1296) * 0.791 # gain and gain drop
-    sigma_e = np.ones(n_pixels) * 5
+    # gain = np.ones(1296) * 10 # gain and gain drop
     sigma_s = np.ones(n_pixels) * 0.1045
+    # sigma_s = np.ones(n_pixels) * 1
     crosstalk = np.ones(n_pixels) * 0.08
+    dt = 4
+    integral_width = 7
     baseline = np.zeros(n_pixels)
     n_events = 0
     n_trigger = 0
-    TEMPLATE_FILENAME = resource_filename(
-        'digicampipe',
-        os.path.join(
-            'tests',
-            'resources',
-            'pulse_SST-1M_dark.txt'
-        )
-    )
 
+    TEMPLATE_FILENAME = resource_filename('digicampipe', os.path.join( 'tests', 'resources', 'pulse_SST-1M_dark.txt'))
+    # TEMPLATE_FILENAME = resource_filename('digicampipe', os.path.join( 'tests', 'resources', 'pulse_SST-1M_pixel_0.dat'))
     template = NormalizedPulseTemplate.load(TEMPLATE_FILENAME)
+
+    sigma_space = 5
+    sigma_time = 4
+    sigma_amplitude = 3
+    # picture_threshold = 5
+    picture_threshold = 10
+    # boundary_threshold = 2
+    boundary_threshold = 10
+    time_before_shower = 5
+    time_after_shower = 40
+    n_peaks = 200
+
     # template.plot()
     # plt.show()
-    n_past_events = 30
+    n_past_events = 50
     rolling_mean = np.zeros((n_pixels, n_past_events)) * np.nan
     rolling_std = np.zeros((n_pixels, n_past_events)) * np.nan
 
@@ -105,7 +120,8 @@ def entry():
         baseline_std = np.sqrt(std)
         baseline_std = baseline_std[:, None] * np.ones(waveform.shape)
 
-
+        if n_events < n_past_events:
+            continue
 
         # method = 'Powell'
         method = 'L-BFGS-B'
@@ -114,32 +130,40 @@ def entry():
         # method = 'trust-constr'
         # options = {'maxiter': n_call, 'maxfun': n_call}
         options = None #{'maxiter': n_call, 'maxfun': n_call}
+        config = dict(data=waveform, error=baseline_std,
+                                       gain=gain, baseline=baseline,
+                                       crosstalk=crosstalk, sigma_s=sigma_s,
+                                       geometry=geometry, dt=dt,
+                                       integral_width=integral_width,
+                                       template=template,
+                                       sigma_space=sigma_space,
+                                       sigma_time=sigma_time,
+                                       sigma_amplitude=sigma_amplitude,
+                                       picture_threshold=picture_threshold,
+                                       boundary_threshold=boundary_threshold,
+                                       time_before_shower=time_before_shower,
+                                       time_after_shower=time_after_shower)
 
         try:
 
-            fitter_1 = ShowerFitter(data=waveform, gain=gain,
-                                    baseline=baseline,
-                                    crosstalk=crosstalk,
-                                    template=template,
-                                    error=baseline_std)
+            fitters = []
 
-            fitter_2 = MPEShowerFitter(data=waveform,
-                                       baseline=baseline,
-                                       gain=gain,
-                                       crosstalk=crosstalk,
-                                       sigma_e=baseline_std,
-                                       sigma_s=sigma_s,
-                                       n_peaks=100,
-                                       error=baseline_std,
-                                       template=template)
+            # fitter_1 = SpaceTimeFitter(**config)
+            # fitter_1.fit(method=method, verbose=debug, options=options)
+            # fitters.append(fitter_1)
+            # fitter_2 = PoissonSpaceTimeFitter(**config)
+            # fitter_2.fit(method=method, verbose=debug, options=options)
+            # fitters.append(fitter_2)
+            # fitter_3 = HillasFitter(**config)
+            # fitter_3.fit(method=method, verbose=debug, options=options)
+            # fitters.append(fitter_3)
+            fitter_4 = SPESpaceTimeFitter(**config, n_peaks=n_peaks)
+            fitter_4.fit(method=method, verbose=debug, options=options)
+            fitters.append(fitter_4)
 
 
-            fitter_1.fit(method=method, verbose=debug, options=options)
-            fitter_2.fit(method=method, verbose=debug, options=options)
-            # fitters = [fitter_1, fitter_2]
             n_trigger += 1
-            fitters = [fitter_2]
-        except HillasParameterizationError as e:
+        except (HillasParameterizationError, ValueError) as e:
             print('Could not fit event id {}'.format(event_id))
             print(e)
             continue
@@ -156,28 +180,30 @@ def entry():
 
             if debug:
 
-                cam_display, _ = plot_array_camera(data=waveform.max(axis=-1))
-                cam_display.add_ellipse(centroid=(fitter.start_parameters['x_cm'],
-                                                  fitter.start_parameters['y_cm']),
-                                        width=3 * fitter.start_parameters['width'],
-                                        length=3 * fitter.start_parameters['length'],
-                                        angle=fitter.start_parameters['psi'],
-                                        linewidth=7, color='r')
+                print('Event ID', event_id)
 
-                fitter.plot()
-                fitter.plot_times()
-                fitter.plot_waveforms()
-                # fitter.template.plot()
-                # fitter.plot_likelihood('x_cm', 'y_cm', size=(100, 100))
-                # fitter.plot_likelihood('width', 'length', size=(100, 100))
-                fitter.plot_1dlikelihood('charge')
-                fitter.plot_1dlikelihood('x_cm')
-                fitter.plot_1dlikelihood('y_cm')
-                fitter.plot_1dlikelihood('psi')
-                fitter.plot_1dlikelihood('width')
-                fitter.plot_1dlikelihood('length')
-                print(fitter)
-                plt.show()
+                try:
+
+                    fitter.plot()
+                    # fitter.plot_times()
+                    fitter.plot_waveforms()
+                    fitter.plot_ellipse()
+                    fitter.plot_times_camera()
+                    fitter.plot_waveforms_3D()
+                    fitter.plot_1dlikelihood('t_cm')
+                    fitter.plot_1dlikelihood('v')
+                    # fitter.plot_1dlikelihood('charge')
+                    fitter.plot_1dlikelihood('psi')
+                    # fitter.plot_1dlikelihood('x_cm')
+                    #fitter.plot_1dlikelihood('y_cm')
+                    # fitter.plot_1dlikelihood('width')
+                    # fitter.plot_1dlikelihood('length')
+
+                    print(fitter)
+                    plt.show()
+                except ValueError:
+                    pass
+
     data = {'fitted': fit_values, 'standard': hillas_values,
             'n_trigger': n_trigger, 'n_events': n_events}
 

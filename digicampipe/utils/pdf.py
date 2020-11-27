@@ -76,6 +76,63 @@ def mpe_distribution_general(x, bin_width, baseline, gain, sigma_e, sigma_s,
         return 0
 
 
+def log_generalized_poisson_1d(k, mu, mu_xt):
+
+    # mu = mu[:, None]
+    # print(k.shape, mu.shape, mu_xt.shape)
+
+    log_mu = np.log(mu)
+    mask = (k == 0)
+    k[mask] = 1
+    log_k = np.log(k)
+    log_k = np.cumsum(log_k)
+    k[mask] = 0
+    #  = k[..., None] * np.ones(1296)
+    # log_k = log_k[..., None] * np.ones(1296)
+
+    x = mu[..., None] + (mu_xt * k)
+    log_pdf = log_mu[..., None] - log_k + (k - 1 ) * np.log(x) - x
+    mask = np.isfinite(log_pdf)
+    log_pdf[~mask] = -1E20
+
+    return log_pdf
+
+
+def log_generalized_poisson(k, mu, mu_xt):
+
+    # mu = mu[:, None]
+    # print(k.shape, mu.shape, mu_xt.shape)
+
+    sorted = (np.diff(k) > 0).all()
+    assert sorted
+
+    log_mu = np.log(mu)
+    mask = (k == 0)
+    k[mask] = 1
+    log_k = np.log(k)
+    log_k = np.cumsum(log_k)
+    k[mask] = 0
+    k = k[..., None] * np.ones(1296)
+    log_k = log_k[..., None] * np.ones(1296)
+
+    x = mu + (mu_xt * k)[..., None]
+    log_pdf = log_mu - log_k[..., None] + (k - 1)[..., None] * np.log(x) - x
+    mask = np.isfinite(log_pdf)
+    log_pdf[~mask] = -1E20
+
+    return log_pdf
+
+
+def log_gaussian(x, mean, sigma):
+
+    # mean = mean[..., np.newaxis]
+    # sigma = sigma[..., np.newaxis]
+    log_pdf = -(x - mean) ** 2 / (2 * sigma ** 2)
+    log_pdf = log_pdf - np.log((np.sqrt(2 * np.pi) * sigma))
+
+    return log_pdf
+
+
 def fmpe_pdf_10(x, baseline, gain, sigma_e, sigma_s, bin_width, a_0=0, a_1=0,
                 a_2=0, a_3=0, a_4=0, a_5=0, a_6=0, a_7=0, a_8=0, a_9=0):
     # sigma_e = np.sqrt(sigma_e**2 - 2**2 / 12)
@@ -192,6 +249,7 @@ if __name__ == '__main__':
 
 def gaussian2d(photo_electrons, x, y, x_cm, y_cm, width, length, psi):
 
+    """
     scale_w = 1. / (2. * width**2)
     scale_l = 1. / (2. * length**2)
     a = np.cos(psi)**2 * scale_l + np.sin(psi)**2 * scale_w
@@ -202,5 +260,25 @@ def gaussian2d(photo_electrons, x, y, x_cm, y_cm, width, length, psi):
 
     pdf = - (a * (x - x_cm)**2 - 2 * b * (x - x_cm) * (y - y_cm) + c * (y - y_cm)**2)
     pdf = np.exp(pdf) * norm * photo_electrons
+    """
 
-    return pdf
+    return np.exp(log_gaussian2d(size=photo_electrons, x=x, y=y, x_cm=x_cm,
+                                 y_cm=y_cm, width=width, length=length, psi=psi))
+
+
+def log_gaussian2d(size, x, y, x_cm, y_cm, width, length, psi):
+
+    scale_w = 1. / (2. * width ** 2)
+    scale_l = 1. / (2. * length ** 2)
+    a = np.cos(psi) ** 2 * scale_l + np.sin(psi) ** 2 * scale_w
+    b = np.sin(2 * psi) * (scale_w - scale_l) / 2.
+    c = np.cos(psi) ** 2 * scale_w + np.sin(psi) ** 2 * scale_l
+
+    norm = 1. / (2 * np.pi * width * length)
+
+    log_pdf = - (a * (x - x_cm) ** 2 - 2 * b * (x - x_cm) * (y - y_cm) + c * (
+                y - y_cm) ** 2)
+
+    log_pdf += np.log(norm) + np.log(size)
+
+    return log_pdf

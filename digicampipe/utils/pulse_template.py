@@ -111,8 +111,8 @@ class NormalizedPulseTemplate:
                         bounds_error=False, fill_value=np.inf,
                         assume_sorted=True)
 
-    def integral(self):
-        return np.trapz(y=self.amplitude, x=self.time)
+    def integral(self, order=1):
+        return np.trapz(y=self.amplitude**order, x=self.time)
 
     def compute_charge_amplitude_ratio(self, integral_width, dt_sampling):
 
@@ -179,3 +179,14 @@ class NormalizedPulseTemplate:
         axes.set_xlabel('time [ns]')
         axes.set_ylabel('normalised amplitude [a.u.]')
         return axes
+
+    def compute_time_of_max(self):
+
+        dt = np.diff(self.time)[0]
+        index_max = np.argmax(self.amplitude)
+        t = np.linspace(self.time[index_max] - dt,
+                        self.time[index_max] + dt,
+                        num=100)
+        t_max = self(t).argmax()
+        t_max = t[t_max]
+        return t_max

@@ -11,7 +11,7 @@ from protozfits import File
 from tqdm import tqdm
 
 from digicampipe.instrument import camera
-from digicampipe.io.containers import DataContainer
+from digicampipe.io.containers import DataContainer, SIIContainer
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,58 @@ def _binary_search(file, item):
                 first = mid_point + 1
 
     return mid_point
+
+
+def zfits_sii_event_source(url, event_id=None, max_events=None, disable_bar=False):
+
+
+    data = SIIContainer()
+
+    with File(url) as file:
+
+        n_events_in_file = len(file.Events)
+        events = file.Events
+        index_of_event = 0
+
+        if event_id is not None:
+
+            index_of_event = _binary_search(file, event_id)
+
+            first_event_id = file.Events[0].eventNumber
+            last_event_id = file.Events[n_events_in_file - 1].eventNumber
+            if not first_event_id <= event_id <= last_event_id:
+                raise IndexError('Cannot find event ID {} in File {}\n'
+                                 'First event ID : {}\n'
+                                 'Last event ID : {}'.format(event_id, url,
+                                                             first_event_id,
+                                                             last_event_id))
+
+            events = events[max(index_of_event, 0):]
+
+        n_steps = n_events_in_file if max_events is None else max_events
+
+        for event_counter, event in tqdm(enumerate(events), desc='Events', leave=True, initial=index_of_event, disable=disable_bar, total=n_steps):
+            if max_events is not None and event_counter > max_events:
+                break
+
+            print(event)
+
+            data.event_id = event_counter
+
+
+            data.local_time  = (
+                        np.int64(event.local_time_sec * 1E9) +
+                        np.int64(event.local_time_nanosec)
+                )
+            data.gps_time = (
+                        np.int64(event.trig.timeSec * 1E9) +
+                        np.int64(event.trig.timeNanoSec)
+                )
+            data.adc_samples = event.hiGain.waveforms.samples
+
+            data.digicam_baseline = event.hiGain.waveforms.baselines / 16
+
+            yield data
 
 
 def zfits_event_source(

@@ -48,6 +48,7 @@ from digicampipe.visualization.plot import plot_array_camera, plot_histo
 
 
 class FMPEFitter(HistogramFitter):
+
     def __init__(self, histogram, estimated_gain, n_peaks=10, **kwargs):
 
         self.estimated_gain = estimated_gain

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#PBS -l walltime=167:59:59
+#PBS -l vmem=2200mb
+#PBS -q qlong
+#PBS -t 0-330
+#PBS -e /home/alispach/logs/
+#PBS -o /home/alispach/logs/
+source ~/.bashrc
+conda activate digicampipe
+cd ~/ctasoft/digicampipe/digicampipe/scripts
+
+# PARTICLE='gamma'
+# PARTICLE='proton'
+PARTICLE='gamma_diffuse'
+DATA_DIR='/work/se2/alispach/sst-1m_prod4b/'$PARTICLE'/'
+INPUT_FILE=($( ls $DATA_DIR*.simtel.gz ))
+INDEX=${PBS_ARRAYID}
+# INDEX=0
+INPUT_FILE=${INPUT_FILE[$INDEX]}
+OUTPUT_FILE=$(basename $INPUT_FILE)
+
+OUTPUT_FILE="$(cut --delimiter='.' --fields=1 <<< $OUTPUT_FILE)"
+OUTPUT_FILE=$DATA_DIR$OUTPUT_FILE'_v2.h5'
+
+if [ -f "$OUTPUT_FILE" ]; then
+    echo "$OUTPUT_FILE exist"
+else
+python spe_time_lh_fit.py --output=$OUTPUT_FILE $INPUT_FILE
+fi
+

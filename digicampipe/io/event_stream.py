@@ -91,18 +91,32 @@ def calibration_event_stream(path,
     for event in event_stream(path, max_events=max_events,
                               event_id_range=event_id_range,
                               disable_bar=disable_bar, **kwargs):
-        r0_event = list(event.r0.tel.values())[0]
-        container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
-        container.event_type = r0_event.camera_event_type
-        container.data.adc_samples = r0_event.adc_samples[pixel_id]
-        container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
-        container.data.local_time = r0_event.local_camera_clock
-        container.data.gps_time = r0_event.gps_time
-        container.data.cleaning_mask = \
-            np.ones(container.data.adc_samples.shape[0], dtype=bool)
-        container.event_id = r0_event.camera_event_number
-        container.mc = event.mc
-        yield container
+        for tel_id, r0_event in tqdm(event.r0.tel.items(),
+                                     total=len(event.r0.tel.keys()),
+                                     disable=disable_bar):
+
+            # print(tel_id, r0_event)
+            container.pixel_id = np.arange(r0_event.adc_samples.shape[0])[pixel_id]
+            container.event_type = r0_event.camera_event_type
+            container.data.adc_samples = r0_event.adc_samples[pixel_id]
+            container.data.digicam_baseline = r0_event.digicam_baseline[pixel_id]
+            container.data.local_time = r0_event.local_camera_clock
+            container.data.gps_time = r0_event.gps_time
+            container.data.cleaning_mask = \
+                np.ones(container.data.adc_samples.shape[0], dtype=bool)
+            container.event_id = r0_event.camera_event_number
+            container.mc = event.mc
+            container.tel_alt = event.mc.tel[tel_id].altitude_raw
+            container.tel_az = event.mc.tel[tel_id].azimuth_raw
+            container.alt = event.mc.alt
+            container.az = event.mc.az
+            container.tel_id = tel_id
+            container.core_x = event.mc.core_x
+            container.core_y = event.mc.core_y
+            container.h_first = event.mc.h_first_int
+            container.x_max = event.mc.x_max
+
+            yield container
 
 
 def guess_source_from_path(path):

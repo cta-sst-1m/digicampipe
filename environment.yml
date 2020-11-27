@@ -40,6 +40,7 @@ dependencies:
   - recommonmark==0.4.0
   - secretstorage
   - sphinx-automodapi
+  - joblib
   - git+https://github.com/iminuit/probfit.git
   - https://github.com/cta-sst-1m/protozfitsreader/archive/v1.4.2.tar.gz
   - git+https://github.com/cta-observatory/pyhessio.git

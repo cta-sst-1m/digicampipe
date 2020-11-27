@@ -72,7 +72,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
     cam = DigiCam
     geom = cam.geometry
     cam_display = CameraDisplay(geom, **kwargs)
-    cam_display.cmap.set_bad(color='k')
+    cam_display.cmap.set_bad(color='k', alpha=0.3)
     cam_display.image = data
     cam_display.axes.set_title('')
     cam_display.axes.set_xticks([])
@@ -96,7 +96,7 @@ def plot_array_camera(data, label='', limits=None, **kwargs):
     return cam_display, fig
 
 
-def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
+def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ', axes=None,
                      **kwargs):
     mask = np.isfinite(x) * np.isfinite(y)
 
@@ -107,15 +107,21 @@ def plot_correlation(x, y, c=None, label_x=' ', label_y=' ', label_c=' ',
         c = c[mask]
     pearson_corr = np.corrcoef(x, y)[0, 1]
 
-    plt.figure(figsize=(10, 10))
-    plt.scatter(x, y, c=c, label='Correlation {:.02f}'.format(pearson_corr),
+    if axes is None:
+        fig = plt.figure(figsize=(10, 10))
+        axes = fig.add_subplot(111)
+    label = kwargs.pop('label', 'Correlation {:.02f}'.format(pearson_corr))
+    m = axes.scatter(x, y, c=c,
+                 label=label,
                 **kwargs)
 
     if c is not None:
-        plt.colorbar(label=label_c)
-    plt.xlabel(label_x)
-    plt.legend(loc='best')
-    plt.ylabel(label_y)
+        plt.colorbar(label=label_c, ax=axes, mappable=m)
+    axes.set_xlabel(label_x)
+    axes.legend(loc='best')
+    axes.set_ylabel(label_y)
+
+    return axes
 
 
 def plot_histo(data, x_label='', show_fit=False, limits=None, **kwargs):

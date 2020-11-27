@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import trange
 
-from digicampipe.instrument.camera import Camera
+from digicampipe.instrument.camera import Camera, DigiCam
 
 
 def disp_eval(parameters, width, length, cog_x, cog_y,
@@ -280,3 +280,25 @@ def plot_event(pix_x, pix_y, image):
 def extents(f):
     delta = f[1] - f[0]
     return [f[0] - delta / 2, f[-1] + delta / 2]
+
+
+def compute_leakage(x, y, psi, width, length, n_sigma=3, geom=DigiCam.geometry):
+
+    x_pix = geom.pix_x.value
+    y_pix = geom.pix_y.value
+    pix_area = 511.37934068067324
+
+    dx = x_pix - x
+    dy = y_pix - y
+
+    lon = dx * np.cos(psi) + dy * np.sin(psi)
+    lat = dx * np.sin(psi) - dy * np.cos(psi)
+
+    mask_pixel = ((lon / length) ** 2 + (
+                lat / width) ** 2) < n_sigma ** 2
+
+    pixels_area = (mask_pixel * pix_area).sum()
+
+    leakage = pixels_area / (np.pi * n_sigma**2 * width * length)
+
+    return leakage

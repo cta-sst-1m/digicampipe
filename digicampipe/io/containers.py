@@ -239,6 +239,14 @@ class DL0Container(Container):
     tel = Field(Map(DL0CameraContainer), "map of tel_id to DL0CameraContainer")
 
 
+class SIIContainer(Container):
+
+    event_id = Field(-1, "Event id number")
+    adc_samples = Field(ndarray, "Waveform")
+    local_time = Field(ndarray, 'timestamps')
+    gps_time = Field(ndarray, 'time')
+    digicam_baseline = Field(ndarray, 'time')
+
 class DataContainer(Container):
     """ Top-level container for all event information.
     Each field is representing a specific data processing level from (R0 to
@@ -369,3 +377,78 @@ class CalibrationContainer(Container):
     info = CalibrationContainerMeta()
     slow_data = Field(None, "Slow Data Information")
     mc = Field(MCEventContainer(), "Monte-Carlo data")
+    tel_id = Field(int, "Telescope id")
+    alt = Field(float, "Altitude of event")
+    tel_alt = Field(float, "Altitude of telescope")
+    az = Field(float, "Azimuth of event")
+    tel_az = Field(float, "Azimuth of telescope")
+    core_x = Field(float, "Impact parameter x (meters)")
+    core_y = Field(float, "Impact parameter y (meters)")
+    h_first = Field(float, "First interaction height (meters)")
+    x_max = Field(float, "Xmax (g/cm^2)")
+
+class HillasParametersContainer(Container):
+
+    container_prefix = "hillas"
+
+    intensity = Field(np.nan, "total intensity (size)")
+    intensity_err = Field(np.nan, "Uncertainty `intensity`")
+    x = Field(np.nan, "centroid x coordinate")
+    x_err = Field(np.nan, "Uncertainty centroid x coordinate")
+    y = Field(np.nan, "centroid x coordinate")
+    y_err = Field(np.nan, "Uncertainty centroid x coordinate")
+    r = Field(np.nan, "radial coordinate of centroid")
+    r_err = Field(np.nan, "Uncertainty radial coordinate of centroid")
+    phi = Field(np.nan, "polar coordinate of centroid", unit=u.deg)
+    phi_err = Field(np.nan, "Uncertainty polar coordinate of centroid", unit=u.deg)
+    length = Field(np.nan, "RMS spread along the major-axis")
+    length_err = Field(np.nan, "Uncertainty RMS spread along the major-axis")
+    width = Field(np.nan, "RMS spread along the minor-axis")
+    width_err = Field(np.nan, "Uncertainty RMS spread along the minor-axis")
+    psi = Field(np.nan, "rotation angle of ellipse", unit=u.deg)
+    psi_err = Field(np.nan, "Uncertainty rotation angle of ellipse", unit=u.deg)
+    alpha = Field(np.nan, "angle between main axis and center of the camera", unit=u.deg)
+    alpha_err = Field(np.nan, "Uncertainty angle between main axis and center of the camera", unit=u.deg)
+
+    skewness_l = Field(np.nan, "measure of the asymmetry")
+    skewness_w = Field(np.nan, "measure of the asymmetry")
+    kurtosis_l = Field(np.nan, "measure of the tailedness")
+    kurtosis_w = Field(np.nan, "measure of the tailedness")
+    leakage = Field(np.nan, "Leakage parameter")
+
+
+class TimingParametersContainer(Container):
+    """
+    Slope and Intercept of a linear regression of the arrival times
+    along the shower main axis
+    """
+
+    container_prefix = "timing"
+    slope = Field(np.nan, "Slope of arrival times along main shower axis")
+    slope_err = Field(np.nan, "Uncertainty `slope`")
+    intercept = Field(np.nan, "intercept of arrival times along main shower axis")
+    intercept_err = Field(np.nan, "Uncertainty `intercept`")
+
+
+class ImageParametersContainer(Container):
+    """ Collection of image parameters """
+
+    container_prefix = "params"
+    hillas = Field(HillasParametersContainer(), "Hillas Parameters")
+    timing = Field(TimingParametersContainer(), "Timing Parameters")
+    log_lh = Field(np.nan, "Log likelihood")
+    event_id = Field(np.nan, "Event ID")
+    tel_id = Field(np.nan, "Tel ID")
+    true_energy = Field(np.nan, 'True energy')
+    particle = Field(np.nan, 'Particle shower ID')
+    # leakage = Field(LeakageContainer(), "Leakage Parameters")
+    # concentration = Field(ConcentrationContainer(), "Concentration Parameters")
+    # morphology = Field(MorphologyContainer(), "Morphology Parameters")
+    alt = Field(float, "Altitude of event")
+    tel_alt = Field(float, "Altitude of telescope")
+    az = Field(float, "Azimuth of event")
+    tel_az = Field(float, "Azimuth of telescope")
+    core_x = Field(float, "Impact parameter x (meters)")
+    core_y = Field(float, "Impact parameter y (meters)")
+    h_first = Field(float, "First interaction height (meters)")
+    x_max = Field(float, "Xmax (g/cm^2)")

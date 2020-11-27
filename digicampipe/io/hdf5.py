@@ -70,7 +70,6 @@ def digicamtoy_event_source(
                 data.inst.cluster_matrix_19[tel_id] = camera.cluster_19_matrix
                 data.inst.patch_matrix[tel_id] = camera.patch_matrix
                 data.inst.num_samples[tel_id] = n_samples
-                data.r0.tel[tel_id].digicam_baseline = baseline
                 data.r0.tel[tel_id].camera_event_type = \
                     CameraEventType.INTERNAL
                 data.r0.tel[tel_id].array_event_type = CameraEventType.UNKNOWN
@@ -86,6 +85,8 @@ def digicamtoy_event_source(
             data.r0.tel[tel_id].local_camera_clock = event_id
             data.r0.tel[tel_id].gps_time = event_id
             data.r0.tel[tel_id].adc_samples = adc_count[index_in_chunk]
+            data.r0.tel[tel_id].digicam_baseline = np.squeeze(baseline[event_id])
+
             index_in_chunk += 1
 
         yield data

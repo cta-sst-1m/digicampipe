@@ -192,6 +192,7 @@ def simtel_event_source(url, camera=None, max_events=None,
                     'azimuth_cor', 0)
                 data.mc.tel[tel_id].altitude_cor = tracking_position.get(
                     'altitude_cor', 0)
+
             yield data
             counter += 1
             if max_events and counter >= max_events:
