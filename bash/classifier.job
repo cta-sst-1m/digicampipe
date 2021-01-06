@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#PBS -l vmem=32g,nodes=1:ppn=18,walltime=167:59:59
+#PBS -e /home/alispach/logs/
+#PBS -o /home/alispach/logs/
+#PBS -q qbigmem
+
+source ~/.bashrc
+conda activate digicampipe
+cd ~/ctasoft/digicampipe/digicampipe/scripts
+
+python direction_reco.py
+python energy_reco.py
+python classifier.py
+
+
+
