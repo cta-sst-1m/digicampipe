@@ -124,7 +124,7 @@ done
 
 ### LST
 
-## DOWNLOAD DATA
+##DOWNLOAD DATA
 
 VERSION='v3'
 INPUT_PATH='/fefs/aswg/workspace/cyril.alispach/DL1/'$VERSION'/'
