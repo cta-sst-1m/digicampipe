@@ -8,11 +8,11 @@ dependencies:
 - python=3.6
 - astropy
 - astroquery
+- ctapipe=0.6.0
 - ctapipe-extra=0.2.*
 - cython
 - docopt
 - fitsio
-- gxx_linux-64 # required for Arch users ()
 - h5py
 - hdf5
 - humanize
