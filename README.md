@@ -1,5 +1,5 @@
 # digicampipe [![Build Status](https://travis-ci.org/cta-sst-1m/digicampipe.svg?branch=master)](https://travis-ci.org/cta-sst-1m/digicampipe)
-DigiCam pipeline based on ctapipe
+DigiCam pipeline based on ctapipe (dev_with_ctapipe)
 
 The documentation can be found here: [Digicampipe documentation](https://cta-sst-1m.github.io/digicampipe)
 
